@@ -191,8 +191,11 @@ export class MultiplayerManager {
         const projectileData = {
             x: projectile.x,
             y: projectile.y,
-            velocityX: projectile.velocityX,
-            velocityY: projectile.velocityY,
+            angle: projectile.angle,
+            velocity: {
+                x: projectile.velocity.x,
+                y: projectile.velocity.y
+            },
             damage: projectile.damage,
             type: projectile.type || 'laser',
             color: projectile.color || '#f00'
@@ -288,8 +291,8 @@ export class MultiplayerManager {
         const projectile = {
             x: projectileData.x,
             y: projectileData.y,
-            velocityX: projectileData.velocityX,
-            velocityY: projectileData.velocityY,
+            velocityX: projectileData.velocity ? projectileData.velocity.x : 0,
+            velocityY: projectileData.velocity ? projectileData.velocity.y : 0,
             damage: projectileData.damage,
             type: projectileData.type || 'laser',
             color: projectileData.color || '#f00',
