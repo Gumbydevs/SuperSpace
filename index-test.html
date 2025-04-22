@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperSpace - Deployment Test</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #4ff;
+            margin-bottom: 20px;
+        }
+        p {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #33f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #55f;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #33f;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 50, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>SuperSpace Deployment Test</h1>
+    <p>This is a simple test page to verify deployment on Vercel.</p>
+    <p>If you can see this page with styling, basic HTML and CSS are working correctly.</p>
+    
+    <button id="test-btn">Test JavaScript</button>
+    <div id="status">Status: Waiting for JS test...</div>
+
+    <script>
+        document.getElementById('test-btn').addEventListener('click', function() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = 'Status: JavaScript is working correctly!<br>Time: ' + new Date().toLocaleTimeString();
+            statusEl.style.backgroundColor = 'rgba(0, 50, 0, 0.5)';
+            statusEl.style.borderColor = '#0f0';
+        });
+
+        // Test server connectivity
+        window.addEventListener('load', function() {
+            const serverUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000' 
+                : 'https://superspace-server.onrender.com';
+            
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML += '<br>Attempting to connect to server at ' + serverUrl + '...';
+            
+            fetch(serverUrl + '/status')
+                .then(response => response.json())
+                .then(data => {
+                    statusEl.innerHTML += '<br>Server connection successful! Players online: ' + data.players;
+                })
+                .catch(error => {
+                    statusEl.innerHTML += '<br>Server connection failed. Error: ' + error.message;
+                });
+        });
+    </script>
+</body>
+</html>
