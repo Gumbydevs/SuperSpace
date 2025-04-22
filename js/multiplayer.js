@@ -18,6 +18,9 @@ export class MultiplayerManager {
         // Show offline status immediately
         this.addConnectionIndicator();
         this.createPlayerListUI();
+        
+        // Initialize player count to 0
+        this.updatePlayerCount();
     }
 
     connect(serverUrl = 'http://localhost:3000') {
@@ -256,6 +259,9 @@ export class MultiplayerManager {
             
             // Show connection indicator
             this.updateConnectionIndicator(true);
+            
+            // Update the player count display
+            this.updatePlayerCount();
         });
 
         // Handle disconnection from server
@@ -266,6 +272,9 @@ export class MultiplayerManager {
             
             // Show disconnected indicator
             this.updateConnectionIndicator(false);
+            
+            // Update the player count display
+            this.updatePlayerCount();
             
             // Show disconnection message
             this.showGameMessage('Disconnected from server', '#f44', 5000);
@@ -278,6 +287,9 @@ export class MultiplayerManager {
             
             // Show disconnected indicator
             this.updateConnectionIndicator(false);
+            
+            // Update the player count display
+            this.updatePlayerCount();
             
             // Show error message
             this.showGameMessage('Connection error: ' + error.message, '#f44', 5000);
@@ -294,6 +306,9 @@ export class MultiplayerManager {
                 }
             });
             
+            // Update the player count display
+            this.updatePlayerCount();
+            
             // Show connection success message
             this.showGameMessage('Connected to multiplayer server', '#4f4', 3000);
         });
@@ -302,6 +317,9 @@ export class MultiplayerManager {
         this.socket.on('playerJoined', (playerData) => {
             this.addRemotePlayer(playerData);
             this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
+            
+            // Update the player count display
+            this.updatePlayerCount();
         });
 
         // Handle player movement updates
@@ -337,6 +355,9 @@ export class MultiplayerManager {
             const playerName = this.players[playerId]?.name || 'A player';
             this.removeRemotePlayer(playerId);
             this.showGameMessage(`${playerName} left the game`, '#aaa');
+            
+            // Update the player count display
+            this.updatePlayerCount();
         });
 
         // Handle player respawn
@@ -371,6 +392,9 @@ export class MultiplayerManager {
         this.socket.on('playerTimedOut', (data) => {
             this.removeRemotePlayer(data.id);
             this.showGameMessage(`${data.name} was disconnected due to inactivity`, '#ff9');
+            
+            // Update the player count display
+            this.updatePlayerCount();
         });
         
         // Start ping interval to keep connection alive and reset inactivity timer
@@ -1234,5 +1258,15 @@ export class MultiplayerManager {
         
         // Continue shaking in next frame
         requestAnimationFrame(() => this.updateCameraShake());
+    }
+
+    // Update the player count on the start page
+    updatePlayerCount() {
+        const playerCountElement = document.getElementById('player-count');
+        if (playerCountElement) {
+            // Count is current player (if connected) plus all remote players
+            const count = (this.connected ? 1 : 0) + Object.keys(this.players).length;
+            playerCountElement.textContent = count;
+        }
     }
 }
