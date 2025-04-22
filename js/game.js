@@ -173,11 +173,21 @@ class Game {
             // Here we update world elements like asteroids and powerups
             this.world.update(deltaTime, this.player, this.soundManager);
             
+            // Update multiplayer status and send player position to server
+            if (this.multiplayer && this.multiplayer.connected) {
+                this.multiplayer.update(deltaTime);
+            }
+            
             // Here we update UI elements with current game state
             document.getElementById('score').textContent = this.player.score;
             document.getElementById('health').textContent = Math.floor(this.player.health);
             document.getElementById('weapons').textContent = this.player.currentWeapon;
-            document.getElementById('credits').textContent = this.player.credits;
+            
+            // Check if credits element exists (it might not be in your HTML yet)
+            const creditsElement = document.getElementById('credits');
+            if (creditsElement) {
+                creditsElement.textContent = this.player.credits;
+            }
             
             // Here we dynamically update shield and energy UI if player has these capabilities
             if (this.player.shieldCapacity > 0) {
