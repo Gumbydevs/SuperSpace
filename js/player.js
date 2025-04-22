@@ -57,32 +57,51 @@ export class Player {
     }
 
     update(deltaTime, input, soundManager) {
-        // Here we handle rotation based on player input
-        if (input.includes('ArrowLeft')) {
-            this.rotation -= this.rotationSpeed * deltaTime;
-        }
-        if (input.includes('ArrowRight')) {
-            this.rotation += this.rotationSpeed * deltaTime;
-        }
-
-        // Here we wrap rotation to stay between 0 and 2π
-        this.rotation = this.rotation % (Math.PI * 2);
-        if (this.rotation < 0) this.rotation += Math.PI * 2;
-
-        // Here we handle thrust/acceleration
-        if (input.includes('ArrowUp')) {
-            // Calculate acceleration components based on ship's rotation
-            // Sine for X because 0 radians points up in our coordinate system
-            const accelerationX = Math.sin(this.rotation) * this.acceleration * deltaTime;
-            const accelerationY = -Math.cos(this.rotation) * this.acceleration * deltaTime;
+        // Handle direct joystick control for mobile devices
+        if (input.directRotation !== undefined && input.directRotation !== null) {
+            // Direct control from joystick - directly set the rotation value
+            this.rotation = input.directRotation;
+            
+            // Use the joystick thrust amount (if provided) to scale acceleration
+            const thrustMultiplier = input.thrustAmount || 1.0;
+            
+            // Calculate acceleration based on the ship's rotation
+            const accelerationX = Math.sin(this.rotation) * this.acceleration * deltaTime * thrustMultiplier;
+            const accelerationY = -Math.cos(this.rotation) * this.acceleration * deltaTime * thrustMultiplier;
             
             // Apply acceleration to velocity
             this.velocity.x += accelerationX;
             this.velocity.y += accelerationY;
+        } else {
+            // Standard keyboard controls
+            
+            // Here we handle rotation based on player input
+            if (input.keys.includes('ArrowLeft')) {
+                this.rotation -= this.rotationSpeed * deltaTime;
+            }
+            if (input.keys.includes('ArrowRight')) {
+                this.rotation += this.rotationSpeed * deltaTime;
+            }
+    
+            // Here we wrap rotation to stay between 0 and 2π
+            this.rotation = this.rotation % (Math.PI * 2);
+            if (this.rotation < 0) this.rotation += Math.PI * 2;
+    
+            // Here we handle thrust/acceleration
+            if (input.keys.includes('ArrowUp')) {
+                // Calculate acceleration components based on ship's rotation
+                // Sine for X because 0 radians points up in our coordinate system
+                const accelerationX = Math.sin(this.rotation) * this.acceleration * deltaTime;
+                const accelerationY = -Math.cos(this.rotation) * this.acceleration * deltaTime;
+                
+                // Apply acceleration to velocity
+                this.velocity.x += accelerationX;
+                this.velocity.y += accelerationY;
+            }
         }
 
         // Here we check if player is braking (using down arrow)
-        this.braking = input.includes('ArrowDown');
+        this.braking = input.keys.includes('ArrowDown');
 
         // Here we apply physics based on whether the player is braking or coasting
         if (this.braking) {
@@ -108,16 +127,16 @@ export class Player {
         this.y += this.velocity.y * deltaTime;
 
         // Here we handle weapon firing
-        if (input.includes('Space') && this.fireCooldown <= 0) {
+        if (input.keys.includes('Space') && this.fireCooldown <= 0) {
             this.fire(soundManager);
             this.fireCooldown = this.fireCooldownTime;
         }
 
         // Here we handle weapon switching with Q and E keys
-        if ((input.includes('KeyQ') || input.includes('KeyE')) && soundManager) {
+        if ((input.keys.includes('KeyQ') || input.keys.includes('KeyE')) && soundManager) {
             const previousWeapon = this.currentWeapon;
             
-            if (input.includes('KeyQ')) {
+            if (input.keys.includes('KeyQ')) {
                 // Cycle backwards through weapons
                 this.weaponIndex = (this.weaponIndex - 1 + this.weapons.length) % this.weapons.length;
             } else {
