@@ -47,6 +47,84 @@ class Game {
         
         // Set up keyboard shortcuts
         this.setupHotkeys();
+        
+        // Initialize player count display by connecting to server without joining game
+        this.initializePlayerCount();
+    }
+    
+    // Connect to the server to get player count without joining the game
+    initializePlayerCount() {
+        const serverUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000'
+            : 'https://superspace-server.onrender.com';
+            
+        console.log('Initializing player count, connecting to:', serverUrl);
+        
+        // Load Socket.IO client only if not already loaded
+        if (typeof io === 'undefined') {
+            console.log('Socket.IO not loaded, loading script...');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+            script.integrity = '';  // Removed integrity check which can cause issues
+            script.crossOrigin = 'anonymous';
+            script.onload = () => {
+                console.log('Socket.IO script loaded successfully');
+                this.createPlayerCountConnection(serverUrl);
+            };
+            script.onerror = (error) => {
+                console.error('Error loading Socket.IO script:', error);
+            };
+            document.head.appendChild(script);
+        } else {
+            console.log('Socket.IO already loaded, creating connection');
+            this.createPlayerCountConnection(serverUrl);
+        }
+    }
+    
+    // Create a connection specifically for player count
+    createPlayerCountConnection(serverUrl) {
+        try {
+            console.log('Creating temporary socket connection for player count');
+            const tempSocket = io(serverUrl);
+            
+            // Setup event handlers
+            tempSocket.on('connect', () => {
+                console.log('Player count socket connected with ID:', tempSocket.id);
+                // Request player count once connected
+                tempSocket.emit('getPlayerCount');
+            });
+            
+            tempSocket.on('connect_error', (error) => {
+                console.error('Player count socket connection error:', error);
+            });
+            
+            // Listen for player count updates
+            tempSocket.on('playerCountUpdate', (count) => {
+                console.log('Received player count update:', count);
+                const playerCountElement = document.getElementById('player-count');
+                if (playerCountElement) {
+                    playerCountElement.textContent = count;
+                    console.log('Player count element updated to:', count);
+                } else {
+                    console.warn('Player count element not found in DOM');
+                }
+            });
+            
+            // Store the socket so we can disconnect it later when actual game starts
+            this.tempSocket = tempSocket;
+            
+            // If we have a real connection but no player count after 2 seconds,
+            // try requesting it again (sometimes first request gets lost)
+            setTimeout(() => {
+                const playerCountElement = document.getElementById('player-count');
+                if (playerCountElement && playerCountElement.textContent === '0' && tempSocket.connected) {
+                    console.log('Re-requesting player count...');
+                    tempSocket.emit('getPlayerCount');
+                }
+            }, 2000);
+        } catch (error) {
+            console.error('Error creating player count connection:', error);
+        }
     }
 
     // Here we adjust canvas size to match window size for responsive gameplay
@@ -124,6 +202,13 @@ class Game {
 
     // Here we transition from menu to active gameplay
     startGame() {
+        // If there's a temporary socket for player count, disconnect it
+        if (this.tempSocket) {
+            console.log('Disconnecting temporary player count socket');
+            this.tempSocket.disconnect();
+            this.tempSocket = null;
+        }
+        
         // Resume audio context (needed because of browser autoplay policy)
         this.soundManager.resumeAudio();
         

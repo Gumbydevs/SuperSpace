@@ -5,6 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SuperSpace - SubSpace Homage Game</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // Connect to the server to get player count as soon as the page loads
+        window.addEventListener('load', function() {
+            const serverUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000'
+                : 'https://superspace-server.onrender.com';
+                
+            // Connect to server
+            const socket = io(serverUrl);
+            
+            // When connected, request player count
+            socket.on('connect', function() {
+                socket.emit('getPlayerCount');
+            });
+            
+            // Listen for player count updates
+            socket.on('playerCountUpdate', function(count) {
+                document.getElementById('player-count').textContent = count;
+            });
+            
+            // Handle disconnect/errors gracefully
+            socket.on('disconnect', function() {
+                document.getElementById('player-count').textContent = '?';
+            });
+            
+            socket.on('connect_error', function() {
+                document.getElementById('player-count').textContent = '?';
+            });
+        });
+    </script>
 </head>
 <body>
     <div class="game-container">

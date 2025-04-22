@@ -53,6 +53,17 @@ io.on('connection', (socket) => {
   // Set initial activity timestamp
   playerLastActivity[socket.id] = Date.now();
   
+  // Handle requests for player count (without joining the game)
+  socket.on('getPlayerCount', () => {
+    // Get the current count of players
+    const playerCount = Object.keys(gameState.players).length;
+    
+    // Send current player count to the requesting client
+    socket.emit('playerCountUpdate', playerCount);
+    
+    console.log(`Player count requested by: ${socket.id}, current count: ${playerCount}`);
+  });
+  
   // Player joined
   socket.on('playerJoin', (playerData) => {
     // Update activity timestamp
@@ -78,6 +89,9 @@ io.on('connection', (socket) => {
     
     // Notify all clients about the new player
     socket.broadcast.emit('playerJoined', gameState.players[socket.id]);
+    
+    // Broadcast updated player count to all clients
+    io.emit('playerCountUpdate', Object.keys(gameState.players).length);
     
     console.log(`Player ${gameState.players[socket.id].name} joined the game`);
   });
@@ -275,6 +289,9 @@ io.on('connection', (socket) => {
       
       // Remove player activity tracking
       delete playerLastActivity[socket.id];
+      
+      // Broadcast updated player count to all clients
+      io.emit('playerCountUpdate', Object.keys(gameState.players).length);
     } else {
       console.log(`Unknown player disconnected: ${socket.id}`);
     }
@@ -313,6 +330,9 @@ setInterval(() => {
       
       // Disconnect the socket
       socket.disconnect(true);
+      
+      // Broadcast updated player count to all clients
+      io.emit('playerCountUpdate', Object.keys(gameState.players).length);
     }
   });
 }, INACTIVITY_CHECK_INTERVAL);
