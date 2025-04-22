@@ -2,7 +2,16 @@ export class InputHandler {
     constructor() {
         this.keys = [];
         this.isTouchDevice = false;
-        this.touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+        this.touchJoystick = { 
+            active: false, 
+            startX: 0, 
+            startY: 0, 
+            moveX: 0, 
+            moveY: 0,
+            angle: 0,          // Angle in radians for direct ship control
+            magnitude: 0,      // Magnitude for thrust power
+            directControl: true // Flag to use direct control mode on mobile
+        };
         this.touchButtons = {};
         
         window.addEventListener('keydown', (e) => {
@@ -252,8 +261,24 @@ export class InputHandler {
                 let deltaX = this.touchJoystick.moveX - this.touchJoystick.startX;
                 let deltaY = this.touchJoystick.moveY - this.touchJoystick.startY;
                 
-                // Limit to a circle with radius 40
+                // Calculate angle and magnitude for direct control mode
+                this.touchJoystick.angle = Math.atan2(deltaY, deltaX);
+                
+                // Convert to ship orientation (where 0 is up, not right)
+                this.touchJoystick.angle = this.touchJoystick.angle + Math.PI/2;
+                
+                // Normalize angle to 0-2π range
+                if (this.touchJoystick.angle < 0) {
+                    this.touchJoystick.angle += Math.PI * 2;
+                }
+                
+                // Calculate magnitude (distance from center)
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                
+                // Normalize magnitude to 0-1 range (with max being 40px)
+                this.touchJoystick.magnitude = Math.min(distance / 40, 1);
+                
+                // Limit to a circle with radius 40
                 if (distance > 40) {
                     deltaX = deltaX * 40 / distance;
                     deltaY = deltaY * 40 / distance;
@@ -265,9 +290,45 @@ export class InputHandler {
                     this.touchElements.knob.style.top = `calc(50% + ${deltaY}px)`;
                 }
                 
-                // Convert joystick movement to key presses
-                this.handleJoystickInput(deltaX, deltaY);
+                if (this.touchJoystick.directControl) {
+                    // Direct control mode for mobile: convert to rotation and thrust
+                    this.handleDirectJoystickControl();
+                } else {
+                    // Legacy mode for backwards compatibility
+                    this.handleJoystickInput(deltaX, deltaY);
+                }
             }
+        }
+    }
+    
+    handleDirectJoystickControl() {
+        // Remove all direction keys first
+        this.removeKey('ArrowUp');
+        this.removeKey('ArrowDown');
+        this.removeKey('ArrowLeft');
+        this.removeKey('ArrowRight');
+        
+        // Only apply controls if the joystick is moved enough
+        if (this.touchJoystick.magnitude > 0.2) {
+            // Add simulated rotation key input based on angle
+            // These will be used by the Player class to set its rotation directly
+            
+            // Add direct rotation property to be read by the Player class
+            this.directRotation = this.touchJoystick.angle;
+            
+            // Apply thrust if the joystick magnitude is significant
+            if (this.touchJoystick.magnitude > 0.3) {
+                if (!this.keys.includes('ArrowUp')) {
+                    this.keys.push('ArrowUp');
+                }
+                
+                // Set thrust amount proportional to joystick distance
+                this.thrustAmount = this.touchJoystick.magnitude;
+            }
+        } else {
+            // Reset direct rotation if joystick is back to center
+            this.directRotation = null;
+            this.thrustAmount = 0;
         }
     }
     
@@ -281,6 +342,10 @@ export class InputHandler {
                 this.touchElements.knob.style.left = '50%';
                 this.touchElements.knob.style.top = '50%';
             }
+            
+            // Reset direct control values
+            this.directRotation = null;
+            this.thrustAmount = 0;
             
             // Remove all direction keys
             this.removeKey('ArrowUp');
@@ -310,6 +375,10 @@ export class InputHandler {
                     this.touchElements.knob.style.left = '50%';
                     this.touchElements.knob.style.top = '50%';
                 }
+                
+                // Reset direct control values
+                this.directRotation = null;
+                this.thrustAmount = 0;
                 
                 // Remove all direction keys
                 this.removeKey('ArrowUp');
