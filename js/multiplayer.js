@@ -594,61 +594,61 @@ export class MultiplayerManager {
                 // Fighter ship design
                 ctx.fillStyle = player.color;
                 ctx.beginPath();
-                ctx.moveTo(20, 0);
-                ctx.lineTo(-10, -15);
-                ctx.lineTo(-5, -5);
+                ctx.moveTo(0, -20); // Front (points in direction of travel)
+                ctx.lineTo(-15, 10);
                 ctx.lineTo(-5, 5);
-                ctx.lineTo(-10, 15);
+                ctx.lineTo(5, 5); 
+                ctx.lineTo(15, 10);
                 ctx.closePath();
                 ctx.fill();
                 
                 // Engine glow
                 ctx.fillStyle = '#ff6';
                 ctx.beginPath();
-                ctx.moveTo(-8, -7);
-                ctx.lineTo(-15, 0);
-                ctx.lineTo(-8, 7);
+                ctx.moveTo(-7, 8);
+                ctx.lineTo(0, 15);
+                ctx.lineTo(7, 8);
                 ctx.closePath();
                 ctx.fill();
             } else if (player.ship === 'cruiser') {
                 // Heavy cruiser design
                 ctx.fillStyle = player.color;
                 ctx.beginPath();
-                ctx.moveTo(25, 0);
-                ctx.lineTo(10, -8);
-                ctx.lineTo(-15, -20);
-                ctx.lineTo(-10, -8);
-                ctx.lineTo(-10, 8);
-                ctx.lineTo(-15, 20);
-                ctx.lineTo(10, 8);
+                ctx.moveTo(0, -25); // Front
+                ctx.lineTo(-8, -10);
+                ctx.lineTo(-20, 15);
+                ctx.lineTo(-8, 10);
+                ctx.lineTo(8, 10);
+                ctx.lineTo(20, 15);
+                ctx.lineTo(8, -10);
                 ctx.closePath();
                 ctx.fill();
                 
                 // Engine glow
                 ctx.fillStyle = '#f66';
                 ctx.beginPath();
-                ctx.moveTo(-12, -12);
-                ctx.lineTo(-20, 0);
-                ctx.lineTo(-12, 12);
+                ctx.moveTo(-12, 12);
+                ctx.lineTo(0, 20);
+                ctx.lineTo(12, 12);
                 ctx.closePath();
                 ctx.fill();
             } else {
-                // Default scout ship design
+                // Default scout ship design (pointing up at rotation 0)
                 ctx.fillStyle = player.color;
                 ctx.beginPath();
-                ctx.moveTo(15, 0);
-                ctx.lineTo(-10, -10);
-                ctx.lineTo(-5, 0);
-                ctx.lineTo(-10, 10);
+                ctx.moveTo(0, -15); // front (points upward when rotation = 0)
+                ctx.lineTo(-10, 10); // back left
+                ctx.lineTo(0, 5); // back middle
+                ctx.lineTo(10, 10); // back right
                 ctx.closePath();
                 ctx.fill();
                 
                 // Engine glow
                 ctx.fillStyle = '#6ff';
                 ctx.beginPath();
-                ctx.moveTo(-7, -5);
-                ctx.lineTo(-12, 0);
-                ctx.lineTo(-7, 5);
+                ctx.moveTo(-5, 12);
+                ctx.lineTo(0, 15);
+                ctx.lineTo(5, 12);
                 ctx.closePath();
                 ctx.fill();
             }
@@ -683,17 +683,107 @@ export class MultiplayerManager {
                     projectile.x += projectile.velocityX * 0.016; // Assumes 60 FPS
                     projectile.y += projectile.velocityY * 0.016;
                     
-                    // Draw projectile
-                    ctx.fillStyle = projectile.color || '#f00';
-                    ctx.beginPath();
-                    ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
-                    ctx.fill();
+                    // Draw projectile based on type
+                    switch(projectile.type) {
+                        case 'laser':
+                            ctx.fillStyle = projectile.color || '#f00';
+                            ctx.beginPath();
+                            ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            // Add laser trail effect
+                            ctx.strokeStyle = projectile.color || '#f00';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(projectile.x, projectile.y);
+                            ctx.lineTo(
+                                projectile.x - projectile.velocityX * 0.02,
+                                projectile.y - projectile.velocityY * 0.02
+                            );
+                            ctx.stroke();
+                            break;
+                            
+                        case 'burst':
+                            ctx.fillStyle = '#ff0';
+                            ctx.beginPath();
+                            ctx.arc(projectile.x, projectile.y, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                            
+                        case 'missile':
+                            // Draw missile body
+                            ctx.save();
+                            ctx.translate(projectile.x, projectile.y);
+                            
+                            // Calculate rotation from velocity
+                            let rotation = Math.atan2(projectile.velocityY, projectile.velocityX);
+                            ctx.rotate(rotation);
+                            
+                            ctx.fillStyle = '#f80';
+                            ctx.beginPath();
+                            ctx.moveTo(5, 0);
+                            ctx.lineTo(0, -2);
+                            ctx.lineTo(-5, -2);
+                            ctx.lineTo(-5, 2);
+                            ctx.lineTo(0, 2);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Engine exhaust
+                            ctx.fillStyle = '#f00';
+                            ctx.beginPath();
+                            ctx.moveTo(-5, -1);
+                            ctx.lineTo(-8, 0);
+                            ctx.lineTo(-5, 1);
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            ctx.restore();
+                            break;
+                            
+                        default:
+                            // Generic projectile
+                            ctx.fillStyle = projectile.color || '#f00';
+                            ctx.beginPath();
+                            ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                    }
                     
-                    // Remove projectiles that are too far away
+                    // Check collision with local player
                     const dx = projectile.x - this.game.player.x;
                     const dy = projectile.y - this.game.player.y;
                     const distSq = dx * dx + dy * dy;
-                    if (distSq > 1000000) { // 1000 distance squared
+                    
+                    if (distSq < 225) { // 15 squared - rough collision radius
+                        // Hit the player!
+                        const damage = projectile.damage || 10;
+                        this.game.player.takeDamage(damage);
+                        
+                        // Show hit message
+                        this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
+                        
+                        // Remove the projectile
+                        player.projectiles.splice(i, 1);
+                        
+                        // Send hit confirmation to server
+                        this.socket.emit('hit', {
+                            type: 'player',
+                            targetId: this.playerId,
+                            damage: damage,
+                            attackerId: player.id
+                        });
+                        
+                        // Check if player was destroyed
+                        if (this.game.player.health <= 0) {
+                            this.socket.emit('playerDestroyed', {
+                                playerId: this.playerId,
+                                attackerId: player.id
+                            });
+                        }
+                    }
+                    
+                    // Remove projectiles that are too far away
+                    else if (distSq > 1000000) { // 1000 distance squared
                         player.projectiles.splice(i, 1);
                     }
                 });
