@@ -319,7 +319,7 @@ class Game {
             if (this.shop.shopOpen) return;
             
             // Here we handle thruster sound based on player input
-            if (this.input.keys.includes('ArrowUp')) {
+            if (this.input.keys && Array.isArray(this.input.keys) && this.input.keys.includes('ArrowUp')) {
                 if (!this.thrusterSoundActive) {
                     // Start thruster sound when player starts accelerating
                     this.soundManager.startThrusterSound({ volume: 0.3 });
@@ -332,7 +332,8 @@ class Game {
             }
             
             // Here we update player position, rotation, and actions
-            this.player.update(deltaTime, this.input.keys, this.soundManager);
+            // Pass the entire input object instead of just keys
+            this.player.update(deltaTime, this.input, this.soundManager);
             
             // Here we update world elements like asteroids and powerups
             this.world.update(deltaTime, this.player, this.soundManager);
