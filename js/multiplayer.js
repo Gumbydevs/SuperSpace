@@ -5,33 +5,206 @@ export class MultiplayerManager {
         this.connected = false;
         this.players = {};
         this.playerId = null;
-        this.playerName = "Player-" + Math.floor(Math.random() * 1000);
+        this.playerName = "Player"; // Initialize with a default name, will be prompted to change
         this.lastUpdate = 0;
         this.updateInterval = 50; // 50ms = 20 updates per second
     }
 
     connect(serverUrl = 'http://localhost:3000') {
-        // Load Socket.IO client library dynamically
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
-            script.integrity = 'sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI';
-            script.crossOrigin = 'anonymous';
-            script.onload = () => {
-                try {
-                    this.socket = io(serverUrl);
-                    this.setupSocketEvents();
-                    resolve(true);
-                } catch (error) {
-                    console.error('Error connecting to multiplayer server:', error);
-                    reject(error);
+        // Show dialog to get player name before connecting
+        return this.showPlayerNameDialog()
+            .then(() => {
+                // Now load Socket.IO client library dynamically
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+                    script.integrity = 'sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI';
+                    script.crossOrigin = 'anonymous';
+                    script.onload = () => {
+                        try {
+                            this.socket = io(serverUrl);
+                            this.setupSocketEvents();
+                            resolve(true);
+                        } catch (error) {
+                            console.error('Error connecting to multiplayer server:', error);
+                            reject(error);
+                        }
+                    };
+                    script.onerror = (error) => {
+                        console.error('Error loading Socket.IO client:', error);
+                        reject(error);
+                    };
+                    document.head.appendChild(script);
+                });
+            });
+    }
+
+    // Show dialog to let player set their name
+    showPlayerNameDialog() {
+        return new Promise((resolve) => {
+            // Create modal backdrop
+            const backdrop = document.createElement('div');
+            backdrop.style.position = 'fixed';
+            backdrop.style.top = '0';
+            backdrop.style.left = '0';
+            backdrop.style.width = '100%';
+            backdrop.style.height = '100%';
+            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            backdrop.style.display = 'flex';
+            backdrop.style.justifyContent = 'center';
+            backdrop.style.alignItems = 'center';
+            backdrop.style.zIndex = '1000';
+            
+            // Create modal dialog
+            const dialog = document.createElement('div');
+            dialog.style.backgroundColor = '#222';
+            dialog.style.color = 'white';
+            dialog.style.borderRadius = '10px';
+            dialog.style.padding = '20px';
+            dialog.style.maxWidth = '400px';
+            dialog.style.width = '90%';
+            dialog.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.5)';
+            dialog.style.border = '2px solid #444';
+            
+            // Create dialog title
+            const title = document.createElement('h2');
+            title.textContent = '💫 Enter Your Pilot Name';
+            title.style.margin = '0 0 20px 0';
+            title.style.textAlign = 'center';
+            title.style.color = '#4af';
+            title.style.textShadow = '0 0 5px rgba(64, 170, 255, 0.7)';
+            dialog.appendChild(title);
+            
+            // Create input group
+            const inputGroup = document.createElement('div');
+            inputGroup.style.marginBottom = '20px';
+            
+            // Add label
+            const label = document.createElement('label');
+            label.textContent = 'Choose your pilot name:';
+            label.style.display = 'block';
+            label.style.marginBottom = '8px';
+            label.style.color = '#ccc';
+            inputGroup.appendChild(label);
+            
+            // Add input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = this.playerName + '-' + Math.floor(Math.random() * 1000);
+            input.style.width = '100%';
+            input.style.padding = '10px';
+            input.style.borderRadius = '5px';
+            input.style.border = '1px solid #555';
+            input.style.backgroundColor = '#333';
+            input.style.color = '#fff';
+            input.style.fontSize = '16px';
+            input.style.outline = 'none';
+            input.style.boxSizing = 'border-box';
+            
+            // Select all text when focused
+            input.onclick = () => input.select();
+            
+            // Add input field with auto-select
+            inputGroup.appendChild(input);
+            dialog.appendChild(inputGroup);
+            
+            // Create buttons container
+            const buttons = document.createElement('div');
+            buttons.style.display = 'flex';
+            buttons.style.justifyContent = 'center';
+            buttons.style.gap = '10px';
+            
+            // Create confirm button
+            const confirmButton = document.createElement('button');
+            confirmButton.textContent = '🚀 Connect';
+            confirmButton.style.padding = '10px 20px';
+            confirmButton.style.borderRadius = '5px';
+            confirmButton.style.border = 'none';
+            confirmButton.style.backgroundColor = '#4af';
+            confirmButton.style.color = 'white';
+            confirmButton.style.cursor = 'pointer';
+            confirmButton.style.fontSize = '16px';
+            confirmButton.style.fontWeight = 'bold';
+            confirmButton.style.transition = 'background-color 0.2s';
+            
+            // Hover effect
+            confirmButton.onmouseover = () => {
+                confirmButton.style.backgroundColor = '#6cf';
+            };
+            confirmButton.onmouseout = () => {
+                confirmButton.style.backgroundColor = '#4af';
+            };
+            
+            confirmButton.onclick = () => {
+                // Validate and set player name (min 3 chars, max 15 chars)
+                let name = input.value.trim();
+                
+                // Default to random name if empty
+                if (name === '') {
+                    name = 'Pilot-' + Math.floor(Math.random() * 1000);
                 }
+                
+                // Enforce length limits
+                if (name.length < 3) {
+                    name = name.padEnd(3, '0');
+                }
+                
+                if (name.length > 15) {
+                    name = name.substring(0, 15);
+                }
+                
+                // Update player name
+                this.setPlayerName(name);
+                
+                // Remove modal
+                document.body.removeChild(backdrop);
+                
+                // Resolve the promise
+                resolve();
             };
-            script.onerror = (error) => {
-                console.error('Error loading Socket.IO client:', error);
-                reject(error);
-            };
-            document.head.appendChild(script);
+            
+            buttons.appendChild(confirmButton);
+            dialog.appendChild(buttons);
+            backdrop.appendChild(dialog);
+            document.body.appendChild(backdrop);
+            
+            // Focus the input field
+            input.focus();
+            input.select();
+            
+            // Submit on Enter key
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    confirmButton.click();
+                }
+            });
+        });
+    }
+
+    // Set player name and update UI if needed
+    setPlayerName(name) {
+        this.playerName = name;
+        
+        // Update player list if already connected
+        const playerList = document.getElementById('player-list-container');
+        if (playerList) {
+            this.updatePlayerList();
+        }
+        
+        // Show confirmation message
+        this.showGameMessage(`Welcome, ${name}!`, '#4af');
+    }
+
+    // Add ability to change name later
+    showChangeNameUI() {
+        this.showPlayerNameDialog().then(() => {
+            // If already connected, update server with new name
+            if (this.connected) {
+                this.socket.emit('playerNameChange', {
+                    id: this.playerId,
+                    name: this.playerName
+                });
+            }
         });
     }
 
@@ -137,6 +310,26 @@ export class MultiplayerManager {
         this.socket.on('worldUpdate', (data) => {
             // Update any world entities managed by the server
             // This would synchronize asteroids and powerups between clients
+        });
+
+        // Handle player name changes
+        this.socket.on('playerNameChanged', (data) => {
+            if (this.players[data.id]) {
+                // Update player name in local players collection
+                this.players[data.id].name = data.newName;
+                
+                // Update player list UI
+                this.updatePlayerList();
+                
+                // Show message about name change
+                if (data.id === this.playerId) {
+                    // This is our own name change confirmation
+                    this.showGameMessage(`You are now known as ${data.newName}`, '#4af');
+                } else {
+                    // Another player changed their name
+                    this.showGameMessage(`${data.oldName} is now known as ${data.newName}`, '#fff');
+                }
+            }
         });
 
         // Handle player ship changes
@@ -453,14 +646,52 @@ export class MultiplayerManager {
         playerList.style.maxHeight = '300px';
         playerList.style.overflowY = 'auto';
         
+        // Create header with title and buttons
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        header.style.borderBottom = '1px solid #555';
+        header.style.paddingBottom = '5px';
+        header.style.marginBottom = '5px';
+        
+        // Title element
         const title = document.createElement('div');
         title.textContent = '🌐 PLAYERS ONLINE';
         title.style.fontWeight = 'bold';
-        title.style.borderBottom = '1px solid #555';
-        title.style.paddingBottom = '5px';
-        title.style.marginBottom = '5px';
+        header.appendChild(title);
         
-        playerList.appendChild(title);
+        // Change Name button
+        const changeNameBtn = document.createElement('button');
+        changeNameBtn.textContent = '✏️ Change Name';
+        changeNameBtn.style.backgroundColor = '#333';
+        changeNameBtn.style.color = '#4af';
+        changeNameBtn.style.border = '1px solid #4af';
+        changeNameBtn.style.borderRadius = '4px';
+        changeNameBtn.style.padding = '2px 5px';
+        changeNameBtn.style.fontSize = '11px';
+        changeNameBtn.style.cursor = 'pointer';
+        changeNameBtn.style.marginLeft = '5px';
+        changeNameBtn.style.transition = 'all 0.2s';
+        
+        // Button hover effect
+        changeNameBtn.onmouseover = () => {
+            changeNameBtn.style.backgroundColor = '#4af';
+            changeNameBtn.style.color = 'black';
+        };
+        
+        changeNameBtn.onmouseout = () => {
+            changeNameBtn.style.backgroundColor = '#333';
+            changeNameBtn.style.color = '#4af';
+        };
+        
+        // Add click handler
+        changeNameBtn.onclick = () => {
+            this.showChangeNameUI();
+        };
+        
+        header.appendChild(changeNameBtn);
+        playerList.appendChild(header);
         
         const listContainer = document.createElement('div');
         listContainer.id = 'player-list-container';

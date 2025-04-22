@@ -206,6 +206,26 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Player name change
+  socket.on('playerNameChange', (data) => {
+    if (gameState.players[socket.id]) {
+      // Store the old name for the message
+      const oldName = gameState.players[socket.id].name;
+      
+      // Update the player's name
+      gameState.players[socket.id].name = data.name;
+      
+      console.log(`Player ${socket.id} changed name from ${oldName} to ${data.name}`);
+      
+      // Notify all clients about the name change
+      io.emit('playerNameChanged', {
+        id: socket.id,
+        oldName: oldName,
+        newName: data.name
+      });
+    }
+  });
+  
   // Player disconnect
   socket.on('disconnect', () => {
     if (gameState.players[socket.id]) {
