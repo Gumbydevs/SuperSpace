@@ -5,6 +5,7 @@ body {
     color: #fff;
     font-family: 'Arial', sans-serif;
     overflow: hidden;
+    overscroll-behavior-y: contain;
 }
 
 .game-container {
@@ -86,6 +87,9 @@ button {
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 15px;
 }
 
 button:hover {
@@ -93,9 +97,45 @@ button:hover {
     transform: scale(1.05);
 }
 
+button:focus, a:focus {
+    outline: 2px solid #4af;
+}
+
 h1 {
     color: #33f;
     font-size: 48px;
     margin-bottom: 50px;
     text-shadow: 0 0 10px #33f, 0 0 20px #33f;
+}
+
+/* Mobile responsiveness for touch controls */
+@media (hover: none) and (pointer: coarse) {
+    /* Adjust UI elements to avoid overlap with touch controls */
+    #score-container, #health-container, #shield-container, #energy-container, #credits-container {
+        font-size: 16px;
+        padding: 5px 8px;
+    }
+    
+    /* Move UI elements away from the edges to avoid overlap with touch controls */
+    #game-ui {
+        padding: 50px 20px;
+    }
+    
+    /* Make buttons easier to tap */
+    button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 15px;
+    }
+    
+    /* Ensure modals are accessible on small screens */
+    .modal-content {
+        width: 90%;
+        max-width: 500px;
+    }
+    
+    /* Prevent double-tap zoom on controls */
+    .touch-ui, .touch-joystick, .touch-button {
+        touch-action: none;
+    }
 }

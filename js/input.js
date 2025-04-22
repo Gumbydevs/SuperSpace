@@ -1,6 +1,9 @@
 export class InputHandler {
     constructor() {
         this.keys = [];
+        this.isTouchDevice = false;
+        this.touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+        this.touchButtons = {};
         
         window.addEventListener('keydown', (e) => {
             // Prevent default behaviors for game control keys
@@ -22,20 +25,347 @@ export class InputHandler {
             }
         });
         
+        // Detect touch device
+        this.detectTouchDevice();
+        
         // Add touch controls for mobile
         this.setupTouchControls();
     }
+
+    detectTouchDevice() {
+        // Check if device has touch capability
+        this.isTouchDevice = ('ontouchstart' in window) || 
+                            (navigator.maxTouchPoints > 0) || 
+                            (navigator.msMaxTouchPoints > 0);
+                            
+        console.log("Touch device detected:", this.isTouchDevice);
+    }
     
     setupTouchControls() {
-        // Virtual joystick for mobile would go here in a more complete game
-        // For now, we'll just add some basic debugging
-        console.log('Touch controls are not fully implemented in this prototype');
+        // Only create touch controls if this is a touch device
+        if (!this.isTouchDevice) return;
         
-        // Add event listeners for touch if needed
-        /*
-        document.addEventListener('touchstart', (e) => {
-            // Handle touch controls
+        // Create touch UI container
+        this.createTouchInterface();
+        
+        // Setup touch events for joystick
+        document.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+        document.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+        document.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+        document.addEventListener('touchcancel', (e) => this.handleTouchEnd(e));
+    }
+    
+    createTouchInterface() {
+        // Create container for all touch controls
+        const touchUI = document.createElement('div');
+        touchUI.id = 'touch-controls';
+        touchUI.className = 'touch-ui';
+        
+        // Create and style the virtual joystick
+        const joystick = document.createElement('div');
+        joystick.id = 'touch-joystick';
+        joystick.className = 'touch-joystick';
+        
+        const joystickKnob = document.createElement('div');
+        joystickKnob.id = 'joystick-knob';
+        joystickKnob.className = 'joystick-knob';
+        
+        joystick.appendChild(joystickKnob);
+        touchUI.appendChild(joystick);
+        
+        // Create fire button
+        const fireButton = document.createElement('div');
+        fireButton.id = 'fire-button';
+        fireButton.className = 'touch-button';
+        fireButton.innerHTML = '🔥';
+        touchUI.appendChild(fireButton);
+        
+        // Create weapon switch button
+        const weaponButton = document.createElement('div');
+        weaponButton.id = 'weapon-button';
+        weaponButton.className = 'touch-button';
+        weaponButton.innerHTML = '🔄';
+        touchUI.appendChild(weaponButton);
+        
+        document.body.appendChild(touchUI);
+        
+        // Add button touch events
+        fireButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.keys.includes('Space')) {
+                this.keys.push('Space');
+            }
         });
-        */
+        
+        fireButton.addEventListener('touchend', () => {
+            const index = this.keys.indexOf('Space');
+            if (index > -1) {
+                this.keys.splice(index, 1);
+            }
+        });
+        
+        weaponButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            // Switch weapon (Q key)
+            if (!this.keys.includes('KeyQ')) {
+                this.keys.push('KeyQ');
+                // Remove it after a short delay to simulate a keypress
+                setTimeout(() => {
+                    const index = this.keys.indexOf('KeyQ');
+                    if (index > -1) {
+                        this.keys.splice(index, 1);
+                    }
+                }, 100);
+            }
+        });
+        
+        // Add CSS for touch controls
+        const style = document.createElement('style');
+        style.textContent = `
+            .touch-ui {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1000;
+                display: none; /* Hide by default, show only on touch devices */
+            }
+            
+            .touch-joystick {
+                position: absolute;
+                bottom: 20%;
+                left: 15%;
+                width: 120px;
+                height: 120px;
+                background-color: rgba(255, 255, 255, 0.2);
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 50%;
+                pointer-events: auto;
+            }
+            
+            .joystick-knob {
+                position: absolute;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(255, 255, 255, 0.6);
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .touch-button {
+                position: absolute;
+                width: 80px;
+                height: 80px;
+                background-color: rgba(255, 255, 255, 0.3);
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 30px;
+                pointer-events: auto;
+            }
+            
+            #fire-button {
+                bottom: 20%;
+                right: 15%;
+            }
+            
+            #weapon-button {
+                bottom: 35%;
+                right: 15%;
+            }
+            
+            @media (hover: none) and (pointer: coarse) {
+                .touch-ui {
+                    display: block;
+                }
+            }
+        `;
+        
+        document.head.appendChild(style);
+        
+        // Store references to elements
+        this.touchElements = {
+            joystick: joystick,
+            knob: joystickKnob,
+            fireButton: fireButton,
+            weaponButton: weaponButton
+        };
+    }
+    
+    handleTouchStart(e) {
+        // Identify which part of the screen was touched
+        const touch = e.touches[0];
+        const touchX = touch.clientX;
+        const touchY = touch.clientY;
+        
+        // Check if touch is on the left side (joystick area)
+        if (touchX < window.innerWidth / 2 && !this.touchJoystick.active) {
+            e.preventDefault();
+            this.touchJoystick.active = true;
+            this.touchJoystick.startX = touchX;
+            this.touchJoystick.startY = touchY;
+            this.touchJoystick.moveX = touchX;
+            this.touchJoystick.moveY = touchY;
+            
+            // Position the joystick at the touch point
+            if (this.touchElements && this.touchElements.joystick) {
+                this.touchElements.joystick.style.left = (touchX - 60) + 'px';
+                this.touchElements.joystick.style.top = (touchY - 60) + 'px';
+                this.touchElements.knob.style.left = '50%';
+                this.touchElements.knob.style.top = '50%';
+            }
+        }
+    }
+    
+    handleTouchMove(e) {
+        // Handle joystick movement
+        if (this.touchJoystick.active) {
+            e.preventDefault();
+            
+            // Find the touch that started on the joystick
+            let touchIndex = -1;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchX = touch.clientX;
+                const touchY = touch.clientY;
+                
+                // Rough estimate to identify the joystick touch
+                if (Math.abs(touchX - this.touchJoystick.startX) < 100 && 
+                    Math.abs(touchY - this.touchJoystick.startY) < 100) {
+                    touchIndex = i;
+                    break;
+                }
+            }
+            
+            if (touchIndex >= 0) {
+                const touch = e.touches[touchIndex];
+                this.touchJoystick.moveX = touch.clientX;
+                this.touchJoystick.moveY = touch.clientY;
+                
+                // Calculate joystick movement
+                let deltaX = this.touchJoystick.moveX - this.touchJoystick.startX;
+                let deltaY = this.touchJoystick.moveY - this.touchJoystick.startY;
+                
+                // Limit to a circle with radius 40
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                if (distance > 40) {
+                    deltaX = deltaX * 40 / distance;
+                    deltaY = deltaY * 40 / distance;
+                }
+                
+                // Update knob position
+                if (this.touchElements && this.touchElements.knob) {
+                    this.touchElements.knob.style.left = `calc(50% + ${deltaX}px)`;
+                    this.touchElements.knob.style.top = `calc(50% + ${deltaY}px)`;
+                }
+                
+                // Convert joystick movement to key presses
+                this.handleJoystickInput(deltaX, deltaY);
+            }
+        }
+    }
+    
+    handleTouchEnd(e) {
+        // Reset joystick if all touches are removed
+        if (e.touches.length === 0) {
+            this.touchJoystick.active = false;
+            
+            // Reset knob position
+            if (this.touchElements && this.touchElements.knob) {
+                this.touchElements.knob.style.left = '50%';
+                this.touchElements.knob.style.top = '50%';
+            }
+            
+            // Remove all direction keys
+            this.removeKey('ArrowUp');
+            this.removeKey('ArrowDown');
+            this.removeKey('ArrowLeft');
+            this.removeKey('ArrowRight');
+        } else {
+            // Check if joystick touch is still active
+            let joystickTouchActive = false;
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchX = touch.clientX;
+                const touchY = touch.clientY;
+                
+                if (Math.abs(touchX - this.touchJoystick.startX) < 100 && 
+                    Math.abs(touchY - this.touchJoystick.startY) < 100) {
+                    joystickTouchActive = true;
+                    break;
+                }
+            }
+            
+            if (!joystickTouchActive) {
+                this.touchJoystick.active = false;
+                
+                // Reset knob position
+                if (this.touchElements && this.touchElements.knob) {
+                    this.touchElements.knob.style.left = '50%';
+                    this.touchElements.knob.style.top = '50%';
+                }
+                
+                // Remove all direction keys
+                this.removeKey('ArrowUp');
+                this.removeKey('ArrowDown');
+                this.removeKey('ArrowLeft');
+                this.removeKey('ArrowRight');
+            }
+        }
+    }
+    
+    handleJoystickInput(deltaX, deltaY) {
+        // Convert joystick position to key presses
+        
+        // Horizontal movement
+        if (deltaX > 15) {
+            // Right
+            if (!this.keys.includes('ArrowRight')) {
+                this.keys.push('ArrowRight');
+            }
+            this.removeKey('ArrowLeft');
+        } else if (deltaX < -15) {
+            // Left
+            if (!this.keys.includes('ArrowLeft')) {
+                this.keys.push('ArrowLeft');
+            }
+            this.removeKey('ArrowRight');
+        } else {
+            // Center zone - remove both left and right
+            this.removeKey('ArrowLeft');
+            this.removeKey('ArrowRight');
+        }
+        
+        // Vertical movement
+        if (deltaY < -15) {
+            // Up
+            if (!this.keys.includes('ArrowUp')) {
+                this.keys.push('ArrowUp');
+            }
+            this.removeKey('ArrowDown');
+        } else if (deltaY > 15) {
+            // Down (braking)
+            if (!this.keys.includes('ArrowDown')) {
+                this.keys.push('ArrowDown');
+            }
+            this.removeKey('ArrowUp');
+        } else {
+            // Center zone - remove both up and down
+            this.removeKey('ArrowUp');
+            this.removeKey('ArrowDown');
+        }
+    }
+    
+    removeKey(key) {
+        const index = this.keys.indexOf(key);
+        if (index > -1) {
+            this.keys.splice(index, 1);
+        }
     }
 }
