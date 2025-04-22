@@ -19,8 +19,8 @@ export class UI {
         const topInfoPanel = document.createElement('div');
         topInfoPanel.id = 'top-info-panel';
         topInfoPanel.style.position = 'absolute';
-        topInfoPanel.style.top = '20px';
-        topInfoPanel.style.left = '280px'; // Leave space for players online list
+        topInfoPanel.style.top = '17px';
+        topInfoPanel.style.left = '120px'; // Leave space for players online list
         topInfoPanel.style.display = 'flex';
         topInfoPanel.style.flexDirection = 'row'; // Changed to row for horizontal layout
         topInfoPanel.style.alignItems = 'center';
