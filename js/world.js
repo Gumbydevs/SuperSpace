@@ -136,6 +136,19 @@ export class World {
             // Keep asteroid within world boundaries
             this.wrapPosition(asteroid);
 
+            // Check for collision with player if not in safe zone
+            if (!this.isInSafeZone(player)) {
+                const dx = player.x - asteroid.x;
+                const dy = player.y - asteroid.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Collision occurs when player is within asteroid radius plus player collision radius
+                if (distance < asteroid.radius + player.collisionRadius) {
+                    // Handle collision effects (bounce, damage, etc.)
+                    player.handleAsteroidCollision(asteroid, soundManager);
+                }
+            }
+
             // Here we check for collisions with player projectiles
             player.projectiles.forEach((projectile, j) => {
                 const dx = projectile.x - asteroid.x;
@@ -211,6 +224,38 @@ export class World {
 
         // Keep player within world boundaries
         this.wrapPosition(player);
+
+        // Check collisions with other players in multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            const otherPlayers = window.game.multiplayer.players;
+            if (otherPlayers) {
+                // Fix: Use Object.values to convert the players object into an array that we can iterate
+                Object.values(otherPlayers).forEach(otherPlayer => {
+                    // Skip collision with self or players in safe zone
+                    if (otherPlayer.id === window.game.multiplayer.socket.id || 
+                        this.isInSafeZone(player) || 
+                        this.isInSafeZone(otherPlayer)) {
+                        return;
+                    }
+                    
+                    // Calculate distance between players
+                    const dx = player.x - otherPlayer.x;
+                    const dy = player.y - otherPlayer.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Collision occurs when distance is less than combined collision radii
+                    if (distance < player.collisionRadius + 15) { // Using 15 as approximate collision radius for other players
+                        // Handle collision with other player
+                        player.handlePlayerCollision(otherPlayer, soundManager);
+                        
+                        // Send collision event to server
+                        if (window.game.multiplayer.connected) {
+                            window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
+                        }
+                    }
+                });
+            }
+        }
 
         // Here we update powerups and check for player collection
         this.powerups.forEach((powerup, i) => {
@@ -481,6 +526,45 @@ export class World {
                     // Add slight deceleration
                     this.velocityX *= 0.97;
                     this.velocityY *= 0.97;
+                }
+            });
+        }
+    }
+
+    createCollisionEffect(x, y) {
+        // Create a flash effect at the collision point
+        this.explosions.push({
+            x: x,
+            y: y,
+            radius: 10,
+            maxRadius: 20,
+            timeLeft: 0.2,
+            update(deltaTime) {
+                this.timeLeft -= deltaTime;
+            }
+        });
+        
+        // Create spark particles for collision
+        const particleCount = 8;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 40 + Math.random() * 80;
+            
+            this.particles.push({
+                x: x,
+                y: y,
+                velocityX: Math.cos(angle) * speed,
+                velocityY: Math.sin(angle) * speed,
+                size: 1 + Math.random() * 2,
+                color: Math.random() > 0.5 ? '#aaaaff' : '#ffffff', // Blue/white sparks
+                life: 1.0,
+                maxLife: 0.2 + Math.random() * 0.2,
+                update(deltaTime) {
+                    // Move particle
+                    this.x += this.velocityX * deltaTime;
+                    this.y += this.velocityY * deltaTime;
+                    // Decrease lifetime
+                    this.life -= deltaTime / this.maxLife;
                 }
             });
         }

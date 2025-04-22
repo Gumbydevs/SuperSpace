@@ -17,6 +17,12 @@ export class Player {
         this.height = 30; // Ship collision height
         this.velocity = { x: 0, y: 0 }; // Current movement vector
 
+        // Add collision properties
+        this.collisionRadius = 15; // Radius used for collision detection
+        this.collisionCooldown = 0; // Time remaining before next collision can occur
+        this.collisionCooldownTime = 0.1; // Time between collision processing to prevent multiple hits
+        this.bounceStrength = 0.5; // How strongly ships bounce off obstacles (0-1)
+
         // Here we define the player's health and defense stats
         this.maxHealth = 100;
         this.health = 100;
@@ -130,6 +136,11 @@ export class Player {
         // Here we update the ship's position based on its velocity
         this.x += this.velocity.x * deltaTime;
         this.y += this.velocity.y * deltaTime;
+
+        // Reduce collision cooldown
+        if (this.collisionCooldown > 0) {
+            this.collisionCooldown -= deltaTime;
+        }
 
         // Here we handle weapon firing
         if (input.keys.includes('Space') && this.fireCooldown <= 0) {
@@ -380,5 +391,116 @@ export class Player {
         ctx.fill();
         
         ctx.restore();
+    }
+
+    // Add method to handle collisions with asteroids
+    handleAsteroidCollision(asteroid, soundManager) {
+        if (this.collisionCooldown <= 0) {
+            // Calculate collision vector from asteroid center to player
+            const dx = this.x - asteroid.x;
+            const dy = this.y - asteroid.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalize collision vector
+            const nx = dx / distance;
+            const ny = dy / distance;
+            
+            // Calculate relative velocity
+            const relVelX = this.velocity.x;
+            const relVelY = this.velocity.y;
+            
+            // Calculate impulse (how strongly we bounce)
+            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
+            
+            // Apply impulse in the direction away from collision
+            this.velocity.x = nx * impulseStrength;
+            this.velocity.y = ny * impulseStrength;
+            
+            // Take damage based on impact force
+            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            const damageFactor = 0.1; // Controls how much damage is taken per unit of speed
+            const damage = Math.max(5, impactForce * damageFactor);
+            this.takeDamage(damage);
+            
+            // Play collision sound
+            if (soundManager) {
+                soundManager.play('hit', {
+                    volume: Math.min(0.8, 0.3 + (damage / 30)),
+                    playbackRate: 0.7,
+                    position: { x: this.x, y: this.y }
+                });
+            }
+            
+            // Create visual impact effect
+            if (window.game && window.game.world) {
+                // Calculate impact position at the collision point
+                const impactX = asteroid.x + nx * asteroid.radius;
+                const impactY = asteroid.y + ny * asteroid.radius;
+                window.game.world.createCollisionEffect(impactX, impactY);
+            }
+            
+            // Set cooldown to prevent multiple collisions
+            this.collisionCooldown = this.collisionCooldownTime;
+            
+            return true; // Collision occurred
+        }
+        
+        return false; // No new collision
+    }
+    
+    // Add method to handle collisions with other players
+    handlePlayerCollision(otherPlayer, soundManager) {
+        if (this.collisionCooldown <= 0) {
+            // Calculate collision vector between players
+            const dx = this.x - otherPlayer.x;
+            const dy = this.y - otherPlayer.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalize collision vector
+            const nx = dx / distance;
+            const ny = dy / distance;
+            
+            // Calculate relative velocity
+            const relVelX = this.velocity.x - otherPlayer.velocity.x;
+            const relVelY = this.velocity.y - otherPlayer.velocity.y;
+            
+            // Calculate impulse (how strongly we bounce)
+            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
+            
+            // Apply impulse in the direction away from collision
+            this.velocity.x += nx * impulseStrength * 0.5;
+            this.velocity.y += ny * impulseStrength * 0.5;
+            
+            // Take minimal damage from player collision
+            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            if (impactForce > 200) { // Only deal damage for high-speed collisions
+                const damageFactor = 0.05; // Less damage for player-player collisions
+                const damage = Math.max(1, impactForce * damageFactor);
+                this.takeDamage(damage);
+            }
+            
+            // Play collision sound
+            if (soundManager) {
+                soundManager.play('hit', {
+                    volume: 0.4,
+                    playbackRate: 1.2,
+                    position: { x: this.x, y: this.y }
+                });
+            }
+            
+            // Create visual impact effect
+            if (window.game && window.game.world) {
+                const impactX = this.x - nx * this.collisionRadius / 2;
+                const impactY = this.y - ny * this.collisionRadius / 2;
+                window.game.world.createCollisionEffect(impactX, impactY);
+            }
+            
+            // Set cooldown to prevent multiple collisions
+            this.collisionCooldown = this.collisionCooldownTime;
+            
+            return true; // Collision occurred
+        }
+        
+        return false; // No new collision
     }
 }
