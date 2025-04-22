@@ -151,7 +151,7 @@ io.on('connection', (socket) => {
         
         // Check if player is destroyed
         if (gameState.players[data.targetId].health <= 0) {
-          socket.broadcast.emit('playerDestroyed', {
+          io.emit('playerDestroyed', {
             playerId: data.targetId,
             attackerId: socket.id
           });
@@ -160,6 +160,8 @@ io.on('connection', (socket) => {
           if (gameState.players[socket.id]) {
             gameState.players[socket.id].score += 500; // Points for defeating a player
             gameState.players[socket.id].credits += 250; // Credits for defeating a player
+            
+            console.log(`Player ${gameState.players[socket.id].name} destroyed ${gameState.players[data.targetId].name}`);
           }
         }
       }
