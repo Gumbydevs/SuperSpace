@@ -130,6 +130,30 @@ export class Player {
             // Only play sound if weapon actually changed
             if (previousWeapon !== this.currentWeapon) {
                 soundManager.play('powerup', { volume: 0.4, playbackRate: 1.5 });
+                
+                // Update weapon display in UI
+                const weaponElement = document.getElementById('weapons');
+                if (weaponElement) {
+                    weaponElement.textContent = this.currentWeapon;
+                }
+                
+                // Update weapon icon based on weapon type
+                const weaponIcon = document.getElementById('weapon-icon');
+                if (weaponIcon) {
+                    switch(this.currentWeapon) {
+                        case 'Basic Laser':
+                            weaponIcon.innerHTML = '🔫';
+                            break;
+                        case 'Burst Cannon':
+                            weaponIcon.innerHTML = '💥';
+                            break;
+                        case 'Seeker Missile':
+                            weaponIcon.innerHTML = '🚀';
+                            break;
+                        default:
+                            weaponIcon.innerHTML = '🔫';
+                    }
+                }
             }
         }
 
@@ -195,6 +219,11 @@ export class Player {
             // Health can't go below 0
             if (this.health < 0) {
                 this.health = 0;
+            }
+            
+            // Update the health display in the UI
+            if (window.game && window.game.ui) {
+                window.game.ui.updateHealthBar(this.health, this.maxHealth);
             }
         }
         

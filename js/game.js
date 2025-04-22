@@ -29,6 +29,9 @@ class Game {
         // Initialize multiplayer system
         this.multiplayer = new MultiplayerManager(this);
 
+        // Store a reference to the UI for other classes to access
+        window.gameUI = this.ui;
+
         // Here we make the canvas fullscreen and respond to window resizing
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
@@ -141,6 +144,9 @@ class Game {
         
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
+        
+        // Initialize the health bar with the player's current health
+        this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
     }
 
     // Placeholder for options menu
@@ -180,8 +186,8 @@ class Game {
             
             // Here we update UI elements with current game state
             document.getElementById('score').textContent = this.player.score;
-            document.getElementById('health').textContent = Math.floor(this.player.health);
-            document.getElementById('weapons').textContent = this.player.currentWeapon;
+            // Use the new health bar update method instead of just updating the text
+            this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
             
             // Check if credits element exists (it might not be in your HTML yet)
             const creditsElement = document.getElementById('credits');
@@ -321,6 +327,9 @@ class Game {
         
         // Reset game state to playing
         this.gameState = 'playing';
+        
+        // Reinitialize health bar with new player's health
+        this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
     }
 
     // Here we implement the main game loop using requestAnimationFrame

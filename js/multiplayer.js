@@ -402,8 +402,8 @@ export class MultiplayerManager {
         const indicator = document.createElement('div');
         indicator.id = 'connection-indicator';
         indicator.style.position = 'absolute';
-        indicator.style.bottom = '20px';
-        indicator.style.right = '20px';
+        indicator.style.top = '15px';
+        indicator.style.left = '20px';
         indicator.style.padding = '5px 10px';
         indicator.style.borderRadius = '5px';
         indicator.style.fontFamily = 'Arial, sans-serif';
@@ -439,7 +439,7 @@ export class MultiplayerManager {
         const playerList = document.createElement('div');
         playerList.id = 'player-list';
         playerList.style.position = 'absolute';
-        playerList.style.top = '20px';
+        playerList.style.top = '50px'; // Position below connection indicator
         playerList.style.left = '20px';
         playerList.style.padding = '10px';
         playerList.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
@@ -450,6 +450,8 @@ export class MultiplayerManager {
         playerList.style.fontSize = '14px';
         playerList.style.zIndex = '100';
         playerList.style.minWidth = '200px';
+        playerList.style.maxHeight = '300px';
+        playerList.style.overflowY = 'auto';
         
         const title = document.createElement('div');
         title.textContent = '🌐 PLAYERS ONLINE';

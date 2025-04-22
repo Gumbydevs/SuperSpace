@@ -489,6 +489,146 @@ export class World {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    applyPowerup(player, type) {
+        // Here we handle effects for different powerup types
+        switch(type) {
+            case 'health':
+                // Restore 25% of max health
+                const healthToAdd = player.maxHealth * 0.25;
+                player.health = Math.min(player.health + healthToAdd, player.maxHealth);
+                
+                // Show pickup message
+                if (window.game && window.game.multiplayer) {
+                    window.game.multiplayer.showGameMessage('Health +25%', '#0f0');
+                }
+                
+                // Update health display
+                if (window.gameUI) {
+                    window.gameUI.updateHealthBar(player.health, player.maxHealth);
+                }
+                break;
+                
+            case 'shield':
+                // Add shield capacity if player doesn't have it yet
+                if (player.shieldCapacity === 0) {
+                    player.shieldCapacity = 50;
+                    player.shield = 50;
+                    
+                    // Show message about new capability
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('Shield System Activated!', '#00f');
+                    }
+                    
+                    // Add shield display to UI
+                    if (window.gameUI && player.shieldCapacity > 0) {
+                        window.gameUI.addShieldDisplay();
+                    }
+                } else {
+                    // Restore 50% of shield capacity
+                    player.shield = Math.min(player.shield + player.shieldCapacity * 0.5, player.shieldCapacity);
+                    
+                    // Show pickup message
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('Shield +50%', '#00f');
+                    }
+                }
+                break;
+                
+            case 'energy':
+                // Add energy capacity if player doesn't have it yet
+                if (player.maxEnergy === 0) {
+                    player.maxEnergy = 100;
+                    player.energy = 100;
+                    
+                    // Show message about new capability
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('Energy System Activated!', '#f0f');
+                    }
+                    
+                    // Add energy display to UI
+                    if (window.gameUI && player.maxEnergy > 0) {
+                        window.gameUI.addEnergyDisplay();
+                    }
+                } else {
+                    // Restore 50% of energy capacity
+                    player.energy = Math.min(player.energy + player.maxEnergy * 0.5, player.maxEnergy);
+                    
+                    // Show pickup message
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('Energy +50%', '#f0f');
+                    }
+                }
+                break;
+                
+            case 'weapon':
+                // Give player a random weapon upgrade
+                // If they already have all weapons, improve fire rate
+                if (!player.weapons.includes('Burst Cannon')) {
+                    player.weapons.push('Burst Cannon');
+                    player.weaponIndex = player.weapons.length - 1;
+                    player.currentWeapon = player.weapons[player.weaponIndex];
+                    
+                    // Show pickup message
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('New Weapon: Burst Cannon!', '#f00');
+                    }
+                } else if (!player.weapons.includes('Seeker Missile')) {
+                    player.weapons.push('Seeker Missile');
+                    player.weaponIndex = player.weapons.length - 1;
+                    player.currentWeapon = player.weapons[player.weaponIndex];
+                    
+                    // Show pickup message
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('New Weapon: Seeker Missile!', '#f00');
+                    }
+                } else {
+                    // Improve fire rate
+                    player.fireCooldownTime *= 0.9;
+                    
+                    // Show pickup message
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.showGameMessage('Fire Rate Improved!', '#f00');
+                    }
+                }
+                
+                // Update weapon display in UI
+                const weaponElement = document.getElementById('weapons');
+                if (weaponElement) {
+                    weaponElement.textContent = player.currentWeapon;
+                }
+                
+                // Update weapon icon based on new weapon
+                const weaponIcon = document.getElementById('weapon-icon');
+                if (weaponIcon) {
+                    switch(player.currentWeapon) {
+                        case 'Basic Laser':
+                            weaponIcon.innerHTML = '🔫';
+                            break;
+                        case 'Burst Cannon':
+                            weaponIcon.innerHTML = '💥';
+                            break;
+                        case 'Seeker Missile':
+                            weaponIcon.innerHTML = '🚀';
+                            break;
+                        default:
+                            weaponIcon.innerHTML = '🔫';
+                    }
+                }
+                break;
+                
+            case 'credits':
+                // Award bonus credits
+                const creditsBonus = 100;
+                player.addCredits(creditsBonus);
+                
+                // Show pickup message
+                if (window.game && window.game.multiplayer) {
+                    window.game.multiplayer.showGameMessage(`+${creditsBonus} CREDITS!`, '#fff');
+                }
+                break;
+        }
+    }
+
     render(ctx, player) {
         // Here we define the visible area for rendering optimization
         const visibleArea = {

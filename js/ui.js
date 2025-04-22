@@ -7,45 +7,25 @@ export class UI {
         // Create HUD container
         const hudContainer = document.createElement('div');
         hudContainer.id = 'hud-container';
-        hudContainer.style.position = 'absolute';
+        hudContainer.style.position = 'fixed'; // Changed from absolute to fixed
         hudContainer.style.top = '0';
         hudContainer.style.left = '0';
         hudContainer.style.width = '100%';
-        hudContainer.style.padding = '20px';
-        hudContainer.style.display = 'flex';
-        hudContainer.style.justifyContent = 'space-between';
+        hudContainer.style.height = '100%';
         hudContainer.style.pointerEvents = 'none'; // Let clicks pass through
-        
-        // Left side - Status indicators
-        const statusPanel = document.createElement('div');
-        statusPanel.id = 'status-panel';
-        statusPanel.style.display = 'flex';
-        statusPanel.style.flexDirection = 'column';
-        statusPanel.style.gap = '10px';
-        
-        // Health display
-        const healthDisplay = document.createElement('div');
-        healthDisplay.className = 'status-item';
-        healthDisplay.innerHTML = '<span class="status-label">HEALTH:</span> <span id="health" class="status-value">100</span>';
-        this.styleStatusItem(healthDisplay, '#3f3');
-        
-        // Weapon display
-        const weaponDisplay = document.createElement('div');
-        weaponDisplay.className = 'status-item';
-        weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Basic Laser</span>';
-        this.styleStatusItem(weaponDisplay, '#ff3');
-        
-        // Add status items to panel
-        statusPanel.appendChild(healthDisplay);
-        statusPanel.appendChild(weaponDisplay);
+        hudContainer.style.zIndex = '1000'; // Higher z-index to ensure it's on top
         
         // Right side - Score and minimap
         const infoPanel = document.createElement('div');
         infoPanel.id = 'info-panel';
+        infoPanel.style.position = 'absolute';
+        infoPanel.style.top = '20px';
+        infoPanel.style.right = '20px';
         infoPanel.style.display = 'flex';
         infoPanel.style.flexDirection = 'column';
         infoPanel.style.alignItems = 'flex-end';
         infoPanel.style.gap = '10px';
+        infoPanel.style.zIndex = '1001'; // Higher z-index
         
         // Score display
         const scoreDisplay = document.createElement('div');
@@ -68,6 +48,7 @@ export class UI {
         minimapContainer.style.borderRadius = '5px';
         minimapContainer.style.overflow = 'hidden';
         minimapContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        minimapContainer.style.pointerEvents = 'auto'; // Allow interaction with minimap
         
         const minimapCanvas = document.createElement('canvas');
         minimapCanvas.id = 'minimap';
@@ -80,12 +61,95 @@ export class UI {
         infoPanel.appendChild(creditsDisplay);
         infoPanel.appendChild(minimapContainer);
         
-        // Add panels to HUD
-        hudContainer.appendChild(statusPanel);
-        hudContainer.appendChild(infoPanel);
+        // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.)
+        const statusPanel = document.createElement('div');
+        statusPanel.id = 'status-panel';
+        statusPanel.style.position = 'absolute';
+        statusPanel.style.bottom = '20px';
+        statusPanel.style.left = '20px';
+        statusPanel.style.display = 'flex';
+        statusPanel.style.flexDirection = 'column';
+        statusPanel.style.gap = '10px';
+        statusPanel.style.padding = '15px';
+        statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        statusPanel.style.borderRadius = '8px';
+        statusPanel.style.border = '1px solid #444';
+        statusPanel.style.boxShadow = '0 0 10px rgba(0, 100, 255, 0.5)';
+        statusPanel.style.zIndex = '1001'; // Higher z-index
+        statusPanel.style.pointerEvents = 'auto'; // Make sure the panel can receive pointer events
         
-        // Add HUD to document
+        // Health display
+        const healthDisplay = document.createElement('div');
+        healthDisplay.className = 'status-item';
+        
+        // Health bar
+        const healthBar = document.createElement('div');
+        healthBar.style.width = '100%';
+        healthBar.style.height = '8px';
+        healthBar.style.backgroundColor = '#333';
+        healthBar.style.borderRadius = '4px';
+        healthBar.style.overflow = 'hidden';
+        healthBar.style.marginTop = '5px';
+        
+        const healthFill = document.createElement('div');
+        healthFill.id = 'health-fill';
+        healthFill.style.width = '100%';
+        healthFill.style.height = '100%';
+        healthFill.style.backgroundColor = '#3f3';
+        healthFill.style.transition = 'width 0.3s ease';
+        
+        healthBar.appendChild(healthFill);
+        
+        healthDisplay.innerHTML = '<span class="status-label">HEALTH:</span> <span id="health" class="status-value">100</span>';
+        this.styleStatusItem(healthDisplay, '#3f3');
+        healthDisplay.appendChild(healthBar);
+        
+        // Weapon display
+        const weaponDisplay = document.createElement('div');
+        weaponDisplay.className = 'status-item';
+        weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Basic Laser</span>';
+        
+        // Weapon icon
+        const weaponIcon = document.createElement('div');
+        weaponIcon.id = 'weapon-icon';
+        weaponIcon.innerHTML = '🔫';
+        weaponIcon.style.fontSize = '20px';
+        weaponIcon.style.marginLeft = '10px';
+        weaponIcon.style.display = 'inline-block';
+        weaponIcon.style.verticalAlign = 'middle';
+        
+        const weaponText = weaponDisplay.querySelector('#weapons');
+        if (weaponText) {
+            weaponText.parentNode.insertBefore(weaponIcon, weaponText.nextSibling);
+        }
+        
+        this.styleStatusItem(weaponDisplay, '#ff3');
+        
+        // Add status items to panel
+        statusPanel.appendChild(healthDisplay);
+        statusPanel.appendChild(weaponDisplay);
+        
+        // Add panels to HUD
+        hudContainer.appendChild(infoPanel);
+        hudContainer.appendChild(statusPanel);
+        
+        // Ensure the HUD is always created AFTER other elements
+        // Remove existing HUD if it already exists
+        const existingHud = document.getElementById('hud-container');
+        if (existingHud) {
+            document.body.removeChild(existingHud);
+        }
+        
+        // Add HUD to document body
         document.body.appendChild(hudContainer);
+        
+        // Force a browser repaint to ensure UI is visible
+        setTimeout(() => {
+            hudContainer.style.opacity = '0.99';
+            setTimeout(() => {
+                hudContainer.style.opacity = '1';
+            }, 10);
+        }, 100);
     }
     
     styleStatusItem(element, color) {
@@ -200,5 +264,26 @@ export class UI {
             viewWidth,
             viewHeight
         );
+    }
+    
+    // Update health bar display based on current health percentage
+    updateHealthBar(currentHealth, maxHealth = 100) {
+        const healthFill = document.getElementById('health-fill');
+        const healthValue = document.getElementById('health');
+        
+        if (healthFill && healthValue) {
+            const healthPercentage = Math.max(0, Math.min(100, (currentHealth / maxHealth) * 100));
+            healthFill.style.width = `${healthPercentage}%`;
+            healthValue.textContent = Math.round(currentHealth);
+            
+            // Change color based on health level
+            if (healthPercentage > 60) {
+                healthFill.style.backgroundColor = '#3f3'; // Green
+            } else if (healthPercentage > 30) {
+                healthFill.style.backgroundColor = '#ff3'; // Yellow
+            } else {
+                healthFill.style.backgroundColor = '#f33'; // Red
+            }
+        }
     }
 }
