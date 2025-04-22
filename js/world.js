@@ -437,12 +437,29 @@ export class World {
             }
         };
         this.explosions.push(smallFlash);
+        
+        // Add a second, slightly larger flash with delay for better visual effect
+        setTimeout(() => {
+            if (this.explosions) { // Safety check in case World was destroyed
+                const secondaryFlash = {
+                    x: x + (Math.random() - 0.5) * 5,
+                    y: y + (Math.random() - 0.5) * 5,
+                    radius: radius * 0.2,
+                    maxRadius: radius * 0.4,
+                    timeLeft: 0.15,
+                    update(deltaTime) {
+                        this.timeLeft -= deltaTime;
+                    }
+                };
+                this.explosions.push(secondaryFlash);
+            }
+        }, 50);
 
         // Here we create spark particles
-        const particleCount = Math.floor(3 + Math.random() * 5);
+        const particleCount = Math.floor(5 + Math.random() * 7); // Increased count for better effect
         for (let i = 0; i < particleCount; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 50 + Math.random() * 100;
+            const speed = 50 + Math.random() * 120; // Increased speed variation
             const size = 1 + Math.random() * 2;
             const lifetime = 0.2 + Math.random() * 0.3;
 
@@ -452,7 +469,7 @@ export class World {
                 velocityX: Math.cos(angle) * speed,
                 velocityY: Math.sin(angle) * speed,
                 size: size,
-                color: '#ffbb00', // Spark color (orange-yellow)
+                color: Math.random() > 0.3 ? '#ffbb00' : '#ff4400', // Mix of colors
                 life: 1.0,
                 maxLife: lifetime,
                 update(deltaTime) {
@@ -461,6 +478,9 @@ export class World {
                     this.y += this.velocityY * deltaTime;
                     // Decrease lifetime
                     this.life -= deltaTime / this.maxLife;
+                    // Add slight deceleration
+                    this.velocityX *= 0.97;
+                    this.velocityY *= 0.97;
                 }
             });
         }

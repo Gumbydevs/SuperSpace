@@ -535,6 +535,25 @@ export class MultiplayerManager {
     handleDamage(damage, attackerId) {
         this.game.player.takeDamage(damage);
         
+        // Create explosion effect at impact point
+        if (this.game.world) {
+            // Calculate impact position (slightly offset from player center)
+            const impactOffset = 10; // pixels from center
+            const impactAngle = Math.random() * Math.PI * 2; // random direction
+            const impactX = this.game.player.x + Math.cos(impactAngle) * impactOffset;
+            const impactY = this.game.player.y + Math.sin(impactAngle) * impactOffset;
+            
+            // Create hit effect with small explosion
+            this.game.world.createProjectileHitEffect(
+                impactX, impactY, 
+                15, // radius 
+                this.game.soundManager
+            );
+            
+            // Add camera shake effect
+            this.addCameraShake(damage * 0.5); // shake intensity based on damage
+        }
+        
         // Show damage message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Hit by ${attacker} (-${damage.toFixed(1)})`, '#f88');
@@ -542,6 +561,39 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
+        // Create multiple explosions when player dies
+        if (this.game.world) {
+            // Create main explosion at player position
+            this.game.world.createExplosion(
+                this.game.player.x,
+                this.game.player.y,
+                30, // larger radius for main explosion
+                this.game.soundManager
+            );
+            
+            // Create additional scattered explosions
+            for (let i = 0; i < 6; i++) {
+                const offsetDistance = Math.random() * 25 + 5; // 5-30 pixels from center
+                const angle = Math.random() * Math.PI * 2; // random direction
+                const delay = Math.random() * 0.4; // stagger explosions (0-0.4 seconds)
+                
+                setTimeout(() => {
+                    if (!this.game || !this.game.world) return; // Safety check
+                    
+                    // Create explosion at offset position
+                    this.game.world.createExplosion(
+                        this.game.player.x + Math.cos(angle) * offsetDistance,
+                        this.game.player.y + Math.sin(angle) * offsetDistance,
+                        15 + Math.random() * 10, // random size between 15-25
+                        this.game.soundManager
+                    );
+                }, delay * 1000);
+            }
+            
+            // Add intense camera shake
+            this.addCameraShake(20);
+        }
+        
         // Show death message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Destroyed by ${attacker}!`, '#f44', 3000);
@@ -1087,5 +1139,64 @@ export class MultiplayerManager {
                 });
             }
         });
+    }
+
+    // Add camera shake effect
+    addCameraShake(intensity) {
+        if (!this.game.canvas) return;
+        
+        // Initialize shake properties if needed
+        if (!this.shakeIntensity) {
+            this.shakeIntensity = 0;
+            this.shakeDuration = 0;
+            this.shakeStartTime = 0;
+            this.originalTransform = this.game.ctx.getTransform();
+        }
+        
+        // Add new shake intensity to existing shake
+        this.shakeIntensity = Math.min(15, this.shakeIntensity + intensity);
+        this.shakeDuration = 0.5; // half second shake
+        this.shakeStartTime = Date.now() / 1000;
+        
+        // If we're not already updating the shake, start the update loop
+        if (!this.shakingActive) {
+            this.shakingActive = true;
+            this.updateCameraShake();
+        }
+    }
+    
+    // Update camera shake each frame
+    updateCameraShake() {
+        if (!this.shakeIntensity || !this.game.ctx) {
+            this.shakingActive = false;
+            return;
+        }
+        
+        const currentTime = Date.now() / 1000;
+        const elapsedTime = currentTime - this.shakeStartTime;
+        
+        // Check if shake should stop
+        if (elapsedTime > this.shakeDuration) {
+            // Reset to original position
+            this.game.ctx.setTransform(this.originalTransform);
+            this.shakeIntensity = 0;
+            this.shakingActive = false;
+            return;
+        }
+        
+        // Calculate remaining shake percentage
+        const shakeProgress = 1 - (elapsedTime / this.shakeDuration);
+        const currentIntensity = this.shakeIntensity * shakeProgress;
+        
+        // Generate random offset
+        const offsetX = (Math.random() - 0.5) * 2 * currentIntensity;
+        const offsetY = (Math.random() - 0.5) * 2 * currentIntensity;
+        
+        // Apply shake by moving the canvas
+        this.game.ctx.setTransform(this.originalTransform);
+        this.game.ctx.translate(offsetX, offsetY);
+        
+        // Continue shaking in next frame
+        requestAnimationFrame(() => this.updateCameraShake());
     }
 }
