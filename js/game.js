@@ -38,10 +38,12 @@ class Game {
         // Set up hotkeys
         this.setupHotkeys();
 
-        // Connect to multiplayer server if multiplayer is enabled
-        const serverUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000'
-            : 'https://superspace-game.onrender.com'; // Replace with your actual deployed URL
+        // Connect to multiplayer server - always use local server during development
+        const serverUrl = 'http://localhost:3000';
+        // Later for production use:
+        // const serverUrl = window.location.hostname === 'localhost' 
+        //    ? 'http://localhost:3000'
+        //    : 'https://your-deployed-url.com';
         
         this.multiplayer.connect(serverUrl)
             .then(() => {
