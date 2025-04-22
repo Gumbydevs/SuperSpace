@@ -45,12 +45,10 @@ class Game {
         this.setupHotkeys();
 
         // Here we connect to the multiplayer server
-        // For development we use localhost, for production would use deployed URL
-        const serverUrl = 'http://localhost:3000';
-        // Later for production use:
-        // const serverUrl = window.location.hostname === 'localhost' 
-        //    ? 'http://localhost:3000'
-        //    : 'https://your-deployed-url.com';
+        // Use the deployed server URL in production, localhost in development
+        const serverUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000'
+            : 'https://superspace-server.onrender.com'; // We'll deploy to Render
         
         this.multiplayer.connect(serverUrl)
             .then(() => {

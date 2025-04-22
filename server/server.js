@@ -8,11 +8,21 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
-// Configure CORS
+// Configure CORS to allow requests from any origin
+// In production, you might want to restrict this to your frontend domain
 app.use(cors());
 
 // Serve static files from the parent directory
 app.use(express.static(path.join(__dirname, '..')));
+
+// Add a home route that shows server status
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'running',
+    players: Object.keys(gameState.players).length,
+    uptime: process.uptime()
+  });
+});
 
 // Create Socket.IO server with CORS configuration
 const io = socketIO(server, {
