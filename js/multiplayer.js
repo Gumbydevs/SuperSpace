@@ -760,31 +760,37 @@ export class MultiplayerManager {
                     const distSq = dx * dx + dy * dy;
                     
                     if (distSq < 225) { // 15 squared - rough collision radius
-                        // Hit the player!
-                        const damage = projectile.damage || 10;
-                        this.game.player.takeDamage(damage);
-                        
-                        // Show hit message
-                        this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
-                        
-                        // Remove the projectile
-                        player.projectiles.splice(i, 1);
-                        
-                        // Send hit confirmation to server
-                        this.socket.emit('hit', {
-                            type: 'player',
-                            targetId: this.playerId,
-                            damage: damage,
-                            attackerId: player.id
-                        });
-                        
-                        // Check if player was destroyed
-                        if (this.game.player.health <= 0) {
-                            this.socket.emit('playerDestroyed', {
-                                playerId: this.playerId,
+                        // Check if player is in safe zone before applying damage
+                        if (this.game.world && !this.game.world.isInSafeZone(this.game.player)) {
+                            // Hit the player!
+                            const damage = projectile.damage || 10;
+                            this.game.player.takeDamage(damage);
+                            
+                            // Show hit message
+                            this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
+                            
+                            // Send hit confirmation to server
+                            this.socket.emit('hit', {
+                                type: 'player',
+                                targetId: this.playerId,
+                                damage: damage,
                                 attackerId: player.id
                             });
+                            
+                            // Check if player was destroyed
+                            if (this.game.player.health <= 0) {
+                                this.socket.emit('playerDestroyed', {
+                                    playerId: this.playerId,
+                                    attackerId: player.id
+                                });
+                            }
+                        } else {
+                            // Player in safe zone - show protection message
+                            this.showGameMessage('Safe Zone Protection Active', '#ffcc00');
                         }
+                        
+                        // Remove the projectile either way
+                        player.projectiles.splice(i, 1);
                     }
                     
                     // Remove projectiles that are too far away

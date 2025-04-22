@@ -17,6 +17,15 @@ export class World {
             bottom: this.height / 2,
             left: -this.width / 2
         };
+        
+        // Here we add the safe zone at the center (spawn area)
+        this.safeZone = {
+            x: 0,
+            y: 0, 
+            radius: 300, // Safe zone radius
+            active: true // Can be toggled for events
+        };
+        
         // Here we initialize arrays for visual effects
         this.particles = [];
         this.explosions = [];
@@ -484,6 +493,19 @@ export class World {
         this.powerups.push(powerup);
     }
 
+    // Check if an entity is within the safe zone
+    isInSafeZone(entity) {
+        if (!this.safeZone.active) return false;
+        
+        // Calculate distance from entity to safe zone center
+        const dx = entity.x - this.safeZone.x;
+        const dy = entity.y - this.safeZone.y;
+        const distanceSquared = dx * dx + dy * dy;
+        
+        // Check if distance is less than safe zone radius
+        return distanceSquared <= (this.safeZone.radius * this.safeZone.radius);
+    }
+
     getRandomInt(min, max) {
         // Helper function to get random integer in range (inclusive)
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -647,6 +669,71 @@ export class World {
             this.width,
             this.height
         );
+        
+        // Here we draw the safe zone at the center of the world
+        if (this.safeZone.active) {
+            // Create checkered pattern with yellow/black safety stripes
+            const stripeWidth = 40;
+            const stripeCount = Math.ceil(this.safeZone.radius * 2 / stripeWidth);
+            
+            // Draw transparent floor first
+            ctx.save();
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = '#888';
+            ctx.beginPath();
+            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            
+            // Draw safety stripes pattern
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
+            ctx.clip();
+            
+            // Draw stripes
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < stripeCount; i++) {
+                for (let j = 0; j < stripeCount; j++) {
+                    if ((i + j) % 2 === 0) {
+                        ctx.fillStyle = '#ffcc00'; // Yellow
+                    } else {
+                        ctx.fillStyle = '#000000'; // Black
+                    }
+                    
+                    const x = this.safeZone.x - this.safeZone.radius + i * stripeWidth;
+                    const y = this.safeZone.y - this.safeZone.radius + j * stripeWidth;
+                    ctx.fillRect(x, y, stripeWidth, stripeWidth);
+                }
+            }
+            
+            // Draw border
+            ctx.globalAlpha = 0.7;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Draw inner border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius - 5, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Draw "SAFE ZONE" text
+            ctx.globalAlpha = 1.0;
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            ctx.strokeText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.radius - 20);
+            ctx.fillText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.radius - 20);
+            ctx.restore();
+        }
 
         // Here we draw background stars
         this.stars.forEach(star => {

@@ -188,6 +188,15 @@ export class Player {
     }
 
     takeDamage(amount) {
+        // Check if player is in safe zone - prevent all damage if they are
+        if (window.game && window.game.world && window.game.world.isInSafeZone(this)) {
+            // Show message about safe zone protection
+            if (window.game.multiplayer) {
+                window.game.multiplayer.showGameMessage('Safe Zone Protection Active', '#ffcc00');
+            }
+            return false; // No damage applied in safe zone
+        }
+        
         // Record time of damage for shield recharge delay
         this.lastDamageTime = Date.now() / 1000;
         
