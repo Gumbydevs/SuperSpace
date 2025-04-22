@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperSpace - SubSpace Homage Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="stats">
+                <div>Score: <span id="score">0</span></div>
+                <div>Health: <span id="health">100</span></div>
+                <div>Weapons: <span id="weapons">Basic Laser</span></div>
+            </div>
+            <div id="minimap-container">
+                <canvas id="minimap" width="150" height="150"></canvas>
+            </div>
+        </div>
+        <div id="menu">
+            <h1>SuperSpace</h1>
+            <button id="play-btn">Play Game</button>
+            <button id="options-btn">Options</button>
+            <div id="server-info">Players online: <span id="player-count">0</span></div>
+        </div>
+    </div>
+    <script src="js/game.js" type="module"></script>
+</body>
+</html>
