@@ -98,9 +98,16 @@ export class World {
 
                 if (distance < asteroid.radius) {
                     asteroid.health -= projectile.damage;
-                    player.projectiles.splice(j, 1);
 
-                    this.createProjectileHitEffect(asteroid.x, asteroid.y, asteroid.radius, soundManager);
+                    // Calculate the exact impact point on the asteroid's edge
+                    const impactAngle = Math.atan2(dy, dx);
+                    const impactX = asteroid.x + Math.cos(impactAngle) * asteroid.radius;
+                    const impactY = asteroid.y + Math.sin(impactAngle) * asteroid.radius;
+
+                    // Create hit effect at the impact point instead of asteroid center
+                    this.createProjectileHitEffect(impactX, impactY, asteroid.radius, soundManager);
+
+                    player.projectiles.splice(j, 1);
 
                     if (asteroid.health <= 0) {
                         player.score += asteroid.scoreValue;
@@ -127,7 +134,8 @@ export class World {
                         }
                         player.addCredits(creditReward);
 
-                        this.createExplosion(asteroid.x, asteroid.y, asteroid.radius, soundManager);
+                        // Create explosion at the impact point for the final blow too
+                        this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
 
                         if (asteroid.size !== 'small') {
                             if (Math.random() < 0.7) {
