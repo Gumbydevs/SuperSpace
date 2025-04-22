@@ -57,6 +57,11 @@ export class Player {
     }
 
     update(deltaTime, input, soundManager) {
+        // Ensure input.keys is always an array to prevent "includes is not a function" error
+        if (!input.keys || !Array.isArray(input.keys)) {
+            input.keys = [];
+        }
+        
         // Handle direct joystick control for mobile devices
         if (input.directRotation !== undefined && input.directRotation !== null) {
             // Direct control from joystick - directly set the rotation value
