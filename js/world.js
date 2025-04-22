@@ -754,6 +754,42 @@ export class World {
             ctx.lineWidth = 4;
             ctx.strokeText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.size / 2 - 20);
             ctx.fillText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.size / 2 - 20);
+            
+            // Draw semi-transparent "SAFE ZONE" text along the inside borders
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Top border text
+            ctx.save();
+            ctx.translate(this.safeZone.x, this.safeZone.y - this.safeZone.size / 2 + 30);
+            ctx.fillText('SAFE ZONE', 0, 0);
+            ctx.restore();
+            
+            // Bottom border text
+            ctx.save();
+            ctx.translate(this.safeZone.x, this.safeZone.y + this.safeZone.size / 2 - 30);
+            ctx.fillText('SAFE ZONE', 0, 0);
+            ctx.restore();
+            
+            // Left border text - rotated 90 degrees
+            ctx.save();
+            ctx.translate(this.safeZone.x - this.safeZone.size / 2 + 30, this.safeZone.y);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('SAFE ZONE', 0, 0);
+            ctx.restore();
+            
+            // Right border text - rotated 90 degrees
+            ctx.save();
+            ctx.translate(this.safeZone.x + this.safeZone.size / 2 - 30, this.safeZone.y);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText('SAFE ZONE', 0, 0);
+            ctx.restore();
+            
+            ctx.restore();
             ctx.restore();
 
             // Draw pulsing docking lights at cardinal points
