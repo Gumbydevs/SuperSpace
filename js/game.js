@@ -1,3 +1,5 @@
+// filepath: d:\Code_Playground\Games\SuperSpace\js\game.js
+// Import all necessary game components from their respective modules
 import { Player } from './player.js';
 import { World } from './world.js';
 import { InputHandler } from './input.js';
@@ -6,39 +8,44 @@ import { SoundManager } from './sound.js';
 import { ShopSystem } from './shop.js';
 import { MultiplayerManager } from './multiplayer.js';
 
+// Main Game class that coordinates all game systems and components
 class Game {
     constructor() {
+        // Here we get the canvas element and its context for drawing
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.world = new World();
-        this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
-        this.input = new InputHandler();
-        this.ui = new UI();
-        this.soundManager = new SoundManager();
-        this.shop = new ShopSystem(this.player);
-        this.lastTime = 0;
-        this.gameState = 'menu'; // menu, playing, gameover
-        this.thrusterSoundActive = false;
         
-        // Initialize multiplayer
+        // Here we initialize all major game systems
+        this.world = new World();  // Manages game world, asteroids, powerups, etc.
+        this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);  // Creates player ship at center
+        this.input = new InputHandler();  // Handles keyboard and mouse input
+        this.ui = new UI();  // Manages UI elements on screen
+        this.soundManager = new SoundManager();  // Handles all game audio
+        this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
+        this.lastTime = 0;  // Used for calculating delta time between frames
+        this.gameState = 'menu';  // Game can be in 'menu', 'playing', or 'gameover' state
+        this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
+        
+        // Initialize multiplayer system
         this.multiplayer = new MultiplayerManager(this);
 
-        // Set canvas to fullscreen
+        // Here we make the canvas fullscreen and respond to window resizing
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
 
-        // Event listeners
+        // Set up event listeners for menu buttons
         document.getElementById('play-btn').addEventListener('click', () => this.startGame());
         document.getElementById('options-btn').addEventListener('click', () => this.showOptions());
         
-        // Add mute and shop buttons to DOM
+        // Here we create UI controls for mute and shop
         this.createMuteButton();
         this.createShopButton();
         
-        // Set up hotkeys
+        // Set up keyboard shortcuts
         this.setupHotkeys();
 
-        // Connect to multiplayer server - always use local server during development
+        // Here we connect to the multiplayer server
+        // For development we use localhost, for production would use deployed URL
         const serverUrl = 'http://localhost:3000';
         // Later for production use:
         // const serverUrl = window.location.hostname === 'localhost' 
@@ -54,15 +61,18 @@ class Game {
             });
     }
 
+    // Here we adjust canvas size to match window size for responsive gameplay
     resizeCanvas() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
     }
 
+    // Here we create a mute button to toggle game sound on/off
     createMuteButton() {
         const muteBtn = document.createElement('button');
-        muteBtn.textContent = '🔊';
+        muteBtn.textContent = '🔊';  // Default sound on icon
         muteBtn.id = 'mute-btn';
+        // Here we style the button with CSS
         muteBtn.style.position = 'absolute';
         muteBtn.style.top = '20px';
         muteBtn.style.right = '20px';
@@ -73,17 +83,22 @@ class Game {
         muteBtn.style.borderRadius = '5px';
         muteBtn.style.padding = '10px 15px';
         muteBtn.style.cursor = 'pointer';
+        // Here we set up the click handler to toggle mute state
         muteBtn.onclick = () => {
             const isMuted = this.soundManager.toggleMute();
+            // Update button icon based on mute state
             muteBtn.textContent = isMuted ? '🔇' : '🔊';
         };
+        // Add the button to the document body
         document.body.appendChild(muteBtn);
     }
     
+    // Here we create a shop button to access the in-game store
     createShopButton() {
         const shopBtn = document.createElement('button');
         shopBtn.textContent = '🛒 Shop';
         shopBtn.id = 'shop-btn';
+        // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
         shopBtn.style.top = '20px';
         shopBtn.style.right = '90px';
@@ -94,11 +109,13 @@ class Game {
         shopBtn.style.borderRadius = '5px';
         shopBtn.style.padding = '10px 15px';
         shopBtn.style.cursor = 'pointer';
-        shopBtn.style.display = 'none'; // Initially hidden until game starts
+        shopBtn.style.display = 'none';  // Initially hidden until game starts
+        // Set up click handler to toggle shop visibility
         shopBtn.onclick = () => this.toggleShop();
         document.body.appendChild(shopBtn);
     }
     
+    // Here we toggle the shop interface on/off
     toggleShop() {
         // Only allow shop access when playing
         if (this.gameState === 'playing') {
@@ -106,6 +123,7 @@ class Game {
         }
     }
     
+    // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
         window.addEventListener('keydown', e => {
             // Shop hotkey (B key)
@@ -115,6 +133,7 @@ class Game {
         });
     }
 
+    // Here we transition from menu to active gameplay
     startGame() {
         // Resume audio context (needed because of browser autoplay policy)
         this.soundManager.resumeAudio();
@@ -126,44 +145,49 @@ class Game {
         document.getElementById('shop-btn').style.display = 'block';
     }
 
+    // Placeholder for options menu
     showOptions() {
         console.log('Options menu - to be implemented');
     }
 
+    // Here we update all game components each frame using delta time
     update(deltaTime) {
         if (this.gameState === 'playing') {
             // Skip game updates if shop is open
             if (this.shop.shopOpen) return;
             
-            // Handle thruster sound based on input
+            // Here we handle thruster sound based on player input
             if (this.input.keys.includes('ArrowUp')) {
                 if (!this.thrusterSoundActive) {
+                    // Start thruster sound when player starts accelerating
                     this.soundManager.startThrusterSound({ volume: 0.3 });
                     this.thrusterSoundActive = true;
                 }
             } else if (this.thrusterSoundActive) {
+                // Stop thruster sound when player stops accelerating
                 this.soundManager.stopThrusterSound();
                 this.thrusterSoundActive = false;
             }
             
-            // Update player (pass sound manager for shooting sounds)
+            // Here we update player position, rotation, and actions
             this.player.update(deltaTime, this.input.keys, this.soundManager);
             
-            // Update world (pass sound manager for collision sounds)
+            // Here we update world elements like asteroids and powerups
             this.world.update(deltaTime, this.player, this.soundManager);
             
-            // Update UI elements
+            // Here we update UI elements with current game state
             document.getElementById('score').textContent = this.player.score;
             document.getElementById('health').textContent = Math.floor(this.player.health);
             document.getElementById('weapons').textContent = this.player.currentWeapon;
             document.getElementById('credits').textContent = this.player.credits;
             
-            // Update shield and energy UI if they exist
+            // Here we dynamically update shield and energy UI if player has these capabilities
             if (this.player.shieldCapacity > 0) {
                 const shieldElement = document.getElementById('shield');
                 if (shieldElement) {
                     shieldElement.textContent = Math.floor(this.player.shield);
                 } else {
+                    // Add shield display if player has gained shield capability
                     this.ui.addShieldDisplay();
                 }
             }
@@ -173,6 +197,7 @@ class Game {
                 if (energyElement) {
                     energyElement.textContent = Math.floor(this.player.energy);
                 } else {
+                    // Add energy display if player has gained energy capability
                     this.ui.addEnergyDisplay();
                 }
             }
@@ -184,8 +209,9 @@ class Game {
         }
     }
 
+    // Here we draw all game elements to the canvas
     render() {
-        // Clear canvas
+        // Clear canvas with black background
         this.ctx.fillStyle = 'black';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -193,30 +219,32 @@ class Game {
             // Save context state for camera transformations
             this.ctx.save();
             
-            // Apply camera transformation (center on player)
+            // Here we apply camera transformation to center view on player
             this.ctx.translate(
                 this.canvas.width / 2 - this.player.x, 
                 this.canvas.height / 2 - this.player.y
             );
             
-            // Render world and objects
+            // Here we render the world and player objects
             this.world.render(this.ctx, this.player);
             this.player.render(this.ctx);
             
-            // Restore context state
+            // Restore context to original state
             this.ctx.restore();
             
-            // Render HUD elements that need canvas drawing
+            // Here we render HUD elements like the minimap
             this.ui.renderMinimap(this.ctx, this.player, this.world);
         }
     }
 
+    // Here we handle the game over state
     gameOver() {
         this.gameState = 'gameover';
         
-        // Create game over screen
+        // Here we create game over screen UI
         const gameOverScreen = document.createElement('div');
         gameOverScreen.id = 'gameover';
+        // Style the game over screen
         gameOverScreen.style.position = 'absolute';
         gameOverScreen.style.top = '50%';
         gameOverScreen.style.left = '50%';
@@ -228,13 +256,16 @@ class Game {
         gameOverScreen.style.textAlign = 'center';
         gameOverScreen.style.zIndex = '200';
         
+        // Create game over title
         const gameOverTitle = document.createElement('h2');
         gameOverTitle.textContent = 'Game Over';
         gameOverTitle.style.color = '#f33';
         
+        // Display final score
         const scoreText = document.createElement('p');
         scoreText.textContent = `Final Score: ${this.player.score}`;
         
+        // Create restart button
         const restartButton = document.createElement('button');
         restartButton.textContent = 'Restart Game';
         restartButton.style.padding = '10px 20px';
@@ -246,6 +277,7 @@ class Game {
         restartButton.style.cursor = 'pointer';
         restartButton.onclick = () => this.restartGame();
         
+        // Assemble and add game over screen to document
         gameOverScreen.appendChild(gameOverTitle);
         gameOverScreen.appendChild(scoreText);
         gameOverScreen.appendChild(restartButton);
@@ -256,6 +288,7 @@ class Game {
         document.getElementById('shop-btn').style.display = 'none';
     }
     
+    // Here we reset the game state to start a new game
     restartGame() {
         // Remove game over screen
         const gameOverScreen = document.getElementById('gameover');
@@ -263,7 +296,7 @@ class Game {
             document.body.removeChild(gameOverScreen);
         }
         
-        // Reset player and world
+        // Reset player and world to initial state
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
         this.world = new World();
         
@@ -273,21 +306,25 @@ class Game {
         // Show shop button again
         document.getElementById('shop-btn').style.display = 'block';
         
-        // Reset game state
+        // Reset game state to playing
         this.gameState = 'playing';
     }
 
+    // Here we implement the main game loop using requestAnimationFrame
     gameLoop(currentTime) {
-        // Calculate deltaTime in seconds
+        // Calculate deltaTime in seconds for smooth animation regardless of frame rate
         const deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
         
+        // Update game state and render
         this.update(deltaTime);
         this.render();
         
+        // Request next animation frame to continue the loop
         requestAnimationFrame((time) => this.gameLoop(time));
     }
 
+    // Here we start the game loop
     start() {
         requestAnimationFrame((time) => this.gameLoop(time));
     }

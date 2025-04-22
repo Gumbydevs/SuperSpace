@@ -1,24 +1,32 @@
 export class World {
     constructor() {
+        // Here we define the game world dimensions
         this.width = 10000;
         this.height = 10000;
+        // Here we generate stars for the background
         this.stars = this.generateStars(2000);
+        // Here we create the initial asteroids in the world
         this.asteroids = this.generateAsteroids(150);
+        // Here we initialize arrays for game objects
         this.powerups = [];
         this.enemies = [];
+        // Here we define the world boundaries for collision detection
         this.boundaries = {
             top: -this.height / 2,
             right: this.width / 2,
             bottom: this.height / 2,
             left: -this.width / 2
         };
+        // Here we initialize arrays for visual effects
         this.particles = [];
         this.explosions = [];
 
+        // Here we define asteroid spawning parameters
         this.maxAsteroids = 150;
         this.asteroidSpawnTimer = 0;
         this.asteroidSpawnInterval = 2;
 
+        // Here we define how many credits each asteroid type is worth
         this.asteroidCreditValues = {
             small: { min: 10, max: 25 },
             medium: { min: 20, max: 50 },
@@ -27,12 +35,16 @@ export class World {
     }
 
     generateStars(count) {
+        // Here we create background stars with random positions and properties
         const stars = [];
         for (let i = 0; i < count; i++) {
             stars.push({
+                // Position stars randomly throughout the world
                 x: Math.random() * this.width - this.width / 2,
                 y: Math.random() * this.height - this.height / 2,
+                // Vary star sizes slightly 
                 size: Math.random() * 2 + 1,
+                // Vary star brightness for a more realistic starfield
                 brightness: Math.random() * 0.7 + 0.3
             });
         }
@@ -42,19 +54,29 @@ export class World {
     generateAsteroids(count) {
         const asteroids = [];
         for (let i = 0; i < count; i++) {
+            // Here we randomly determine asteroid size category
             const size = Math.random() < 0.5 ? 'small' : Math.random() < 0.8 ? 'medium' : 'large';
+            // Here we set radius based on size category
             const radius = size === 'small' ? 20 : size === 'medium' ? 40 : 60;
+            // Here we set health based on size category
             const health = size === 'small' ? 50 : size === 'medium' ? 100 : 200;
+            // Here we set score value based on size category
             const scoreValue = size === 'small' ? 100 : size === 'medium' ? 200 : 400;
 
+            // Here we create an asteroid with random position and properties
             asteroids.push({
+                // Random position within world bounds
                 x: (Math.random() - 0.5) * this.width,
                 y: (Math.random() - 0.5) * this.height,
                 radius: radius,
                 health: health,
+                // Random initial rotation
                 rotation: Math.random() * Math.PI * 2,
+                // Random rotation speed
                 rotationSpeed: (Math.random() - 0.5) * 0.5,
+                // Generate jagged vertices for the asteroid shape
                 vertices: this.generateAsteroidVertices(8, 0.4),
+                // Random initial velocity
                 velocityX: (Math.random() - 0.5) * 20,
                 velocityY: (Math.random() - 0.5) * 20,
                 size: size,
@@ -65,10 +87,14 @@ export class World {
     }
 
     generateAsteroidVertices(count, irregularity) {
+        // Here we create irregular polygon shapes for asteroids
         const vertices = [];
         for (let i = 0; i < count; i++) {
+            // Calculate angle for this vertex (evenly distributed around 360°)
             const angle = (i / count) * Math.PI * 2;
+            // Vary the radius to create an irregular shape
             const radius = 1 + (Math.random() * irregularity * 2 - irregularity);
+            // Add the vertex using polar coordinates
             vertices.push({
                 x: Math.cos(angle) * radius,
                 y: Math.sin(angle) * radius
@@ -78,25 +104,33 @@ export class World {
     }
 
     update(deltaTime, player, soundManager) {
+        // Here we handle asteroid spawning over time
         this.asteroidSpawnTimer += deltaTime;
         if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
+            // Add a new asteroid when timer expires and below max count
             this.asteroids.push(...this.generateAsteroids(1));
             this.asteroidSpawnTimer = 0;
         }
 
+        // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
+            // Move asteroid based on its velocity
             asteroid.x += asteroid.velocityX * deltaTime;
             asteroid.y += asteroid.velocityY * deltaTime;
+            // Rotate asteroid
             asteroid.rotation += asteroid.rotationSpeed * deltaTime;
 
+            // Keep asteroid within world boundaries
             this.wrapPosition(asteroid);
 
+            // Here we check for collisions with player projectiles
             player.projectiles.forEach((projectile, j) => {
                 const dx = projectile.x - asteroid.x;
                 const dy = projectile.y - asteroid.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < asteroid.radius) {
+                    // Here we handle collision with projectile
                     asteroid.health -= projectile.damage;
 
                     // Calculate the exact impact point on the asteroid's edge
@@ -104,14 +138,18 @@ export class World {
                     const impactX = asteroid.x + Math.cos(impactAngle) * asteroid.radius;
                     const impactY = asteroid.y + Math.sin(impactAngle) * asteroid.radius;
 
-                    // Create hit effect at the impact point instead of asteroid center
+                    // Create hit effect at the impact point
                     this.createProjectileHitEffect(impactX, impactY, asteroid.radius, soundManager);
 
+                    // Remove the projectile
                     player.projectiles.splice(j, 1);
 
+                    // Here we handle asteroid destruction
                     if (asteroid.health <= 0) {
+                        // Award score to player
                         player.score += asteroid.scoreValue;
 
+                        // Award credits based on asteroid size
                         let creditReward;
                         switch (asteroid.size) {
                             case 'large':
@@ -134,57 +172,73 @@ export class World {
                         }
                         player.addCredits(creditReward);
 
-                        // Create explosion at the impact point for the final blow too
+                        // Create explosion effect
                         this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
 
+                        // Here we handle asteroid splitting or powerup spawning
                         if (asteroid.size !== 'small') {
                             if (Math.random() < 0.7) {
+                                // 70% chance to split into smaller asteroids
                                 this.splitAsteroid(asteroid, soundManager);
                             } else {
+                                // 30% chance to spawn a powerup
                                 this.spawnPowerup(asteroid.x, asteroid.y);
                             }
                         } else if (Math.random() < 0.1) {
+                            // 10% chance for small asteroids to spawn a powerup
                             this.spawnPowerup(asteroid.x, asteroid.y);
                         }
 
+                        // Remove the destroyed asteroid
                         this.asteroids.splice(i, 1);
                     }
                 }
             });
         });
 
+        // Keep player within world boundaries
         this.wrapPosition(player);
 
+        // Here we update powerups and check for player collection
         this.powerups.forEach((powerup, i) => {
+            // Animate powerup pulsing effect
             powerup.pulsePhase += powerup.pulseSpeed * deltaTime;
 
+            // Check for collision with player
             const dx = powerup.x - player.x;
             const dy = powerup.y - player.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance < powerup.radius + player.width / 2) {
+                // Apply powerup effect to player
                 this.applyPowerup(player, powerup.type);
+                // Remove collected powerup
                 this.powerups.splice(i, 1);
 
+                // Spawn a new powerup after delay (maintains powerup count in world)
                 setTimeout(() => {
                     this.powerups.push(...this.generatePowerups(1));
                 }, 5000);
             }
         });
 
+        // Here we update particle effects (debris, etc.)
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const particle = this.particles[i];
             particle.update(deltaTime);
 
+            // Remove expired particles
             if (particle.life <= 0) {
                 this.particles.splice(i, 1);
             }
         }
 
+        // Here we update explosion effects
         for (let i = this.explosions.length - 1; i >= 0; i--) {
             const explosion = this.explosions[i];
             explosion.update(deltaTime);
 
+            // Remove finished explosions
             if (explosion.timeLeft <= 0) {
                 this.explosions.splice(i, 1);
             }
@@ -192,6 +246,9 @@ export class World {
     }
 
     wrapPosition(entity) {
+        // Here we implement screen wrapping to keep objects in the game world
+        // If an object goes beyond one edge, it appears on the opposite side
+
         if (entity.x < this.boundaries.left) {
             entity.x = this.boundaries.right;
         } else if (entity.x > this.boundaries.right) {
@@ -206,8 +263,10 @@ export class World {
     }
 
     splitAsteroid(asteroid, soundManager) {
+        // Here we create visual debris when an asteroid is split
         this.createAsteroidDebris(asteroid.x, asteroid.y, asteroid.radius);
 
+        // Play explosion sound for the split
         if (soundManager) {
             soundManager.play('explosion', {
                 volume: 0.3 * (asteroid.radius / 50),
@@ -216,22 +275,28 @@ export class World {
             });
         }
 
+        // Here we determine how many fragments to create based on size
         const fragmentCount = asteroid.radius > 50 ? 3 : 2;
 
+        // Here we create smaller asteroids from the split
         for (let i = 0; i < fragmentCount; i++) {
+            // Calculate position offset for each fragment (evenly distributed)
             const angleOffset = (Math.PI * 2 / fragmentCount) * i;
             const distance = asteroid.radius * 0.5;
             const offsetX = Math.cos(angleOffset) * distance;
             const offsetY = Math.sin(angleOffset) * distance;
 
+            // Calculate new velocity (faster than parent asteroid)
             const newVelocityMagnitude = Math.sqrt(
                 asteroid.velocityX * asteroid.velocityX +
                 asteroid.velocityY * asteroid.velocityY
             ) * 1.2;
 
+            // Add some randomness to the velocity direction
             const velocityAngle = Math.atan2(asteroid.velocityY, asteroid.velocityX) +
                 (Math.random() - 0.5) * Math.PI * 0.75;
 
+            // Create the new smaller asteroid
             const newAsteroid = {
                 x: asteroid.x + offsetX,
                 y: asteroid.y + offsetY,
@@ -250,32 +315,39 @@ export class World {
     }
 
     createAsteroidDebris(x, y, radius) {
+        // Here we create debris particles when an asteroid breaks
         const particleCount = Math.floor(radius / 4);
         
         for (let i = 0; i < particleCount; i++) {
+            // Randomize particle position within asteroid
             const angle = Math.random() * Math.PI * 2;
             const distance = Math.random() * radius * 0.8;
             
             const particleX = x + Math.cos(angle) * distance;
             const particleY = y + Math.sin(angle) * distance;
             
+            // Randomize particle velocity (outward from center)
             const velocityMagnitude = 20 + Math.random() * 40;
             const velocityAngle = Math.random() * Math.PI * 2;
             
+            // Create and add the particle
             this.particles.push({
                 x: particleX,
                 y: particleY,
                 velocityX: Math.cos(velocityAngle) * velocityMagnitude,
                 velocityY: Math.sin(velocityAngle) * velocityMagnitude,
                 size: 1 + Math.random() * 3,
-                color: '#aaa',
-                life: 1.0,
-                maxLife: 0.5 + Math.random() * 0.5,
+                color: '#aaa',  // Gray color for rock debris
+                life: 1.0,      // Full life to start
+                maxLife: 0.5 + Math.random() * 0.5,  // Random lifetime
                 rotation: Math.random() * Math.PI * 2,
                 update(deltaTime) {
+                    // Move particle
                     this.x += this.velocityX * deltaTime;
                     this.y += this.velocityY * deltaTime;
+                    // Decrease lifetime
                     this.life -= deltaTime / this.maxLife;
+                    // Slow down over time
                     this.velocityX *= 0.99;
                     this.velocityY *= 0.99;
                 }
@@ -284,6 +356,7 @@ export class World {
     }
 
     createExplosion(x, y, radius, soundManager) {
+        // Here we play the explosion sound
         if (soundManager) {
             soundManager.play('explosion', {
                 volume: Math.min(0.7, 0.4 * (radius / 30)),
@@ -291,6 +364,7 @@ export class World {
             });
         }
 
+        // Here we create the main explosion effect
         this.explosions.push({
             x: x,
             y: y,
@@ -302,11 +376,13 @@ export class World {
             }
         });
 
+        // Here we create secondary explosion effects for a more complex look
         for (let i = 0; i < Math.floor(radius / 10); i++) {
             const distance = radius * 0.7;
             const angle = Math.random() * Math.PI * 2;
             const delay = Math.random() * 0.2;
 
+            // Create secondary explosions with a slight delay
             setTimeout(() => {
                 const secondaryX = x + Math.cos(angle) * distance;
                 const secondaryY = y + Math.sin(angle) * distance;
@@ -327,16 +403,16 @@ export class World {
     }
 
     createProjectileHitEffect(x, y, radius, soundManager) {
-        // Play hit sound effect
+        // Here we play hit sound effect
         if (soundManager) {
             soundManager.play('hit', {
                 volume: Math.min(0.4, 0.3 * (radius / 30)),
-                playbackRate: 0.8 + Math.random() * 0.4,
+                playbackRate: 0.8 + Math.random() * 0.4, // Randomize pitch slightly
                 position: { x, y }
             });
         }
 
-        // Create a small flash effect
+        // Here we create a small flash effect
         const smallFlash = {
             x: x,
             y: y,
@@ -349,7 +425,7 @@ export class World {
         };
         this.explosions.push(smallFlash);
 
-        // Create spark particles
+        // Here we create spark particles
         const particleCount = Math.floor(3 + Math.random() * 5);
         for (let i = 0; i < particleCount; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -367,8 +443,10 @@ export class World {
                 life: 1.0,
                 maxLife: lifetime,
                 update(deltaTime) {
+                    // Move the spark
                     this.x += this.velocityX * deltaTime;
                     this.y += this.velocityY * deltaTime;
+                    // Decrease lifetime
                     this.life -= deltaTime / this.maxLife;
                 }
             });
@@ -376,9 +454,11 @@ export class World {
     }
 
     spawnPowerup(x, y) {
+        // Here we define possible powerup types and their spawn probability
         const types = ['health', 'shield', 'energy', 'weapon', 'credits'];
-        const weights = [0.3, 0.2, 0.2, 0.2, 0.1];
+        const weights = [0.3, 0.2, 0.2, 0.2, 0.1]; // Health has highest chance
 
+        // Here we use weighted random selection
         let sum = 0;
         const r = Math.random();
         let selectedType;
@@ -391,22 +471,26 @@ export class World {
             }
         }
 
+        // Here we create the powerup object
         const powerup = {
             x: x,
             y: y,
             type: selectedType,
             radius: 15,
-            pulsePhase: Math.random() * Math.PI * 2
+            pulsePhase: Math.random() * Math.PI * 2, // Random starting phase
+            pulseSpeed: 5 + Math.random() * 2       // Random pulse speed
         };
 
         this.powerups.push(powerup);
     }
 
     getRandomInt(min, max) {
+        // Helper function to get random integer in range (inclusive)
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     render(ctx, player) {
+        // Here we define the visible area for rendering optimization
         const visibleArea = {
             top: player.y - window.innerHeight / 2 - 100,
             right: player.x + window.innerWidth / 2 + 100,
@@ -414,6 +498,7 @@ export class World {
             left: player.x - window.innerWidth / 2 - 100
         };
 
+        // Here we draw the world boundary
         ctx.strokeStyle = '#555';
         ctx.lineWidth = 5;
         ctx.strokeRect(
@@ -423,7 +508,9 @@ export class World {
             this.height
         );
 
+        // Here we draw background stars
         this.stars.forEach(star => {
+            // Only draw stars in visible area (optimization)
             if (
                 star.x >= visibleArea.left &&
                 star.x <= visibleArea.right &&
@@ -437,11 +524,13 @@ export class World {
             }
         });
 
+        // Here we draw asteroids
         this.asteroids.forEach(asteroid => {
             ctx.save();
             ctx.translate(asteroid.x, asteroid.y);
             ctx.rotate(asteroid.rotation);
 
+            // Draw the asteroid using its vertices
             ctx.fillStyle = '#aaa';
             ctx.beginPath();
             asteroid.vertices.forEach((vertex, i) => {
@@ -460,30 +549,33 @@ export class World {
             ctx.restore();
         });
 
+        // Here we draw powerups
         this.powerups.forEach(powerup => {
+            // Calculate pulse effect
             const pulseScale = 1 + 0.2 * Math.sin(powerup.pulsePhase);
 
+            // Determine color and label based on powerup type
             let color;
             let label;
             switch (powerup.type) {
                 case 'health':
-                    color = '#0f0';
+                    color = '#0f0';  // Green
                     label = 'HEALTH';
                     break;
                 case 'weapon':
-                    color = '#f00';
+                    color = '#f00';  // Red
                     label = 'WEAPON';
                     break;
                 case 'shield':
-                    color = '#00f';
+                    color = '#00f';  // Blue
                     label = 'SHIELD';
                     break;
                 case 'energy':
-                    color = '#ff0';
+                    color = '#ff0';  // Yellow
                     label = 'ENERGY';
                     break;
                 case 'credits':
-                    color = '#fff';
+                    color = '#fff';  // White
                     label = 'CREDITS';
                     break;
                 default:
@@ -494,17 +586,20 @@ export class World {
             ctx.save();
             ctx.translate(powerup.x, powerup.y);
 
+            // Here we draw the outer glow
             ctx.fillStyle = color;
-            ctx.globalAlpha = 0.3;
+            ctx.globalAlpha = 0.3;  // Transparent
             ctx.beginPath();
             ctx.arc(0, 0, powerup.radius * pulseScale * 1.5, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.globalAlpha = 1;
+            // Here we draw the inner core
+            ctx.globalAlpha = 1;  // Fully opaque
             ctx.beginPath();
             ctx.arc(0, 0, powerup.radius * pulseScale * 0.7, 0, Math.PI * 2);
             ctx.fill();
 
+            // Here we draw the label text
             ctx.font = '11px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -512,30 +607,34 @@ export class World {
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 2;
 
+            // Outlined text for better visibility
             ctx.strokeText(label, 0, powerup.radius * 1.8);
             ctx.fillText(label, 0, powerup.radius * 1.8);
 
             ctx.restore();
         });
 
+        // Here we draw explosions
         this.explosions.forEach(explosion => {
             const radiusRatio = explosion.timeLeft / 0.5;
             const currentRadius = explosion.maxRadius * (1 - radiusRatio);
             const opacity = explosion.timeLeft * 2;
 
+            // Draw explosion ring
             ctx.beginPath();
             ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 200, 50, ${opacity * 0.7})`;
+            ctx.strokeStyle = `rgba(255, 200, 50, ${opacity * 0.7})`;  // Orange-yellow
             ctx.lineWidth = 3;
             ctx.stroke();
 
+            // Draw explosion glow using radial gradient
             const gradient = ctx.createRadialGradient(
                 explosion.x, explosion.y, 0,
                 explosion.x, explosion.y, currentRadius * 0.8
             );
-            gradient.addColorStop(0, `rgba(255, 255, 200, ${opacity})`);
-            gradient.addColorStop(0.3, `rgba(255, 120, 50, ${opacity * 0.8})`);
-            gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+            gradient.addColorStop(0, `rgba(255, 255, 200, ${opacity})`);      // Bright center
+            gradient.addColorStop(0.3, `rgba(255, 120, 50, ${opacity * 0.8})`); // Orange middle
+            gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');                   // Transparent edge
 
             ctx.fillStyle = gradient;
             ctx.beginPath();
@@ -543,6 +642,7 @@ export class World {
             ctx.fill();
         });
 
+        // Here we draw particles (debris, etc.)
         this.particles.forEach(particle => {
             ctx.save();
             ctx.translate(particle.x, particle.y);
@@ -551,14 +651,16 @@ export class World {
                 ctx.rotate(particle.rotation);
             }
 
+            // Fade out as lifetime decreases
             ctx.globalAlpha = particle.life;
             ctx.fillStyle = particle.color;
 
-            if (particle.color === '#ffaa00') {
+            // Different drawing for different particle types
+            if (particle.color === '#ffbb00') {  // Sparks
                 ctx.beginPath();
                 ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
                 ctx.fill();
-            } else {
+            } else {  // Debris
                 ctx.beginPath();
                 ctx.moveTo(particle.size, 0);
                 ctx.lineTo(particle.size * 0.5, particle.size);

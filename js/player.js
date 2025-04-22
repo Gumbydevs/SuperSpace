@@ -2,61 +2,62 @@ import { Projectile } from './projectile.js';
 
 export class Player {
     constructor(x, y) {
+        // Here we set the initial position of the player's ship
         this.x = x;
         this.y = y;
-        this.rotation = 0; // in radians
+        this.rotation = 0; // in radians, 0 means facing up
         this.speed = 0;
-        this.maxSpeed = 400; // increased for better top speed
-        this.acceleration = 300; // reduced slightly for more gradual acceleration
-        this.rotationSpeed = 4.0; // slightly reduced for more realistic turning
-        this.friction = 0.998; // dramatically reduced friction for space-like movement
-        this.braking = false; // new property to track if player is braking
-        this.brakePower = 0.95; // braking effectiveness
-        this.width = 30;
-        this.height = 30;
-        this.velocity = { x: 0, y: 0 };
+        this.maxSpeed = 400; // Maximum possible speed for the ship
+        this.acceleration = 300; // How quickly the ship speeds up
+        this.rotationSpeed = 4.0; // How quickly the ship can turn
+        this.friction = 0.998; // Space-like movement with minimal friction
+        this.braking = false; // Tracks if player is actively braking
+        this.brakePower = 0.95; // How effective braking is (lower = stronger brakes)
+        this.width = 30; // Ship collision width
+        this.height = 30; // Ship collision height
+        this.velocity = { x: 0, y: 0 }; // Current movement vector
 
-        // Stats
+        // Here we define the player's health and defense stats
         this.maxHealth = 100;
         this.health = 100;
-        this.armor = 1.0; // Damage multiplier (lower is better)
-        this.damageReduction = 0;
+        this.armor = 1.0; // Damage multiplier (lower values mean better protection)
+        this.damageReduction = 0; // Flat damage reduction percentage
 
-        // Ship and equipment tracking
+        // Here we track the player's current ship and equipment
         this.currentShip = 'scout'; // Default starting ship
         this.currentWeaponId = 'laser'; // Track weapon by ID for shop integration
 
-        // Credits and score
+        // Here we define the player's economy and score
         this.credits = 0; // Currency for purchasing ships and upgrades
         this.score = 0;   // Points for game score
 
-        // Weapon systems
+        // Here we set up the weapon systems
         this.weapons = ['Basic Laser', 'Burst Cannon', 'Seeker Missile'];
         this.currentWeapon = this.weapons[0];
         this.weaponIndex = 0;
-        this.projectiles = [];
-        this.fireCooldown = 0;
-        this.fireCooldownTime = 0.20; // decreased from 0.25 for faster firing
+        this.projectiles = []; // Active projectiles fired by player
+        this.fireCooldown = 0; // Current cooldown time before can fire again
+        this.fireCooldownTime = 0.20; // Base time between shots
 
-        // Energy system (optional until upgraded)
+        // Here we define the energy system (optional until upgraded)
         this.maxEnergy = 100;
         this.energy = 100;
-        this.energyRegen = 5; // Energy per second
+        this.energyRegen = 5; // Energy points regenerated per second
 
-        // Shield system (requires upgrade)
-        this.shieldCapacity = 0;
+        // Here we set up the shield system (requires upgrade)
+        this.shieldCapacity = 0; // No shields by default until upgraded
         this.shield = 0;
-        this.shieldRechargeRate = 10; // Shield points per second when not taking damage
+        this.shieldRechargeRate = 10; // Shield points per second when recharging
         this.shieldRechargeDelay = 3; // Seconds to wait after damage before recharging
         this.lastDamageTime = 0;
 
-        // Cargo system
+        // Here we define the cargo system
         this.cargoCapacity = 100;
         this.cargo = 0; // Resource units collected
     }
 
     update(deltaTime, input, soundManager) {
-        // Rotation
+        // Here we handle rotation based on player input
         if (input.includes('ArrowLeft')) {
             this.rotation -= this.rotationSpeed * deltaTime;
         }
@@ -64,13 +65,14 @@ export class Player {
             this.rotation += this.rotationSpeed * deltaTime;
         }
 
-        // Wrap rotation to stay between 0 and 2π
+        // Here we wrap rotation to stay between 0 and 2π
         this.rotation = this.rotation % (Math.PI * 2);
         if (this.rotation < 0) this.rotation += Math.PI * 2;
 
-        // Thrust
+        // Here we handle thrust/acceleration
         if (input.includes('ArrowUp')) {
             // Calculate acceleration components based on ship's rotation
+            // Sine for X because 0 radians points up in our coordinate system
             const accelerationX = Math.sin(this.rotation) * this.acceleration * deltaTime;
             const accelerationY = -Math.cos(this.rotation) * this.acceleration * deltaTime;
             
@@ -79,10 +81,10 @@ export class Player {
             this.velocity.y += accelerationY;
         }
 
-        // Check if player is braking (using down arrow)
+        // Here we check if player is braking (using down arrow)
         this.braking = input.includes('ArrowDown');
 
-        // Apply appropriate physics based on braking or coasting
+        // Here we apply physics based on whether the player is braking or coasting
         if (this.braking) {
             // Apply stronger deceleration when braking
             this.velocity.x *= this.brakePower;
@@ -93,7 +95,7 @@ export class Player {
             this.velocity.y *= this.friction;
         }
         
-        // Cap velocity to max speed
+        // Here we cap velocity to the maximum speed
         const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
         if (currentSpeed > this.maxSpeed) {
             const ratio = this.maxSpeed / currentSpeed;
@@ -101,23 +103,25 @@ export class Player {
             this.velocity.y *= ratio;
         }
 
-        // Update position based on velocity
+        // Here we update the ship's position based on its velocity
         this.x += this.velocity.x * deltaTime;
         this.y += this.velocity.y * deltaTime;
 
-        // Weapon shooting
+        // Here we handle weapon firing
         if (input.includes('Space') && this.fireCooldown <= 0) {
             this.fire(soundManager);
             this.fireCooldown = this.fireCooldownTime;
         }
 
-        // Weapon switching with sound effect
+        // Here we handle weapon switching with Q and E keys
         if ((input.includes('KeyQ') || input.includes('KeyE')) && soundManager) {
             const previousWeapon = this.currentWeapon;
             
             if (input.includes('KeyQ')) {
+                // Cycle backwards through weapons
                 this.weaponIndex = (this.weaponIndex - 1 + this.weapons.length) % this.weapons.length;
             } else {
+                // Cycle forwards through weapons
                 this.weaponIndex = (this.weaponIndex + 1) % this.weapons.length;
             }
             
@@ -129,7 +133,7 @@ export class Player {
             }
         }
 
-        // Update projectiles
+        // Here we update projectiles and remove those that exceed their range
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             this.projectiles[i].update(deltaTime);
             
@@ -139,17 +143,17 @@ export class Player {
             }
         }
 
-        // Reduce cooldowns
+        // Here we reduce cooldown timers
         if (this.fireCooldown > 0) {
             this.fireCooldown -= deltaTime;
         }
 
-        // Regenerate energy
+        // Here we regenerate energy over time
         if (this.energy < this.maxEnergy) {
             this.energy = Math.min(this.maxEnergy, this.energy + this.energyRegen * deltaTime);
         }
         
-        // Shield recharge logic
+        // Here we handle shield recharge after not taking damage for a while
         if (this.shieldCapacity > 0 && this.shield < this.shieldCapacity) {
             const now = Date.now() / 1000;
             if (now - this.lastDamageTime >= this.shieldRechargeDelay) {
@@ -163,26 +167,28 @@ export class Player {
         // Record time of damage for shield recharge delay
         this.lastDamageTime = Date.now() / 1000;
         
-        // Apply damage reduction if any
+        // Here we apply damage reduction if any
         if (this.damageReduction) {
             amount = amount * (1 - this.damageReduction);
         }
         
-        // Apply armor multiplier
+        // Here we apply armor multiplier (lower armor value means less damage)
         amount = amount * this.armor;
         
-        // First apply damage to shields if they exist
+        // Here we apply damage to shields first if they exist
         if (this.shield > 0) {
             if (this.shield >= amount) {
+                // Shield absorbs all damage
                 this.shield -= amount;
                 amount = 0;
             } else {
+                // Shield is depleted, remaining damage goes to hull
                 amount -= this.shield;
                 this.shield = 0;
             }
         }
         
-        // Apply remaining damage to hull
+        // Here we apply remaining damage to hull
         if (amount > 0) {
             this.health -= amount;
             
@@ -196,14 +202,17 @@ export class Player {
     }
 
     addCredits(amount) {
+        // Here we add credits to player's account (from destroying asteroids, etc.)
         this.credits += amount;
     }
 
     fire(soundManager) {
         let projectiles = [];
         
+        // Here we handle different weapon types
         switch (this.currentWeapon) {
             case 'Basic Laser':
+                // Here we create a single straight laser projectile
                 projectiles.push(new Projectile(
                     this.x, this.y,
                     this.rotation,
@@ -213,29 +222,29 @@ export class Player {
                     600  // range
                  ));
                 
-                // Play laser sound
+                // Here we play the laser sound effect
                 if (soundManager) {
                     soundManager.play('laser', { 
                         volume: 0.4,
-                        position: { x: this.x, y: this.y }
+                        position: { x: this.x, y: this.y } // Positional audio
                     });
                 }
                 break;
                 
             case 'Burst Cannon':
-                // Fire 3 projectiles in a burst
+                // Here we fire 3 projectiles in a spread pattern
                 for (let i = -1; i <= 1; i++) {
                     projectiles.push(new Projectile(
                         this.x, this.y,
-                        this.rotation + (i * 0.1),
+                        this.rotation + (i * 0.1), // Small angle offset for spread
                         'burst',
-                        5, // damage
+                        5, // Lower damage per projectile
                         700, // speed
                         400  // range
                     ));
                 }
                 
-                // Play burst sound
+                // Here we play the burst cannon sound
                 if (soundManager) {
                     soundManager.play('burst', { 
                         volume: 0.4,
@@ -245,17 +254,18 @@ export class Player {
                 break;
                 
             case 'Seeker Missile':
+                // Here we fire a single homing missile
                 projectiles.push(new Projectile(
                     this.x, this.y,
                     this.rotation,
                     'missile',
-                    20, // damage
-                    500, // speed
-                    1000, // range
-                    true  // homing
+                    20, // High damage
+                    500, // Slower speed
+                    1000, // Longer range
+                    true  // Homing capability
                 ));
                 
-                // Play missile sound
+                // Here we play the missile launch sound
                 if (soundManager) {
                     soundManager.play('missile', { 
                         volume: 0.5,
@@ -265,31 +275,32 @@ export class Player {
                 break;
         }
         
+        // Add the new projectiles to the player's active projectiles array
         this.projectiles.push(...projectiles);
     }
 
     render(ctx) {
-        // Draw projectiles
+        // Here we draw all active projectiles
         this.projectiles.forEach(projectile => {
             projectile.render(ctx);
         });
         
-        // Draw ship
+        // Here we draw the player's ship
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         
-        // Ship body - rotated 90 degrees counter-clockwise
+        // Ship body - triangular shape rotated so tip points in direction of travel
         ctx.fillStyle = '#33f';
         ctx.beginPath();
-        ctx.moveTo(0, -15); // front (now points upward)
+        ctx.moveTo(0, -15); // front (points upward when rotation = 0)
         ctx.lineTo(-10, 10); // back left
         ctx.lineTo(0, 5); // back middle
         ctx.lineTo(10, 10); // back right
         ctx.closePath();
         ctx.fill();
         
-        // Engine glow - also rotated
+        // Here we draw the engine glow effect
         ctx.fillStyle = '#f66';
         ctx.beginPath();
         ctx.moveTo(0, 5);

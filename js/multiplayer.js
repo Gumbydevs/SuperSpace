@@ -435,7 +435,7 @@ export class MultiplayerManager {
     createPlayerListUI() {
         const playerList = document.createElement('div');
         playerList.id = 'player-list';
-        playerList.style.position = 'bottom-left';
+        playerList.style.position = 'absolute';
         playerList.style.top = '20px';
         playerList.style.left = '20px';
         playerList.style.padding = '10px';
