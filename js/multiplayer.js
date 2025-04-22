@@ -239,96 +239,104 @@ export class MultiplayerManager {
     }
 
     setupSocketEvents() {
+        // Handle connection to server
         this.socket.on('connect', () => {
             console.log('Connected to server with ID:', this.socket.id);
-            this.connected = true;
             this.playerId = this.socket.id;
+            this.connected = true;
             
-            // Join the game
-            this.joinGame();
+            // Send player data to server after connecting
+            this.socket.emit('playerJoin', {
+                x: this.game.player.x,
+                y: this.game.player.y,
+                rotation: this.game.player.rotation,
+                ship: this.game.player.currentShip || 'scout',
+                name: this.playerName
+            });
             
-            // Add connection status indicator
-            this.addConnectionIndicator();
-            
-            // Show the player list UI
-            this.createPlayerListUI();
+            // Show connection indicator
+            this.updateConnectionIndicator(true);
         });
 
+        // Handle disconnection from server
         this.socket.on('disconnect', () => {
             console.log('Disconnected from server');
             this.connected = false;
+            this.players = {}; // Clear remote players
+            
+            // Show disconnected indicator
             this.updateConnectionIndicator(false);
+            
+            // Show disconnection message
+            this.showGameMessage('Disconnected from server', '#f44', 5000);
         });
 
-        // Game state update from server
-        this.socket.on('gameState', (state) => {
-            console.log('Received game state:', state);
+        // Handle connection error
+        this.socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            this.connected = false;
             
-            // Process all players
-            Object.values(state.players).forEach(playerData => {
-                if (playerData.id !== this.playerId) {
-                    this.updateRemotePlayer(playerData);
+            // Show disconnected indicator
+            this.updateConnectionIndicator(false);
+            
+            // Show error message
+            this.showGameMessage('Connection error: ' + error.message, '#f44', 5000);
+        });
+
+        // Handle receiving game state from server
+        this.socket.on('gameState', (data) => {
+            console.log('Received game state:', data);
+            
+            // Process all players in the game
+            Object.values(data.players).forEach(player => {
+                if (player.id !== this.playerId) {
+                    this.addRemotePlayer(player);
                 }
             });
             
-            // Update player list
-            this.updatePlayerList(state.players);
+            // Show connection success message
+            this.showGameMessage('Connected to multiplayer server', '#4f4', 3000);
         });
 
-        // Another player joined
-        this.socket.on('playerJoined', (player) => {
-            console.log('Player joined:', player);
-            this.addRemotePlayer(player);
-            this.updatePlayerList();
-            
-            // Show welcome message
-            this.showGameMessage(`${player.name} joined the game`, '#4f4');
+        // Handle new player joining
+        this.socket.on('playerJoined', (playerData) => {
+            this.addRemotePlayer(playerData);
+            this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
         });
 
-        // Another player left
-        this.socket.on('playerLeft', (playerId) => {
-            console.log('Player left:', playerId);
-            this.removeRemotePlayer(playerId);
-            this.updatePlayerList();
-            
-            const playerName = this.players[playerId]?.name || 'A player';
-            this.showGameMessage(`${playerName} left the game`, '#f44');
+        // Handle player movement updates
+        this.socket.on('playerMoved', (playerData) => {
+            this.updateRemotePlayer(playerData);
         });
 
-        // Player movement updates
-        this.socket.on('playerMoved', (data) => {
-            this.updateRemotePlayer(data);
-        });
-
-        // Handle projectiles from other players
+        // Handle player projectile firing
         this.socket.on('projectileFired', (data) => {
             this.handleRemoteProjectile(data.playerId, data.projectile);
         });
 
-        // Handle hits on asteroids
-        this.socket.on('asteroidHit', (data) => {
-            this.handleAsteroidHit(data.asteroidId, data.damage, data.playerId);
-        });
-
-        // Handle asteroid destruction
-        this.socket.on('asteroidDestroyed', (data) => {
-            this.handleAsteroidDestroyed(data.asteroidId, data.playerId);
-        });
-
-        // Handle player getting hit
+        // Handle player hits (damage)
         this.socket.on('playerHit', (data) => {
             if (data.targetId === this.playerId) {
                 this.handleDamage(data.damage, data.attackerId);
             }
         });
 
-        // Handle player being destroyed
+        // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
             if (data.playerId === this.playerId) {
+                // Local player destroyed
                 this.handleDeath(data.attackerId);
             } else {
+                // Remote player destroyed
                 this.handleRemotePlayerDeath(data.playerId, data.attackerId);
             }
+        });
+
+        // Handle player disconnection
+        this.socket.on('playerLeft', (playerId) => {
+            const playerName = this.players[playerId]?.name || 'A player';
+            this.removeRemotePlayer(playerId);
+            this.showGameMessage(`${playerName} left the game`, '#aaa');
         });
 
         // Handle player respawn
@@ -336,27 +344,17 @@ export class MultiplayerManager {
             this.handleRemotePlayerRespawn(data.id, data.x, data.y);
         });
 
-        // Handle world updates (asteroids, powerups)
-        this.socket.on('worldUpdate', (data) => {
-            // Update any world entities managed by the server
-            // This would synchronize asteroids and powerups between clients
-        });
-
         // Handle player name changes
         this.socket.on('playerNameChanged', (data) => {
+            // Update local cache of player names
             if (this.players[data.id]) {
-                // Update player name in local players collection
                 this.players[data.id].name = data.newName;
                 
-                // Update player list UI
+                // Rebuild the player list UI
                 this.updatePlayerList();
                 
-                // Show message about name change
-                if (data.id === this.playerId) {
-                    // This is our own name change confirmation
-                    this.showGameMessage(`You are now known as ${data.newName}`, '#4af');
-                } else {
-                    // Another player changed their name
+                // Show notification message
+                if (data.id !== this.playerId) {
                     this.showGameMessage(`${data.oldName} is now known as ${data.newName}`, '#fff');
                 }
             }
@@ -368,6 +366,44 @@ export class MultiplayerManager {
                 this.players[data.id].ship = data.ship;
             }
         });
+
+        // Handle player timeout notifications
+        this.socket.on('playerTimedOut', (data) => {
+            this.removeRemotePlayer(data.id);
+            this.showGameMessage(`${data.name} was disconnected due to inactivity`, '#ff9');
+        });
+        
+        // Start ping interval to keep connection alive and reset inactivity timer
+        this.startPingInterval();
+    }
+
+    // Send periodic pings to keep the connection active
+    startPingInterval() {
+        // Clear any existing interval first
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+        }
+        
+        // Start a new ping interval - send ping every 20 seconds
+        this.pingInterval = setInterval(() => {
+            if (this.connected) {
+                this.socket.emit('ping');
+            }
+        }, 20000); // 20 seconds
+    }
+
+    // Handle cleanup when the game is closed
+    cleanup() {
+        // Clear ping interval
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+        
+        // Disconnect socket if connected
+        if (this.socket && this.connected) {
+            this.socket.disconnect();
+        }
     }
 
     // Send player data to server

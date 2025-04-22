@@ -32,6 +32,10 @@ const io = socketIO(server, {
   }
 });
 
+// Constants for inactivity timeout
+const INACTIVITY_TIMEOUT = 120000; // 2 minutes in milliseconds
+const INACTIVITY_CHECK_INTERVAL = 30000; // 30 seconds in milliseconds
+
 // Game state
 const gameState = {
   players: {},
@@ -39,12 +43,21 @@ const gameState = {
   powerups: []
 };
 
+// Track last activity time for each player
+const playerLastActivity = {};
+
 // Connection handling
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
   
+  // Set initial activity timestamp
+  playerLastActivity[socket.id] = Date.now();
+  
   // Player joined
   socket.on('playerJoin', (playerData) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     // Add the player to the game state
     gameState.players[socket.id] = {
       id: socket.id,
@@ -71,6 +84,9 @@ io.on('connection', (socket) => {
   
   // Player movement update
   socket.on('playerUpdate', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     const player = gameState.players[socket.id];
     if (player) {
       // Update player state
@@ -95,6 +111,9 @@ io.on('connection', (socket) => {
   
   // Player fired a projectile
   socket.on('playerFire', (projectile) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     const player = gameState.players[socket.id];
     if (player) {
       // Add player ID to the projectile
@@ -116,6 +135,9 @@ io.on('connection', (socket) => {
   
   // Player hit something (asteroid, enemy, etc.)
   socket.on('hit', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     if (data.type === 'asteroid') {
       // Handle asteroid hit
       socket.broadcast.emit('asteroidHit', {
@@ -170,6 +192,9 @@ io.on('connection', (socket) => {
   
   // Player respawn
   socket.on('respawn', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     if (gameState.players[socket.id]) {
       gameState.players[socket.id].health = 100;
       gameState.players[socket.id].x = data.x || 0;
@@ -185,6 +210,9 @@ io.on('connection', (socket) => {
   
   // Player purchased or upgraded
   socket.on('playerPurchase', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     if (gameState.players[socket.id]) {
       // Update player stats based on purchase
       if (data.type === 'ship') {
@@ -208,6 +236,9 @@ io.on('connection', (socket) => {
   
   // Player name change
   socket.on('playerNameChange', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
     if (gameState.players[socket.id]) {
       // Store the old name for the message
       const oldName = gameState.players[socket.id].name;
@@ -226,6 +257,11 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Ping/heartbeat from client (to keep connection alive and reset inactivity timer)
+  socket.on('ping', () => {
+    playerLastActivity[socket.id] = Date.now();
+  });
+  
   // Player disconnect
   socket.on('disconnect', () => {
     if (gameState.players[socket.id]) {
@@ -236,11 +272,50 @@ io.on('connection', (socket) => {
       
       // Remove the player from the game state
       delete gameState.players[socket.id];
+      
+      // Remove player activity tracking
+      delete playerLastActivity[socket.id];
     } else {
       console.log(`Unknown player disconnected: ${socket.id}`);
     }
   });
 });
+
+// Check for inactive players periodically
+setInterval(() => {
+  const now = Date.now();
+  const inactiveSockets = [];
+  
+  // Find inactive players
+  Object.keys(playerLastActivity).forEach((socketId) => {
+    const lastActivity = playerLastActivity[socketId];
+    if (now - lastActivity > INACTIVITY_TIMEOUT) {
+      inactiveSockets.push(socketId);
+    }
+  });
+  
+  // Disconnect inactive players
+  inactiveSockets.forEach((socketId) => {
+    const socket = io.sockets.sockets.get(socketId);
+    if (socket && gameState.players[socketId]) {
+      const playerName = gameState.players[socketId].name;
+      console.log(`Disconnecting inactive player: ${playerName} (${socketId})`);
+      
+      // Notify all clients about the timeout
+      io.emit('playerTimedOut', {
+        id: socketId,
+        name: playerName
+      });
+      
+      // Remove player from game state
+      delete gameState.players[socketId];
+      delete playerLastActivity[socketId];
+      
+      // Disconnect the socket
+      socket.disconnect(true);
+    }
+  });
+}, INACTIVITY_CHECK_INTERVAL);
 
 // Start world simulation
 function updateWorld() {
