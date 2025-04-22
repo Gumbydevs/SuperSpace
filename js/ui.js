@@ -7,48 +7,52 @@ export class UI {
         // Create HUD container
         const hudContainer = document.createElement('div');
         hudContainer.id = 'hud-container';
-        hudContainer.style.position = 'fixed'; // Changed from absolute to fixed
+        hudContainer.style.position = 'fixed'; 
         hudContainer.style.top = '0';
         hudContainer.style.left = '0';
         hudContainer.style.width = '100%';
         hudContainer.style.height = '100%';
-        hudContainer.style.pointerEvents = 'none'; // Let clicks pass through
-        hudContainer.style.zIndex = '1000'; // Higher z-index to ensure it's on top
+        hudContainer.style.pointerEvents = 'none'; 
+        hudContainer.style.zIndex = '1000'; 
         
-        // Right side - Score and minimap
-        const infoPanel = document.createElement('div');
-        infoPanel.id = 'info-panel';
-        infoPanel.style.position = 'absolute';
-        infoPanel.style.top = '20px';
-        infoPanel.style.right = '20px';
-        infoPanel.style.display = 'flex';
-        infoPanel.style.flexDirection = 'column';
-        infoPanel.style.alignItems = 'flex-end';
-        infoPanel.style.gap = '10px';
-        infoPanel.style.zIndex = '1001'; // Higher z-index
+        // Top bar - Score and credits in horizontal row
+        const topInfoPanel = document.createElement('div');
+        topInfoPanel.id = 'top-info-panel';
+        topInfoPanel.style.position = 'absolute';
+        topInfoPanel.style.top = '20px';
+        topInfoPanel.style.left = '280px'; // Leave space for players online list
+        topInfoPanel.style.display = 'flex';
+        topInfoPanel.style.flexDirection = 'row'; // Changed to row for horizontal layout
+        topInfoPanel.style.alignItems = 'center';
+        topInfoPanel.style.gap = '15px';
+        topInfoPanel.style.zIndex = '1001';
         
-        // Score display
+        // Score display - made more compact
         const scoreDisplay = document.createElement('div');
-        scoreDisplay.className = 'status-item';
+        scoreDisplay.className = 'status-item-small';
         scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
-        this.styleStatusItem(scoreDisplay, '#fff');
+        this.styleStatusItemSmall(scoreDisplay, '#fff');
         
-        // Credits display
+        // Credits display - made more compact
         const creditsDisplay = document.createElement('div');
-        creditsDisplay.className = 'status-item';
+        creditsDisplay.className = 'status-item-small';
         creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
-        this.styleStatusItem(creditsDisplay, '#ff0');
+        this.styleStatusItemSmall(creditsDisplay, '#ff0');
         
-        // Add minimap canvas
+        // Bottom right - Minimap
         const minimapContainer = document.createElement('div');
-        minimapContainer.style.position = 'relative';
+        minimapContainer.id = 'minimap-container';
+        minimapContainer.style.position = 'absolute';
+        minimapContainer.style.bottom = '20px';
+        minimapContainer.style.right = '20px';
         minimapContainer.style.width = '150px';
         minimapContainer.style.height = '150px';
         minimapContainer.style.border = '2px solid #555';
         minimapContainer.style.borderRadius = '5px';
         minimapContainer.style.overflow = 'hidden';
         minimapContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        minimapContainer.style.pointerEvents = 'auto'; // Allow interaction with minimap
+        minimapContainer.style.pointerEvents = 'auto';
+        minimapContainer.style.zIndex = '1001';
         
         const minimapCanvas = document.createElement('canvas');
         minimapCanvas.id = 'minimap';
@@ -56,10 +60,9 @@ export class UI {
         minimapCanvas.height = 150;
         minimapContainer.appendChild(minimapCanvas);
         
-        // Add to info panel
-        infoPanel.appendChild(scoreDisplay);
-        infoPanel.appendChild(creditsDisplay);
-        infoPanel.appendChild(minimapContainer);
+        // Add score and credits to info panel
+        topInfoPanel.appendChild(scoreDisplay);
+        topInfoPanel.appendChild(creditsDisplay);
         
         // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.)
         const statusPanel = document.createElement('div');
@@ -75,8 +78,8 @@ export class UI {
         statusPanel.style.borderRadius = '8px';
         statusPanel.style.border = '1px solid #444';
         statusPanel.style.boxShadow = '0 0 10px rgba(0, 100, 255, 0.5)';
-        statusPanel.style.zIndex = '1001'; // Higher z-index
-        statusPanel.style.pointerEvents = 'auto'; // Make sure the panel can receive pointer events
+        statusPanel.style.zIndex = '1001';
+        statusPanel.style.pointerEvents = 'auto';
         
         // Health display
         const healthDisplay = document.createElement('div');
@@ -130,11 +133,11 @@ export class UI {
         statusPanel.appendChild(weaponDisplay);
         
         // Add panels to HUD
-        hudContainer.appendChild(infoPanel);
+        hudContainer.appendChild(topInfoPanel);
         hudContainer.appendChild(statusPanel);
+        hudContainer.appendChild(minimapContainer);
         
         // Ensure the HUD is always created AFTER other elements
-        // Remove existing HUD if it already exists
         const existingHud = document.getElementById('hud-container');
         if (existingHud) {
             document.body.removeChild(existingHud);
@@ -165,6 +168,27 @@ export class UI {
             label.style.color = color;
             label.style.fontWeight = 'bold';
             label.style.marginRight = '5px';
+        }
+        
+        const value = element.querySelector('.status-value');
+        if (value) {
+            value.style.fontWeight = 'bold';
+        }
+    }
+    
+    styleStatusItemSmall(element, color) {
+        element.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        element.style.padding = '4px 8px';
+        element.style.borderRadius = '3px';
+        element.style.border = '1px solid #555';
+        element.style.color = 'white';
+        element.style.fontFamily = 'Arial, sans-serif';
+        
+        const label = element.querySelector('.status-label');
+        if (label) {
+            label.style.color = color;
+            label.style.fontWeight = 'bold';
+            label.style.marginRight = '3px';
         }
         
         const value = element.querySelector('.status-value');

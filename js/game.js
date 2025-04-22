@@ -77,13 +77,14 @@ class Game {
         muteBtn.style.position = 'absolute';
         muteBtn.style.top = '20px';
         muteBtn.style.right = '20px';
-        muteBtn.style.zIndex = '100';
+        muteBtn.style.zIndex = '1002'; 
         muteBtn.style.background = 'rgba(0, 0, 0, 0.5)';
         muteBtn.style.color = 'white';
         muteBtn.style.border = '1px solid #33f';
-        muteBtn.style.borderRadius = '5px';
-        muteBtn.style.padding = '10px 15px';
+        muteBtn.style.borderRadius = '3px';
+        muteBtn.style.padding = '4px 8px';
         muteBtn.style.cursor = 'pointer';
+        muteBtn.style.fontSize = '14px';
         // Here we set up the click handler to toggle mute state
         muteBtn.onclick = () => {
             const isMuted = this.soundManager.toggleMute();
@@ -101,14 +102,14 @@ class Game {
         shopBtn.id = 'shop-btn';
         // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
-        shopBtn.style.top = '20px';
-        shopBtn.style.right = '90px';
-        shopBtn.style.zIndex = '100';
+        shopBtn.style.top = '60px'; // Position below the top row
+        shopBtn.style.right = '20px';
+        shopBtn.style.zIndex = '1002';
         shopBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         shopBtn.style.color = 'white';
         shopBtn.style.border = '1px solid #33f';
         shopBtn.style.borderRadius = '5px';
-        shopBtn.style.padding = '10px 15px';
+        shopBtn.style.padding = '6px 12px';
         shopBtn.style.cursor = 'pointer';
         shopBtn.style.display = 'none';  // Initially hidden until game starts
         // Set up click handler to toggle shop visibility
