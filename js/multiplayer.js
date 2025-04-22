@@ -5,38 +5,57 @@ export class MultiplayerManager {
         this.connected = false;
         this.players = {};
         this.playerId = null;
-        this.playerName = "Player"; // Initialize with a default name, will be prompted to change
+        
+        // Load player name from localStorage or use default
+        this.playerName = localStorage.getItem('playerName') || "Pilot";
+        
+        // Check if player has already set their name in a previous session
+        this.hasSetName = localStorage.getItem('hasSetName') === 'true';
+        
         this.lastUpdate = 0;
         this.updateInterval = 50; // 50ms = 20 updates per second
     }
 
     connect(serverUrl = 'http://localhost:3000') {
-        // Show dialog to get player name before connecting
-        return this.showPlayerNameDialog()
-            .then(() => {
-                // Now load Socket.IO client library dynamically
-                return new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
-                    script.integrity = 'sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI';
-                    script.crossOrigin = 'anonymous';
-                    script.onload = () => {
-                        try {
-                            this.socket = io(serverUrl);
-                            this.setupSocketEvents();
-                            resolve(true);
-                        } catch (error) {
-                            console.error('Error connecting to multiplayer server:', error);
-                            reject(error);
-                        }
-                    };
-                    script.onerror = (error) => {
-                        console.error('Error loading Socket.IO client:', error);
-                        reject(error);
-                    };
-                    document.head.appendChild(script);
-                });
+        // If we're already connected or have already set a name, skip the dialog
+        const showNameDialog = !this.connected && !this.hasSetName;
+        
+        // Create a promise chain that may or may not include the name dialog
+        let connectionPromise = Promise.resolve();
+        
+        // Only show the name dialog if needed
+        if (showNameDialog) {
+            connectionPromise = this.showPlayerNameDialog().then(() => {
+                // Mark that we've set the name to avoid showing the dialog again
+                this.hasSetName = true;
             });
+        }
+        
+        // Then connect to the server
+        return connectionPromise.then(() => {
+            // Now load Socket.IO client library dynamically
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+                script.integrity = 'sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI';
+                script.crossOrigin = 'anonymous';
+                script.onload = () => {
+                    try {
+                        this.socket = io(serverUrl);
+                        this.setupSocketEvents();
+                        resolve(true);
+                    } catch (error) {
+                        console.error('Error connecting to multiplayer server:', error);
+                        reject(error);
+                    }
+                };
+                script.onerror = (error) => {
+                    console.error('Error loading Socket.IO client:', error);
+                    reject(error);
+                };
+                document.head.appendChild(script);
+            });
+        });
     }
 
     // Show dialog to let player set their name
@@ -87,10 +106,10 @@ export class MultiplayerManager {
             label.style.color = '#ccc';
             inputGroup.appendChild(label);
             
-            // Add input field
+            // Add input field - use the exact stored name as default
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = this.playerName + '-' + Math.floor(Math.random() * 1000);
+            input.value = this.playerName; // Use the stored name without modifications
             input.style.width = '100%';
             input.style.padding = '10px';
             input.style.borderRadius = '5px';
@@ -184,6 +203,13 @@ export class MultiplayerManager {
     // Set player name and update UI if needed
     setPlayerName(name) {
         this.playerName = name;
+        
+        // Save player name to localStorage
+        localStorage.setItem('playerName', name);
+        
+        // Save that we've set the name
+        this.hasSetName = true;
+        localStorage.setItem('hasSetName', 'true');
         
         // Update player list if already connected
         const playerList = document.getElementById('player-list-container');
@@ -646,11 +672,8 @@ export class MultiplayerManager {
         playerList.style.maxHeight = '300px';
         playerList.style.overflowY = 'auto';
         
-        // Create header with title and buttons
+        // Create header with title only (removed change name button)
         const header = document.createElement('div');
-        header.style.display = 'flex';
-        header.style.justifyContent = 'space-between';
-        header.style.alignItems = 'center';
         header.style.borderBottom = '1px solid #555';
         header.style.paddingBottom = '5px';
         header.style.marginBottom = '5px';
@@ -661,36 +684,6 @@ export class MultiplayerManager {
         title.style.fontWeight = 'bold';
         header.appendChild(title);
         
-        // Change Name button
-        const changeNameBtn = document.createElement('button');
-        changeNameBtn.textContent = '✏️ Change Name';
-        changeNameBtn.style.backgroundColor = '#333';
-        changeNameBtn.style.color = '#4af';
-        changeNameBtn.style.border = '1px solid #4af';
-        changeNameBtn.style.borderRadius = '4px';
-        changeNameBtn.style.padding = '2px 5px';
-        changeNameBtn.style.fontSize = '11px';
-        changeNameBtn.style.cursor = 'pointer';
-        changeNameBtn.style.marginLeft = '5px';
-        changeNameBtn.style.transition = 'all 0.2s';
-        
-        // Button hover effect
-        changeNameBtn.onmouseover = () => {
-            changeNameBtn.style.backgroundColor = '#4af';
-            changeNameBtn.style.color = 'black';
-        };
-        
-        changeNameBtn.onmouseout = () => {
-            changeNameBtn.style.backgroundColor = '#333';
-            changeNameBtn.style.color = '#4af';
-        };
-        
-        // Add click handler
-        changeNameBtn.onclick = () => {
-            this.showChangeNameUI();
-        };
-        
-        header.appendChild(changeNameBtn);
         playerList.appendChild(header);
         
         const listContainer = document.createElement('div');

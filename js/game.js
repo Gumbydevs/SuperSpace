@@ -26,8 +26,9 @@ class Game {
         this.gameState = 'menu';  // Game can be in 'menu', 'playing', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
         
-        // Initialize multiplayer system
+        // Initialize multiplayer system (but don't connect yet)
         this.multiplayer = new MultiplayerManager(this);
+        this.multiplayerConnected = false;
 
         // Store a reference to the UI for other classes to access
         window.gameUI = this.ui;
@@ -46,20 +47,6 @@ class Game {
         
         // Set up keyboard shortcuts
         this.setupHotkeys();
-
-        // Here we connect to the multiplayer server
-        // Use the deployed server URL in production, localhost in development
-        const serverUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000'
-            : 'https://superspace-server.onrender.com'; // We'll deploy to Render
-        
-        this.multiplayer.connect(serverUrl)
-            .then(() => {
-                console.log('Connected to multiplayer server at', serverUrl);
-            })
-            .catch(error => {
-                console.error('Failed to connect to multiplayer server:', error);
-            });
     }
 
     // Here we adjust canvas size to match window size for responsive gameplay
@@ -148,11 +135,178 @@ class Game {
         
         // Initialize the health bar with the player's current health
         this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
+
+        // Connect to the multiplayer server when the game starts
+        if (!this.multiplayerConnected) {
+            const serverUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000'
+                : 'https://superspace-server.onrender.com'; // We'll deploy to Render
+            
+            this.multiplayer.connect(serverUrl)
+                .then(() => {
+                    console.log('Connected to multiplayer server at', serverUrl);
+                    this.multiplayerConnected = true;
+                })
+                .catch(error => {
+                    console.error('Failed to connect to multiplayer server:', error);
+                });
+        }
     }
 
-    // Placeholder for options menu
+    // Create and show the options menu
     showOptions() {
-        console.log('Options menu - to be implemented');
+        // Create modal backdrop
+        const backdrop = document.createElement('div');
+        backdrop.style.position = 'fixed';
+        backdrop.style.top = '0';
+        backdrop.style.left = '0';
+        backdrop.style.width = '100%';
+        backdrop.style.height = '100%';
+        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        backdrop.style.display = 'flex';
+        backdrop.style.justifyContent = 'center';
+        backdrop.style.alignItems = 'center';
+        backdrop.style.zIndex = '1000';
+        
+        // Create options dialog
+        const dialog = document.createElement('div');
+        dialog.style.backgroundColor = '#222';
+        dialog.style.color = 'white';
+        dialog.style.borderRadius = '10px';
+        dialog.style.padding = '20px';
+        dialog.style.width = '400px';
+        dialog.style.maxWidth = '90%';
+        dialog.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.5)';
+        dialog.style.border = '2px solid #444';
+        
+        // Create title
+        const title = document.createElement('h2');
+        title.textContent = '⚙️ Options';
+        title.style.margin = '0 0 20px 0';
+        title.style.textAlign = 'center';
+        title.style.color = '#4af';
+        title.style.textShadow = '0 0 5px rgba(64, 170, 255, 0.7)';
+        dialog.appendChild(title);
+        
+        // Create options list
+        const optionsList = document.createElement('div');
+        optionsList.style.marginBottom = '20px';
+        
+        // Add sound option
+        const soundOption = document.createElement('div');
+        soundOption.style.display = 'flex';
+        soundOption.style.justifyContent = 'space-between';
+        soundOption.style.alignItems = 'center';
+        soundOption.style.marginBottom = '10px';
+        soundOption.style.padding = '8px';
+        soundOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+        soundOption.style.borderRadius = '5px';
+        
+        const soundLabel = document.createElement('div');
+        soundLabel.textContent = '🔊 Sound';
+        soundLabel.style.fontWeight = 'bold';
+        
+        const soundToggle = document.createElement('div');
+        
+        const soundButton = document.createElement('button');
+        soundButton.textContent = this.soundManager.muted ? 'OFF' : 'ON';
+        soundButton.style.padding = '5px 10px';
+        soundButton.style.backgroundColor = this.soundManager.muted ? '#555' : '#4af';
+        soundButton.style.color = 'white';
+        soundButton.style.border = 'none';
+        soundButton.style.borderRadius = '3px';
+        soundButton.style.cursor = 'pointer';
+        soundButton.onclick = () => {
+            const isMuted = this.soundManager.toggleMute();
+            soundButton.textContent = isMuted ? 'OFF' : 'ON';
+            soundButton.style.backgroundColor = isMuted ? '#555' : '#4af';
+            
+            // Update mute button outside options
+            const muteBtn = document.getElementById('mute-btn');
+            if (muteBtn) {
+                muteBtn.textContent = isMuted ? '🔇' : '🔊';
+            }
+        };
+        
+        soundToggle.appendChild(soundButton);
+        soundOption.appendChild(soundLabel);
+        soundOption.appendChild(soundToggle);
+        optionsList.appendChild(soundOption);
+        
+        // Add rename pilot option
+        const renameOption = document.createElement('div');
+        renameOption.style.display = 'flex';
+        renameOption.style.justifyContent = 'space-between';
+        renameOption.style.alignItems = 'center';
+        renameOption.style.marginBottom = '10px';
+        renameOption.style.padding = '8px';
+        renameOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+        renameOption.style.borderRadius = '5px';
+        
+        const renameLabel = document.createElement('div');
+        renameLabel.textContent = '👨‍✈️ Pilot Name';
+        renameLabel.style.fontWeight = 'bold';
+        
+        const renameButton = document.createElement('button');
+        renameButton.textContent = 'Rename';
+        renameButton.style.padding = '5px 10px';
+        renameButton.style.backgroundColor = '#4af';
+        renameButton.style.color = 'white';
+        renameButton.style.border = 'none';
+        renameButton.style.borderRadius = '3px';
+        renameButton.style.cursor = 'pointer';
+        renameButton.onclick = () => {
+            // Close options dialog first
+            document.body.removeChild(backdrop);
+            
+            // Show rename dialog
+            if (this.multiplayer) {
+                this.multiplayer.showChangeNameUI();
+            }
+        };
+        
+        renameOption.appendChild(renameLabel);
+        renameOption.appendChild(renameButton);
+        optionsList.appendChild(renameOption);
+        
+        // Add current pilot name display
+        const currentNameInfo = document.createElement('div');
+        currentNameInfo.style.fontSize = '14px';
+        currentNameInfo.style.color = '#aaa';
+        currentNameInfo.style.marginTop = '-5px';
+        currentNameInfo.style.marginBottom = '10px';
+        currentNameInfo.style.marginLeft = '8px';
+        currentNameInfo.textContent = `Current name: ${this.multiplayer ? this.multiplayer.playerName : 'Unknown'}`;
+        optionsList.appendChild(currentNameInfo);
+        
+        // Close button
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.display = 'block';
+        closeButton.style.margin = '0 auto';
+        closeButton.style.padding = '8px 20px';
+        closeButton.style.backgroundColor = '#555';
+        closeButton.style.color = 'white';
+        closeButton.style.border = 'none';
+        closeButton.style.borderRadius = '5px';
+        closeButton.style.cursor = 'pointer';
+        closeButton.onclick = () => {
+            document.body.removeChild(backdrop);
+        };
+        
+        dialog.appendChild(optionsList);
+        dialog.appendChild(closeButton);
+        backdrop.appendChild(dialog);
+        document.body.appendChild(backdrop);
+        
+        // Add keyboard shortcut to close dialog with Escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape' && document.body.contains(backdrop)) {
+                document.body.removeChild(backdrop);
+                window.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        window.addEventListener('keydown', escapeHandler);
     }
 
     // Here we update all game components each frame using delta time
