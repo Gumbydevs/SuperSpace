@@ -346,5 +346,7 @@ class Game {
 // Initialize and start the game when the page is loaded
 window.addEventListener('load', () => {
     const game = new Game();
+    // Store a global reference to the game for multiplayer access
+    window.game = game;
     game.start();
 });

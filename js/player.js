@@ -275,6 +275,21 @@ export class Player {
                 break;
         }
         
+        // Send projectile data to multiplayer system if it exists
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            projectiles.forEach(projectile => {
+                window.game.multiplayer.sendProjectile({
+                    x: projectile.x,
+                    y: projectile.y,
+                    velocityX: projectile.velocityX,
+                    velocityY: projectile.velocityY,
+                    damage: projectile.damage,
+                    type: projectile.type || 'laser',
+                    color: projectile.color || '#f00'
+                });
+            });
+        }
+        
         // Add the new projectiles to the player's active projectiles array
         this.projectiles.push(...projectiles);
     }
