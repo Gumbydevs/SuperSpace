@@ -227,6 +227,11 @@ class Game {
             this.world.render(this.ctx, this.player);
             this.player.render(this.ctx);
             
+            // Render other players from multiplayer
+            if (this.multiplayer && this.multiplayer.connected) {
+                this.multiplayer.render(this.ctx);
+            }
+            
             // Restore context to original state
             this.ctx.restore();
             
