@@ -18,12 +18,13 @@ export class World {
             left: -this.width / 2
         };
         
-        // Here we add the safe zone at the center (spawn area)
+        // Here we add the safe zone at the center (spawn area) - now square
         this.safeZone = {
             x: 0,
             y: 0, 
-            radius: 300, // Safe zone radius
-            active: true // Can be toggled for events
+            size: 500, // Safe zone side length
+            active: true, // Can be toggled for events
+            pulsePhase: 0 // For docking light animation
         };
         
         // Here we initialize arrays for visual effects
@@ -120,6 +121,9 @@ export class World {
             this.asteroids.push(...this.generateAsteroids(1));
             this.asteroidSpawnTimer = 0;
         }
+
+        // Update safe zone pulse phase for docking lights
+        this.safeZone.pulsePhase += deltaTime * 2;
 
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
@@ -500,10 +504,14 @@ export class World {
         // Calculate distance from entity to safe zone center
         const dx = entity.x - this.safeZone.x;
         const dy = entity.y - this.safeZone.y;
-        const distanceSquared = dx * dx + dy * dy;
         
-        // Check if distance is less than safe zone radius
-        return distanceSquared <= (this.safeZone.radius * this.safeZone.radius);
+        // Check if entity is within the square safe zone
+        return (
+            dx >= -this.safeZone.size / 2 &&
+            dx <= this.safeZone.size / 2 &&
+            dy >= -this.safeZone.size / 2 &&
+            dy <= this.safeZone.size / 2
+        );
     }
 
     getRandomInt(min, max) {
@@ -674,21 +682,29 @@ export class World {
         if (this.safeZone.active) {
             // Create checkered pattern with yellow/black safety stripes
             const stripeWidth = 40;
-            const stripeCount = Math.ceil(this.safeZone.radius * 2 / stripeWidth);
+            const stripeCount = Math.ceil(this.safeZone.size / stripeWidth);
             
             // Draw transparent floor first
             ctx.save();
             ctx.globalAlpha = 0.2;
             ctx.fillStyle = '#888';
-            ctx.beginPath();
-            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(
+                this.safeZone.x - this.safeZone.size / 2,
+                this.safeZone.y - this.safeZone.size / 2,
+                this.safeZone.size,
+                this.safeZone.size
+            );
             ctx.restore();
             
             // Draw safety stripes pattern
             ctx.save();
             ctx.beginPath();
-            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
+            ctx.rect(
+                this.safeZone.x - this.safeZone.size / 2,
+                this.safeZone.y - this.safeZone.size / 2,
+                this.safeZone.size,
+                this.safeZone.size
+            );
             ctx.clip();
             
             // Draw stripes
@@ -701,8 +717,8 @@ export class World {
                         ctx.fillStyle = '#000000'; // Black
                     }
                     
-                    const x = this.safeZone.x - this.safeZone.radius + i * stripeWidth;
-                    const y = this.safeZone.y - this.safeZone.radius + j * stripeWidth;
+                    const x = this.safeZone.x - this.safeZone.size / 2 + i * stripeWidth;
+                    const y = this.safeZone.y - this.safeZone.size / 2 + j * stripeWidth;
                     ctx.fillRect(x, y, stripeWidth, stripeWidth);
                 }
             }
@@ -711,16 +727,22 @@ export class World {
             ctx.globalAlpha = 0.7;
             ctx.lineWidth = 4;
             ctx.strokeStyle = '#ffcc00';
-            ctx.beginPath();
-            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.strokeRect(
+                this.safeZone.x - this.safeZone.size / 2,
+                this.safeZone.y - this.safeZone.size / 2,
+                this.safeZone.size,
+                this.safeZone.size
+            );
             
             // Draw inner border
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(this.safeZone.x, this.safeZone.y, this.safeZone.radius - 5, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.strokeRect(
+                this.safeZone.x - this.safeZone.size / 2 + 5,
+                this.safeZone.y - this.safeZone.size / 2 + 5,
+                this.safeZone.size - 10,
+                this.safeZone.size - 10
+            );
             
             // Draw "SAFE ZONE" text
             ctx.globalAlpha = 1.0;
@@ -730,8 +752,53 @@ export class World {
             ctx.textBaseline = 'middle';
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 4;
-            ctx.strokeText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.radius - 20);
-            ctx.fillText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.radius - 20);
+            ctx.strokeText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.size / 2 - 20);
+            ctx.fillText('SAFE ZONE', this.safeZone.x, this.safeZone.y - this.safeZone.size / 2 - 20);
+            ctx.restore();
+
+            // Draw pulsing docking lights at cardinal points
+            const dockingLightRadius = 10 + 5 * Math.sin(this.safeZone.pulsePhase);
+            const dockingLightPositions = [
+                { x: this.safeZone.x, y: this.safeZone.y - this.safeZone.size / 2 }, // North
+                { x: this.safeZone.x + this.safeZone.size / 2, y: this.safeZone.y }, // East
+                { x: this.safeZone.x, y: this.safeZone.y + this.safeZone.size / 2 }, // South
+                { x: this.safeZone.x - this.safeZone.size / 2, y: this.safeZone.y }  // West
+            ];
+
+            // Draw outer glow for docking lights
+            dockingLightPositions.forEach(pos => {
+                const glowRadius = dockingLightRadius * 2.5;
+                const gradient = ctx.createRadialGradient(
+                    pos.x, pos.y, 0,
+                    pos.x, pos.y, glowRadius
+                );
+                gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 0, 0, 0.5)');
+                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw the actual docking lights
+            ctx.save();
+            dockingLightPositions.forEach(pos => {
+                // Main red light
+                ctx.fillStyle = '#ff0000';
+                ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.safeZone.pulsePhase);
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, dockingLightRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bright center
+                ctx.fillStyle = '#ffaaaa';
+                ctx.globalAlpha = 0.9;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, dockingLightRadius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            });
             ctx.restore();
         }
 
