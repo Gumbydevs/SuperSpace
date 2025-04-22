@@ -14,6 +14,10 @@ export class MultiplayerManager {
         
         this.lastUpdate = 0;
         this.updateInterval = 50; // 50ms = 20 updates per second
+        
+        // Show offline status immediately
+        this.addConnectionIndicator();
+        this.createPlayerListUI();
     }
 
     connect(serverUrl = 'http://localhost:3000') {
@@ -655,6 +659,12 @@ export class MultiplayerManager {
 
     // Create player list UI
     createPlayerListUI() {
+        // Remove existing player list if it exists
+        const existingList = document.getElementById('player-list');
+        if (existingList) {
+            document.body.removeChild(existingList);
+        }
+        
         const playerList = document.createElement('div');
         playerList.id = 'player-list';
         playerList.style.position = 'absolute';
@@ -672,28 +682,47 @@ export class MultiplayerManager {
         playerList.style.maxHeight = '300px';
         playerList.style.overflowY = 'auto';
         
-        // Create header with title only (removed change name button)
-        const header = document.createElement('div');
-        header.style.borderBottom = '1px solid #555';
-        header.style.paddingBottom = '5px';
-        header.style.marginBottom = '5px';
+        // Create a single container for everything
+        const contentContainer = document.createElement('div');
         
-        // Title element
-        const title = document.createElement('div');
-        title.textContent = '🌐 PLAYERS ONLINE';
-        title.style.fontWeight = 'bold';
-        header.appendChild(title);
+        // Title text without any container or borders
+        const titleText = document.createElement('div');
+        titleText.textContent = '🌐 PLAYERS ONLINE';
+        titleText.style.fontWeight = 'bold';
+        titleText.style.marginBottom = '5px'; // Reduced margin to be closer to divider
+        contentContainer.appendChild(titleText);
         
-        playerList.appendChild(header);
+        // Add subtle divider - separate element from both title and player list
+        const divider = document.createElement('div');
+        divider.style.height = '1px';
+        divider.style.background = 'linear-gradient(to right, transparent, rgba(80, 160, 255, 0.5), transparent)';
+        divider.style.margin = '0 -5px 8px -5px'; // Negative left/right margin to extend slightly beyond container
+        divider.style.border = 'none';
+        contentContainer.appendChild(divider);
         
+        // Create player list container directly
         const listContainer = document.createElement('div');
         listContainer.id = 'player-list-container';
-        playerList.appendChild(listContainer);
         
+        // Reset EVERY possible style that could create lines
+        listContainer.style.border = 'none';
+        listContainer.style.outline = 'none';
+        listContainer.style.boxShadow = 'none';
+        listContainer.style.textDecoration = 'none';
+        listContainer.style.borderBottom = 'none';
+        listContainer.style.borderTop = 'none';
+        listContainer.style.boxSizing = 'border-box';
+        listContainer.style.background = 'transparent';
+        
+        contentContainer.appendChild(listContainer);
+        playerList.appendChild(contentContainer);
         document.body.appendChild(playerList);
+        
+        // Update the player list immediately
+        this.updatePlayerList();
     }
 
-    // Update player list UI
+    // Update player list UI with explicit styles to prevent any unwanted decorations
     updatePlayerList() {
         const listContainer = document.getElementById('player-list-container');
         if (!listContainer) return;
@@ -701,11 +730,14 @@ export class MultiplayerManager {
         // Clear existing list
         listContainer.innerHTML = '';
         
-        // Add current player
+        // Add current player with very explicit styling
         const currentPlayerItem = document.createElement('div');
         currentPlayerItem.style.display = 'flex';
         currentPlayerItem.style.alignItems = 'center';
         currentPlayerItem.style.marginBottom = '5px';
+        currentPlayerItem.style.position = 'relative'; // Ensure proper positioning
+        currentPlayerItem.style.padding = '2px';
+        currentPlayerItem.style.borderRadius = '3px';
         
         const currentPlayerColor = document.createElement('span');
         currentPlayerColor.style.display = 'inline-block';
@@ -714,16 +746,28 @@ export class MultiplayerManager {
         currentPlayerColor.style.backgroundColor = '#0f0';
         currentPlayerColor.style.borderRadius = '50%';
         currentPlayerColor.style.marginRight = '5px';
+        currentPlayerColor.style.flexShrink = '0';
         
         const currentPlayerText = document.createElement('span');
         currentPlayerText.textContent = `${this.playerName} (You)`;
         currentPlayerText.style.color = '#0f0';
+        // Very explicit style reset to prevent any decoration
+        currentPlayerText.style.textDecoration = 'none';
+        currentPlayerText.style.borderBottom = 'none';
+        currentPlayerText.style.borderTop = 'none';
+        currentPlayerText.style.textShadow = 'none';
+        currentPlayerText.style.boxShadow = 'none';
+        currentPlayerText.style.position = 'relative';
+        currentPlayerText.style.whiteSpace = 'nowrap';
+        currentPlayerText.style.overflow = 'hidden';
+        currentPlayerText.style.textOverflow = 'ellipsis';
         
+        // Clear any potential overlays
         currentPlayerItem.appendChild(currentPlayerColor);
         currentPlayerItem.appendChild(currentPlayerText);
         listContainer.appendChild(currentPlayerItem);
         
-        // Add other players
+        // Add other players with same explicit styling
         Object.values(this.players).forEach(player => {
             if (player.id === this.playerId) return;
             
@@ -731,6 +775,9 @@ export class MultiplayerManager {
             playerItem.style.display = 'flex';
             playerItem.style.alignItems = 'center';
             playerItem.style.marginBottom = '5px';
+            playerItem.style.position = 'relative'; // Ensure proper positioning
+            playerItem.style.padding = '2px';
+            playerItem.style.borderRadius = '3px';
             
             const playerColor = document.createElement('span');
             playerColor.style.display = 'inline-block';
@@ -739,14 +786,30 @@ export class MultiplayerManager {
             playerColor.style.backgroundColor = player.color || '#f00';
             playerColor.style.borderRadius = '50%';
             playerColor.style.marginRight = '5px';
+            playerColor.style.flexShrink = '0';
             
             const playerText = document.createElement('span');
             playerText.textContent = player.name;
+            // Very explicit style reset to prevent any decoration
+            playerText.style.textDecoration = 'none';
+            playerText.style.borderBottom = 'none';
+            playerText.style.borderTop = 'none';
+            playerText.style.textShadow = 'none';
+            playerText.style.boxShadow = 'none';
+            playerText.style.position = 'relative';
+            playerText.style.whiteSpace = 'nowrap';
+            playerText.style.overflow = 'hidden';
+            playerText.style.textOverflow = 'ellipsis';
             
             playerItem.appendChild(playerColor);
             playerItem.appendChild(playerText);
             listContainer.appendChild(playerItem);
         });
+        
+        // Ensure the container itself doesn't add any decorations
+        listContainer.style.border = 'none';
+        listContainer.style.borderTop = 'none';
+        listContainer.style.borderBottom = 'none';
     }
 
     // Show game message (chat, kills, etc.)

@@ -668,6 +668,9 @@ export class World {
             left: player.x - window.innerWidth / 2 - 100
         };
 
+        // Get current game state to determine what to render
+        const gameState = window.game ? window.game.gameState : 'menu';
+
         // Here we draw the world boundary
         ctx.strokeStyle = '#555';
         ctx.lineWidth = 5;
@@ -678,8 +681,8 @@ export class World {
             this.height
         );
         
-        // Here we draw the safe zone at the center of the world
-        if (this.safeZone.active) {
+        // Only draw safe zone when actually playing the game
+        if (this.safeZone.active && gameState === 'playing') {
             // Create checkered pattern with yellow/black safety stripes
             const stripeWidth = 40;
             const stripeCount = Math.ceil(this.safeZone.size / stripeWidth);
@@ -879,128 +882,131 @@ export class World {
             ctx.restore();
         });
 
-        // Here we draw powerups
-        this.powerups.forEach(powerup => {
-            // Calculate pulse effect
-            const pulseScale = 1 + 0.2 * Math.sin(powerup.pulsePhase);
+        // Only draw powerups when in playing mode
+        if (gameState === 'playing') {
+            // Here we draw powerups
+            this.powerups.forEach(powerup => {
+                // Calculate pulse effect
+                const pulseScale = 1 + 0.2 * Math.sin(powerup.pulsePhase);
 
-            // Determine color and label based on powerup type
-            let color;
-            let label;
-            switch (powerup.type) {
-                case 'health':
-                    color = '#0f0';  // Green
-                    label = 'HEALTH';
-                    break;
-                case 'weapon':
-                    color = '#f00';  // Red
-                    label = 'WEAPON';
-                    break;
-                case 'shield':
-                    color = '#00f';  // Blue
-                    label = 'SHIELD';
-                    break;
-                case 'energy':
-                    color = '#ff0';  // Yellow
-                    label = 'ENERGY';
-                    break;
-                case 'credits':
-                    color = '#fff';  // White
-                    label = 'CREDITS';
-                    break;
-                default:
-                    color = '#fff';
-                    label = 'ITEM';
-            }
+                // Determine color and label based on powerup type
+                let color;
+                let label;
+                switch (powerup.type) {
+                    case 'health':
+                        color = '#0f0';  // Green
+                        label = 'HEALTH';
+                        break;
+                    case 'weapon':
+                        color = '#f00';  // Red
+                        label = 'WEAPON';
+                        break;
+                    case 'shield':
+                        color = '#00f';  // Blue
+                        label = 'SHIELD';
+                        break;
+                    case 'energy':
+                        color = '#ff0';  // Yellow
+                        label = 'ENERGY';
+                        break;
+                    case 'credits':
+                        color = '#fff';  // White
+                        label = 'CREDITS';
+                        break;
+                    default:
+                        color = '#fff';
+                        label = 'ITEM';
+                }
 
-            ctx.save();
-            ctx.translate(powerup.x, powerup.y);
+                ctx.save();
+                ctx.translate(powerup.x, powerup.y);
 
-            // Here we draw the outer glow
-            ctx.fillStyle = color;
-            ctx.globalAlpha = 0.3;  // Transparent
-            ctx.beginPath();
-            ctx.arc(0, 0, powerup.radius * pulseScale * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Here we draw the inner core
-            ctx.globalAlpha = 1;  // Fully opaque
-            ctx.beginPath();
-            ctx.arc(0, 0, powerup.radius * pulseScale * 0.7, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Here we draw the label text
-            ctx.font = '11px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-
-            // Outlined text for better visibility
-            ctx.strokeText(label, 0, powerup.radius * 1.8);
-            ctx.fillText(label, 0, powerup.radius * 1.8);
-
-            ctx.restore();
-        });
-
-        // Here we draw explosions
-        this.explosions.forEach(explosion => {
-            const radiusRatio = explosion.timeLeft / 0.5;
-            const currentRadius = explosion.maxRadius * (1 - radiusRatio);
-            const opacity = explosion.timeLeft * 2;
-
-            // Draw explosion ring
-            ctx.beginPath();
-            ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 200, 50, ${opacity * 0.7})`;  // Orange-yellow
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // Draw explosion glow using radial gradient
-            const gradient = ctx.createRadialGradient(
-                explosion.x, explosion.y, 0,
-                explosion.x, explosion.y, currentRadius * 0.8
-            );
-            gradient.addColorStop(0, `rgba(255, 255, 200, ${opacity})`);      // Bright center
-            gradient.addColorStop(0.3, `rgba(255, 120, 50, ${opacity * 0.8})`); // Orange middle
-            gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');                   // Transparent edge
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(explosion.x, explosion.y, currentRadius * 0.8, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
-        // Here we draw particles (debris, etc.)
-        this.particles.forEach(particle => {
-            ctx.save();
-            ctx.translate(particle.x, particle.y);
-
-            if (particle.rotation) {
-                ctx.rotate(particle.rotation);
-            }
-
-            // Fade out as lifetime decreases
-            ctx.globalAlpha = particle.life;
-            ctx.fillStyle = particle.color;
-
-            // Different drawing for different particle types
-            if (particle.color === '#ffbb00') {  // Sparks
+                // Here we draw the outer glow
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.3;  // Transparent
                 ctx.beginPath();
-                ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+                ctx.arc(0, 0, powerup.radius * pulseScale * 1.5, 0, Math.PI * 2);
                 ctx.fill();
-            } else {  // Debris
-                ctx.beginPath();
-                ctx.moveTo(particle.size, 0);
-                ctx.lineTo(particle.size * 0.5, particle.size);
-                ctx.lineTo(-particle.size, particle.size * 0.5);
-                ctx.lineTo(-particle.size * 0.3, -particle.size);
-                ctx.closePath();
-                ctx.fill();
-            }
 
-            ctx.restore();
-        });
+                // Here we draw the inner core
+                ctx.globalAlpha = 1;  // Fully opaque
+                ctx.beginPath();
+                ctx.arc(0, 0, powerup.radius * pulseScale * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Here we draw the label text
+                ctx.font = '11px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+
+                // Outlined text for better visibility
+                ctx.strokeText(label, 0, powerup.radius * 1.8);
+                ctx.fillText(label, 0, powerup.radius * 1.8);
+
+                ctx.restore();
+            });
+
+            // Here we draw explosions
+            this.explosions.forEach(explosion => {
+                const radiusRatio = explosion.timeLeft / 0.5;
+                const currentRadius = explosion.maxRadius * (1 - radiusRatio);
+                const opacity = explosion.timeLeft * 2;
+
+                // Draw explosion ring
+                ctx.beginPath();
+                ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 200, 50, ${opacity * 0.7})`;  // Orange-yellow
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Draw explosion glow using radial gradient
+                const gradient = ctx.createRadialGradient(
+                    explosion.x, explosion.y, 0,
+                    explosion.x, explosion.y, currentRadius * 0.8
+                );
+                gradient.addColorStop(0, `rgba(255, 255, 200, ${opacity})`);      // Bright center
+                gradient.addColorStop(0.3, `rgba(255, 120, 50, ${opacity * 0.8})`); // Orange middle
+                gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');                   // Transparent edge
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(explosion.x, explosion.y, currentRadius * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Here we draw particles (debris, etc.)
+            this.particles.forEach(particle => {
+                ctx.save();
+                ctx.translate(particle.x, particle.y);
+
+                if (particle.rotation) {
+                    ctx.rotate(particle.rotation);
+                }
+
+                // Fade out as lifetime decreases
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+
+                // Different drawing for different particle types
+                if (particle.color === '#ffbb00') {  // Sparks
+                    ctx.beginPath();
+                    ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {  // Debris
+                    ctx.beginPath();
+                    ctx.moveTo(particle.size, 0);
+                    ctx.lineTo(particle.size * 0.5, particle.size);
+                    ctx.lineTo(-particle.size, particle.size * 0.5);
+                    ctx.lineTo(-particle.size * 0.3, -particle.size);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            });
+        }
     }
 }

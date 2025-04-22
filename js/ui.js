@@ -1,6 +1,29 @@
 export class UI {
     constructor() {
         this.createHudElements();
+        // Initially hide gameplay UI elements since we start at menu
+        this.setGameplayUIVisibility(false);
+    }
+    
+    // Show or hide gameplay UI elements based on game state
+    setGameplayUIVisibility(visible) {
+        // Hide or show minimap - always hidden on title screen
+        const minimapContainer = document.getElementById('minimap-container');
+        if (minimapContainer) {
+            minimapContainer.style.display = visible ? 'block' : 'none';
+        }
+        
+        // Hide or show player status panel (health, weapons) - always hidden on title screen
+        const statusPanel = document.getElementById('status-panel');
+        if (statusPanel) {
+            statusPanel.style.display = visible ? 'flex' : 'none';
+        }
+        
+        // Note: We keep the following visible at all times:
+        // - Top info panel (score, credits)
+        // - Connection indicator
+        // - Player list
+        // - Mute and shop buttons are managed elsewhere
     }
     
     createHudElements() {

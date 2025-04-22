@@ -133,6 +133,9 @@ class Game {
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
         
+        // Show gameplay UI elements
+        this.ui.setGameplayUIVisibility(true);
+        
         // Initialize the health bar with the player's current health
         this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
 
@@ -384,29 +387,32 @@ class Game {
         this.ctx.fillStyle = 'black';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Always render the stars and asteroids in the background regardless of game state
+        this.ctx.save();
+        // Center the view
+        this.ctx.translate(
+            this.canvas.width / 2 - this.player.x, 
+            this.canvas.height / 2 - this.player.y
+        );
+        
+        // Render the world (stars and asteroids)
+        this.world.render(this.ctx, this.player);
+        
+        // Only render the player and projectiles when actively playing
         if (this.gameState === 'playing') {
-            // Save context state for camera transformations
-            this.ctx.save();
-            
-            // Here we apply camera transformation to center view on player
-            this.ctx.translate(
-                this.canvas.width / 2 - this.player.x, 
-                this.canvas.height / 2 - this.player.y
-            );
-            
-            // Here we render the world and player objects
-            this.world.render(this.ctx, this.player);
             this.player.render(this.ctx);
             
             // Render other players from multiplayer
             if (this.multiplayer && this.multiplayer.connected) {
                 this.multiplayer.render(this.ctx);
             }
-            
-            // Restore context to original state
-            this.ctx.restore();
-            
-            // Here we render HUD elements like the minimap
+        }
+        
+        // Restore context to original state
+        this.ctx.restore();
+        
+        // Only render minimap when playing
+        if (this.gameState === 'playing') {
             this.ui.renderMinimap(this.ctx, this.player, this.world);
         }
     }
