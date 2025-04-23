@@ -1,8 +1,24 @@
 export class UI {
     constructor() {
+        this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
+        this.isSmallMobile = window.innerWidth <= 480; // Check if small mobile (screen width <= 480px)
         this.createHudElements();
         // Initially hide gameplay UI elements since we start at menu
         this.setGameplayUIVisibility(false);
+        
+        // Add window resize listener to adjust UI when device orientation changes
+        window.addEventListener('resize', () => {
+            const wasMobile = this.isMobileDevice;
+            const wasSmallMobile = this.isSmallMobile;
+            
+            this.isMobileDevice = window.innerWidth <= 768;
+            this.isSmallMobile = window.innerWidth <= 480;
+            
+            // Only recreate HUD if device category changed (mobile/tablet ↔ desktop or small mobile ↔ larger mobile)
+            if (wasMobile !== this.isMobileDevice || wasSmallMobile !== this.isSmallMobile) {
+                this.createHudElements();
+            }
+        });
     }
     
     // Show or hide gameplay UI elements based on game state
@@ -38,42 +54,97 @@ export class UI {
         hudContainer.style.pointerEvents = 'none'; 
         hudContainer.style.zIndex = '1000'; 
         
-        // Top bar - Score and credits in horizontal row - SCALED DOWN
+        // Determine appropriate scaling based on device size
+        let topPanelScale = 0.85; // Default desktop scale
+        let statusPanelScale = 0.85; // Default desktop scale
+        let minimapSize = 120; // Default desktop size
+        let statusPanelPadding = '10px';
+        let minimapMargin = '15px';
+        let topPanelPosition = '10px';
+        
+        // Apply additional scaling for mobile/tablet devices
+        if (this.isMobileDevice) {
+            topPanelScale = 0.7;
+            statusPanelScale = 0.7;
+            minimapSize = 100;
+            statusPanelPadding = '8px';
+            minimapMargin = '10px'; 
+            topPanelPosition = '5px';
+            
+            // Further adjustments for small mobile screens
+            if (this.isSmallMobile) {
+                topPanelScale = 0.6;
+                statusPanelScale = 0.6;
+                minimapSize = 80;
+                statusPanelPadding = '6px';
+                minimapMargin = '8px';
+            }
+        }
+        
+        // Create a unified top row panel for Online, Score and Credits - ALL IN ONE ROW
         const topInfoPanel = document.createElement('div');
         topInfoPanel.id = 'top-info-panel';
         topInfoPanel.style.position = 'absolute';
-        topInfoPanel.style.top = '10px'; // Moved up slightly
-        topInfoPanel.style.left = '80px'; // Less space needed
+        topInfoPanel.style.top = topPanelPosition;
+        topInfoPanel.style.left = '10px';
         topInfoPanel.style.display = 'flex';
         topInfoPanel.style.flexDirection = 'row';
         topInfoPanel.style.alignItems = 'center';
-        topInfoPanel.style.gap = '10px'; // Reduced gap
+        topInfoPanel.style.gap = this.isMobileDevice ? '6px' : '10px';
         topInfoPanel.style.zIndex = '1001';
-        topInfoPanel.style.transform = 'scale(0.85)'; // Scale down the entire panel
-        topInfoPanel.style.transformOrigin = 'top left'; // Keep position relative to top left
+        topInfoPanel.style.transform = `scale(${topPanelScale})`;
+        topInfoPanel.style.transformOrigin = 'top left';
         
-        // Score display - made even more compact
+        // Move the server info element (Online players) into our panel
+        const serverInfo = document.getElementById('server-info');
+        if (serverInfo) {
+            // Detach from its current location
+            serverInfo.parentNode.removeChild(serverInfo);
+            
+            // Style to match other elements
+            serverInfo.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            serverInfo.style.padding = this.isMobileDevice ? 
+                (this.isSmallMobile ? '2px 4px' : '2px 5px') : '3px 6px';
+            serverInfo.style.borderRadius = '3px';
+            serverInfo.style.border = '1px solid #555';
+            serverInfo.style.fontSize = this.isMobileDevice ? 
+                (this.isSmallMobile ? '0.75em' : '0.8em') : '0.85em';
+            
+            // Add to our panel
+            topInfoPanel.appendChild(serverInfo);
+        } else {
+            // Create placeholder if not found (shouldn't happen)
+            const onlineDisplay = document.createElement('div');
+            onlineDisplay.className = 'status-item-small';
+            onlineDisplay.innerHTML = '<span class="status-label">ONLINE:</span> <span id="player-count" class="status-value">0</span>';
+            this.styleStatusItemSmall(onlineDisplay, '#0af');
+            topInfoPanel.appendChild(onlineDisplay);
+        }
+        
+        // Score display
         const scoreDisplay = document.createElement('div');
         scoreDisplay.className = 'status-item-small';
         scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
         this.styleStatusItemSmall(scoreDisplay, '#fff');
+        topInfoPanel.appendChild(scoreDisplay);
         
-        // Credits display - made even more compact
+        // Credits display
         const creditsDisplay = document.createElement('div');
         creditsDisplay.className = 'status-item-small';
         creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
         this.styleStatusItemSmall(creditsDisplay, '#ff0');
+        topInfoPanel.appendChild(creditsDisplay);
         
         // Bottom right - Minimap - SCALED DOWN
         const minimapContainer = document.createElement('div');
         minimapContainer.id = 'minimap-container';
         minimapContainer.style.position = 'absolute';
-        minimapContainer.style.bottom = '15px'; // Moved closer to bottom edge
-        minimapContainer.style.right = '15px'; // Moved closer to right edge
-        minimapContainer.style.width = '120px'; // Smaller width
-        minimapContainer.style.height = '120px'; // Smaller height
-        minimapContainer.style.border = '1px solid #555'; // Thinner border
-        minimapContainer.style.borderRadius = '4px'; // Smaller border radius
+        minimapContainer.style.bottom = minimapMargin;
+        minimapContainer.style.right = minimapMargin;
+        minimapContainer.style.width = `${minimapSize}px`;
+        minimapContainer.style.height = `${minimapSize}px`;
+        minimapContainer.style.border = '1px solid #555';
+        minimapContainer.style.borderRadius = '4px';
         minimapContainer.style.overflow = 'hidden';
         minimapContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
         minimapContainer.style.pointerEvents = 'auto';
@@ -81,10 +152,10 @@ export class UI {
         
         const minimapCanvas = document.createElement('canvas');
         minimapCanvas.id = 'minimap';
-        minimapCanvas.width = 120; // Match new container size
-        minimapCanvas.height = 120; // Match new container size
+        minimapCanvas.width = minimapSize;
+        minimapCanvas.height = minimapSize;
         minimapContainer.appendChild(minimapCanvas);
-        
+
         // Add score and credits to info panel
         topInfoPanel.appendChild(scoreDisplay);
         topInfoPanel.appendChild(creditsDisplay);
@@ -93,20 +164,20 @@ export class UI {
         const statusPanel = document.createElement('div');
         statusPanel.id = 'status-panel';
         statusPanel.style.position = 'absolute';
-        statusPanel.style.bottom = '15px'; // Moved closer to bottom edge
-        statusPanel.style.left = '15px'; // Moved closer to left edge
+        statusPanel.style.bottom = minimapMargin;
+        statusPanel.style.left = minimapMargin;
         statusPanel.style.display = 'flex';
         statusPanel.style.flexDirection = 'column';
-        statusPanel.style.gap = '6px'; // Reduced gap between items
-        statusPanel.style.padding = '10px'; // Reduced padding
+        statusPanel.style.gap = this.isMobileDevice ? '4px' : '6px';
+        statusPanel.style.padding = statusPanelPadding;
         statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        statusPanel.style.borderRadius = '6px'; // Smaller border radius
-        statusPanel.style.border = '1px solid #444'; // Thinner border
-        statusPanel.style.boxShadow = '0 0 8px rgba(0, 100, 255, 0.5)'; // Less intense shadow
+        statusPanel.style.borderRadius = '6px';
+        statusPanel.style.border = '1px solid #444';
+        statusPanel.style.boxShadow = '0 0 8px rgba(0, 100, 255, 0.5)';
         statusPanel.style.zIndex = '1001';
         statusPanel.style.pointerEvents = 'auto';
-        statusPanel.style.transform = 'scale(0.85)'; // Scale the entire panel down
-        statusPanel.style.transformOrigin = 'bottom left'; // Keep position relative to bottom left
+        statusPanel.style.transform = `scale(${statusPanelScale})`;
+        statusPanel.style.transformOrigin = 'bottom left';
         
         // Health display
         const healthDisplay = document.createElement('div');
@@ -115,11 +186,11 @@ export class UI {
         // Health bar - made more compact
         const healthBar = document.createElement('div');
         healthBar.style.width = '100%';
-        healthBar.style.height = '6px'; // Thinner bar
+        healthBar.style.height = this.isMobileDevice ? '4px' : '6px';
         healthBar.style.backgroundColor = '#333';
-        healthBar.style.borderRadius = '3px'; // Smaller border radius
+        healthBar.style.borderRadius = '3px';
         healthBar.style.overflow = 'hidden';
-        healthBar.style.marginTop = '4px'; // Less margin
+        healthBar.style.marginTop = this.isMobileDevice ? '3px' : '4px';
         
         const healthFill = document.createElement('div');
         healthFill.id = 'health-fill';
@@ -143,8 +214,8 @@ export class UI {
         const weaponIcon = document.createElement('div');
         weaponIcon.id = 'weapon-icon';
         weaponIcon.innerHTML = '🔫';
-        weaponIcon.style.fontSize = '16px'; // Smaller icon
-        weaponIcon.style.marginLeft = '8px'; // Less margin
+        weaponIcon.style.fontSize = this.isMobileDevice ? '14px' : '16px';
+        weaponIcon.style.marginLeft = this.isMobileDevice ? '6px' : '8px';
         weaponIcon.style.display = 'inline-block';
         weaponIcon.style.verticalAlign = 'middle';
         
@@ -183,19 +254,22 @@ export class UI {
     }
     
     styleStatusItem(element, color) {
+        const fontSize = this.isMobileDevice ? (this.isSmallMobile ? '0.8em' : '0.85em') : '0.9em';
+        const padding = this.isMobileDevice ? (this.isSmallMobile ? '4px 7px' : '5px 8px') : '6px 10px';
+        
         element.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        element.style.padding = '6px 10px'; // Reduced padding
-        element.style.borderRadius = '4px'; // Smaller border radius
-        element.style.border = '1px solid #555'; // Thinner border
+        element.style.padding = padding;
+        element.style.borderRadius = '4px';
+        element.style.border = '1px solid #555';
         element.style.color = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
-        element.style.fontSize = '0.9em'; // Slightly smaller font
+        element.style.fontSize = fontSize;
         
         const label = element.querySelector('.status-label');
         if (label) {
             label.style.color = color;
             label.style.fontWeight = 'bold';
-            label.style.marginRight = '4px'; // Less margin
+            label.style.marginRight = this.isMobileDevice ? '3px' : '4px';
         }
         
         const value = element.querySelector('.status-value');
@@ -205,19 +279,22 @@ export class UI {
     }
     
     styleStatusItemSmall(element, color) {
+        const fontSize = this.isMobileDevice ? (this.isSmallMobile ? '0.75em' : '0.8em') : '0.85em';
+        const padding = this.isMobileDevice ? (this.isSmallMobile ? '2px 4px' : '2px 5px') : '3px 6px';
+        
         element.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        element.style.padding = '3px 6px'; // Reduced padding
+        element.style.padding = padding;
         element.style.borderRadius = '3px';
-        element.style.border = '1px solid #555'; // Thinner border
+        element.style.border = '1px solid #555';
         element.style.color = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
-        element.style.fontSize = '0.85em'; // Smaller font
+        element.style.fontSize = fontSize;
         
         const label = element.querySelector('.status-label');
         if (label) {
             label.style.color = color;
             label.style.fontWeight = 'bold';
-            label.style.marginRight = '2px'; // Less margin
+            label.style.marginRight = this.isMobileDevice ? '1px' : '2px';
         }
         
         const value = element.querySelector('.status-value');
@@ -292,7 +369,7 @@ export class UI {
             
             minimapCtx.fillStyle = color;
             minimapCtx.beginPath();
-            minimapCtx.arc(x, y, 1.5, 0, Math.PI * 2); // Smaller powerup dots
+            minimapCtx.arc(x, y, this.isMobileDevice ? 1 : 1.5, 0, Math.PI * 2);
             minimapCtx.fill();
         });
         
@@ -302,7 +379,7 @@ export class UI {
         
         minimapCtx.fillStyle = '#33f';
         minimapCtx.beginPath();
-        minimapCtx.arc(playerX, playerY, 2.5, 0, Math.PI * 2); // Slightly smaller player dot
+        minimapCtx.arc(playerX, playerY, this.isMobileDevice ? 2 : 2.5, 0, Math.PI * 2);
         minimapCtx.fill();
         
         // Draw view area (visible area on main screen)
