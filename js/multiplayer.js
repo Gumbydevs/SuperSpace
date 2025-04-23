@@ -272,6 +272,24 @@ export class MultiplayerManager {
             this.updatePlayerCount();
         });
 
+        // Handle player data from server (in response to our request)
+        this.socket.on('playerData', (playerData) => {
+            // Update the player with the correct data from server
+            if (this.players[playerData.id]) {
+                this.players[playerData.id].name = playerData.name || this.players[playerData.id].name;
+                this.players[playerData.id].ship = playerData.ship || this.players[playerData.id].ship;
+                this.players[playerData.id].color = playerData.color || this.players[playerData.id].color;
+                
+                // Update the player list to show the correct name
+                this.updatePlayerList();
+                
+                // Show player name correction message
+                if (playerData.name && this.players[playerData.id].name === 'Unknown') {
+                    this.showGameMessage(`Player identified: ${playerData.name}`, '#aaf');
+                }
+            }
+        });
+
         // Handle asteroid field update from server
         this.socket.on('asteroidFieldUpdate', (data) => {
             console.log('Received asteroid field from server:', data.asteroids.length, 'asteroids');
@@ -1214,7 +1232,9 @@ export class MultiplayerManager {
 
     // Handle remote player respawn
     handleRemotePlayerRespawn(playerId, x, y) {
+        // Check if this is a player we already know about
         if (this.players[playerId]) {
+            // Player exists in our list, update them
             this.players[playerId].x = x;
             this.players[playerId].y = y;
             this.players[playerId].health = 100;
@@ -1222,6 +1242,28 @@ export class MultiplayerManager {
             
             const playerName = this.players[playerId].name;
             this.showGameMessage(`${playerName} respawned!`, '#8af');
+        } else {
+            // This is a player who was removed from our list after destruction
+            // Re-add them with a name and await the next player update to fill in details
+            this.players[playerId] = {
+                id: playerId,
+                x: x,
+                y: y,
+                rotation: 0,
+                health: 100,
+                ship: 'scout',
+                name: 'Unknown', // Will be updated by next playerMoved message
+                color: this.getRandomPlayerColor(),
+                projectiles: [],
+                destroyed: false
+            };
+            
+            // Request current player data from server to get correct name
+            if (this.socket) {
+                this.socket.emit('requestPlayerData', { playerId: playerId });
+            }
+            
+            this.showGameMessage(`A player respawned!`, '#8af');
         }
     }
 

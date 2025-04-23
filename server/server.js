@@ -304,6 +304,24 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Player requested data for another player (typically for respawn)
+  socket.on('requestPlayerData', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Check if requested player exists and send their data
+    if (data.playerId && gameState.players[data.playerId]) {
+      socket.emit('playerData', {
+        id: data.playerId,
+        name: gameState.players[data.playerId].name,
+        ship: gameState.players[data.playerId].ship,
+        color: gameState.players[data.playerId].color
+      });
+      
+      console.log(`Player ${socket.id} requested data for player ${data.playerId}`);
+    }
+  });
+  
   // Player name change
   socket.on('playerNameChange', (data) => {
     // Update activity timestamp
