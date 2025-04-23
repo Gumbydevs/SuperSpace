@@ -600,7 +600,8 @@ export class MultiplayerManager {
             ship: playerData.ship || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
-            projectiles: []
+            projectiles: [],
+            destroyed: false // Add destroyed flag
         };
         
         this.players[playerData.id] = player;
@@ -621,7 +622,7 @@ export class MultiplayerManager {
         }
         
         // Update player position and state
-        if (player) {
+        if (player && !player.destroyed) { // Skip updates for destroyed players
             player.x = playerData.x || player.x;
             player.y = playerData.y || player.y;
             player.rotation = playerData.rotation || player.rotation;
@@ -656,7 +657,7 @@ export class MultiplayerManager {
         };
         
         // Add to remote player's projectiles if they exist
-        if (this.players[playerId]) {
+        if (this.players[playerId] && !this.players[playerId].destroyed) { // Skip for destroyed players
             if (!this.players[playerId].projectiles) {
                 this.players[playerId].projectiles = [];
             }
@@ -668,7 +669,7 @@ export class MultiplayerManager {
     handleRemoteProjectileHit(targetId, position, damage) {
         // Get the target player
         const targetPlayer = this.players[targetId];
-        if (!targetPlayer) return;
+        if (!targetPlayer || targetPlayer.destroyed) return; // Skip for destroyed players
         
         // Create visual hit effect at impact position
         if (this.game.world) {
@@ -769,137 +770,65 @@ export class MultiplayerManager {
         // Store current credits value
         const currentCredits = this.game.player.credits;
         
-        // Create multiple dramatic explosions when player dies
-        if (this.game.world) {
-            const playerX = this.game.player.x;
-            const playerY = this.game.player.y;
-            
-            // Play explosion sound at higher volume for more impact
-            if (this.game.soundManager) {
-                this.game.soundManager.play('explosion', {
-                    volume: 0.9,
-                    position: { x: playerX, y: playerY }
-                });
-            }
-            
-            // Create main explosion at player position (larger radius)
-            this.game.world.createExplosion(
-                playerX,
-                playerY,
-                40, // Larger radius for main explosion
-                this.game.soundManager
-            );
-            
-            // Create lingering smoke particles at the explosion center
-            for (let i = 0; i < 15; i++) {
-                const smokeSize = 5 + Math.random() * 12;
-                const smokeDuration = 1.5 + Math.random() * 2.5; // Longer-lasting smoke (1.5-4 seconds)
+        // Hide the player ship immediately
+        this.game.player.visible = false;
+        
+        // Use the game's createShipDestructionEffect
+        if (this.game && this.game.createShipDestructionEffect) {
+            this.game.createShipDestructionEffect();
+        } else {
+            // Fallback if not available - basic explosion
+            if (this.game.world) {
+                const playerX = this.game.player.x;
+                const playerY = this.game.player.y;
                 
-                // Create smoke with minimal initial velocity for slower dispersal
-                this.game.world.createSmokeParticle(
-                    playerX + (Math.random() - 0.5) * 15,
-                    playerY + (Math.random() - 0.5) * 15,
-                    smokeSize,
-                    smokeDuration,
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10
+                // Play explosion sound
+                if (this.game.soundManager) {
+                    this.game.soundManager.play('explosion', {
+                        volume: 0.9,
+                        position: { x: playerX, y: playerY }
+                    });
+                }
+                
+                // Create explosion at player position
+                this.game.world.createExplosion(
+                    playerX,
+                    playerY,
+                    40,
+                    this.game.soundManager
                 );
             }
-            
-            // Create additional scattered explosions with delays for a chain reaction effect
-            for (let i = 0; i < 10; i++) { // Increased from 6 to 10 explosions
-                const offsetDistance = Math.random() * 35 + 10; // 10-45 pixels from center
-                const angle = Math.random() * Math.PI * 2; // random direction
-                const delay = Math.random() * 0.6; // longer staggered explosions (0-0.6 seconds)
-                const offsetX = Math.cos(angle) * offsetDistance;
-                const offsetY = Math.sin(angle) * offsetDistance;
-                
-                setTimeout(() => {
-                    if (!this.game || !this.game.world) return; // Safety check
-                    
-                    const explosionX = playerX + offsetX;
-                    const explosionY = playerY + offsetY;
-                    
-                    // Create explosion at offset position
-                    this.game.world.createExplosion(
-                        explosionX,
-                        explosionY,
-                        15 + Math.random() * 15, // random size between 15-30
-                        this.game.soundManager
-                    );
-                    
-                    // Add a few smoke particles at each explosion location
-                    for (let j = 0; j < 4; j++) {
-                        const smokeDuration = 1.0 + Math.random() * 2.0;
-                        this.game.world.createSmokeParticle(
-                            explosionX + (Math.random() - 0.5) * 10,
-                            explosionY + (Math.random() - 0.5) * 10,
-                            3 + Math.random() * 8,
-                            smokeDuration,
-                            offsetX * 0.1, // inherit some directional velocity from explosion
-                            offsetY * 0.1
-                        );
-                    }
-                }, delay * 1000);
-            }
-            
-            // Add more debris particles 
-            for (let i = 0; i < 40; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 30 + Math.random() * 100;
-                const size = 1 + Math.random() * 3;
-                
-                // Create debris with ship color
-                const debris = {
-                    x: playerX,
-                    y: playerY,
-                    velocityX: Math.cos(angle) * speed,
-                    velocityY: Math.sin(angle) * speed,
-                    size: size,
-                    color: i % 2 === 0 ? '#ffcc00' : '#ff4400', // Mix of colors
-                    life: 1.0,
-                    maxLife: 0.5 + Math.random() * 1.0, // Longer lifetime
-                    rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 2,
-                    update(deltaTime) {
-                        // Move debris
-                        this.x += this.velocityX * deltaTime;
-                        this.y += this.velocityY * deltaTime;
-                        // Decrease lifetime
-                        this.life -= deltaTime / this.maxLife;
-                        // Slow down over time
-                        this.velocityX *= 0.99;
-                        this.velocityY *= 0.99;
-                        // Rotate debris
-                        this.rotation += this.rotationSpeed * deltaTime;
-                    }
-                };
-                
-                this.game.world.particles.push(debris);
-            }
-            
-            // Add intense camera shake
-            this.addCameraShake(30); // Increased from 20 to 30 for more dramatic effect
         }
         
         // Show death message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Destroyed by ${attacker}!`, '#f44', 3000);
         
+        // Set the game state to "dying"
+        if (this.game) {
+            this.game.gameState = 'dying';
+        }
+        
         // Respawn after delay
         setTimeout(() => {
+            if (!this.game) return; // Safety check
+            
             const spawnX = (Math.random() - 0.5) * 1000;
             const spawnY = (Math.random() - 0.5) * 1000;
             
             this.game.player.x = spawnX;
             this.game.player.y = spawnY;
             this.game.player.health = this.game.player.maxHealth;
+            this.game.player.visible = true;
+            
+            if (this.game.gameState === 'dying') {
+                this.game.gameState = 'playing';
+            }
             
             // The credits value is already persisted via localStorage, but let's ensure
             // it's consistent with what we had before death
             if (this.game.player.credits !== currentCredits) {
                 this.game.player.credits = currentCredits;
-                // Ensure localStorage is updated
                 localStorage.setItem('playerCredits', currentCredits.toString());
             }
             
@@ -915,6 +844,9 @@ export class MultiplayerManager {
         // Get player data before removing them
         const deadPlayer = this.players[playerId];
         if (!deadPlayer) return;
+        
+        // Mark the player as destroyed so they can't be targeted or rendered
+        deadPlayer.destroyed = true;
         
         const deadPlayerName = deadPlayer.name || 'A player';
         const attacker = attackerId === this.playerId 
@@ -934,115 +866,276 @@ export class MultiplayerManager {
             this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
         }
         
-        // Create explosion effects at remote player position
+        // Create ship destruction effect for remote player
         if (this.game.world && deadPlayer) {
-            const playerX = deadPlayer.x;
-            const playerY = deadPlayer.y;
-            
-            // Create main explosion at player position
-            this.game.world.createExplosion(
-                playerX,
-                playerY,
-                35, // Large radius for main explosion
-                this.game.soundManager
-            );
-            
-            // Play explosion sound with distance-based volume
-            if (this.game.soundManager) {
-                // Calculate distance from local player
-                const dx = this.game.player.x - playerX;
-                const dy = this.game.player.y - playerY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // Reduce volume based on distance
-                const maxDistance = 1500;
-                const volumeFactor = Math.max(0, 1 - (distance / maxDistance));
-                
-                this.game.soundManager.play('explosion', {
-                    volume: 0.7 * volumeFactor,
-                    position: { x: playerX, y: playerY }
-                });
-            }
-            
-            // Create lingering smoke particles
-            for (let i = 0; i < 12; i++) {
-                const smokeSize = 4 + Math.random() * 10;
-                const smokeDuration = 1.0 + Math.random() * 2.0; // 1-3 seconds
-                
-                // Create smoke with minimal initial velocity
-                this.game.world.createSmokeParticle(
-                    playerX + (Math.random() - 0.5) * 15,
-                    playerY + (Math.random() - 0.5) * 15,
-                    smokeSize,
-                    smokeDuration,
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10
-                );
-            }
-            
-            // Create secondary explosions
-            for (let i = 0; i < 6; i++) {
-                const offsetDistance = Math.random() * 25 + 5;
-                const angle = Math.random() * Math.PI * 2;
-                const delay = Math.random() * 0.5; // stagger explosions
-                
-                setTimeout(() => {
-                    if (!this.game || !this.game.world) return; // Safety check
-                    
-                    // Create secondary explosion
-                    this.game.world.createExplosion(
-                        playerX + Math.cos(angle) * offsetDistance,
-                        playerY + Math.sin(angle) * offsetDistance,
-                        10 + Math.random() * 15,
-                        null // No additional sound for small explosions
-                    );
-                }, delay * 1000);
-            }
-            
-            // Create debris particles using player ship color
-            const shipColor = deadPlayer.color || '#ff0000';
-            for (let i = 0; i < 30; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 30 + Math.random() * 80;
-                
-                const debris = {
-                    x: playerX,
-                    y: playerY,
-                    velocityX: Math.cos(angle) * speed,
-                    velocityY: Math.sin(angle) * speed,
-                    size: 1 + Math.random() * 3,
-                    color: i % 3 === 0 ? shipColor : (i % 3 === 1 ? '#ffcc00' : '#ff4400'),
-                    life: 1.0,
-                    maxLife: 0.5 + Math.random() * 0.8,
-                    rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 3,
-                    update(deltaTime) {
-                        // Move debris
-                        this.x += this.velocityX * deltaTime;
-                        this.y += this.velocityY * deltaTime;
-                        // Decrease lifetime
-                        this.life -= deltaTime / this.maxLife;
-                        // Slow down over time
-                        this.velocityX *= 0.98;
-                        this.velocityY *= 0.98;
-                        // Rotate debris
-                        this.rotation += this.rotationSpeed * deltaTime;
-                    }
-                };
-                
-                this.game.world.particles.push(debris);
-            }
+            // Use the createRemoteShipDestructionEffect with player's data
+            this.createRemoteShipDestructionEffect(deadPlayer);
             
             // Add slight camera shake if player is nearby (within 500 units)
             const playerDistance = Math.sqrt(
-                Math.pow(this.game.player.x - playerX, 2) + 
-                Math.pow(this.game.player.y - playerY, 2)
+                Math.pow(this.game.player.x - deadPlayer.x, 2) + 
+                Math.pow(this.game.player.y - deadPlayer.y, 2)
             );
             
             if (playerDistance < 500) {
                 const shakeIntensity = 15 * (1 - playerDistance / 500);
                 this.addCameraShake(shakeIntensity);
             }
+        }
+
+        // Remove the player after a delay to let death animation play out
+        setTimeout(() => {
+            delete this.players[playerId];
+            this.updatePlayerList();
+        }, 3000);
+    }
+
+    // Create ship destruction effect for remote players
+    createRemoteShipDestructionEffect(deadPlayer) {
+        if (!this.game.world) return;
+        
+        const playerX = deadPlayer.x;
+        const playerY = deadPlayer.y;
+        const playerRotation = deadPlayer.rotation || 0;
+        const playerColor = deadPlayer.color || '#ff0000';
+        
+        // Play explosion sound with distance-based volume
+        if (this.game.soundManager) {
+            // Calculate distance from local player
+            const dx = this.game.player.x - playerX;
+            const dy = this.game.player.y - playerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Reduce volume based on distance
+            const maxDistance = 1500;
+            const volumeFactor = Math.max(0, 1 - (distance / maxDistance));
+            
+            this.game.soundManager.play('explosion', {
+                volume: 0.7 * volumeFactor,
+                position: { x: playerX, y: playerY }
+            });
+        }
+        
+        // Create main explosion at player position
+        this.game.world.createExplosion(
+            playerX,
+            playerY,
+            35, // Large radius for main explosion
+            this.game.soundManager
+        );
+        
+        // Create ship pieces - these will represent the breaking apart ship
+        // Wing pieces
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [-10, 10], // Left wing x,y offset from center
+            [15, 15],  // Size
+            playerColor,
+            [-80, -30], // Velocity
+            2 + Math.random() * 2 // Rotation speed
+        );
+        
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [10, 10], // Right wing x,y offset from center
+            [15, 15], // Size
+            playerColor,
+            [80, -30], // Velocity
+            -(2 + Math.random() * 2) // Rotation speed (opposite direction)
+        );
+        
+        // Nose piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, -15], // Nose x,y offset from center
+            [10, 20], // Size
+            playerColor,
+            [0, -120], // Velocity - shoots forward
+            Math.random() * 4 - 2 // Random rotation either direction
+        );
+        
+        // Cockpit/center piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, 0], // Center x,y (no offset)
+            [12, 12], // Size
+            this.getLighterColor(playerColor), // Slightly lighter color for cockpit
+            [(Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40], // Random velocity
+            Math.random() * 3 - 1.5 // Slow random rotation
+        );
+        
+        // Engine piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, 10], // Engine x,y offset from center
+            [8, 10], // Size
+            '#f66', // Engine color (reddish)
+            [0, 100], // Velocity - shoots backward
+            Math.random() * 6 - 3 // Faster random rotation
+        );
+        
+        // Create lingering smoke particles
+        for (let i = 0; i < 15; i++) {
+            const smokeSize = 4 + Math.random() * 10;
+            const smokeDuration = 1.0 + Math.random() * 2.0; // 1-3 seconds
+            
+            // Create smoke with minimal initial velocity
+            this.game.world.createSmokeParticle(
+                playerX + (Math.random() - 0.5) * 15,
+                playerY + (Math.random() - 0.5) * 15,
+                smokeSize,
+                smokeDuration,
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10
+            );
+        }
+        
+        // Create additional scattered explosions with delays for a chain reaction effect
+        for (let i = 0; i < 8; i++) {
+            const offsetDistance = Math.random() * 25 + 5;
+            const angle = Math.random() * Math.PI * 2;
+            const delay = Math.random() * 0.5; // stagger explosions
+            
+            setTimeout(() => {
+                if (!this.game || !this.game.world) return; // Safety check
+                
+                const explosionX = playerX + Math.cos(angle) * offsetDistance;
+                const explosionY = playerY + Math.sin(angle) * offsetDistance;
+                
+                // Create secondary explosion
+                this.game.world.createExplosion(
+                    explosionX,
+                    explosionY,
+                    10 + Math.random() * 15,
+                    null // No additional sound for small explosions
+                );
+            }, delay * 1000);
+        }
+        
+        // Create smaller debris pieces
+        for (let i = 0; i < 25; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 30 + Math.random() * 100;
+            const size = 1 + Math.random() * 3;
+            
+            // Create debris with mixed colors
+            const colors = [playerColor, this.getLighterColor(playerColor), '#f66', '#ddd'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const debris = {
+                x: playerX + (Math.random() - 0.5) * 10, // Slight random offset
+                y: playerY + (Math.random() - 0.5) * 10,
+                velocityX: Math.cos(angle) * speed,
+                velocityY: Math.sin(angle) * speed,
+                size: size,
+                color: color,
+                life: 1.0,
+                maxLife: 1.0 + Math.random() * 2.0, // Longer lifetime
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 5,
+                update(deltaTime) {
+                    // Move debris
+                    this.x += this.velocityX * deltaTime;
+                    this.y += this.velocityY * deltaTime;
+                    // Decrease lifetime
+                    this.life -= deltaTime / this.maxLife;
+                    // Slow down over time
+                    this.velocityX *= 0.99;
+                    this.velocityY *= 0.99;
+                    // Rotate debris
+                    this.rotation += this.rotationSpeed * deltaTime;
+                }
+            };
+            
+            this.game.world.particles.push(debris);
+        }
+    }
+
+    // Helper to create a ship piece with specific properties
+    createShipPiece(x, y, rotation, offset, size, color, velocity, rotationSpeed) {
+        if (!this.game.world) return null;
+        
+        // Calculate the actual starting position based on offset and rotation
+        const offsetX = offset[0] * Math.cos(rotation) - offset[1] * Math.sin(rotation);
+        const offsetY = offset[0] * Math.sin(rotation) + offset[1] * Math.cos(rotation);
+        
+        // Create the ship piece as a specialized particle
+        const piece = {
+            x: x + offsetX,
+            y: y + offsetY,
+            width: size[0],
+            height: size[1],
+            velocityX: velocity[0],
+            velocityY: velocity[1],
+            color: color,
+            rotation: rotation,
+            rotationSpeed: rotationSpeed,
+            life: 1.0,
+            maxLife: 3.0, // Longer lifetime for ship pieces
+            isShipPiece: true, // Flag to identify this as a ship piece
+            drag: 0.98, // Slightly higher drag for ship pieces
+            update(deltaTime) {
+                // Move piece
+                this.x += this.velocityX * deltaTime;
+                this.y += this.velocityY * deltaTime;
+                
+                // Apply drag to gradually slow down
+                this.velocityX *= this.drag;
+                this.velocityY *= this.drag;
+                
+                // Rotate piece
+                this.rotation += this.rotationSpeed * deltaTime;
+                
+                // Decrease lifetime
+                this.life -= deltaTime / this.maxLife;
+            }
+        };
+        
+        // Add to world particles
+        this.game.world.particles.push(piece);
+        return piece;
+    }
+
+    // Helper to generate a lighter version of a color for cockpit
+    getLighterColor(color) {
+        // Simple way to lighten a hex color
+        if (color.startsWith('#') && color.length === 4) {
+            color = '#' + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+        }
+        
+        // Default lighter blue if we can't parse the color
+        if (!color.startsWith('#') || color.length !== 7) {
+            return '#66f';
+        }
+        
+        try {
+            // Parse RGB components
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+            
+            // Lighten by 30%
+            const newR = Math.min(255, r + 60);
+            const newG = Math.min(255, g + 60);
+            const newB = Math.min(255, b + 60);
+            
+            // Convert back to hex
+            return '#' + 
+                newR.toString(16).padStart(2, '0') +
+                newG.toString(16).padStart(2, '0') +
+                newB.toString(16).padStart(2, '0');
+        } catch (e) {
+            return '#66f'; // Fallback if parsing fails
         }
     }
 
@@ -1052,6 +1145,7 @@ export class MultiplayerManager {
             this.players[playerId].x = x;
             this.players[playerId].y = y;
             this.players[playerId].health = 100;
+            this.players[playerId].destroyed = false; // Reset destroyed flag
             
             const playerName = this.players[playerId].name;
             this.showGameMessage(`${playerName} respawned!`, '#8af');
@@ -1238,7 +1332,7 @@ export class MultiplayerManager {
         
         // Add other players with same explicit styling
         Object.values(this.players).forEach(player => {
-            if (player.id === this.playerId) return;
+            if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
             
             const playerItem = document.createElement('div');
             playerItem.style.display = 'flex';
@@ -1343,7 +1437,7 @@ export class MultiplayerManager {
         if (!this.connected) return;
         
         Object.values(this.players).forEach(player => {
-            if (player.id === this.playerId) return;
+            if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
             
             // Draw remote player's ship
             ctx.save();
