@@ -50,6 +50,10 @@ class Game {
         
         // Initialize player count display by connecting to server without joining game
         this.initializePlayerCount();
+
+        // GUARANTEED EXPLOSION SYSTEM
+        // This uses a DOM-based approach as fallback to ensure explosions always appear
+        this.setupGuaranteedExplosionSystem();
     }
     
     // Connect to the server to get player count without joining the game
@@ -518,6 +522,9 @@ class Game {
         // Create ship destruction effect - breaking into pieces
         this.createShipDestructionEffect();
         
+        // Show full-screen explosion effect
+        this.showFullScreenExplosion();
+        
         // Only show game over screen after a delay to see the explosion
         setTimeout(() => {
             this.gameState = 'gameover';
@@ -774,6 +781,195 @@ class Game {
         return piece;
     }
     
+    // Override die() to actually show the explosion
+    forcePlayerExplosion() {
+        // Force an explosion at the player's position - this is a direct workaround
+        // that doesn't depend on any timing in the player class
+        
+        console.log("FORCING PLAYER EXPLOSION!");
+        
+        const playerX = this.player.x;
+        const playerY = this.player.y;
+        
+        // Play explosion sound immediately with max volume
+        this.soundManager.play('explosion', {
+            volume: 1.0,
+            position: { x: playerX, y: playerY }
+        });
+        
+        // Create a massive explosion for visibility
+        if (this.world) {
+            for (let i = 0; i < 3; i++) { // Create multiple layers of explosions
+                this.world.createExplosion(
+                    playerX + (Math.random() - 0.5) * 10, 
+                    playerY + (Math.random() - 0.5) * 10, 
+                    45 + i*10,  // Giant explosion
+                    null  // No sound, we already played it
+                );
+            }
+            
+            // Create many small secondary explosions
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const offsetX = (Math.random() - 0.5) * 50;
+                    const offsetY = (Math.random() - 0.5) * 50;
+                    this.world.createExplosion(
+                        playerX + offsetX,
+                        playerY + offsetY,
+                        15 + Math.random() * 15,
+                        null
+                    );
+                }, i * 80); // Staggered timing
+            }
+            
+            // Create massive amounts of debris
+            for (let i = 0; i < 50; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * 150;
+                const size = 1 + Math.random() * 4;
+                
+                // Create debris with mixed colors
+                const colors = ['#33f', '#66f', '#f66', '#999', '#ff0', '#f80'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const debris = {
+                    x: playerX + (Math.random() - 0.5) * 15,
+                    y: playerY + (Math.random() - 0.5) * 15,
+                    velocityX: Math.cos(angle) * speed,
+                    velocityY: Math.sin(angle) * speed,
+                    size: size,
+                    color: color,
+                    life: 1.0,
+                    maxLife: 1.0 + Math.random() * 3.0,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 8,
+                    update(deltaTime) {
+                        // Move debris
+                        this.x += this.velocityX * deltaTime;
+                        this.y += this.velocityY * deltaTime;
+                        // Decrease lifetime
+                        this.life -= deltaTime / this.maxLife;
+                        // Slow down over time
+                        this.velocityX *= 0.98;
+                        this.velocityY *= 0.98;
+                        // Rotate debris
+                        this.rotation += this.rotationSpeed * deltaTime;
+                    }
+                };
+                
+                this.world.particles.push(debris);
+            }
+        }
+        
+        // Add extreme camera shake for dramatic effect
+        if (this.multiplayer) {
+            this.multiplayer.addCameraShake(40);
+        }
+    }
+    
+    // Add UNMISSABLE full screen explosion effect
+    showFullScreenExplosion() {
+        console.log("CREATING FULL-SCREEN EXPLOSION EFFECT!");
+        
+        // Create full-screen overlay for explosion effect
+        const overlay = document.createElement('div');
+        overlay.id = 'death-explosion-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '10000'; // Above everything
+        overlay.style.backgroundColor = 'rgba(255, 100, 0, 0)'; // Start transparent
+        overlay.style.transition = 'background-color 0.15s ease-out';
+        document.body.appendChild(overlay);
+        
+        // Flash the screen bright orange
+        setTimeout(() => { 
+            overlay.style.backgroundColor = 'rgba(255, 100, 0, 0.8)'; 
+            
+            // Play loud explosion sound
+            if (this.soundManager) {
+                this.soundManager.play('explosion', { volume: 1.0 });
+                // Play it twice for more impact
+                this.soundManager.play('explosion', { volume: 1.0, playbackRate: 0.8 });
+            }
+        }, 10);
+        
+        // Add animated explosion elements
+        for (let i = 0; i < 40; i++) {
+            const piece = document.createElement('div');
+            const size = 30 + Math.random() * 200;
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const delay = Math.random() * 0.3;
+            const duration = 0.5 + Math.random() * 0.8;
+            
+            piece.style.position = 'absolute';
+            piece.style.width = `${size}px`;
+            piece.style.height = `${size}px`;
+            piece.style.borderRadius = '50%';
+            piece.style.left = `${x}%`;
+            piece.style.top = `${y}%`;
+            piece.style.transform = 'translate(-50%, -50%) scale(0.1)';
+            piece.style.background = Math.random() > 0.5 ?
+                'radial-gradient(circle, rgba(255,220,150,1) 0%, rgba(255,100,50,0.8) 50%, rgba(255,0,0,0) 100%)' :
+                'radial-gradient(circle, rgba(255,255,200,1) 0%, rgba(255,150,50,0.8) 50%, rgba(255,50,0,0) 100%)';
+            piece.style.boxShadow = '0 0 30px rgba(255, 150, 50, 0.8)';
+            piece.style.opacity = '0';
+            piece.style.animation = `fullscreen-explosion ${duration}s ease-out ${delay}s forwards`;
+            
+            overlay.appendChild(piece);
+        }
+        
+        // Add fiery text that says "DESTROYED!"
+        const text = document.createElement('div');
+        text.textContent = 'DESTROYED!';
+        text.style.position = 'absolute';
+        text.style.top = '50%';
+        text.style.left = '50%';
+        text.style.transform = 'translate(-50%, -50%) scale(0.1)';
+        text.style.fontFamily = 'Arial, sans-serif';
+        text.style.fontSize = '100px';
+        text.style.fontWeight = 'bold';
+        text.style.color = '#fff';
+        text.style.textShadow = '0 0 20px #ff0, 0 0 40px #f80, 0 0 60px #f00';
+        text.style.opacity = '0';
+        text.style.animation = 'explosion-text 1s ease-out 0.2s forwards';
+        overlay.appendChild(text);
+        
+        // Add CSS for animations if not already present
+        if (!document.getElementById('fullscreen-explosion-style')) {
+            const style = document.createElement('style');
+            style.id = 'fullscreen-explosion-style';
+            style.textContent = `
+                @keyframes fullscreen-explosion {
+                    0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.1); }
+                    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+                    100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+                }
+                @keyframes explosion-text {
+                    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.1); }
+                    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+                    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Fade out and remove overlay after animation
+        setTimeout(() => {
+            overlay.style.backgroundColor = 'rgba(255, 100, 0, 0)';
+            setTimeout(() => {
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+            }, 1000);
+        }, 1000);
+    }
+    
     // Here we reset the game state to start a new game
     restartGame() {
         // Remove game over screen
@@ -816,6 +1012,121 @@ class Game {
     // Here we start the game loop
     start() {
         requestAnimationFrame((time) => this.gameLoop(time));
+    }
+
+    // This adds a guaranteed explosion system that works independently of the game loop
+    setupGuaranteedExplosionSystem() {
+        // Create an explosion effect container that will be positioned at player death
+        const explosionContainer = document.createElement('div');
+        explosionContainer.id = 'guaranteed-explosion';
+        explosionContainer.style.position = 'absolute';
+        explosionContainer.style.pointerEvents = 'none';
+        explosionContainer.style.zIndex = '1000';
+        explosionContainer.style.display = 'none'; // Hidden initially
+        document.body.appendChild(explosionContainer);
+        
+        // Store the container for later use
+        this.explosionContainer = explosionContainer;
+        
+        // Set up a simple health observer that checks regularly for health=0 condition
+        this.lastHealth = 100;
+        this.healthCheckInterval = setInterval(() => {
+            // If player exists and health dropped to zero since last check
+            if (this.player && this.player.health === 0 && this.lastHealth > 0) {
+                console.log("HEALTH ZERO DETECTED - TRIGGERING EXPLOSION");
+                
+                // Show explosion at player position
+                this.showGuaranteedExplosion();
+                
+                // Create in-game explosion as well - belt and suspenders approach
+                this.forcePlayerExplosion();
+            }
+            
+            // Remember the current health for next check
+            if (this.player) {
+                this.lastHealth = this.player.health;
+            }
+        }, 50); // Check every 50ms
+    }
+    
+    // This shows a CSS animation explosion effect that is not dependent on game rendering
+    showGuaranteedExplosion() {
+        if (!this.player || !this.explosionContainer) return;
+        
+        // Play explosion sound at max volume
+        if (this.soundManager) {
+            this.soundManager.play('explosion', {
+                volume: 1.0,
+                playbackRate: 0.9,
+                position: { x: this.player.x, y: this.player.y }
+            });
+        }
+        
+        // Position the explosion at the center of the viewport
+        // This ensures it's visible on screen regardless of camera position
+        this.explosionContainer.style.top = '50%';
+        this.explosionContainer.style.left = '50%';
+        this.explosionContainer.style.transform = 'translate(-50%, -50%)';
+        this.explosionContainer.style.width = '300px';
+        this.explosionContainer.style.height = '300px';
+        this.explosionContainer.style.display = 'block';
+        
+        // Reset the container
+        this.explosionContainer.innerHTML = '';
+        
+        // Create the main explosion
+        for (let i = 0; i < 30; i++) {
+            const size = 20 + Math.random() * 80;
+            const delay = Math.random() * 0.4;
+            const duration = 0.5 + Math.random() * 0.7;
+            const x = (Math.random() - 0.5) * 160;
+            const y = (Math.random() - 0.5) * 160;
+            
+            const explosionPiece = document.createElement('div');
+            explosionPiece.style.position = 'absolute';
+            explosionPiece.style.width = `${size}px`;
+            explosionPiece.style.height = `${size}px`;
+            explosionPiece.style.background = i % 3 === 0 ? 
+                'radial-gradient(circle, rgba(255,200,100,1) 0%, rgba(255,100,50,0.7) 50%, rgba(255,30,0,0) 100%)' : 
+                'radial-gradient(circle, rgba(255,255,180,1) 0%, rgba(255,150,50,0.7) 50%, rgba(255,50,0,0) 100%)';
+            explosionPiece.style.borderRadius = '50%';
+            explosionPiece.style.left = `${150 + x - size/2}px`;
+            explosionPiece.style.top = `${150 + y - size/2}px`;
+            explosionPiece.style.opacity = '0';
+            explosionPiece.style.transform = 'scale(0.1)';
+            explosionPiece.style.animation = `explosion ${duration}s ease-out ${delay}s forwards`;
+            this.explosionContainer.appendChild(explosionPiece);
+        }
+        
+        // Add CSS animation rules if they don't exist
+        if (!document.getElementById('explosion-style')) {
+            const style = document.createElement('style');
+            style.id = 'explosion-style';
+            style.textContent = `
+                @keyframes explosion {
+                    0% { 
+                        opacity: 0.2; 
+                        transform: scale(0.1); 
+                    }
+                    50% { 
+                        opacity: 1; 
+                        transform: scale(1.2); 
+                    }
+                    100% { 
+                        opacity: 0; 
+                        transform: scale(1.7); 
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Hide the explosion elements after animation completes
+        setTimeout(() => {
+            if (this.explosionContainer) {
+                this.explosionContainer.style.display = 'none';
+            }
+        }, 2000);
     }
 }
 

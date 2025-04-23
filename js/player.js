@@ -350,8 +350,21 @@ export class Player {
         }
 
         // Check if player is now dead
-        if (this.health <= 0) {
-            this.die();
+        if (this.health <= 0 && window.game) {
+            // DIRECT EXPLOSION: Use our guaranteed method from the game class
+            window.game.forcePlayerExplosion();
+            
+            // Set game state to dying
+            window.game.gameState = 'dying';
+            
+            // Hide the player ship (after explosion is created)
+            this.visible = false;
+            this.deathTriggered = true;
+            
+            // Handle remote player notification if in multiplayer
+            if (window.game.multiplayer && window.game.multiplayer.handleDeath) {
+                window.game.multiplayer.handleDeath(this.lastDamageFrom);
+            }
         } else {
             // Reset the death triggered flag if we're somehow resurrected
             this.deathTriggered = false;
@@ -369,19 +382,41 @@ export class Player {
             window.game.gameState = 'dying';
         }
         
-        // Hide the player ship immediately
-        this.visible = false;
+        // CRITICAL: Mark that death was triggered, but DON'T hide the ship yet!
+        // We'll hide it after the explosion is created
         this.deathTriggered = true;
         
         // GUARANTEED EXPLOSION EFFECT - this will work 100% of the time
         if (window.game && window.game.world) {
-            // Create main explosion
+            // Store player's position since we need it after the ship is hidden
+            const playerX = this.x;
+            const playerY = this.y;
+            const playerRotation = this.rotation;
+            
+            // Play explosion sound FIRST to ensure audio feedback is immediate
+            if (window.game.soundManager) {
+                window.game.soundManager.play('explosion', {
+                    volume: 0.9,
+                    position: { x: playerX, y: playerY }
+                });
+            }
+            
+            // Add camera shake immediately for tactile feedback
+            if (window.game.multiplayer) {
+                window.game.multiplayer.addCameraShake(25);
+            }
+            
+            // Create main explosion BEFORE hiding the ship
             window.game.world.createExplosion(
-                this.x, 
-                this.y, 
+                playerX, 
+                playerY, 
                 35,  // Size of explosion
-                window.game.soundManager
+                null  // We already played the sound above
             );
+            
+            // IMPORTANT: NOW hide the ship AFTER the explosion has been created
+            // This ensures the explosion gets drawn in the correct frame
+            this.visible = false;
             
             // Create multiple secondary explosions for dramatic effect
             for (let i = 0; i < 5; i++) {
@@ -390,8 +425,8 @@ export class Player {
                         const offsetX = (Math.random() - 0.5) * 30;
                         const offsetY = (Math.random() - 0.5) * 30;
                         window.game.world.createExplosion(
-                            this.x + offsetX,
-                            this.y + offsetY,
+                            playerX + offsetX,
+                            playerY + offsetY,
                             15 + Math.random() * 10,
                             null
                         );
@@ -410,8 +445,8 @@ export class Player {
                 const color = colors[Math.floor(Math.random() * colors.length)];
                 
                 const debris = {
-                    x: this.x + (Math.random() - 0.5) * 10,
-                    y: this.y + (Math.random() - 0.5) * 10,
+                    x: playerX + (Math.random() - 0.5) * 10,
+                    y: playerY + (Math.random() - 0.5) * 10,
                     velocityX: Math.cos(angle) * speed,
                     velocityY: Math.sin(angle) * speed,
                     size: size,
@@ -435,19 +470,6 @@ export class Player {
                 };
                 
                 window.game.world.particles.push(debris);
-            }
-            
-            // Add camera shake if available
-            if (window.game.multiplayer) {
-                window.game.multiplayer.addCameraShake(25);
-            }
-            
-            // Play explosion sound
-            if (window.game.soundManager) {
-                window.game.soundManager.play('explosion', {
-                    volume: 0.9,
-                    position: { x: this.x, y: this.y }
-                });
             }
         }
         
@@ -742,10 +764,6 @@ export class Player {
             this.velocity.x = nx * impulseStrength;
             this.velocity.y = ny * impulseStrength;
             
-            // Take damage based on impact force
-            const damageFactor = 0.1; // Controls how much damage is taken per unit of speed
-            const damage = Math.max(5, impactForce * damageFactor);
-            
             // Create visual impact effect at the collision point
             if (window.game && window.game.world) {
                 // Calculate impact position at the collision point
@@ -773,10 +791,10 @@ export class Player {
                 }
             }
             
-            // Play collision sound with volume based on impact force
+            // Play collision sound
             if (soundManager) {
                 soundManager.play('hit', {
-                    volume: Math.min(0.8, 0.3 + (damage / 30)),
+                    volume: Math.min(0.8, 0.3 + (impactForce * 0.001)),
                     playbackRate: 0.7,
                     position: { x: this.x, y: this.y }
                 });
@@ -791,13 +809,39 @@ export class Player {
                 }
             }
             
-            // Critical: Apply damage AFTER creating visual effects
-            // This ensures we see effects even if damage leads to death
-            const wasKilled = this.takeDamage(damage);
+            // Calculate damage based on impact force
+            const damageFactor = 0.1; // Controls how much damage is taken per unit of speed
+            const damage = Math.max(5, impactForce * damageFactor);
             
-            // If the collision killed the player, ensure explosion is shown
-            if (wasKilled && !this.deathTriggered) {
-                this.die();
+            // Apply damage to health
+            this.health -= damage;
+            
+            // Update the health display in the UI
+            if (window.game && window.game.ui) {
+                window.game.ui.updateHealthBar(this.health, this.maxHealth);
+            }
+            
+            // Check if player is now dead (health <= 0)
+            if (this.health <= 0) {
+                // THIS IS THE KEY CHANGE: Use our guaranteed explosion method
+                if (window.game) {
+                    // Use our direct explosion method instead of regular die()
+                    window.game.forcePlayerExplosion();
+                    
+                    // Set game state to dying
+                    window.game.gameState = 'dying';
+                    
+                    // Hide the player ship
+                    this.visible = false;
+                    
+                    // Mark death as triggered
+                    this.deathTriggered = true;
+                    
+                    // Notify multiplayer if available
+                    if (window.game.multiplayer && window.game.multiplayer.handleDeath) {
+                        window.game.multiplayer.handleDeath(this.lastDamageFrom);
+                    }
+                }
             }
             
             // Set cooldown to prevent multiple collisions
