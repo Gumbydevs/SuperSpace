@@ -773,6 +773,11 @@ export class MultiplayerManager {
         // Hide the player ship immediately
         this.game.player.visible = false;
         
+        // Set the game state to "dying" - IMPORTANT: do this before creating effects
+        if (this.game) {
+            this.game.gameState = 'dying';
+        }
+        
         // Use the game's createShipDestructionEffect
         if (this.game && this.game.createShipDestructionEffect) {
             this.game.createShipDestructionEffect();
@@ -804,10 +809,8 @@ export class MultiplayerManager {
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Destroyed by ${attacker}!`, '#f44', 3000);
         
-        // Set the game state to "dying"
-        if (this.game) {
-            this.game.gameState = 'dying';
-        }
+        // Add intense camera shake for death
+        this.addCameraShake(25);
         
         // Respawn after delay
         setTimeout(() => {
