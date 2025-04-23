@@ -193,13 +193,79 @@ export class Player {
             }
         }
 
-        // Here we update projectiles and remove those that exceed their range
-        for (let i = this.projectiles.length - 1; i >= 0; i--) {
-            this.projectiles[i].update(deltaTime);
-            
-            // Remove projectiles that travel beyond their range
-            if (this.projectiles[i].distanceTraveled > this.projectiles[i].range) {
-                this.projectiles.splice(i, 1);
+        // Check for projectile collisions with remote players
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const projectile = this.projectiles[i];
+                let hit = false;
+                
+                // Check against all remote players
+                Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                    if (!hit) { // Only check until we find a hit
+                        const dx = projectile.x - remotePlayer.x;
+                        const dy = projectile.y - remotePlayer.y;
+                        const distSq = dx * dx + dy * dy;
+                        
+                        // Check if projectile hit a remote player (using approximate collision radius of 15)
+                        if (distSq < 225) { // 15 squared
+                            // Check if remote player is in safe zone
+                            if (window.game.world && !window.game.world.isInSafeZone(remotePlayer)) {
+                                // Create explosion effect at point of impact for local visualization
+                                if (window.game.world) {
+                                    window.game.world.createProjectileHitEffect(
+                                        projectile.x,
+                                        projectile.y,
+                                        12 + projectile.damage * 0.3, // Size based on damage
+                                        window.game.soundManager
+                                    );
+                                }
+                                
+                                // Send hit info to server
+                                const hitData = {
+                                    type: 'player',
+                                    targetId: remotePlayer.id,
+                                    damage: projectile.damage || 10
+                                };
+                                
+                                window.game.multiplayer.sendHit('player', remotePlayer.id, projectile.damage);
+                                
+                                // Also broadcast the hit effect to all clients
+                                window.game.multiplayer.sendProjectileHit(
+                                    remotePlayer.id,
+                                    projectile.x,
+                                    projectile.y, 
+                                    projectile.damage
+                                );
+                                
+                                // Show hit message
+                                window.game.multiplayer.showGameMessage(`Hit ${remotePlayer.name}!`, '#4f4');
+                                
+                                hit = true;
+                                this.projectiles.splice(i, 1); // Remove projectile
+                            }
+                        }
+                    }
+                });
+                
+                if (!hit) {
+                    // Update projectile position and check range
+                    projectile.update(deltaTime);
+                    
+                    // Remove projectiles that travel beyond their range
+                    if (projectile.distanceTraveled > projectile.range) {
+                        this.projectiles.splice(i, 1);
+                    }
+                }
+            }
+        } else {
+            // Standard projectile update when not in multiplayer
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                this.projectiles[i].update(deltaTime);
+                
+                // Remove projectiles that travel beyond their range
+                if (this.projectiles[i].distanceTraveled > this.projectiles[i].range) {
+                    this.projectiles.splice(i, 1);
+                }
             }
         }
 
