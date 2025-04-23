@@ -894,13 +894,24 @@ export class MultiplayerManager {
             this.game.gameState = 'dying';
         }
         
-        // ALWAYS create explosion effect directly here to ensure it's visible
-        // Create a local explosion that doesn't depend on game's createShipDestructionEffect
+        // IMPORTANT: ALWAYS create explosion effect directly to ensure visibility
+        // This is a critical fix to ensure the player sees their death explosion
         this.createLocalExplosionEffect(
             this.game.player.x,
             this.game.player.y,
             this.game.player.rotation
         );
+        
+        // Play explosion sound to enhance feedback
+        if (this.game.soundManager) {
+            this.game.soundManager.play('explosion', {
+                volume: 0.9,
+                position: { 
+                    x: this.game.player.x, 
+                    y: this.game.player.y 
+                }
+            });
+        }
         
         // Show death message
         const attacker = this.players[attackerId]?.name || 'Another player';
