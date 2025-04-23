@@ -664,6 +664,62 @@ export class MultiplayerManager {
         }
     }
 
+    // Handle projectile hit on remote players
+    handleRemoteProjectileHit(targetId, position, damage) {
+        // Get the target player
+        const targetPlayer = this.players[targetId];
+        if (!targetPlayer) return;
+        
+        // Create visual hit effect at impact position
+        if (this.game.world) {
+            // Calculate exact hit position or use the provided position
+            const hitX = position ? position.x : targetPlayer.x;
+            const hitY = position ? position.y : targetPlayer.y;
+            
+            // Create main hit effect with small explosion
+            this.game.world.createProjectileHitEffect(
+                hitX, hitY, 
+                15 + damage * 0.3, // Size based on damage
+                this.game.soundManager
+            );
+            
+            // Add secondary hit effects for more visual impact
+            setTimeout(() => {
+                if (!this.game || !this.game.world) return; // Safety check
+                
+                // Add a smaller secondary explosion
+                const offsetX = (Math.random() - 0.5) * 10;
+                const offsetY = (Math.random() - 0.5) * 10;
+                
+                this.game.world.createProjectileHitEffect(
+                    hitX + offsetX,
+                    hitY + offsetY,
+                    8,
+                    null // No additional sound for secondary explosion
+                );
+            }, 50);
+            
+            // Play hit sound with distance-based volume
+            if (this.game.soundManager) {
+                // Calculate distance from local player
+                const dx = this.game.player.x - hitX;
+                const dy = this.game.player.y - hitY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Scale volume based on distance and damage
+                const maxDistance = 1000;
+                const volumeFactor = Math.max(0.2, 1 - (distance / maxDistance));
+                const volumeScale = Math.min(0.7, 0.3 + (damage / 30) * 0.4);
+                
+                this.game.soundManager.play('hit', {
+                    volume: volumeScale * volumeFactor,
+                    playbackRate: 0.9 + Math.random() * 0.2, // Slight randomization
+                    position: { x: hitX, y: hitY }
+                });
+            }
+        }
+    }
+
     // Handle damage to player
     handleDamage(damage, attackerId) {
         this.game.player.takeDamage(damage);
@@ -1311,6 +1367,18 @@ export class MultiplayerManager {
                 ctx.fillStyle = '#ff6';
                 ctx.beginPath();
                 ctx.moveTo(-7, 8);
+                ctx.lineTo(0, 15);
+                ctx.lineTo(7, 8);
+                ctx.closePath();
+                ctx.fill();
+            } else if (player.ship === 'cruiser') {
+                // Heavy cruiser design
+                ctx.fillStyle = player.color;
+                ctx.beginPath();
+                ctx.moveTo(0, -25); // Front
+                ctx.lineTo(-8, -10);
+                ctx.lineTo(-20, 15);
+                ctx.lineTo(-8, 10);
                 ctx.lineTo(8, 10);
                 ctx.lineTo(20, 15);
                 ctx.lineTo(8, -10);
@@ -1447,6 +1515,24 @@ export class MultiplayerManager {
                     const dy = projectile.y - this.game.player.y;
                     const distSq = dx * dx + dy * dy;
                     
+                    if (distSq < 225) { // 15 squared - rough collision radius
+                        // Check if player is in safe zone before applying damage
+                        if (this.game.world && !this.game.world.isInSafeZone(this.game.player)) {
+                            // Hit the player!
+                            const damage = projectile.damage || 10;
+                            this.game.player.takeDamage(damage);
+                            
+                            // Create explosion effect at point of impact
+                            if (this.game.world) {
+                                this.game.world.createProjectileHitEffect(
+                                    projectile.x, 
+                                    projectile.y,
+                                    12 + damage * 0.3, // Size based on damage
+                                    this.game.soundManager
+                                );
+                            }
+                            
+                            // Show hit message
                             this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
                             
                             // Send hit confirmation to server
@@ -1469,10 +1555,9 @@ export class MultiplayerManager {
                             this.showGameMessage('Safe Zone Protection Active', '#ffcc00');
                         }
                         
-                        // Remove the projectile either way
+                        // Remove the projectile
                         player.projectiles.splice(i, 1);
                     }
-                    
                     // Remove projectiles that are too far away
                     else if (distSq > 1000000) { // 1000 distance squared
                         player.projectiles.splice(i, 1);
