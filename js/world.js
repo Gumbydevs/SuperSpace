@@ -5,6 +5,7 @@ export class World {
         this.height = 10000;
         
         // Here we set up the stars for the parallax background
+        this.stars = this.generateStars(2000); // Keep the original stars for backward compatibility
         this.starLayers = []; // Multiple layers for parallax effect
         this.starCount = {
             far: 800,    // Distant stars (slowest movement)
@@ -15,7 +16,21 @@ export class World {
         this.shootingStars = []; // Array for shooting stars
         this.shootingStarTimer = 0;
         this.shootingStarInterval = 2 + Math.random() * 3; // Random interval between shooting stars
-        this.generateStarLayers();
+        
+        // Initialize the star layers as empty arrays to prevent errors
+        this.starLayers = [[], [], [], []];
+        
+        // Generate star layers only if we're in a browser environment
+        // This prevents errors in Node.js or other environments without window
+        if (typeof window !== 'undefined') {
+            try {
+                this.generateStarLayers();
+            } catch (e) {
+                console.error('Error generating star layers:', e);
+                // Ensure we have empty arrays even if generation fails
+                this.starLayers = [[], [], [], []];
+            }
+        }
         
         // Here we create the initial asteroids in the world
         this.asteroids = this.generateAsteroids(150);
