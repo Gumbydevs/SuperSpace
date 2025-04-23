@@ -34,7 +34,8 @@ export class Player {
         this.currentWeaponId = 'laser'; // Track weapon by ID for shop integration
 
         // Here we define the player's economy and score
-        this.credits = 0; // Currency for purchasing ships and upgrades
+        // Load persisted credits from localStorage or default to 0
+        this.credits = parseInt(localStorage.getItem('playerCredits') || 0);
         this.score = 0;   // Points for game score
 
         // Here we set up the weapon systems
@@ -277,6 +278,17 @@ export class Player {
     addCredits(amount) {
         // Here we add credits to player's account (from destroying asteroids, etc.)
         this.credits += amount;
+        
+        // Save credits to localStorage to persist between deaths
+        localStorage.setItem('playerCredits', this.credits.toString());
+        
+        // Update UI display if available
+        if (window.game && window.game.ui) {
+            const creditsElement = document.getElementById('credits');
+            if (creditsElement) {
+                creditsElement.textContent = this.credits;
+            }
+        }
     }
 
     fire(soundManager) {
