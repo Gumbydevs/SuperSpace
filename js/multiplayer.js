@@ -584,6 +584,11 @@ export class MultiplayerManager {
         };
         
         this.players[playerData.id] = player;
+        
+        // Update the player list UI whenever a new player is added
+        this.updatePlayerList();
+        
+        console.log("Added remote player:", player.name, "Total players:", Object.keys(this.players).length);
     }
 
     // Update a remote player's data
@@ -609,6 +614,11 @@ export class MultiplayerManager {
     // Remove a remote player
     removeRemotePlayer(playerId) {
         delete this.players[playerId];
+        
+        // Update the player list UI when a player is removed
+        this.updatePlayerList();
+        
+        console.log("Removed player:", playerId, "Total players:", Object.keys(this.players).length);
     }
 
     // Handle receiving a projectile from another player
