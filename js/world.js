@@ -805,6 +805,31 @@ export class World {
         }
     }
 
+    // Update particles only (used during ship destruction)
+    updateParticles(deltaTime) {
+        // Update particle effects (debris, etc.)
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            particle.update(deltaTime);
+
+            // Remove expired particles
+            if (particle.life <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+        
+        // Update explosion effects
+        for (let i = this.explosions.length - 1; i >= 0; i--) {
+            const explosion = this.explosions[i];
+            explosion.update(deltaTime);
+
+            // Remove finished explosions
+            if (explosion.timeLeft <= 0) {
+                this.explosions.splice(i, 1);
+            }
+        }
+    }
+
     render(ctx, player) {
         // Here we define the visible area for rendering optimization
         const visibleArea = {
