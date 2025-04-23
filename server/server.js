@@ -46,6 +46,46 @@ const gameState = {
 // Track last activity time for each player
 const playerLastActivity = {};
 
+// Asteroid generation settings
+const WORLD_SIZE = 5000; // World size in units
+const ASTEROID_COUNT = 100; // Number of asteroids in the world
+const ASTEROID_MIN_SIZE = 20;
+const ASTEROID_MAX_SIZE = 100;
+const ASTEROID_REGENERATION_TIME = 10000; // Time in ms to regenerate asteroids
+
+// Generate initial asteroids
+generateAsteroids();
+
+// Function to generate asteroid field
+function generateAsteroids() {
+  console.log("Generating new asteroid field...");
+  gameState.asteroids = [];
+  
+  // Generate asteroids with unique IDs
+  for (let i = 0; i < ASTEROID_COUNT; i++) {
+    const radius = ASTEROID_MIN_SIZE + Math.random() * (ASTEROID_MAX_SIZE - ASTEROID_MIN_SIZE);
+    const asteroid = {
+      id: `asteroid-${Date.now()}-${i}`,
+      x: (Math.random() - 0.5) * WORLD_SIZE,
+      y: (Math.random() - 0.5) * WORLD_SIZE,
+      radius: radius,
+      health: radius * 2, // Health based on size
+      type: Math.random() > 0.7 ? 'ice' : 'rock', // Different asteroid types
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.2
+    };
+    
+    gameState.asteroids.push(asteroid);
+  }
+  
+  // Send the new asteroid field to all connected clients
+  io.emit('asteroidFieldUpdate', {
+    asteroids: gameState.asteroids
+  });
+  
+  console.log(`Generated ${gameState.asteroids.length} asteroids`);
+}
+
 // Connection handling
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
