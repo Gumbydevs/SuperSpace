@@ -648,23 +648,39 @@ export class MultiplayerManager {
     handleDamage(damage, attackerId) {
         this.game.player.takeDamage(damage);
         
-        // Create explosion effect at impact point
+        // Create explosion effect at impact point with enhanced visuals
         if (this.game.world) {
             // Calculate impact position (slightly offset from player center)
-            const impactOffset = 10; // pixels from center
+            const impactOffset = 10 + Math.random() * 7; // Add some randomness to the offset
             const impactAngle = Math.random() * Math.PI * 2; // random direction
             const impactX = this.game.player.x + Math.cos(impactAngle) * impactOffset;
             const impactY = this.game.player.y + Math.sin(impactAngle) * impactOffset;
             
-            // Create hit effect with small explosion
+            // Create main hit effect with small explosion
             this.game.world.createProjectileHitEffect(
                 impactX, impactY, 
-                15, // radius 
+                15 + damage * 0.5, // Size based on damage
                 this.game.soundManager
             );
             
-            // Add camera shake effect
-            this.addCameraShake(damage * 0.5); // shake intensity based on damage
+            // Create secondary hit effect after a short delay for more dramatic effect
+            setTimeout(() => {
+                if (!this.game || !this.game.world) return; // Safety check
+                
+                const secondaryOffset = 8 + Math.random() * 5;
+                const secondaryAngle = Math.random() * Math.PI * 2;
+                const secondaryX = this.game.player.x + Math.cos(secondaryAngle) * secondaryOffset;
+                const secondaryY = this.game.player.y + Math.sin(secondaryAngle) * secondaryOffset;
+                
+                this.game.world.createProjectileHitEffect(
+                    secondaryX, secondaryY,
+                    10,
+                    this.game.soundManager
+                );
+            }, 60);
+            
+            // Add more noticeable camera shake effect
+            this.addCameraShake(damage * 0.7); // Increased intensity
         }
         
         // Show damage message

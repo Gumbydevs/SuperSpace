@@ -531,6 +531,48 @@ export class World {
         }
     }
 
+    createSmokeParticle(x, y, size, duration, velocityX = 0, velocityY = 0) {
+        const smoke = {
+            x: x,
+            y: y,
+            velocityX: velocityX + (Math.random() - 0.5) * 20, // Base velocity plus some random spread
+            velocityY: velocityY + (Math.random() - 0.5) * 20,
+            size: size,
+            originalSize: size,
+            opacity: 0.7,
+            life: 1.0,
+            maxLife: duration,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 1.0,
+            color: Math.random() > 0.5 ? 'rgba(40, 40, 40, 0.7)' : 'rgba(70, 70, 70, 0.7)',
+            
+            update(deltaTime) {
+                // Move particle
+                this.x += this.velocityX * deltaTime;
+                this.y += this.velocityY * deltaTime;
+                
+                // Decrease lifetime
+                this.life -= deltaTime / this.maxLife;
+                
+                // Slow down over time
+                this.velocityX *= 0.98;
+                this.velocityY *= 0.98;
+                
+                // Grow slightly as it disperses
+                this.size = this.originalSize * (1 + (1 - this.life) * 0.8);
+                
+                // Rotate the smoke particle
+                this.rotation += this.rotationSpeed * deltaTime;
+                
+                // Fade out
+                this.opacity = this.life * 0.7;
+            }
+        };
+        
+        this.particles.push(smoke);
+        return smoke;
+    }
+
     createCollisionEffect(x, y) {
         // Create a flash effect at the collision point
         this.explosions.push({
