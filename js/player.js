@@ -17,6 +17,10 @@ export class Player {
         this.height = 30; // Ship collision height
         this.velocity = { x: 0, y: 0 }; // Current movement vector
         this.visible = true; // Whether to render the ship (false when destroyed)
+        
+        // Ship color - load from localStorage or use default blue
+        this.shipColor = localStorage.getItem('playerShipColor') || '#33f';
+        this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
 
         // Add collision properties
         this.collisionRadius = 15; // Radius used for collision detection
@@ -715,7 +719,7 @@ export class Player {
             ctx.rotate(this.rotation);
             
             // Ship body - triangular shape rotated so tip points in direction of travel
-            ctx.fillStyle = '#33f';
+            ctx.fillStyle = this.shipColor;
             ctx.beginPath();
             ctx.moveTo(0, -15); // front (points upward when rotation = 0)
             ctx.lineTo(-10, 10); // back left
@@ -725,7 +729,7 @@ export class Player {
             ctx.fill();
             
             // Here we draw the engine glow effect
-            ctx.fillStyle = '#f66';
+            ctx.fillStyle = this.engineColor;
             ctx.beginPath();
             ctx.moveTo(0, 5);
             ctx.lineTo(-5, 12);
@@ -735,6 +739,28 @@ export class Player {
             ctx.fill();
             
             ctx.restore();
+        }
+    }
+    
+    // New method to set ship color and save it to localStorage
+    setShipColor(color) {
+        this.shipColor = color;
+        localStorage.setItem('playerShipColor', color);
+        
+        // If in multiplayer, notify others of the color change
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendShipColorUpdate(color);
+        }
+    }
+    
+    // New method to set engine color and save it to localStorage
+    setEngineColor(color) {
+        this.engineColor = color;
+        localStorage.setItem('playerEngineColor', color);
+        
+        // If in multiplayer, notify others of the color change
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendEngineColorUpdate(color);
         }
     }
 

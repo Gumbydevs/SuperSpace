@@ -543,6 +543,16 @@ export class MultiplayerManager {
             }
         });
         
+        // Handle ship color update from server
+        this.socket.on('shipColorUpdate', (data) => {
+            this.handleRemoteShipColorUpdate(data.playerId, data.color);
+        });
+
+        // Handle engine color update from server
+        this.socket.on('engineColorUpdate', (data) => {
+            this.handleRemoteEngineColorUpdate(data.playerId, data.color);
+        });
+
         // Start ping interval to keep connection alive and reset inactivity timer
         this.startPingInterval();
     }
@@ -697,6 +707,38 @@ export class MultiplayerManager {
             damage: damage,
             attackerId: this.socket.id
         });
+    }
+
+    // Send ship color update to server and other players
+    sendShipColorUpdate(color) {
+        if (!this.connected) return;
+        
+        this.socket.emit('shipColorUpdate', {
+            color: color
+        });
+    }
+    
+    // Send engine color update to server and other players
+    sendEngineColorUpdate(color) {
+        if (!this.connected) return;
+        
+        this.socket.emit('engineColorUpdate', {
+            color: color
+        });
+    }
+    
+    // Handle remote player's ship color update
+    handleRemoteShipColorUpdate(playerId, color) {
+        if (this.players[playerId]) {
+            this.players[playerId].shipColor = color;
+        }
+    }
+    
+    // Handle remote player's engine color update
+    handleRemoteEngineColorUpdate(playerId, color) {
+        if (this.players[playerId]) {
+            this.players[playerId].engineColor = color;
+        }
     }
 
     // Add a visual remote player
