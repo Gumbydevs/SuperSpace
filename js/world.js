@@ -3,8 +3,20 @@ export class World {
         // Here we define the game world dimensions
         this.width = 10000;
         this.height = 10000;
-        // Here we generate stars for the background
-        this.stars = this.generateStars(2000);
+        
+        // Here we set up the stars for the parallax background
+        this.starLayers = []; // Multiple layers for parallax effect
+        this.starCount = {
+            far: 800,    // Distant stars (slowest movement)
+            mid: 500,    // Middle distance stars
+            near: 300,   // Near stars (fastest movement)
+            special: 40  // Special stars (large, colored, or animated)
+        };
+        this.shootingStars = []; // Array for shooting stars
+        this.shootingStarTimer = 0;
+        this.shootingStarInterval = 2 + Math.random() * 3; // Random interval between shooting stars
+        this.generateStarLayers();
+        
         // Here we create the initial asteroids in the world
         this.asteroids = this.generateAsteroids(150);
         // Here we initialize arrays for game objects
@@ -42,6 +54,246 @@ export class World {
             medium: { min: 20, max: 50 },
             large: { min: 40, max: 100 }
         };
+    }
+
+    // Generate starfield with multiple parallax layers
+    generateStarLayers() {
+        // Color palettes for different star types
+        const colorPalettes = {
+            white: ['#ffffff', '#f8f8ff', '#fffafa', '#f0f8ff', '#f5f5f5'],
+            blue: ['#add8e6', '#87cefa', '#87ceeb', '#b0e0e6', '#00bfff'],
+            red: ['#ffb6c1', '#fa8072', '#f08080', '#cd5c5c', '#dc143c'],
+            yellow: ['#ffffe0', '#fffacd', '#fafad2', '#ffefd5', '#ffd700'],
+            purple: ['#e6e6fa', '#d8bfd8', '#dda0dd', '#ee82ee', '#da70d6']
+        };
+
+        // Create far layer (smallest, slowest moving stars)
+        const farStars = [];
+        for (let i = 0; i < this.starCount.far; i++) {
+            // Mostly white/blue stars in the distance
+            const colorSet = Math.random() < 0.8 ? colorPalettes.white : colorPalettes.blue;
+            const color = colorSet[Math.floor(Math.random() * colorSet.length)];
+            
+            farStars.push({
+                x: Math.random() * this.width - this.width / 2,
+                y: Math.random() * this.height - this.height / 2,
+                size: Math.random() * 1.2 + 0.5, // Smaller stars
+                color: color,
+                brightness: Math.random() * 0.4 + 0.2, // Dimmer
+                blinkSpeed: 0, // Most far stars don't blink
+                blinkPhase: 0,
+                parallaxFactor: 0.1 // Moves very slowly
+            });
+        }
+        this.starLayers.push(farStars);
+
+        // Create mid layer (medium stars)
+        const midStars = [];
+        for (let i = 0; i < this.starCount.mid; i++) {
+            // More color variety in middle layer
+            const colorType = Math.random();
+            let colorSet;
+            
+            if (colorType < 0.6) colorSet = colorPalettes.white;
+            else if (colorType < 0.8) colorSet = colorPalettes.blue;
+            else if (colorType < 0.9) colorSet = colorPalettes.yellow;
+            else colorSet = colorPalettes.red;
+            
+            const color = colorSet[Math.floor(Math.random() * colorSet.length)];
+            const hasBlink = Math.random() < 0.2; // 20% of mid stars blink
+            
+            midStars.push({
+                x: Math.random() * this.width - this.width / 2,
+                y: Math.random() * this.height - this.height / 2,
+                size: Math.random() * 1.5 + 1, // Medium size
+                color: color,
+                brightness: Math.random() * 0.5 + 0.4, // Medium brightness
+                blinkSpeed: hasBlink ? Math.random() * 2 + 1 : 0,
+                blinkPhase: Math.random() * Math.PI * 2,
+                parallaxFactor: 0.3 // Medium movement speed
+            });
+        }
+        this.starLayers.push(midStars);
+
+        // Create near layer (largest, fastest moving stars)
+        const nearStars = [];
+        for (let i = 0; i < this.starCount.near; i++) {
+            // Most color variety in near layer
+            const colorType = Math.random();
+            let colorSet;
+            
+            if (colorType < 0.4) colorSet = colorPalettes.white;
+            else if (colorType < 0.6) colorSet = colorPalettes.blue;
+            else if (colorType < 0.75) colorSet = colorPalettes.yellow;
+            else if (colorType < 0.9) colorSet = colorPalettes.red;
+            else colorSet = colorPalettes.purple;
+            
+            const color = colorSet[Math.floor(Math.random() * colorSet.length)];
+            const hasBlink = Math.random() < 0.4; // 40% of near stars blink
+            
+            nearStars.push({
+                x: Math.random() * this.width - this.width / 2,
+                y: Math.random() * this.height - this.height / 2,
+                size: Math.random() * 2 + 1.5, // Larger size
+                color: color,
+                brightness: Math.random() * 0.4 + 0.6, // Brighter
+                blinkSpeed: hasBlink ? Math.random() * 3 + 1.5 : 0,
+                blinkPhase: Math.random() * Math.PI * 2,
+                parallaxFactor: 0.6 // Faster movement
+            });
+        }
+        this.starLayers.push(nearStars);
+
+        // Create special stars (extra bright or large stars, binary systems, etc)
+        const specialStars = [];
+        for (let i = 0; i < this.starCount.special; i++) {
+            // Randomly pick a special star type
+            const starType = Math.random();
+            
+            if (starType < 0.4) {
+                // Bright star with glow
+                const hue = Math.floor(Math.random() * 360);
+                specialStars.push({
+                    x: Math.random() * this.width - this.width / 2,
+                    y: Math.random() * this.height - this.height / 2,
+                    size: Math.random() * 3 + 2.5,
+                    color: `hsl(${hue}, 100%, 80%)`,
+                    brightness: 1.0,
+                    blinkSpeed: Math.random() * 1.5 + 0.5,
+                    blinkPhase: Math.random() * Math.PI * 2,
+                    hasGlow: true,
+                    glowSize: Math.random() * 10 + 5,
+                    parallaxFactor: 0.4,
+                    type: 'bright'
+                });
+            } 
+            else if (starType < 0.7) {
+                // Binary star system
+                const hue1 = Math.floor(Math.random() * 360);
+                const hue2 = (hue1 + 180) % 360; // Complementary color
+                const orbitSpeed = Math.random() * 0.5 + 0.2;
+                const orbitRadius = Math.random() * 6 + 3;
+                
+                specialStars.push({
+                    x: Math.random() * this.width - this.width / 2,
+                    y: Math.random() * this.height - this.height / 2,
+                    size: Math.random() * 2 + 1,
+                    color: `hsl(${hue1}, 100%, 75%)`,
+                    secondaryColor: `hsl(${hue2}, 100%, 75%)`,
+                    brightness: 0.9,
+                    orbitSpeed: orbitSpeed,
+                    orbitRadius: orbitRadius,
+                    orbitPhase: Math.random() * Math.PI * 2,
+                    parallaxFactor: 0.35,
+                    type: 'binary'
+                });
+            }
+            else if (starType < 0.85) {
+                // Pulsing star (like a pulsar or variable star)
+                const baseHue = Math.random() < 0.5 ? 220 : 30; // Blue or yellow/orange
+                const pulseSpeed = Math.random() * 4 + 2;
+                
+                specialStars.push({
+                    x: Math.random() * this.width - this.width / 2,
+                    y: Math.random() * this.height - this.height / 2,
+                    baseSize: Math.random() * 2 + 2,
+                    size: 0, // Will be calculated in update
+                    color: `hsl(${baseHue}, 100%, 75%)`,
+                    brightness: 0.9,
+                    pulseSpeed: pulseSpeed,
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    parallaxFactor: 0.35,
+                    type: 'pulsar'
+                });
+            }
+            else {
+                // Nebula-like cluster
+                const baseHue = Math.floor(Math.random() * 360);
+                const clusterColor = `hsla(${baseHue}, 80%, 70%, 0.3)`;
+                const starCount = Math.floor(Math.random() * 8) + 5;
+                const clusterStars = [];
+                
+                // Create mini-stars for the cluster
+                for (let j = 0; j < starCount; j++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * 15 + 5;
+                    clusterStars.push({
+                        offsetX: Math.cos(angle) * dist,
+                        offsetY: Math.sin(angle) * dist,
+                        size: Math.random() * 1.5 + 0.5,
+                        brightness: Math.random() * 0.3 + 0.7
+                    });
+                }
+                
+                specialStars.push({
+                    x: Math.random() * this.width - this.width / 2,
+                    y: Math.random() * this.height - this.height / 2,
+                    clusterSize: Math.random() * 25 + 15,
+                    color: clusterColor,
+                    stars: clusterStars,
+                    rotationSpeed: (Math.random() - 0.5) * 0.2,
+                    rotation: Math.random() * Math.PI * 2,
+                    parallaxFactor: 0.2,
+                    type: 'cluster'
+                });
+            }
+        }
+        this.starLayers.push(specialStars);
+    }
+
+    // Create a shooting star
+    createShootingStar() {
+        // Calculate a random position near the visible area
+        const edgeType = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+        let x, y;
+        
+        // Determine position based on edge
+        switch (edgeType) {
+            case 0: // Top
+                x = Math.random() * this.width - this.width / 2;
+                y = -this.height / 2;
+                break;
+            case 1: // Right
+                x = this.width / 2;
+                y = Math.random() * this.height - this.height / 2;
+                break;
+            case 2: // Bottom
+                x = Math.random() * this.width - this.width / 2;
+                y = this.height / 2;
+                break;
+            case 3: // Left
+                x = -this.width / 2;
+                y = Math.random() * this.height - this.height / 2;
+                break;
+        }
+        
+        // Calculate trajectory (always toward center with some randomness)
+        const angle = Math.atan2(-y, -x) + (Math.random() - 0.5) * 0.5; // Angle toward center with some variation
+        const speed = Math.random() * 500 + 400; // Fast!
+        
+        // Create the shooting star
+        const shootingStar = {
+            x: x,
+            y: y,
+            trailLength: Math.random() * 100 + 50,
+            speed: speed,
+            angle: angle,
+            life: 1.0, // Full life
+            maxLife: 1.5 + Math.random(), // 1.5-2.5 seconds
+            color: Math.random() < 0.7 ? '#ffffff' : (Math.random() < 0.5 ? '#aaccff' : '#ffccaa'),
+            size: Math.random() * 2 + 1,
+            twinkleFreq: 10 + Math.random() * 15,
+            update(deltaTime) {
+                // Move shooting star
+                this.x += Math.cos(this.angle) * this.speed * deltaTime;
+                this.y += Math.sin(this.angle) * this.speed * deltaTime;
+                
+                // Decrease lifetime
+                this.life -= deltaTime / this.maxLife;
+            }
+        };
+        
+        this.shootingStars.push(shootingStar);
     }
 
     generateStars(count) {
@@ -114,6 +366,9 @@ export class World {
     }
 
     update(deltaTime, player, soundManager) {
+        // Update star animations and parallax effect
+        this.updateStars(deltaTime, player);
+        
         // Here we handle asteroid spawning over time
         this.asteroidSpawnTimer += deltaTime;
         if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
@@ -299,6 +554,61 @@ export class World {
             // Remove finished explosions
             if (explosion.timeLeft <= 0) {
                 this.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    // Update star layers and shooting stars
+    updateStars(deltaTime, player) {
+        // Process special stars animations (pulsing, binary, etc.)
+        const specialStars = this.starLayers[3] || [];
+        specialStars.forEach(star => {
+            if (star.type === 'binary') {
+                // Update binary star orbit phase
+                star.orbitPhase += star.orbitSpeed * deltaTime;
+            } 
+            else if (star.type === 'pulsar') {
+                // Update pulsing star
+                star.pulsePhase += star.pulseSpeed * deltaTime;
+                star.size = star.baseSize * (0.6 + 0.4 * Math.sin(star.pulsePhase)); 
+            }
+            else if (star.type === 'cluster') {
+                // Slowly rotate star cluster
+                star.rotation += star.rotationSpeed * deltaTime;
+            }
+            else if (star.blinkSpeed > 0) {
+                // Update blinking phase for bright stars
+                star.blinkPhase += star.blinkSpeed * deltaTime;
+            }
+        });
+
+        // Update normal stars blinking (for stars that have blinking enabled)
+        for (let layer = 0; layer < this.starLayers.length - 1; layer++) {
+            const stars = this.starLayers[layer] || [];
+            stars.forEach(star => {
+                if (star.blinkSpeed > 0) {
+                    star.blinkPhase += star.blinkSpeed * deltaTime;
+                }
+            });
+        }
+
+        // Random shooting star generation
+        this.shootingStarTimer += deltaTime;
+        if (this.shootingStarTimer >= this.shootingStarInterval) {
+            this.createShootingStar();
+            // Reset timer with random interval
+            this.shootingStarTimer = 0;
+            this.shootingStarInterval = 2 + Math.random() * 8; // 2-10 seconds between shooting stars
+        }
+
+        // Update shooting stars
+        for (let i = this.shootingStars.length - 1; i >= 0; i--) {
+            const shootingStar = this.shootingStars[i];
+            shootingStar.update(deltaTime);
+            
+            // Remove expired shooting stars
+            if (shootingStar.life <= 0) {
+                this.shootingStars.splice(i, 1);
             }
         }
     }
@@ -852,6 +1162,9 @@ export class World {
             this.height
         );
         
+        // Render multi-layered parallax starfield
+        this.renderStarLayers(ctx, player, visibleArea);
+        
         // Only draw safe zone when actually playing the game
         if (this.safeZone.active && gameState === 'playing') {
             // Create checkered pattern with yellow/black safety stripes
@@ -1012,22 +1325,6 @@ export class World {
             ctx.restore();
         }
 
-        // Here we draw background stars
-        this.stars.forEach(star => {
-            // Only draw stars in visible area (optimization)
-            if (
-                star.x >= visibleArea.left &&
-                star.x <= visibleArea.right &&
-                star.y >= visibleArea.top &&
-                star.y <= visibleArea.bottom
-            ) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        });
-
         // Here we draw asteroids
         this.asteroids.forEach(asteroid => {
             ctx.save();
@@ -1181,62 +1478,268 @@ export class World {
         }
     }
 
-    // Handle asteroid field update from server
-    setupServerAsteroidField(serverAsteroids) {
-        console.log(`Received ${serverAsteroids.length} asteroids from server`);
-        
-        // Clear existing asteroids
-        this.asteroids = [];
-        
-        // Process each server asteroid
-        serverAsteroids.forEach(serverAsteroid => {
-            // Create a new asteroid with server properties but local rendering details
-            const asteroid = {
-                // Server-synchronized properties (these must stay identical)
-                id: serverAsteroid.id,
-                x: serverAsteroid.x,
-                y: serverAsteroid.y,
-                radius: serverAsteroid.radius,
-                health: serverAsteroid.health,
-                rotation: serverAsteroid.rotation,
-                rotationSpeed: serverAsteroid.rotationSpeed,
-                type: serverAsteroid.type || 'rock',
-                
-                // Visual properties (can be different per client)
-                vertices: this.generateAsteroidVertices(8, 0.4),
-                size: serverAsteroid.radius > 50 ? 'large' : (serverAsteroid.radius > 30 ? 'medium' : 'small'),
-                scoreValue: serverAsteroid.radius > 50 ? 400 : (serverAsteroid.radius > 30 ? 200 : 100),
-                velocityX: serverAsteroid.velocityX || 0,
-                velocityY: serverAsteroid.velocityY || 0
-            };
+    // Render all star layers with parallax effect
+    renderStarLayers(ctx, player, visibleArea) {
+        // Draw standard stars from oldest code for backward compatibility
+        this.stars.forEach(star => {
+            // Only draw stars in visible area (optimization)
+            if (
+                star.x >= visibleArea.left &&
+                star.x <= visibleArea.right &&
+                star.y >= visibleArea.top &&
+                star.y <= visibleArea.bottom
+            ) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // Calculate screen center for parallax
+        const centerX = player.x;
+        const centerY = player.y;
+
+        // Loop through each star layer for parallax (except special stars)
+        for (let layerIndex = 0; layerIndex < this.starLayers.length - 1; layerIndex++) {
+            const stars = this.starLayers[layerIndex];
+            const parallaxFactor = (layerIndex + 1) * 0.2; // Increase factor with each layer
             
-            this.asteroids.push(asteroid);
+            stars.forEach(star => {
+                // Apply parallax offset based on player position
+                const parallaxX = star.x - (centerX * star.parallaxFactor);
+                const parallaxY = star.y - (centerY * star.parallaxFactor);
+                
+                // Only draw if within visible area
+                if (
+                    parallaxX >= visibleArea.left &&
+                    parallaxX <= visibleArea.right &&
+                    parallaxY >= visibleArea.top &&
+                    parallaxY <= visibleArea.bottom
+                ) {
+                    // Calculate blinking effect for stars that blink
+                    let brightness = star.brightness;
+                    if (star.blinkSpeed > 0) {
+                        brightness *= 0.7 + 0.3 * Math.sin(star.blinkPhase);
+                    }
+                    
+                    ctx.fillStyle = star.color || `rgba(255, 255, 255, ${brightness})`;
+                    if (star.color && star.color.startsWith('#')) {
+                        // For hex colors, apply alpha
+                        ctx.globalAlpha = brightness;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(parallaxX, parallaxY, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Reset global alpha if we changed it
+                    if (star.color && star.color.startsWith('#')) {
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+            });
+        }
+        
+        // Render special stars (bright stars, binary systems, etc.)
+        const specialStars = this.starLayers[3] || [];
+        specialStars.forEach(star => {
+            // Apply parallax offset
+            const parallaxX = star.x - (centerX * star.parallaxFactor);
+            const parallaxY = star.y - (centerY * star.parallaxFactor);
+            
+            // Only draw if in visible area
+            if (
+                parallaxX >= visibleArea.left &&
+                parallaxX <= visibleArea.right &&
+                parallaxY >= visibleArea.top &&
+                parallaxY <= visibleArea.bottom
+            ) {
+                ctx.save();
+                ctx.translate(parallaxX, parallaxY);
+                
+                if (star.type === 'bright') {
+                    // Draw glow halo
+                    if (star.hasGlow) {
+                        const gradient = ctx.createRadialGradient(
+                            0, 0, 0,
+                            0, 0, star.glowSize
+                        );
+                        
+                        let brightness = star.brightness;
+                        if (star.blinkSpeed > 0) {
+                            brightness *= 0.7 + 0.3 * Math.sin(star.blinkPhase);
+                        }
+                        
+                        gradient.addColorStop(0, star.color);
+                        gradient.addColorStop(0.5, star.color.replace('80%', '50%').replace(')', ', 0.5)'));
+                        gradient.addColorStop(1, 'transparent');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.globalAlpha = brightness * 0.6;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, star.glowSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Draw actual star
+                    let brightness = star.brightness;
+                    if (star.blinkSpeed > 0) {
+                        brightness *= 0.7 + 0.3 * Math.sin(star.blinkPhase);
+                    }
+                    
+                    ctx.fillStyle = star.color;
+                    ctx.globalAlpha = brightness;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Add cross-shaped light ray for bright stars
+                    const rayLength = star.size * 4;
+                    ctx.globalAlpha = brightness * 0.4;
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = star.color;
+                    
+                    // Horizontal ray
+                    ctx.beginPath();
+                    ctx.moveTo(-rayLength, 0);
+                    ctx.lineTo(rayLength, 0);
+                    ctx.stroke();
+                    
+                    // Vertical ray
+                    ctx.beginPath();
+                    ctx.moveTo(0, -rayLength);
+                    ctx.lineTo(0, rayLength);
+                    ctx.stroke();
+                    
+                } else if (star.type === 'binary') {
+                    // Draw binary star system
+                    const orbitX = Math.cos(star.orbitPhase) * star.orbitRadius;
+                    const orbitY = Math.sin(star.orbitPhase) * star.orbitRadius;
+                    
+                    // First star
+                    ctx.fillStyle = star.color;
+                    ctx.globalAlpha = star.brightness;
+                    ctx.beginPath();
+                    ctx.arc(-orbitX/2, -orbitY/2, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Second star
+                    ctx.fillStyle = star.secondaryColor;
+                    ctx.beginPath();
+                    ctx.arc(orbitX/2, orbitY/2, star.size * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Faint connecting line/orbit trail
+                    ctx.globalAlpha = 0.2;
+                    ctx.strokeStyle = 'white';
+                    ctx.beginPath();
+                    ctx.moveTo(-orbitX/2, -orbitY/2);
+                    ctx.lineTo(orbitX/2, orbitY/2);
+                    ctx.stroke();
+                    
+                } else if (star.type === 'pulsar') {
+                    // Draw pulsing star
+                    const pulsePhase = star.pulsePhase;
+                    const pulseSize = star.baseSize * (0.6 + 0.4 * Math.sin(pulsePhase));
+                    
+                    // Outer glow
+                    const gradient = ctx.createRadialGradient(
+                        0, 0, 0,
+                        0, 0, pulseSize * 2
+                    );
+                    gradient.addColorStop(0, star.color);
+                    gradient.addColorStop(0.5, star.color.replace('75%', '50%').replace(')', ', 0.3)'));
+                    gradient.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.globalAlpha = 0.5 * (0.6 + 0.4 * Math.abs(Math.sin(pulsePhase)));
+                    ctx.beginPath();
+                    ctx.arc(0, 0, pulseSize * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Core
+                    ctx.fillStyle = star.color;
+                    ctx.globalAlpha = 0.9;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                } else if (star.type === 'cluster') {
+                    // Draw nebula-like cluster
+                    ctx.rotate(star.rotation);
+                    
+                    // Draw nebula cloud
+                    ctx.fillStyle = star.color;
+                    ctx.globalAlpha = 0.3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, star.clusterSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw individual stars in the cluster
+                    ctx.globalAlpha = 1.0;
+                    star.stars.forEach(miniStar => {
+                        ctx.fillStyle = 'rgba(255, 255, 255, ' + miniStar.brightness + ')';
+                        ctx.beginPath();
+                        ctx.arc(
+                            miniStar.offsetX,
+                            miniStar.offsetY,
+                            miniStar.size,
+                            0, Math.PI * 2
+                        );
+                        ctx.fill();
+                    });
+                }
+                
+                ctx.restore();
+            }
         });
         
-        console.log("Asteroid field synchronized with server");
-    }
-    
-    // Handle asteroid hit update from server
-    updateAsteroidHealth(asteroidId, newHealth) {
-        const asteroid = this.asteroids.find(a => a.id === asteroidId);
-        if (asteroid) {
-            asteroid.health = newHealth;
-        }
-    }
-    
-    // Handle asteroid destruction from server
-    destroyServerAsteroid(asteroidId, createExplosion = true) {
-        const asteroidIndex = this.asteroids.findIndex(a => a.id === asteroidId);
-        if (asteroidIndex === -1) return;
-        
-        const asteroid = this.asteroids[asteroidIndex];
-        
-        // Create explosion effect if requested
-        if (createExplosion) {
-            this.createExplosion(asteroid.x, asteroid.y, asteroid.radius);
-        }
-        
-        // Remove the asteroid
-        this.asteroids.splice(asteroidIndex, 1);
+        // Draw shooting stars
+        this.shootingStars.forEach(shootingStar => {
+            // Calculate trail points
+            const trailX = shootingStar.x - Math.cos(shootingStar.angle) * shootingStar.trailLength * shootingStar.life;
+            const trailY = shootingStar.y - Math.sin(shootingStar.angle) * shootingStar.trailLength * shootingStar.life;
+            
+            // Draw the shooting star trail
+            const gradient = ctx.createLinearGradient(
+                shootingStar.x, shootingStar.y,
+                trailX, trailY
+            );
+            
+            gradient.addColorStop(0, shootingStar.color);
+            gradient.addColorStop(0.6, shootingStar.color.replace('#', 'rgba(') + ', 0.5)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = shootingStar.size;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(shootingStar.x, shootingStar.y);
+            ctx.lineTo(trailX, trailY);
+            ctx.stroke();
+            
+            // Draw the head/core of the shooting star
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + shootingStar.life + ')';
+            ctx.beginPath();
+            ctx.arc(shootingStar.x, shootingStar.y, shootingStar.size * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add a twinkle effect at the head
+            const twinkleSize = shootingStar.size * 3 * Math.abs(Math.sin(shootingStar.life * shootingStar.twinkleFreq));
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + shootingStar.life * 0.7 + ')';
+            
+            ctx.beginPath();
+            ctx.moveTo(shootingStar.x, shootingStar.y - twinkleSize);
+            ctx.lineTo(shootingStar.x + twinkleSize/3, shootingStar.y - twinkleSize/3);
+            ctx.lineTo(shootingStar.x + twinkleSize, shootingStar.y);
+            ctx.lineTo(shootingStar.x + twinkleSize/3, shootingStar.y + twinkleSize/3);
+            ctx.lineTo(shootingStar.x, shootingStar.y + twinkleSize);
+            ctx.lineTo(shootingStar.x - twinkleSize/3, shootingStar.y + twinkleSize/3);
+            ctx.lineTo(shootingStar.x - twinkleSize, shootingStar.y);
+            ctx.lineTo(shootingStar.x - twinkleSize/3, shootingStar.y - twinkleSize/3);
+            ctx.closePath();
+            ctx.fill();
+        });
     }
 }
