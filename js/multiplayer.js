@@ -806,8 +806,14 @@ export class MultiplayerManager {
         }
     }
 
-    // Handle damage to player
+    // Handle player damage and check for death
     handleDamage(damage, attackerId) {
+        // Record the attacker ID for kill attribution
+        if (this.game.player) {
+            this.game.player.recordDamageFrom(attackerId);
+        }
+        
+        // Apply damage
         this.game.player.takeDamage(damage);
         
         // Create explosion effect at impact point with enhanced visuals
@@ -850,8 +856,8 @@ export class MultiplayerManager {
         this.showGameMessage(`Hit by ${attacker} (-${damage.toFixed(1)})`, '#f88');
     }
 
-    // Handle player death (local)
-    handleDeath(attackerId) {
+    // Handle local player death immediately (without waiting for server confirmation)
+    handleLocalDeath(attackerId) {
         // Store current credits value
         const currentCredits = this.game.player.credits;
         
@@ -897,6 +903,22 @@ export class MultiplayerManager {
         // Add intense camera shake for death
         this.addCameraShake(25);
         
+        // Send destroyed event to server to inform other players
+        // We only need to send this if we weren't already notified by the server
+        if (this.connected && this.socket) {
+            this.socket.emit('playerDestroyed', {
+                playerId: this.playerId,
+                attackerId: attackerId || null
+            });
+        }
+        
+        // Show kill message using kill announcer
+        if (attackerId) {
+            const killerName = attackerId === this.playerId ? 
+                'You' : (this.players[attackerId]?.name || 'Another player');
+            this.killAnnouncer.announceKill(killerName, 'you');
+        }
+        
         // Respawn after delay
         setTimeout(() => {
             if (!this.game) return; // Safety check
@@ -908,6 +930,7 @@ export class MultiplayerManager {
             this.game.player.y = spawnY;
             this.game.player.health = this.game.player.maxHealth;
             this.game.player.visible = true;
+            this.game.player.deathTriggered = false; // Reset death trigger flag
             
             if (this.game.gameState === 'dying') {
                 this.game.gameState = 'playing';
@@ -925,6 +948,12 @@ export class MultiplayerManager {
             
             this.showGameMessage('Respawned!', '#4f4');
         }, 3000);
+    }
+
+    // Handle player death from server event (modified to use handleLocalDeath for local player)
+    handleDeath(attackerId) {
+        // Call our shared local death handler
+        this.handleLocalDeath(attackerId);
     }
 
     // Handle remote player death

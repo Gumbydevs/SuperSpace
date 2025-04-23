@@ -62,6 +62,11 @@ export class Player {
         // Here we define the cargo system
         this.cargoCapacity = 100;
         this.cargo = 0; // Resource units collected
+
+        // Track the last player who damaged us
+        this.lastDamageFrom = null;
+        this.damageAttributionTimeout = null;
+        this.deathTriggered = false;
     }
 
     update(deltaTime, input, soundManager) {
@@ -343,8 +348,38 @@ export class Player {
                 window.game.ui.updateHealthBar(this.health, this.maxHealth);
             }
         }
+
+        // Check if player is now dead
+        if (this.health <= 0) {
+            // Trigger immediate local death animation if we're in multiplayer mode
+            if (window.game.multiplayer && !this.deathTriggered) {
+                this.deathTriggered = true; // Flag to prevent multiple death animations
+                
+                // Find the last player who hit us (if known) to attribute the kill
+                const attackerId = this.lastDamageFrom || null;
+                
+                // Call local death animation immediately
+                window.game.multiplayer.handleLocalDeath(attackerId);
+            }
+        } else {
+            // Reset the death triggered flag if we're somehow resurrected
+            this.deathTriggered = false;
+        }
         
         return this.health <= 0; // Return true if player is destroyed
+    }
+
+    recordDamageFrom(attackerId) {
+        this.lastDamageFrom = attackerId;
+        
+        // Clear the attack attribution after a while (if they don't kill us)
+        if (this.damageAttributionTimeout) {
+            clearTimeout(this.damageAttributionTimeout);
+        }
+        
+        this.damageAttributionTimeout = setTimeout(() => {
+            this.lastDamageFrom = null;
+        }, 5000); // 5 second attribution window
     }
 
     addCredits(amount) {
