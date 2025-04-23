@@ -1180,4 +1180,63 @@ export class World {
             });
         }
     }
+
+    // Handle asteroid field update from server
+    setupServerAsteroidField(serverAsteroids) {
+        console.log(`Received ${serverAsteroids.length} asteroids from server`);
+        
+        // Clear existing asteroids
+        this.asteroids = [];
+        
+        // Process each server asteroid
+        serverAsteroids.forEach(serverAsteroid => {
+            // Create a new asteroid with server properties but local rendering details
+            const asteroid = {
+                // Server-synchronized properties (these must stay identical)
+                id: serverAsteroid.id,
+                x: serverAsteroid.x,
+                y: serverAsteroid.y,
+                radius: serverAsteroid.radius,
+                health: serverAsteroid.health,
+                rotation: serverAsteroid.rotation,
+                rotationSpeed: serverAsteroid.rotationSpeed,
+                type: serverAsteroid.type || 'rock',
+                
+                // Visual properties (can be different per client)
+                vertices: this.generateAsteroidVertices(8, 0.4),
+                size: serverAsteroid.radius > 50 ? 'large' : (serverAsteroid.radius > 30 ? 'medium' : 'small'),
+                scoreValue: serverAsteroid.radius > 50 ? 400 : (serverAsteroid.radius > 30 ? 200 : 100),
+                velocityX: serverAsteroid.velocityX || 0,
+                velocityY: serverAsteroid.velocityY || 0
+            };
+            
+            this.asteroids.push(asteroid);
+        });
+        
+        console.log("Asteroid field synchronized with server");
+    }
+    
+    // Handle asteroid hit update from server
+    updateAsteroidHealth(asteroidId, newHealth) {
+        const asteroid = this.asteroids.find(a => a.id === asteroidId);
+        if (asteroid) {
+            asteroid.health = newHealth;
+        }
+    }
+    
+    // Handle asteroid destruction from server
+    destroyServerAsteroid(asteroidId, createExplosion = true) {
+        const asteroidIndex = this.asteroids.findIndex(a => a.id === asteroidId);
+        if (asteroidIndex === -1) return;
+        
+        const asteroid = this.asteroids[asteroidIndex];
+        
+        // Create explosion effect if requested
+        if (createExplosion) {
+            this.createExplosion(asteroid.x, asteroid.y, asteroid.radius);
+        }
+        
+        // Remove the asteroid
+        this.asteroids.splice(asteroidIndex, 1);
+    }
 }

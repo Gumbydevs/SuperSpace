@@ -272,6 +272,42 @@ export class MultiplayerManager {
             this.updatePlayerCount();
         });
 
+        // Handle asteroid field update from server
+        this.socket.on('asteroidFieldUpdate', (data) => {
+            console.log('Received asteroid field from server:', data.asteroids.length, 'asteroids');
+            if (this.game.world) {
+                // Set up the asteroid field with server data
+                this.game.world.setupServerAsteroidField(data.asteroids);
+                
+                this.showGameMessage('Asteroid field synchronized', '#aaf', 3000);
+            }
+        });
+        
+        // Handle asteroid hit from server
+        this.socket.on('asteroidHit', (data) => {
+            if (this.game.world) {
+                // Update the asteroid's health
+                this.game.world.updateAsteroidHealth(data.asteroidId, data.damage);
+            }
+        });
+        
+        // Handle asteroid destruction from server
+        this.socket.on('asteroidDestroyed', (data) => {
+            if (this.game.world) {
+                // Destroy the asteroid with explosion
+                this.game.world.destroyServerAsteroid(data.asteroidId, true);
+            }
+        });
+        
+        // Handle world update from server
+        this.socket.on('worldUpdate', (data) => {
+            // Process updated asteroid positions if needed
+            if (data.asteroids && this.game.world) {
+                // This could be used for minor position corrections
+                // but the full field update is handled by asteroidFieldUpdate
+            }
+        });
+
         // Handle disconnection from server
         this.socket.on('disconnect', () => {
             console.log('Disconnected from server');
