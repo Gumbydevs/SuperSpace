@@ -327,177 +327,6 @@ class Game {
         soundOption.appendChild(soundToggle);
         optionsList.appendChild(soundOption);
         
-        // Add ship color customization option
-        const shipColorOption = document.createElement('div');
-        shipColorOption.style.marginBottom = '10px';
-        shipColorOption.style.padding = '8px';
-        shipColorOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-        shipColorOption.style.borderRadius = '5px';
-        
-        const shipColorLabel = document.createElement('div');
-        shipColorLabel.textContent = '🚀 Ship Color';
-        shipColorLabel.style.fontWeight = 'bold';
-        shipColorLabel.style.marginBottom = '10px';
-        shipColorOption.appendChild(shipColorLabel);
-        
-        // Add ship preview
-        const shipPreviewContainer = document.createElement('div');
-        shipPreviewContainer.style.display = 'flex';
-        shipPreviewContainer.style.justifyContent = 'center';
-        shipPreviewContainer.style.alignItems = 'center';
-        shipPreviewContainer.style.marginBottom = '15px';
-        shipPreviewContainer.style.height = '80px';
-        shipPreviewContainer.style.backgroundColor = 'rgba(0, 0, 20, 0.5)';
-        shipPreviewContainer.style.borderRadius = '8px';
-        shipPreviewContainer.style.border = '1px solid #444';
-        
-        // Ship preview canvas
-        const previewCanvas = document.createElement('canvas');
-        previewCanvas.width = 120;
-        previewCanvas.height = 80;
-        previewCanvas.style.display = 'block';
-        
-        shipPreviewContainer.appendChild(previewCanvas);
-        shipColorOption.appendChild(shipPreviewContainer);
-        
-        // Draw ship preview function
-        const drawShipPreview = () => {
-            const ctx = previewCanvas.getContext('2d');
-            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            
-            // Center the ship
-            ctx.save();
-            ctx.translate(previewCanvas.width / 2, previewCanvas.height / 2);
-            ctx.scale(1.5, 1.5); // Make it a bit larger
-            
-            // Draw ship body using current color
-            ctx.fillStyle = this.player.shipColor;
-            ctx.beginPath();
-            ctx.moveTo(0, -15); // front (points upward)
-            ctx.lineTo(-10, 10); // back left
-            ctx.lineTo(0, 5);   // back middle
-            ctx.lineTo(10, 10);  // back right
-            ctx.closePath();
-            ctx.fill();
-            
-            // Draw engine using current color
-            ctx.fillStyle = this.player.engineColor;
-            ctx.beginPath();
-            ctx.moveTo(0, 5);
-            ctx.lineTo(-5, 12);
-            ctx.lineTo(0, 15);
-            ctx.lineTo(5, 12);
-            ctx.closePath();
-            ctx.fill();
-            
-            ctx.restore();
-        };
-        
-        // Create color selection grid
-        const shipColorGrid = document.createElement('div');
-        shipColorGrid.style.display = 'grid';
-        shipColorGrid.style.gridTemplateColumns = 'repeat(6, 1fr)';
-        shipColorGrid.style.gap = '8px';
-        shipColorGrid.style.marginBottom = '15px';
-        
-        // Define ship colors
-        const shipColors = [
-            '#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff',
-            '#36a', '#3a6', '#a63', '#a36', '#63a', '#6a3',
-            '#249', '#924', '#492', '#942', '#294', '#429',
-            '#fff', '#aaa', '#555', '#000', '#fa0', '#0af'
-        ];
-        
-        // Create color selection buttons
-        shipColors.forEach(color => {
-            const colorButton = document.createElement('button');
-            colorButton.style.width = '100%';
-            colorButton.style.height = '20px';
-            colorButton.style.backgroundColor = color;
-            colorButton.style.border = color === this.player.shipColor ? 
-                '2px solid white' : '1px solid #555';
-            colorButton.style.borderRadius = '4px';
-            colorButton.style.cursor = 'pointer';
-            colorButton.style.padding = '0';
-            
-            colorButton.onclick = () => {
-                // Update player ship color
-                this.player.setShipColor(color);
-                
-                // Update selected button appearance
-                shipColorGrid.querySelectorAll('button').forEach(btn => {
-                    btn.style.border = '1px solid #555';
-                });
-                colorButton.style.border = '2px solid white';
-                
-                // Update the preview
-                drawShipPreview();
-                
-                // Play a sound
-                this.soundManager.play('powerup', { volume: 0.3, playbackRate: 1.5 });
-            };
-            
-            shipColorGrid.appendChild(colorButton);
-        });
-        
-        shipColorOption.appendChild(shipColorGrid);
-        
-        // Engine color selection
-        const engineColorLabel = document.createElement('div');
-        engineColorLabel.textContent = '🔥 Engine Color';
-        engineColorLabel.style.fontWeight = 'bold';
-        engineColorLabel.style.marginBottom = '10px';
-        shipColorOption.appendChild(engineColorLabel);
-        
-        // Create engine color grid
-        const engineColorGrid = document.createElement('div');
-        engineColorGrid.style.display = 'grid';
-        engineColorGrid.style.gridTemplateColumns = 'repeat(6, 1fr)';
-        engineColorGrid.style.gap = '8px';
-        
-        // Define engine colors
-        const engineColors = [
-            '#f66', '#ff6', '#6ff', '#f6f', '#6f6', '#66f',
-            '#f00', '#ff0', '#0ff', '#f0f', '#0f0', '#00f',
-            '#fa0', '#0af', '#a0f', '#f0a', '#afa', '#faa',
-            '#fff', '#aaa', '#555', '#000', '#ffd', '#fdb'
-        ];
-        
-        // Create engine color selection buttons
-        engineColors.forEach(color => {
-            const colorButton = document.createElement('button');
-            colorButton.style.width = '100%';
-            colorButton.style.height = '20px';
-            colorButton.style.backgroundColor = color;
-            colorButton.style.border = color === this.player.engineColor ? 
-                '2px solid white' : '1px solid #555';
-            colorButton.style.borderRadius = '4px';
-            colorButton.style.cursor = 'pointer';
-            colorButton.style.padding = '0';
-            
-            colorButton.onclick = () => {
-                // Update player engine color
-                this.player.setEngineColor(color);
-                
-                // Update selected button appearance
-                engineColorGrid.querySelectorAll('button').forEach(btn => {
-                    btn.style.border = '1px solid #555';
-                });
-                colorButton.style.border = '2px solid white';
-                
-                // Update the preview
-                drawShipPreview();
-                
-                // Play a sound
-                this.soundManager.play('powerup', { volume: 0.3, playbackRate: 1.2 });
-            };
-            
-            engineColorGrid.appendChild(colorButton);
-        });
-        
-        shipColorOption.appendChild(engineColorGrid);
-        optionsList.appendChild(shipColorOption);
-        
         // Add rename pilot option
         const renameOption = document.createElement('div');
         renameOption.style.display = 'flex';
@@ -544,6 +373,28 @@ class Game {
         currentNameInfo.textContent = `Current name: ${this.multiplayer ? this.multiplayer.playerName : 'Unknown'}`;
         optionsList.appendChild(currentNameInfo);
         
+        // Add game info option
+        const gameInfoOption = document.createElement('div');
+        gameInfoOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+        gameInfoOption.style.borderRadius = '5px';
+        gameInfoOption.style.padding = '8px';
+        gameInfoOption.style.marginTop = '20px';
+        
+        const gameInfoTitle = document.createElement('div');
+        gameInfoTitle.textContent = 'ℹ️ Game Info';
+        gameInfoTitle.style.fontWeight = 'bold';
+        gameInfoTitle.style.marginBottom = '8px';
+        
+        const gameInfoText = document.createElement('div');
+        gameInfoText.style.fontSize = '13px';
+        gameInfoText.style.color = '#bbb';
+        gameInfoText.style.lineHeight = '1.4';
+        gameInfoText.innerHTML = 'Ship customization is available in the Shop under the Appearance tab.<br><br>Press B or click the Shop button to open the shop.';
+        
+        gameInfoOption.appendChild(gameInfoTitle);
+        gameInfoOption.appendChild(gameInfoText);
+        optionsList.appendChild(gameInfoOption);
+        
         // Close button
         const closeButton = document.createElement('button');
         closeButton.textContent = 'Close';
@@ -563,9 +414,6 @@ class Game {
         dialog.appendChild(closeButton);
         backdrop.appendChild(dialog);
         document.body.appendChild(backdrop);
-        
-        // Draw initial ship preview
-        drawShipPreview();
         
         // Add keyboard shortcut to close dialog with Escape key
         const escapeHandler = (e) => {
