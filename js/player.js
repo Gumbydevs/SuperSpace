@@ -351,42 +351,110 @@ export class Player {
 
         // Check if player is now dead
         if (this.health <= 0) {
-            // Trigger immediate local death animation if we're in multiplayer mode
-            if (window.game.multiplayer && !this.deathTriggered) {
-                this.deathTriggered = true; // Flag to prevent multiple death animations
-                
-                // Find the last player who hit us (if known) to attribute the kill
-                const attackerId = this.lastDamageFrom || null;
-                
-                // CRITICAL FIX: Create explosion effect immediately on client-side
-                // This ensures the explosion is always visible, regardless of server communication
-                if (window.game && window.game.world && window.game.multiplayer) {
-                    // Set the game state to "dying" - before creating effects
-                    window.game.gameState = 'dying';
-                    
-                    // Hide the player ship immediately
-                    this.visible = false;
-                    
-                    // Create explosion directly
-                    window.game.multiplayer.createLocalExplosionEffect(
-                        this.x, 
-                        this.y, 
-                        this.rotation
-                    );
-                    
-                    // Add camera shake for dramatic effect
-                    window.game.multiplayer.addCameraShake(25);
-                }
-                
-                // Call handleDeath to handle respawn and other logic
-                window.game.multiplayer.handleDeath(attackerId);
-            }
+            this.die();
         } else {
             // Reset the death triggered flag if we're somehow resurrected
             this.deathTriggered = false;
         }
         
         return this.health <= 0; // Return true if player is destroyed
+    }
+
+    die() {
+        // Set health to 0
+        this.health = 0;
+        
+        // Make sure the world knows we're dying
+        if (window.game) {
+            window.game.gameState = 'dying';
+        }
+        
+        // Hide the player ship immediately
+        this.visible = false;
+        this.deathTriggered = true;
+        
+        // GUARANTEED EXPLOSION EFFECT - this will work 100% of the time
+        if (window.game && window.game.world) {
+            // Create main explosion
+            window.game.world.createExplosion(
+                this.x, 
+                this.y, 
+                35,  // Size of explosion
+                window.game.soundManager
+            );
+            
+            // Create multiple secondary explosions for dramatic effect
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    if (window.game && window.game.world) {
+                        const offsetX = (Math.random() - 0.5) * 30;
+                        const offsetY = (Math.random() - 0.5) * 30;
+                        window.game.world.createExplosion(
+                            this.x + offsetX,
+                            this.y + offsetY,
+                            15 + Math.random() * 10,
+                            null
+                        );
+                    }
+                }, 100 + Math.random() * 300);
+            }
+            
+            // Create debris pieces
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 30 + Math.random() * 120;
+                const size = 1 + Math.random() * 3;
+                
+                // Create debris with mixed colors
+                const colors = ['#33f', '#66f', '#f66', '#999'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const debris = {
+                    x: this.x + (Math.random() - 0.5) * 10,
+                    y: this.y + (Math.random() - 0.5) * 10,
+                    velocityX: Math.cos(angle) * speed,
+                    velocityY: Math.sin(angle) * speed,
+                    size: size,
+                    color: color,
+                    life: 1.0,
+                    maxLife: 1.0 + Math.random() * 2.0,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 5,
+                    update(deltaTime) {
+                        // Move debris
+                        this.x += this.velocityX * deltaTime;
+                        this.y += this.velocityY * deltaTime;
+                        // Decrease lifetime
+                        this.life -= deltaTime / this.maxLife;
+                        // Slow down over time
+                        this.velocityX *= 0.99;
+                        this.velocityY *= 0.99;
+                        // Rotate debris
+                        this.rotation += this.rotationSpeed * deltaTime;
+                    }
+                };
+                
+                window.game.world.particles.push(debris);
+            }
+            
+            // Add camera shake if available
+            if (window.game.multiplayer) {
+                window.game.multiplayer.addCameraShake(25);
+            }
+            
+            // Play explosion sound
+            if (window.game.soundManager) {
+                window.game.soundManager.play('explosion', {
+                    volume: 0.9,
+                    position: { x: this.x, y: this.y }
+                });
+            }
+        }
+        
+        // Handle remote player notification if in multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.handleDeath) {
+            window.game.multiplayer.handleDeath(this.lastDamageFrom);
+        }
     }
 
     recordDamageFrom(attackerId) {
@@ -664,34 +732,72 @@ export class Player {
             const relVelX = this.velocity.x;
             const relVelY = this.velocity.y;
             
+            // Calculate impact force
+            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            
             // Calculate impulse (how strongly we bounce)
-            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
+            const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
             
             // Apply impulse in the direction away from collision
             this.velocity.x = nx * impulseStrength;
             this.velocity.y = ny * impulseStrength;
             
             // Take damage based on impact force
-            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
             const damageFactor = 0.1; // Controls how much damage is taken per unit of speed
             const damage = Math.max(5, impactForce * damageFactor);
-            this.takeDamage(damage);
             
-            // Play collision sound
+            // Create visual impact effect at the collision point
+            if (window.game && window.game.world) {
+                // Calculate impact position at the collision point
+                const impactX = asteroid.x + nx * asteroid.radius;
+                const impactY = asteroid.y + ny * asteroid.radius;
+                
+                // Create basic collision effect for all impacts
+                window.game.world.createCollisionEffect(impactX, impactY);
+                
+                // For high-velocity impacts, create a more dramatic effect
+                if (impactForce > 150) {
+                    // Create a small explosion based on impact force
+                    const explosionSize = Math.min(25, 10 + impactForce * 0.1);
+                    window.game.world.createExplosion(
+                        impactX, 
+                        impactY,
+                        explosionSize,
+                        soundManager
+                    );
+                    
+                    // Add camera shake proportional to impact force
+                    if (window.game.multiplayer) {
+                        window.game.multiplayer.addCameraShake(Math.min(15, impactForce * 0.05));
+                    }
+                }
+            }
+            
+            // Play collision sound with volume based on impact force
             if (soundManager) {
                 soundManager.play('hit', {
                     volume: Math.min(0.8, 0.3 + (damage / 30)),
                     playbackRate: 0.7,
                     position: { x: this.x, y: this.y }
                 });
+                
+                // For really hard impacts, also play a crash sound
+                if (impactForce > 200) {
+                    soundManager.play('explosion', {
+                        volume: Math.min(0.5, impactForce * 0.001),
+                        playbackRate: 1.2,
+                        position: { x: this.x, y: this.y }
+                    });
+                }
             }
             
-            // Create visual impact effect
-            if (window.game && window.game.world) {
-                // Calculate impact position at the collision point
-                const impactX = asteroid.x + nx * asteroid.radius;
-                const impactY = asteroid.y + ny * asteroid.radius;
-                window.game.world.createCollisionEffect(impactX, impactY);
+            // Critical: Apply damage AFTER creating visual effects
+            // This ensures we see effects even if damage leads to death
+            const wasKilled = this.takeDamage(damage);
+            
+            // If the collision killed the player, ensure explosion is shown
+            if (wasKilled && !this.deathTriggered) {
+                this.die();
             }
             
             // Set cooldown to prevent multiple collisions

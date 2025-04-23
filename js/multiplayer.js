@@ -886,39 +886,14 @@ export class MultiplayerManager {
         // Store current credits value
         const currentCredits = this.game.player.credits;
         
-        // Hide the player ship immediately
-        this.game.player.visible = false;
-        
-        // Set the game state to "dying" - IMPORTANT: do this before creating effects
-        if (this.game) {
-            this.game.gameState = 'dying';
-        }
-        
-        // IMPORTANT: ALWAYS create explosion effect directly to ensure visibility
-        // This is a critical fix to ensure the player sees their death explosion
-        this.createLocalExplosionEffect(
-            this.game.player.x,
-            this.game.player.y,
-            this.game.player.rotation
-        );
-        
-        // Play explosion sound to enhance feedback
-        if (this.game.soundManager) {
-            this.game.soundManager.play('explosion', {
-                volume: 0.9,
-                position: { 
-                    x: this.game.player.x, 
-                    y: this.game.player.y 
-                }
-            });
+        // Make sure the die() method has been called to create explosion effects
+        if (!this.game.player.deathTriggered) {
+            this.game.player.die();
         }
         
         // Show death message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Destroyed by ${attacker}!`, '#f44', 3000);
-        
-        // Add intense camera shake for death
-        this.addCameraShake(25);
         
         // Respawn after delay
         setTimeout(() => {
@@ -931,6 +906,7 @@ export class MultiplayerManager {
             this.game.player.y = spawnY;
             this.game.player.health = this.game.player.maxHealth;
             this.game.player.visible = true;
+            this.game.player.deathTriggered = false;
             
             if (this.game.gameState === 'dying') {
                 this.game.gameState = 'playing';
