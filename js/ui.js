@@ -38,40 +38,42 @@ export class UI {
         hudContainer.style.pointerEvents = 'none'; 
         hudContainer.style.zIndex = '1000'; 
         
-        // Top bar - Score and credits in horizontal row
+        // Top bar - Score and credits in horizontal row - SCALED DOWN
         const topInfoPanel = document.createElement('div');
         topInfoPanel.id = 'top-info-panel';
         topInfoPanel.style.position = 'absolute';
-        topInfoPanel.style.top = '17px';
-        topInfoPanel.style.left = '120px'; // Leave space for players online list
+        topInfoPanel.style.top = '10px'; // Moved up slightly
+        topInfoPanel.style.left = '80px'; // Less space needed
         topInfoPanel.style.display = 'flex';
-        topInfoPanel.style.flexDirection = 'row'; // Changed to row for horizontal layout
+        topInfoPanel.style.flexDirection = 'row';
         topInfoPanel.style.alignItems = 'center';
-        topInfoPanel.style.gap = '15px';
+        topInfoPanel.style.gap = '10px'; // Reduced gap
         topInfoPanel.style.zIndex = '1001';
+        topInfoPanel.style.transform = 'scale(0.85)'; // Scale down the entire panel
+        topInfoPanel.style.transformOrigin = 'top left'; // Keep position relative to top left
         
-        // Score display - made more compact
+        // Score display - made even more compact
         const scoreDisplay = document.createElement('div');
         scoreDisplay.className = 'status-item-small';
         scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
         this.styleStatusItemSmall(scoreDisplay, '#fff');
         
-        // Credits display - made more compact
+        // Credits display - made even more compact
         const creditsDisplay = document.createElement('div');
         creditsDisplay.className = 'status-item-small';
         creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
         this.styleStatusItemSmall(creditsDisplay, '#ff0');
         
-        // Bottom right - Minimap
+        // Bottom right - Minimap - SCALED DOWN
         const minimapContainer = document.createElement('div');
         minimapContainer.id = 'minimap-container';
         minimapContainer.style.position = 'absolute';
-        minimapContainer.style.bottom = '20px';
-        minimapContainer.style.right = '20px';
-        minimapContainer.style.width = '150px';
-        minimapContainer.style.height = '150px';
-        minimapContainer.style.border = '2px solid #555';
-        minimapContainer.style.borderRadius = '5px';
+        minimapContainer.style.bottom = '15px'; // Moved closer to bottom edge
+        minimapContainer.style.right = '15px'; // Moved closer to right edge
+        minimapContainer.style.width = '120px'; // Smaller width
+        minimapContainer.style.height = '120px'; // Smaller height
+        minimapContainer.style.border = '1px solid #555'; // Thinner border
+        minimapContainer.style.borderRadius = '4px'; // Smaller border radius
         minimapContainer.style.overflow = 'hidden';
         minimapContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
         minimapContainer.style.pointerEvents = 'auto';
@@ -79,43 +81,45 @@ export class UI {
         
         const minimapCanvas = document.createElement('canvas');
         minimapCanvas.id = 'minimap';
-        minimapCanvas.width = 150;
-        minimapCanvas.height = 150;
+        minimapCanvas.width = 120; // Match new container size
+        minimapCanvas.height = 120; // Match new container size
         minimapContainer.appendChild(minimapCanvas);
         
         // Add score and credits to info panel
         topInfoPanel.appendChild(scoreDisplay);
         topInfoPanel.appendChild(creditsDisplay);
         
-        // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.)
+        // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - SCALED DOWN
         const statusPanel = document.createElement('div');
         statusPanel.id = 'status-panel';
         statusPanel.style.position = 'absolute';
-        statusPanel.style.bottom = '20px';
-        statusPanel.style.left = '20px';
+        statusPanel.style.bottom = '15px'; // Moved closer to bottom edge
+        statusPanel.style.left = '15px'; // Moved closer to left edge
         statusPanel.style.display = 'flex';
         statusPanel.style.flexDirection = 'column';
-        statusPanel.style.gap = '10px';
-        statusPanel.style.padding = '15px';
+        statusPanel.style.gap = '6px'; // Reduced gap between items
+        statusPanel.style.padding = '10px'; // Reduced padding
         statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        statusPanel.style.borderRadius = '8px';
-        statusPanel.style.border = '1px solid #444';
-        statusPanel.style.boxShadow = '0 0 10px rgba(0, 100, 255, 0.5)';
+        statusPanel.style.borderRadius = '6px'; // Smaller border radius
+        statusPanel.style.border = '1px solid #444'; // Thinner border
+        statusPanel.style.boxShadow = '0 0 8px rgba(0, 100, 255, 0.5)'; // Less intense shadow
         statusPanel.style.zIndex = '1001';
         statusPanel.style.pointerEvents = 'auto';
+        statusPanel.style.transform = 'scale(0.85)'; // Scale the entire panel down
+        statusPanel.style.transformOrigin = 'bottom left'; // Keep position relative to bottom left
         
         // Health display
         const healthDisplay = document.createElement('div');
         healthDisplay.className = 'status-item';
         
-        // Health bar
+        // Health bar - made more compact
         const healthBar = document.createElement('div');
         healthBar.style.width = '100%';
-        healthBar.style.height = '8px';
+        healthBar.style.height = '6px'; // Thinner bar
         healthBar.style.backgroundColor = '#333';
-        healthBar.style.borderRadius = '4px';
+        healthBar.style.borderRadius = '3px'; // Smaller border radius
         healthBar.style.overflow = 'hidden';
-        healthBar.style.marginTop = '5px';
+        healthBar.style.marginTop = '4px'; // Less margin
         
         const healthFill = document.createElement('div');
         healthFill.id = 'health-fill';
@@ -130,17 +134,17 @@ export class UI {
         this.styleStatusItem(healthDisplay, '#3f3');
         healthDisplay.appendChild(healthBar);
         
-        // Weapon display
+        // Weapon display - made more compact
         const weaponDisplay = document.createElement('div');
         weaponDisplay.className = 'status-item';
         weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Basic Laser</span>';
         
-        // Weapon icon
+        // Weapon icon - made smaller
         const weaponIcon = document.createElement('div');
         weaponIcon.id = 'weapon-icon';
         weaponIcon.innerHTML = '🔫';
-        weaponIcon.style.fontSize = '20px';
-        weaponIcon.style.marginLeft = '10px';
+        weaponIcon.style.fontSize = '16px'; // Smaller icon
+        weaponIcon.style.marginLeft = '8px'; // Less margin
         weaponIcon.style.display = 'inline-block';
         weaponIcon.style.verticalAlign = 'middle';
         
@@ -180,17 +184,18 @@ export class UI {
     
     styleStatusItem(element, color) {
         element.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        element.style.padding = '8px 12px';
-        element.style.borderRadius = '5px';
-        element.style.border = '1px solid #555';
+        element.style.padding = '6px 10px'; // Reduced padding
+        element.style.borderRadius = '4px'; // Smaller border radius
+        element.style.border = '1px solid #555'; // Thinner border
         element.style.color = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontSize = '0.9em'; // Slightly smaller font
         
         const label = element.querySelector('.status-label');
         if (label) {
             label.style.color = color;
             label.style.fontWeight = 'bold';
-            label.style.marginRight = '5px';
+            label.style.marginRight = '4px'; // Less margin
         }
         
         const value = element.querySelector('.status-value');
@@ -201,17 +206,18 @@ export class UI {
     
     styleStatusItemSmall(element, color) {
         element.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        element.style.padding = '4px 8px';
+        element.style.padding = '3px 6px'; // Reduced padding
         element.style.borderRadius = '3px';
-        element.style.border = '1px solid #555';
+        element.style.border = '1px solid #555'; // Thinner border
         element.style.color = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontSize = '0.85em'; // Smaller font
         
         const label = element.querySelector('.status-label');
         if (label) {
             label.style.color = color;
             label.style.fontWeight = 'bold';
-            label.style.marginRight = '3px';
+            label.style.marginRight = '2px'; // Less margin
         }
         
         const value = element.querySelector('.status-value');
@@ -286,7 +292,7 @@ export class UI {
             
             minimapCtx.fillStyle = color;
             minimapCtx.beginPath();
-            minimapCtx.arc(x, y, 2, 0, Math.PI * 2);
+            minimapCtx.arc(x, y, 1.5, 0, Math.PI * 2); // Smaller powerup dots
             minimapCtx.fill();
         });
         
@@ -296,7 +302,7 @@ export class UI {
         
         minimapCtx.fillStyle = '#33f';
         minimapCtx.beginPath();
-        minimapCtx.arc(playerX, playerY, 3, 0, Math.PI * 2);
+        minimapCtx.arc(playerX, playerY, 2.5, 0, Math.PI * 2); // Slightly smaller player dot
         minimapCtx.fill();
         
         // Draw view area (visible area on main screen)
