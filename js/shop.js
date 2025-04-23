@@ -3,13 +3,15 @@ export class ShopSystem {
         this.player = player;
         this.shopOpen = false;
         this.currentTab = 'ships'; // 'ships', 'weapons', 'upgrades'
+        
+        // Load ship ownership from localStorage
         this.availableShips = [
             {
                 id: 'scout',
                 name: 'Scout',
                 description: 'Fast and agile, but lightly armed and armored.',
                 price: 0, // Starting ship
-                owned: true,
+                owned: true, // Always owned
                 stats: {
                     maxHealth: 100,
                     maxSpeed: 400,
@@ -27,7 +29,7 @@ export class ShopSystem {
                 name: 'Fighter',
                 description: 'Balanced combat vessel with good speed and firepower.',
                 price: 5000,
-                owned: false,
+                owned: localStorage.getItem('ship_fighter') === 'true',
                 stats: {
                     maxHealth: 150,
                     maxSpeed: 350,
@@ -45,7 +47,7 @@ export class ShopSystem {
                 name: 'Heavy Cruiser',
                 description: 'Slower but heavily armed and armored warship.',
                 price: 12000,
-                owned: false,
+                owned: localStorage.getItem('ship_heavy') === 'true',
                 stats: {
                     maxHealth: 250,
                     maxSpeed: 280,
@@ -63,7 +65,7 @@ export class ShopSystem {
                 name: 'Stealth Ship',
                 description: 'Fast and hard to detect, but lightly armored.',
                 price: 20000,
-                owned: false,
+                owned: localStorage.getItem('ship_stealth') === 'true',
                 stats: {
                     maxHealth: 120,
                     maxSpeed: 450,
@@ -79,13 +81,14 @@ export class ShopSystem {
             }
         ];
         
+        // Load weapon ownership from localStorage
         this.availableWeapons = [
             {
                 id: 'laser',
                 name: 'Basic Laser',
                 description: 'Standard energy weapon with good balance.',
                 price: 0, // Starting weapon
-                owned: true,
+                owned: true, // Always owned
                 stats: {
                     damage: 10,
                     cooldown: 0.20,
@@ -99,7 +102,7 @@ export class ShopSystem {
                 name: 'Burst Cannon',
                 description: 'Fires multiple projectiles in a spread pattern.',
                 price: 2000,
-                owned: true, // The player starts with this weapon
+                owned: localStorage.getItem('weapon_burst') === 'true',
                 stats: {
                     damage: 5, // Per projectile
                     cooldown: 0.30,
@@ -114,7 +117,7 @@ export class ShopSystem {
                 name: 'Seeker Missile',
                 description: 'Guided missile with high damage but slow reload.',
                 price: 5000,
-                owned: true, // The player starts with this weapon
+                owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
                     damage: 20,
                     cooldown: 1.0,
@@ -129,7 +132,7 @@ export class ShopSystem {
                 name: 'Plasma Cannon',
                 description: 'Heavy energy weapon with splash damage.',
                 price: 8000,
-                owned: false,
+                owned: localStorage.getItem('weapon_plasma') === 'true',
                 stats: {
                     damage: 25,
                     cooldown: 0.6,
@@ -144,7 +147,7 @@ export class ShopSystem {
                 name: 'Quantum Disruptor',
                 description: 'Advanced weapon that phases through obstacles.',
                 price: 15000,
-                owned: false,
+                owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
                     damage: 30,
                     cooldown: 0.7,
@@ -156,13 +159,14 @@ export class ShopSystem {
             }
         ];
         
+        // Load upgrade levels from localStorage
         this.availableUpgrades = [
             {
                 id: 'engine',
                 name: 'Engine Upgrade',
                 description: 'Improves speed and acceleration.',
                 basePrice: 1000,
-                level: 0,
+                level: parseInt(localStorage.getItem('upgrade_engine') || '0'),
                 maxLevel: 3,
                 getPrice: (level) => 1000 * (level + 1),
                 getEffect: (level) => ({ 
@@ -175,7 +179,7 @@ export class ShopSystem {
                 name: 'Shield Generator',
                 description: 'Adds rechargeable shields that absorb damage.',
                 basePrice: 3000,
-                level: 0,
+                level: parseInt(localStorage.getItem('upgrade_shield') || '0'),
                 maxLevel: 3,
                 getPrice: (level) => 3000 * (level + 1),
                 getEffect: (level) => ({ shieldCapacity: 50 + (level * 50) })
@@ -185,7 +189,7 @@ export class ShopSystem {
                 name: 'Energy System',
                 description: 'Increases energy capacity and recharge rate.',
                 basePrice: 2000,
-                level: 0,
+                level: parseInt(localStorage.getItem('upgrade_energy') || '0'),
                 maxLevel: 3,
                 getPrice: (level) => 2000 * (level + 1),
                 getEffect: (level) => ({ 
@@ -198,7 +202,7 @@ export class ShopSystem {
                 name: 'Hull Reinforcement',
                 description: 'Increases maximum health and damage resistance.',
                 basePrice: 2500,
-                level: 0,
+                level: parseInt(localStorage.getItem('upgrade_armor') || '0'),
                 maxLevel: 3,
                 getPrice: (level) => 2500 * (level + 1),
                 getEffect: (level) => ({ 
@@ -211,15 +215,100 @@ export class ShopSystem {
                 name: 'Cargo Hold',
                 description: 'Increases loot capacity from destroyed enemies.',
                 basePrice: 1500,
-                level: 0,
+                level: parseInt(localStorage.getItem('upgrade_cargo') || '0'),
                 maxLevel: 2,
                 getPrice: (level) => 1500 * (level + 1),
                 getEffect: (level) => ({ cargoCapacity: 100 + (level * 100) })
             }
         ];
         
+        // After loading data from localStorage, apply all upgrades and set current ship/weapon
+        this.applyAllPurchasedUpgrades();
+        this.loadCurrentEquipment();
+        
         // Initialize UI elements
         this.createShopUI();
+    }
+    
+    // New method to apply all purchased upgrades to the player
+    applyAllPurchasedUpgrades() {
+        // Apply all upgrade effects to the player
+        this.availableUpgrades.forEach(upgrade => {
+            if (upgrade.level > 0) {
+                const effects = upgrade.getEffect(upgrade.level);
+                
+                // Apply the upgrade effects differently based on the upgrade type
+                switch (upgrade.id) {
+                    case 'engine':
+                        this.player.maxSpeed += effects.maxSpeed;
+                        this.player.acceleration += effects.acceleration;
+                        break;
+                        
+                    case 'shield':
+                        this.player.shieldCapacity = effects.shieldCapacity;
+                        this.player.shield = effects.shieldCapacity;
+                        break;
+                        
+                    case 'energy':
+                        this.player.maxEnergy = effects.maxEnergy;
+                        this.player.energy = effects.maxEnergy;
+                        this.player.energyRegen = effects.energyRegen;
+                        break;
+                        
+                    case 'armor':
+                        this.player.maxHealth += effects.maxHealth;
+                        this.player.health += effects.maxHealth;
+                        this.player.damageReduction = effects.damageReduction;
+                        break;
+                        
+                    case 'cargo':
+                        this.player.cargoCapacity = effects.cargoCapacity;
+                        break;
+                }
+            }
+        });
+    }
+    
+    // New method to load current equipment (ship and weapon)
+    loadCurrentEquipment() {
+        // Load currently equipped ship
+        const currentShipId = localStorage.getItem('currentShip') || 'scout';
+        const ship = this.availableShips.find(s => s.id === currentShipId);
+        
+        if (ship && ship.owned) {
+            this.player.currentShip = currentShipId;
+            
+            // Apply ship stats to player
+            this.player.maxHealth = ship.stats.maxHealth;
+            this.player.maxSpeed = ship.stats.maxSpeed;
+            this.player.acceleration = ship.stats.acceleration;
+            this.player.rotationSpeed = ship.stats.handling;
+            this.player.armor = ship.stats.armor || 1.0;
+        }
+        
+        // Load currently equipped weapon
+        const currentWeaponId = localStorage.getItem('currentWeapon') || 'laser';
+        const weapon = this.availableWeapons.find(w => w.id === currentWeaponId);
+        
+        if (weapon && weapon.owned) {
+            this.player.currentWeaponId = currentWeaponId;
+            
+            // Add all owned weapons to player's weapons array
+            this.player.weapons = [];
+            this.availableWeapons.forEach(w => {
+                if (w.owned) {
+                    this.player.weapons.push(w.name);
+                }
+            });
+            
+            // Set current weapon
+            const index = this.player.weapons.findIndex(w => w === weapon.name);
+            if (index >= 0) {
+                this.player.weaponIndex = index;
+                this.player.currentWeapon = weapon.name;
+                this.player.fireCooldownTime = weapon.stats.cooldown;
+            }
+        }
     }
     
     createShopUI() {
@@ -758,6 +847,10 @@ export class ShopSystem {
         // Mark as owned
         ship.owned = true;
         
+        // Save ship ownership to localStorage
+        localStorage.setItem(`ship_${shipId}`, 'true');
+        localStorage.setItem('playerCredits', this.player.credits.toString());
+        
         // Apply the ship
         this.selectShip(shipId);
         
@@ -772,6 +865,7 @@ export class ShopSystem {
         }
         
         this.player.currentShip = shipId;
+        localStorage.setItem('currentShip', shipId);
         
         // Apply ship stats to player
         this.player.maxHealth = ship.stats.maxHealth;
@@ -779,6 +873,22 @@ export class ShopSystem {
         this.player.acceleration = ship.stats.acceleration;
         this.player.rotationSpeed = ship.stats.handling;
         this.player.armor = ship.stats.armor || 1.0;
+        
+        // Apply armor bonus on top of base ship stats
+        const armorUpgrade = this.availableUpgrades.find(u => u.id === 'armor');
+        if (armorUpgrade && armorUpgrade.level > 0) {
+            const effects = armorUpgrade.getEffect(armorUpgrade.level);
+            this.player.maxHealth += effects.maxHealth;
+            this.player.damageReduction = effects.damageReduction;
+        }
+        
+        // Apply engine bonus on top of base ship stats
+        const engineUpgrade = this.availableUpgrades.find(u => u.id === 'engine');
+        if (engineUpgrade && engineUpgrade.level > 0) {
+            const effects = engineUpgrade.getEffect(engineUpgrade.level);
+            this.player.maxSpeed += effects.maxSpeed;
+            this.player.acceleration += effects.acceleration;
+        }
         
         // If health is above new max, cap it
         if (this.player.health > this.player.maxHealth) {
@@ -801,11 +911,18 @@ export class ShopSystem {
         // Mark as owned
         weapon.owned = true;
         
+        // Save to localStorage
+        localStorage.setItem(`weapon_${weaponId}`, 'true');
+        localStorage.setItem('playerCredits', this.player.credits.toString());
+        
         // Add to player's weapons array if not already there
         const weaponName = weapon.name;
         if (!this.player.weapons.includes(weaponName)) {
             this.player.weapons.push(weaponName);
         }
+        
+        // Select the newly purchased weapon
+        this.selectWeapon(weaponId);
         
         // Update shop display
         this.updateShopContent();
@@ -818,6 +935,7 @@ export class ShopSystem {
         }
         
         this.player.currentWeaponId = weaponId;
+        localStorage.setItem('currentWeapon', weaponId);
         
         // Find the index of this weapon in the player's weapons array
         const index = this.player.weapons.findIndex(w => w === weapon.name);
@@ -826,11 +944,41 @@ export class ShopSystem {
             this.player.currentWeapon = weapon.name;
         }
         
-        // Apply weapon cooldown time
+        // Apply weapon stats
         this.player.fireCooldownTime = weapon.stats.cooldown;
         
         // Update shop display
         this.updateShopContent();
+        
+        // Update weapon display in UI
+        const weaponElement = document.getElementById('weapons');
+        if (weaponElement) {
+            weaponElement.textContent = weapon.name;
+        }
+        
+        // Update weapon icon based on weapon type
+        const weaponIcon = document.getElementById('weapon-icon');
+        if (weaponIcon) {
+            switch(weapon.name) {
+                case 'Basic Laser':
+                    weaponIcon.innerHTML = '🔫';
+                    break;
+                case 'Burst Cannon':
+                    weaponIcon.innerHTML = '💥';
+                    break;
+                case 'Seeker Missile':
+                    weaponIcon.innerHTML = '🚀';
+                    break;
+                case 'Plasma Cannon':
+                    weaponIcon.innerHTML = '🔆';
+                    break;
+                case 'Quantum Disruptor':
+                    weaponIcon.innerHTML = '⚡';
+                    break;
+                default:
+                    weaponIcon.innerHTML = '🔫';
+            }
+        }
     }
     
     buyUpgrade(upgradeId) {
@@ -849,6 +997,10 @@ export class ShopSystem {
         
         // Increase level
         upgrade.level += 1;
+        
+        // Save upgrade level to localStorage
+        localStorage.setItem(`upgrade_${upgradeId}`, upgrade.level.toString());
+        localStorage.setItem('playerCredits', this.player.credits.toString());
         
         // Apply upgrade effects to player
         const effects = upgrade.getEffect(upgrade.level);
@@ -897,6 +1049,38 @@ export class ShopSystem {
                 this.player.cargoCapacity = effects.cargoCapacity;
                 break;
         }
+        
+        // Update shop display
+        this.updateShopContent();
+    }
+    
+    // Method to reset localStorage for testing purposes
+    resetAllPurchases() {
+        // Clear ship ownership
+        this.availableShips.forEach(ship => {
+            if (ship.id !== 'scout') { // Always keep the scout ship
+                localStorage.removeItem(`ship_${ship.id}`);
+                ship.owned = false;
+            }
+        });
+        
+        // Clear weapon ownership
+        this.availableWeapons.forEach(weapon => {
+            if (weapon.id !== 'laser') { // Always keep the basic laser
+                localStorage.removeItem(`weapon_${weapon.id}`);
+                weapon.owned = false;
+            }
+        });
+        
+        // Reset upgrade levels
+        this.availableUpgrades.forEach(upgrade => {
+            localStorage.removeItem(`upgrade_${upgrade.id}`);
+            upgrade.level = 0;
+        });
+        
+        // Reset current equipment
+        localStorage.setItem('currentShip', 'scout');
+        localStorage.setItem('currentWeapon', 'laser');
         
         // Update shop display
         this.updateShopContent();
