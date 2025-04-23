@@ -420,6 +420,31 @@ export class MultiplayerManager {
                 'you' : 
                 (this.players[data.playerId]?.name || 'another player');
                 
+            // IMPORTANT: If this is OUR player that died, ALWAYS create the explosion effect immediately
+            // This ensures death animation is visible even if server and client communication has issues
+            if (data.playerId === this.playerId) {
+                // Force create explosion at player's position
+                if (this.game.player && this.game.world) {
+                    // Create an explosion effect at our location
+                    this.game.world.createExplosion(
+                        this.game.player.x,
+                        this.game.player.y,
+                        35, // Size of explosion
+                        this.game.soundManager
+                    );
+                    
+                    // Add intense camera shake too
+                    this.addCameraShake(25);
+                    
+                    // Create additional debris and ship parts
+                    this.createLocalExplosionEffect(
+                        this.game.player.x,
+                        this.game.player.y,
+                        this.game.player.rotation
+                    );
+                }
+            }
+                
             // Announce the kill with the kill announcer system for all players
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
