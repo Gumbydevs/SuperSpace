@@ -356,7 +356,16 @@ export class Player {
     fire(soundManager) {
         let projectiles = [];
         
-        // Here we handle different weapon types
+        // Get the weapon stats from the available weapons in shop
+        let weaponStats = null;
+        if (window.game && window.game.shop) {
+            const weapon = window.game.shop.availableWeapons.find(w => w.name === this.currentWeapon);
+            if (weapon) {
+                weaponStats = weapon.stats;
+            }
+        }
+        
+        // Here we handle different weapon types based on the current weapon
         switch (this.currentWeapon) {
             case 'Basic Laser':
                 // Here we create a single straight laser projectile
@@ -364,12 +373,12 @@ export class Player {
                     this.x, this.y,
                     this.rotation,
                     'laser',
-                    10, // damage
-                    800, // speed
-                    600  // range
-                 ));
+                    weaponStats ? weaponStats.damage : 10, // damage
+                    weaponStats ? weaponStats.speed : 800, // speed
+                    weaponStats ? weaponStats.range : 600  // range
+                ));
                 
-                // Here we play the laser sound effect
+                // Play laser sound
                 if (soundManager) {
                     soundManager.play('laser', { 
                         volume: 0.4,
@@ -379,19 +388,22 @@ export class Player {
                 break;
                 
             case 'Burst Cannon':
-                // Here we fire 3 projectiles in a spread pattern
-                for (let i = -1; i <= 1; i++) {
+                // Fire 3 projectiles in a spread pattern
+                const burstCount = weaponStats ? weaponStats.projectileCount : 3;
+                const spreadAngle = 0.1; // Angle between projectiles
+                
+                for (let i = -(burstCount > 1 ? Math.floor(burstCount / 2) : 0); i <= (burstCount > 1 ? Math.floor((burstCount - 1) / 2) : 0); i++) {
                     projectiles.push(new Projectile(
                         this.x, this.y,
-                        this.rotation + (i * 0.1), // Small angle offset for spread
+                        this.rotation + (i * spreadAngle), // Small angle offset for spread
                         'burst',
-                        5, // Lower damage per projectile
-                        700, // speed
-                        400  // range
+                        weaponStats ? weaponStats.damage : 5, // Lower damage per projectile
+                        weaponStats ? weaponStats.speed : 700, // speed
+                        weaponStats ? weaponStats.range : 400  // range
                     ));
                 }
                 
-                // Here we play the burst cannon sound
+                // Play burst cannon sound
                 if (soundManager) {
                     soundManager.play('burst', { 
                         volume: 0.4,
@@ -401,18 +413,18 @@ export class Player {
                 break;
                 
             case 'Seeker Missile':
-                // Here we fire a single homing missile
+                // Fire a single homing missile
                 projectiles.push(new Projectile(
                     this.x, this.y,
                     this.rotation,
                     'missile',
-                    20, // High damage
-                    500, // Slower speed
-                    1000, // Longer range
+                    weaponStats ? weaponStats.damage : 20, // High damage
+                    weaponStats ? weaponStats.speed : 500, // Slower speed
+                    weaponStats ? weaponStats.range : 1000, // Longer range
                     true  // Homing capability
                 ));
                 
-                // Here we play the missile launch sound
+                // Play missile launch sound
                 if (soundManager) {
                     soundManager.play('missile', { 
                         volume: 0.5,
@@ -420,6 +432,103 @@ export class Player {
                     });
                 }
                 break;
+                
+            case 'Plasma Cannon':
+                // Fire a plasma projectile with splash damage
+                const plasmaProj = new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'plasma',
+                    weaponStats ? weaponStats.damage : 25, // High damage
+                    weaponStats ? weaponStats.speed : 600, // Medium speed
+                    weaponStats ? weaponStats.range : 500, // Medium range
+                    false, // Not homing
+                    weaponStats ? weaponStats.splash : 30 // Splash radius
+                );
+                
+                // Set plasma visual properties
+                plasmaProj.color = '#f0f';
+                plasmaProj.size = 8;
+                plasmaProj.trail = true;
+                plasmaProj.trailColor = '#a0f';
+                
+                projectiles.push(plasmaProj);
+                
+                // Play plasma sound
+                if (soundManager) {
+                    soundManager.play('plasma', { 
+                        volume: 0.7,
+                        position: { x: this.x, y: this.y }
+                    });
+                    
+                    // If plasma sound doesn't exist, use a fallback sound
+                    if (!soundManager.isSoundLoaded('plasma')) {
+                        soundManager.play('laser', {
+                            volume: 0.7,
+                            playbackRate: 0.7,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
+                }
+                break;
+                
+            case 'Quantum Disruptor':
+                // Fire a quantum projectile that can phase through obstacles
+                const quantumProj = new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'quantum',
+                    weaponStats ? weaponStats.damage : 30, // Very high damage
+                    weaponStats ? weaponStats.speed : 900, // Fast speed
+                    weaponStats ? weaponStats.range : 800, // Good range
+                    false // Not homing
+                );
+                
+                // Set quantum visual properties
+                quantumProj.color = '#fff';
+                quantumProj.phasing = true; // Allows passing through asteroids
+                quantumProj.size = 6;
+                quantumProj.glow = true; // Add glow effect
+                quantumProj.trail = true;
+                quantumProj.trailColor = '#0ff';
+                
+                projectiles.push(quantumProj);
+                
+                // Play quantum sound
+                if (soundManager) {
+                    soundManager.play('quantum', { 
+                        volume: 0.6,
+                        position: { x: this.x, y: this.y }
+                    });
+                    
+                    // If quantum sound doesn't exist, use a fallback sound
+                    if (!soundManager.isSoundLoaded('quantum')) {
+                        soundManager.play('powerup', {
+                            volume: 0.5,
+                            playbackRate: 1.2,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
+                }
+                break;
+                
+            default:
+                // Fallback to basic laser if weapon not recognized
+                projectiles.push(new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'laser',
+                    10, // damage
+                    800, // speed
+                    600  // range
+                ));
+                
+                if (soundManager) {
+                    soundManager.play('laser', { 
+                        volume: 0.4,
+                        position: { x: this.x, y: this.y }
+                    });
+                }
         }
         
         // Send projectile data to multiplayer system if it exists
@@ -431,6 +540,11 @@ export class Player {
         
         // Add the new projectiles to the player's active projectiles array
         this.projectiles.push(...projectiles);
+        
+        // Consume energy if energy system is active
+        if (this.maxEnergy > 0 && weaponStats && weaponStats.energyCost) {
+            this.energy = Math.max(0, this.energy - weaponStats.energyCost);
+        }
     }
 
     render(ctx) {
