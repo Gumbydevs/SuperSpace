@@ -364,6 +364,23 @@ export class MultiplayerManager {
                 // Remote player destroyed
                 this.handleRemotePlayerDeath(data.playerId, data.attackerId);
             }
+            
+            // Get player names for the kill message
+            const killerName = data.attackerId === this.playerId ? 
+                'You' : 
+                (this.players[data.attackerId]?.name || 'Another player');
+            
+            const victimName = data.playerId === this.playerId ? 
+                'you' : 
+                (this.players[data.playerId]?.name || 'another player');
+            
+            // Announce the kill with special announcement UI for everyone
+            // Only show "You killed" to the actual killer
+            if (data.attackerId === this.playerId) {
+                this.killAnnouncer.announceKill('You', victimName);
+            } else {
+                this.killAnnouncer.announceKill(killerName, victimName);
+            }
         });
 
         // Handle player disconnection
