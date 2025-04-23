@@ -690,6 +690,9 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
+        // Store current credits value
+        const currentCredits = this.game.player.credits;
+        
         // Create multiple dramatic explosions when player dies
         if (this.game.world) {
             const playerX = this.game.player.x;
@@ -815,6 +818,14 @@ export class MultiplayerManager {
             this.game.player.x = spawnX;
             this.game.player.y = spawnY;
             this.game.player.health = this.game.player.maxHealth;
+            
+            // The credits value is already persisted via localStorage, but let's ensure
+            // it's consistent with what we had before death
+            if (this.game.player.credits !== currentCredits) {
+                this.game.player.credits = currentCredits;
+                // Ensure localStorage is updated
+                localStorage.setItem('playerCredits', currentCredits.toString());
+            }
             
             // Notify server about respawn
             this.sendRespawn(spawnX, spawnY);
