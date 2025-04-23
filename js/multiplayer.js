@@ -332,6 +332,14 @@ export class MultiplayerManager {
             this.handleRemoteProjectile(data.playerId, data.projectile);
         });
 
+        // Handle projectile hits on players
+        this.socket.on('projectileHit', (data) => {
+            // Visualize hits on remote players (not on local player - those are handled by playerHit)
+            if (data.targetId !== this.playerId) {
+                this.handleRemoteProjectileHit(data.targetId, data.position, data.damage);
+            }
+        });
+
         // Handle player hits (damage)
         this.socket.on('playerHit', (data) => {
             if (data.targetId === this.playerId) {
@@ -566,6 +574,18 @@ export class MultiplayerManager {
                 y: this.game.player.y
             },
             velocity: this.game.player.velocity
+        });
+    }
+
+    // Send projectile hit data for remote players
+    sendProjectileHit(targetId, hitX, hitY, damage) {
+        if (!this.connected) return;
+        
+        this.socket.emit('projectileHit', {
+            targetId: targetId,
+            position: { x: hitX, y: hitY },
+            damage: damage,
+            attackerId: this.socket.id
         });
     }
 
@@ -1291,18 +1311,6 @@ export class MultiplayerManager {
                 ctx.fillStyle = '#ff6';
                 ctx.beginPath();
                 ctx.moveTo(-7, 8);
-                ctx.lineTo(0, 15);
-                ctx.lineTo(7, 8);
-                ctx.closePath();
-                ctx.fill();
-            } else if (player.ship === 'cruiser') {
-                // Heavy cruiser design
-                ctx.fillStyle = player.color;
-                ctx.beginPath();
-                ctx.moveTo(0, -25); // Front
-                ctx.lineTo(-8, -10);
-                ctx.lineTo(-20, 15);
-                ctx.lineTo(-8, 10);
                 ctx.lineTo(8, 10);
                 ctx.lineTo(20, 15);
                 ctx.lineTo(8, -10);
@@ -1439,14 +1447,6 @@ export class MultiplayerManager {
                     const dy = projectile.y - this.game.player.y;
                     const distSq = dx * dx + dy * dy;
                     
-                    if (distSq < 225) { // 15 squared - rough collision radius
-                        // Check if player is in safe zone before applying damage
-                        if (this.game.world && !this.game.world.isInSafeZone(this.game.player)) {
-                            // Hit the player!
-                            const damage = projectile.damage || 10;
-                            this.game.player.takeDamage(damage);
-                            
-                            // Show hit message
                             this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
                             
                             // Send hit confirmation to server
