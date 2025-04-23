@@ -350,23 +350,22 @@ export class Player {
         }
 
         // Check if player is now dead
-        if (this.health <= 0) {
-            // Trigger immediate local death animation if we're in multiplayer mode
-            if (window.game.multiplayer && !this.deathTriggered) {
-                this.deathTriggered = true; // Flag to prevent multiple death animations
+        if (this.health <= 0 && !this.deathTriggered) {
+            this.deathTriggered = true; // Flag to prevent multiple death animations
+
+            // Find the last player who hit us (if known) to attribute the kill
+            const attackerId = this.lastDamageFrom || null;
+
+            // CRITICAL: Always create explosion effect on death, regardless of cause
+            if (window.game) {
+                // Set the game state to "dying" - before creating effects
+                window.game.gameState = 'dying';
                 
-                // Find the last player who hit us (if known) to attribute the kill
-                const attackerId = this.lastDamageFrom || null;
-                
-                // CRITICAL FIX: Create explosion effect immediately on client-side
-                // This ensures the explosion is always visible, regardless of server communication
-                if (window.game && window.game.world && window.game.multiplayer) {
-                    // Set the game state to "dying" - before creating effects
-                    window.game.gameState = 'dying';
-                    
-                    // Hide the player ship immediately
-                    this.visible = false;
-                    
+                // Hide the player ship immediately
+                this.visible = false;
+
+                // Check if we're in multiplayer mode
+                if (window.game.multiplayer) {
                     // Create explosion directly
                     window.game.multiplayer.createLocalExplosionEffect(
                         this.x, 
@@ -376,12 +375,25 @@ export class Player {
                     
                     // Add camera shake for dramatic effect
                     window.game.multiplayer.addCameraShake(25);
+                    
+                    // Call handleDeath to handle respawn and other logic
+                    window.game.multiplayer.handleDeath(attackerId);
+                } else {
+                    // Handle death in single player mode
+                    // Use world createExplosion for non-multiplayer games
+                    if (window.game.world) {
+                        window.game.world.createExplosion(
+                            this.x,
+                            this.y,
+                            35, // Size of explosion
+                            window.game.soundManager
+                        );
+                    }
+                    
+                    // Add any single player respawn logic here if needed
                 }
-                
-                // Call handleDeath to handle respawn and other logic
-                window.game.multiplayer.handleDeath(attackerId);
             }
-        } else {
+        } else if (this.health > 0) {
             // Reset the death triggered flag if we're somehow resurrected
             this.deathTriggered = false;
         }
