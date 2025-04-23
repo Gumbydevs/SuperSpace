@@ -358,8 +358,8 @@ export class Player {
                 // Find the last player who hit us (if known) to attribute the kill
                 const attackerId = this.lastDamageFrom || null;
                 
-                // Call local death animation immediately
-                window.game.multiplayer.handleLocalDeath(attackerId);
+                // Call handleDeath instead of handleLocalDeath
+                window.game.multiplayer.handleDeath(attackerId);
             }
         } else {
             // Reset the death triggered flag if we're somehow resurrected
