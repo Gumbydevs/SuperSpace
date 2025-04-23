@@ -358,7 +358,27 @@ export class Player {
                 // Find the last player who hit us (if known) to attribute the kill
                 const attackerId = this.lastDamageFrom || null;
                 
-                // Call handleDeath instead of handleLocalDeath
+                // CRITICAL FIX: Create explosion effect immediately on client-side
+                // This ensures the explosion is always visible, regardless of server communication
+                if (window.game && window.game.world && window.game.multiplayer) {
+                    // Set the game state to "dying" - before creating effects
+                    window.game.gameState = 'dying';
+                    
+                    // Hide the player ship immediately
+                    this.visible = false;
+                    
+                    // Create explosion directly
+                    window.game.multiplayer.createLocalExplosionEffect(
+                        this.x, 
+                        this.y, 
+                        this.rotation
+                    );
+                    
+                    // Add camera shake for dramatic effect
+                    window.game.multiplayer.addCameraShake(25);
+                }
+                
+                // Call handleDeath to handle respawn and other logic
                 window.game.multiplayer.handleDeath(attackerId);
             }
         } else {
