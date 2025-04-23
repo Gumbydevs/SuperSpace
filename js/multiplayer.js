@@ -1,3 +1,5 @@
+import { KillAnnouncer } from './killannouncer.js';
+
 export class MultiplayerManager {
     constructor(game) {
         this.game = game;
@@ -5,6 +7,9 @@ export class MultiplayerManager {
         this.connected = false;
         this.players = {};
         this.playerId = null;
+        
+        // Initialize our kill announcer system
+        this.killAnnouncer = new KillAnnouncer();
         
         // Load player name from localStorage or use default
         this.playerName = localStorage.getItem('playerName') || "Pilot";
@@ -21,6 +26,9 @@ export class MultiplayerManager {
         
         // Initialize player count to 0
         this.updatePlayerCount();
+        
+        // Preload the font for kill announcements
+        this.killAnnouncer.preloadFont();
     }
 
     connect(serverUrl = 'http://localhost:3000') {
@@ -885,6 +893,9 @@ export class MultiplayerManager {
                 this.addCameraShake(shakeIntensity);
             }
         }
+
+        // Announce the kill using KillAnnouncer
+        this.killAnnouncer.announceKill(attacker, deadPlayerName);
 
         // Remove the player after a delay to let death animation play out
         setTimeout(() => {

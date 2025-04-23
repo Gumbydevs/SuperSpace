@@ -237,6 +237,16 @@ export class Player {
                             // Show hit message
                             window.game.multiplayer.showGameMessage(`Hit ${remotePlayer.name}!`, '#4f4');
                             
+                            // Check if kill - Only trigger if remote player health will drop to 0 or below
+                            if (remotePlayer.health <= projectile.damage) {
+                                // This hit will kill the player - announce it on all screens
+                                // We use setTimeout to make sure the server has time to process the hit first
+                                setTimeout(() => {
+                                    // The kill will be announced through the multiplayer system's handleRemotePlayerDeath
+                                    // which will then use the killAnnouncer
+                                }, 50);
+                            }
+                            
                             hit = true;
                             this.projectiles.splice(i, 1); // Remove projectile
                         }
