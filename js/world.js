@@ -1722,8 +1722,10 @@ export class World {
                 trailX, trailY
             );
             
+            // Fix the incorrect color format that was causing the error
+            const colorBase = shootingStar.color.replace('#', '');
             gradient.addColorStop(0, shootingStar.color);
-            gradient.addColorStop(0.6, shootingStar.color.replace('#', 'rgba(') + ', 0.5)');
+            gradient.addColorStop(0.6, `rgba(${parseInt(colorBase.substr(0, 2), 16)}, ${parseInt(colorBase.substr(2, 2), 16)}, ${parseInt(colorBase.substr(4, 2), 16)}, 0.5)`);
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             
             ctx.strokeStyle = gradient;
