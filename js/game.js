@@ -23,7 +23,7 @@ class Game {
         this.soundManager = new SoundManager();  // Handles all game audio
         this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
         this.lastTime = 0;  // Used for calculating delta time between frames
-        this.gameState = 'menu';  // Game can be in 'menu', 'playing', or 'gameover' state
+        this.gameState = 'menu';  // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
         
         // Initialize multiplayer system (but don't connect yet)
@@ -464,6 +464,9 @@ class Game {
             if (this.player.health <= 0) {
                 this.gameOver();
             }
+        } else if (this.gameState === 'dying') {
+            // Update world particles for ship destruction effect
+            this.world.updateParticles(deltaTime);
         }
     }
 
@@ -505,53 +508,270 @@ class Game {
 
     // Here we handle the game over state
     gameOver() {
-        this.gameState = 'gameover';
+        // Don't show game over screen immediately - allow time for explosion animation
+        // Mark the game state as dying but not yet fully game over
+        this.gameState = 'dying';
         
-        // Here we create game over screen UI
-        const gameOverScreen = document.createElement('div');
-        gameOverScreen.id = 'gameover';
-        // Style the game over screen
-        gameOverScreen.style.position = 'absolute';
-        gameOverScreen.style.top = '50%';
-        gameOverScreen.style.left = '50%';
-        gameOverScreen.style.transform = 'translate(-50%, -50%)';
-        gameOverScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        gameOverScreen.style.color = 'white';
-        gameOverScreen.style.padding = '30px';
-        gameOverScreen.style.borderRadius = '10px';
-        gameOverScreen.style.textAlign = 'center';
-        gameOverScreen.style.zIndex = '200';
+        // Hide the player's ship - it will be replaced by explosion effects
+        this.player.visible = false;
         
-        // Create game over title
-        const gameOverTitle = document.createElement('h2');
-        gameOverTitle.textContent = 'Game Over';
-        gameOverTitle.style.color = '#f33';
+        // Create ship destruction effect - breaking into pieces
+        this.createShipDestructionEffect();
         
-        // Display final score
-        const scoreText = document.createElement('p');
-        scoreText.textContent = `Final Score: ${this.player.score}`;
+        // Only show game over screen after a delay to see the explosion
+        setTimeout(() => {
+            this.gameState = 'gameover';
+            
+            // Here we create game over screen UI
+            const gameOverScreen = document.createElement('div');
+            gameOverScreen.id = 'gameover';
+            // Style the game over screen
+            gameOverScreen.style.position = 'absolute';
+            gameOverScreen.style.top = '50%';
+            gameOverScreen.style.left = '50%';
+            gameOverScreen.style.transform = 'translate(-50%, -50%)';
+            gameOverScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            gameOverScreen.style.color = 'white';
+            gameOverScreen.style.padding = '30px';
+            gameOverScreen.style.borderRadius = '10px';
+            gameOverScreen.style.textAlign = 'center';
+            gameOverScreen.style.zIndex = '200';
+            
+            // Create game over title
+            const gameOverTitle = document.createElement('h2');
+            gameOverTitle.textContent = 'Game Over';
+            gameOverTitle.style.color = '#f33';
+            
+            // Display final score
+            const scoreText = document.createElement('p');
+            scoreText.textContent = `Final Score: ${this.player.score}`;
+            
+            // Create restart button
+            const restartButton = document.createElement('button');
+            restartButton.textContent = 'Restart Game';
+            restartButton.style.padding = '10px 20px';
+            restartButton.style.marginTop = '20px';
+            restartButton.style.background = '#33f';
+            restartButton.style.color = 'white';
+            restartButton.style.border = 'none';
+            restartButton.style.borderRadius = '5px';
+            restartButton.style.cursor = 'pointer';
+            restartButton.onclick = () => this.restartGame();
+            
+            // Assemble and add game over screen to document
+            gameOverScreen.appendChild(gameOverTitle);
+            gameOverScreen.appendChild(scoreText);
+            gameOverScreen.appendChild(restartButton);
+            
+            document.body.appendChild(gameOverScreen);
+            
+            // Hide shop button
+            document.getElementById('shop-btn').style.display = 'none';
+        }, 3000); // 3 second delay to see explosion and ship parts
+    }
+    
+    // Create the effect of ship breaking into pieces
+    createShipDestructionEffect() {
+        if (!this.world) return;
         
-        // Create restart button
-        const restartButton = document.createElement('button');
-        restartButton.textContent = 'Restart Game';
-        restartButton.style.padding = '10px 20px';
-        restartButton.style.marginTop = '20px';
-        restartButton.style.background = '#33f';
-        restartButton.style.color = 'white';
-        restartButton.style.border = 'none';
-        restartButton.style.borderRadius = '5px';
-        restartButton.style.cursor = 'pointer';
-        restartButton.onclick = () => this.restartGame();
+        const playerX = this.player.x;
+        const playerY = this.player.y;
+        const playerRotation = this.player.rotation;
+        const playerColor = '#33f'; // Player ship color
         
-        // Assemble and add game over screen to document
-        gameOverScreen.appendChild(gameOverTitle);
-        gameOverScreen.appendChild(scoreText);
-        gameOverScreen.appendChild(restartButton);
+        // Play explosion sound
+        if (this.soundManager) {
+            this.soundManager.play('explosion', {
+                volume: 0.8,
+                position: { x: playerX, y: playerY }
+            });
+        }
         
-        document.body.appendChild(gameOverScreen);
+        // Create main explosion at the center
+        this.world.createExplosion(
+            playerX,
+            playerY,
+            35, // Size of explosion
+            this.soundManager
+        );
         
-        // Hide shop button
-        document.getElementById('shop-btn').style.display = 'none';
+        // Add intense camera shake
+        if (this.multiplayer) {
+            this.multiplayer.addCameraShake(25);
+        }
+        
+        // Create ship pieces - these will represent the breaking apart ship
+        // Wing pieces
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [-10, 10], // Left wing x,y offset from center
+            [15, 15],  // Size
+            playerColor,
+            [-80, -30], // Velocity
+            2 + Math.random() * 2 // Rotation speed
+        );
+        
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [10, 10], // Right wing x,y offset from center
+            [15, 15], // Size
+            playerColor,
+            [80, -30], // Velocity
+            -(2 + Math.random() * 2) // Rotation speed (opposite direction)
+        );
+        
+        // Nose piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, -15], // Nose x,y offset from center
+            [10, 20], // Size
+            playerColor,
+            [0, -120], // Velocity - shoots forward
+            Math.random() * 4 - 2 // Random rotation either direction
+        );
+        
+        // Cockpit/center piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, 0], // Center x,y (no offset)
+            [12, 12], // Size
+            '#66f', // Slightly lighter color for cockpit
+            [(Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40], // Small random velocity
+            Math.random() * 3 - 1.5 // Slow random rotation
+        );
+        
+        // Engine piece
+        this.createShipPiece(
+            playerX, 
+            playerY, 
+            playerRotation,
+            [0, 10], // Engine x,y offset from center
+            [8, 10], // Size
+            '#f66', // Engine color (reddish)
+            [0, 100], // Velocity - shoots backward
+            Math.random() * 6 - 3 // Faster random rotation
+        );
+        
+        // Create smaller debris pieces
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 30 + Math.random() * 120;
+            const size = 1 + Math.random() * 3;
+            
+            // Create debris with mixed colors
+            const colors = [playerColor, '#66f', '#f66', '#999'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const debris = {
+                x: playerX + (Math.random() - 0.5) * 10, // Slight random offset
+                y: playerY + (Math.random() - 0.5) * 10,
+                velocityX: Math.cos(angle) * speed,
+                velocityY: Math.sin(angle) * speed,
+                size: size,
+                color: color,
+                life: 1.0,
+                maxLife: 1.0 + Math.random() * 2.0, // Longer lifetime for some pieces
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 5,
+                update(deltaTime) {
+                    // Move debris
+                    this.x += this.velocityX * deltaTime;
+                    this.y += this.velocityY * deltaTime;
+                    // Decrease lifetime
+                    this.life -= deltaTime / this.maxLife;
+                    // Slow down over time
+                    this.velocityX *= 0.99;
+                    this.velocityY *= 0.99;
+                    // Rotate debris
+                    this.rotation += this.rotationSpeed * deltaTime;
+                }
+            };
+            
+            this.world.particles.push(debris);
+        }
+        
+        // Add smoke/fire trail to some pieces
+        const createSmokeTrail = (piece) => {
+            const interval = setInterval(() => {
+                // Check if the piece still exists and game is still in dying state
+                if (!piece || this.gameState !== 'dying') {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                // Add smoke particle at the piece's position
+                this.world.createSmokeParticle(
+                    piece.x, 
+                    piece.y,
+                    3 + Math.random() * 3,
+                    0.5 + Math.random() * 0.5,
+                    piece.velocityX * 0.1, 
+                    piece.velocityY * 0.1
+                );
+            }, 60); // Create smoke every 60ms
+            
+            // Auto-clear after a few seconds
+            setTimeout(() => clearInterval(interval), 2000);
+        };
+        
+        // Add smoke trails to some of the larger pieces
+        this.world.particles
+            .filter(p => p.isShipPiece && Math.random() > 0.5) // Only some pieces get trails
+            .forEach(piece => createSmokeTrail(piece));
+    }
+    
+    // Helper to create a ship piece with specific properties
+    createShipPiece(x, y, rotation, offset, size, color, velocity, rotationSpeed) {
+        if (!this.world) return null;
+        
+        // Calculate the actual starting position based on offset and rotation
+        const offsetX = offset[0] * Math.cos(rotation) - offset[1] * Math.sin(rotation);
+        const offsetY = offset[0] * Math.sin(rotation) + offset[1] * Math.cos(rotation);
+        
+        // Create the ship piece as a specialized particle
+        const piece = {
+            x: x + offsetX,
+            y: y + offsetY,
+            width: size[0],
+            height: size[1],
+            velocityX: velocity[0],
+            velocityY: velocity[1],
+            color: color,
+            rotation: rotation,
+            rotationSpeed: rotationSpeed,
+            life: 1.0,
+            maxLife: 3.0, // Longer lifetime for ship pieces
+            isShipPiece: true, // Flag to identify this as a ship piece
+            // Slightly higher drag for ship pieces compared to small debris
+            drag: 0.98,
+            update(deltaTime) {
+                // Move piece
+                this.x += this.velocityX * deltaTime;
+                this.y += this.velocityY * deltaTime;
+                
+                // Apply drag to gradually slow down
+                this.velocityX *= this.drag;
+                this.velocityY *= this.drag;
+                
+                // Rotate piece
+                this.rotation += this.rotationSpeed * deltaTime;
+                
+                // Decrease lifetime
+                this.life -= deltaTime / this.maxLife;
+            }
+        };
+        
+        // Add to world particles
+        this.world.particles.push(piece);
+        return piece;
     }
     
     // Here we reset the game state to start a new game

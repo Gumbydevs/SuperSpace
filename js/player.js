@@ -16,6 +16,7 @@ export class Player {
         this.width = 30; // Ship collision width
         this.height = 30; // Ship collision height
         this.velocity = { x: 0, y: 0 }; // Current movement vector
+        this.visible = true; // Whether to render the ship (false when destroyed)
 
         // Add collision properties
         this.collisionRadius = 15; // Radius used for collision detection
@@ -444,31 +445,33 @@ export class Player {
         });
         
         // Here we draw the player's ship
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-        
-        // Ship body - triangular shape rotated so tip points in direction of travel
-        ctx.fillStyle = '#33f';
-        ctx.beginPath();
-        ctx.moveTo(0, -15); // front (points upward when rotation = 0)
-        ctx.lineTo(-10, 10); // back left
-        ctx.lineTo(0, 5); // back middle
-        ctx.lineTo(10, 10); // back right
-        ctx.closePath();
-        ctx.fill();
-        
-        // Here we draw the engine glow effect
-        ctx.fillStyle = '#f66';
-        ctx.beginPath();
-        ctx.moveTo(0, 5);
-        ctx.lineTo(-5, 12);
-        ctx.lineTo(0, 15);
-        ctx.lineTo(5, 12);
-        ctx.closePath();
-        ctx.fill();
-        
-        ctx.restore();
+        if (this.visible) {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
+            
+            // Ship body - triangular shape rotated so tip points in direction of travel
+            ctx.fillStyle = '#33f';
+            ctx.beginPath();
+            ctx.moveTo(0, -15); // front (points upward when rotation = 0)
+            ctx.lineTo(-10, 10); // back left
+            ctx.lineTo(0, 5); // back middle
+            ctx.lineTo(10, 10); // back right
+            ctx.closePath();
+            ctx.fill();
+            
+            // Here we draw the engine glow effect
+            ctx.fillStyle = '#f66';
+            ctx.beginPath();
+            ctx.moveTo(0, 5);
+            ctx.lineTo(-5, 12);
+            ctx.lineTo(0, 15);
+            ctx.lineTo(5, 12);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        }
     }
 
     // Add method to handle collisions with asteroids
