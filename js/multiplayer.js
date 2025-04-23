@@ -690,37 +690,117 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
-        // Create multiple explosions when player dies
+        // Create multiple dramatic explosions when player dies
         if (this.game.world) {
-            // Create main explosion at player position
+            const playerX = this.game.player.x;
+            const playerY = this.game.player.y;
+            
+            // Play explosion sound at higher volume for more impact
+            if (this.game.soundManager) {
+                this.game.soundManager.play('explosion', {
+                    volume: 0.9,
+                    position: { x: playerX, y: playerY }
+                });
+            }
+            
+            // Create main explosion at player position (larger radius)
             this.game.world.createExplosion(
-                this.game.player.x,
-                this.game.player.y,
-                30, // larger radius for main explosion
+                playerX,
+                playerY,
+                40, // Larger radius for main explosion
                 this.game.soundManager
             );
             
-            // Create additional scattered explosions
-            for (let i = 0; i < 6; i++) {
-                const offsetDistance = Math.random() * 25 + 5; // 5-30 pixels from center
+            // Create lingering smoke particles at the explosion center
+            for (let i = 0; i < 15; i++) {
+                const smokeSize = 5 + Math.random() * 12;
+                const smokeDuration = 1.5 + Math.random() * 2.5; // Longer-lasting smoke (1.5-4 seconds)
+                
+                // Create smoke with minimal initial velocity for slower dispersal
+                this.game.world.createSmokeParticle(
+                    playerX + (Math.random() - 0.5) * 15,
+                    playerY + (Math.random() - 0.5) * 15,
+                    smokeSize,
+                    smokeDuration,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+            }
+            
+            // Create additional scattered explosions with delays for a chain reaction effect
+            for (let i = 0; i < 10; i++) { // Increased from 6 to 10 explosions
+                const offsetDistance = Math.random() * 35 + 10; // 10-45 pixels from center
                 const angle = Math.random() * Math.PI * 2; // random direction
-                const delay = Math.random() * 0.4; // stagger explosions (0-0.4 seconds)
+                const delay = Math.random() * 0.6; // longer staggered explosions (0-0.6 seconds)
+                const offsetX = Math.cos(angle) * offsetDistance;
+                const offsetY = Math.sin(angle) * offsetDistance;
                 
                 setTimeout(() => {
                     if (!this.game || !this.game.world) return; // Safety check
                     
+                    const explosionX = playerX + offsetX;
+                    const explosionY = playerY + offsetY;
+                    
                     // Create explosion at offset position
                     this.game.world.createExplosion(
-                        this.game.player.x + Math.cos(angle) * offsetDistance,
-                        this.game.player.y + Math.sin(angle) * offsetDistance,
-                        15 + Math.random() * 10, // random size between 15-25
+                        explosionX,
+                        explosionY,
+                        15 + Math.random() * 15, // random size between 15-30
                         this.game.soundManager
                     );
+                    
+                    // Add a few smoke particles at each explosion location
+                    for (let j = 0; j < 4; j++) {
+                        const smokeDuration = 1.0 + Math.random() * 2.0;
+                        this.game.world.createSmokeParticle(
+                            explosionX + (Math.random() - 0.5) * 10,
+                            explosionY + (Math.random() - 0.5) * 10,
+                            3 + Math.random() * 8,
+                            smokeDuration,
+                            offsetX * 0.1, // inherit some directional velocity from explosion
+                            offsetY * 0.1
+                        );
+                    }
                 }, delay * 1000);
             }
             
+            // Add more debris particles 
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 30 + Math.random() * 100;
+                const size = 1 + Math.random() * 3;
+                
+                // Create debris with ship color
+                const debris = {
+                    x: playerX,
+                    y: playerY,
+                    velocityX: Math.cos(angle) * speed,
+                    velocityY: Math.sin(angle) * speed,
+                    size: size,
+                    color: i % 2 === 0 ? '#ffcc00' : '#ff4400', // Mix of colors
+                    life: 1.0,
+                    maxLife: 0.5 + Math.random() * 1.0, // Longer lifetime
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 2,
+                    update(deltaTime) {
+                        // Move debris
+                        this.x += this.velocityX * deltaTime;
+                        this.y += this.velocityY * deltaTime;
+                        // Decrease lifetime
+                        this.life -= deltaTime / this.maxLife;
+                        // Slow down over time
+                        this.velocityX *= 0.99;
+                        this.velocityY *= 0.99;
+                        // Rotate debris
+                        this.rotation += this.rotationSpeed * deltaTime;
+                    }
+                };
+                
+                this.game.world.particles.push(debris);
+            }
+            
             // Add intense camera shake
-            this.addCameraShake(20);
+            this.addCameraShake(30); // Increased from 20 to 30 for more dramatic effect
         }
         
         // Show death message
@@ -745,16 +825,137 @@ export class MultiplayerManager {
 
     // Handle remote player death
     handleRemotePlayerDeath(playerId, attackerId) {
-        const deadPlayer = this.players[playerId]?.name || 'A player';
+        // Get player data before removing them
+        const deadPlayer = this.players[playerId];
+        if (!deadPlayer) return;
+        
+        const deadPlayerName = deadPlayer.name || 'A player';
         const attacker = attackerId === this.playerId 
             ? 'You' 
             : (this.players[attackerId]?.name || 'Another player');
         
         // Show kill message
         if (attackerId === this.playerId) {
-            this.showGameMessage(`You destroyed ${deadPlayer}! (+500 pts, +250 credits)`, '#4f4');
+            this.showGameMessage(`You destroyed ${deadPlayerName}! (+500 pts, +250 credits)`, '#4f4');
+            
+            // Award credits and points if local player was the killer
+            if (this.game.player) {
+                this.game.player.score += 500;
+                this.game.player.addCredits(250);
+            }
         } else {
-            this.showGameMessage(`${attacker} destroyed ${deadPlayer}!`, '#fff');
+            this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
+        }
+        
+        // Create explosion effects at remote player position
+        if (this.game.world && deadPlayer) {
+            const playerX = deadPlayer.x;
+            const playerY = deadPlayer.y;
+            
+            // Create main explosion at player position
+            this.game.world.createExplosion(
+                playerX,
+                playerY,
+                35, // Large radius for main explosion
+                this.game.soundManager
+            );
+            
+            // Play explosion sound with distance-based volume
+            if (this.game.soundManager) {
+                // Calculate distance from local player
+                const dx = this.game.player.x - playerX;
+                const dy = this.game.player.y - playerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Reduce volume based on distance
+                const maxDistance = 1500;
+                const volumeFactor = Math.max(0, 1 - (distance / maxDistance));
+                
+                this.game.soundManager.play('explosion', {
+                    volume: 0.7 * volumeFactor,
+                    position: { x: playerX, y: playerY }
+                });
+            }
+            
+            // Create lingering smoke particles
+            for (let i = 0; i < 12; i++) {
+                const smokeSize = 4 + Math.random() * 10;
+                const smokeDuration = 1.0 + Math.random() * 2.0; // 1-3 seconds
+                
+                // Create smoke with minimal initial velocity
+                this.game.world.createSmokeParticle(
+                    playerX + (Math.random() - 0.5) * 15,
+                    playerY + (Math.random() - 0.5) * 15,
+                    smokeSize,
+                    smokeDuration,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+            }
+            
+            // Create secondary explosions
+            for (let i = 0; i < 6; i++) {
+                const offsetDistance = Math.random() * 25 + 5;
+                const angle = Math.random() * Math.PI * 2;
+                const delay = Math.random() * 0.5; // stagger explosions
+                
+                setTimeout(() => {
+                    if (!this.game || !this.game.world) return; // Safety check
+                    
+                    // Create secondary explosion
+                    this.game.world.createExplosion(
+                        playerX + Math.cos(angle) * offsetDistance,
+                        playerY + Math.sin(angle) * offsetDistance,
+                        10 + Math.random() * 15,
+                        null // No additional sound for small explosions
+                    );
+                }, delay * 1000);
+            }
+            
+            // Create debris particles using player ship color
+            const shipColor = deadPlayer.color || '#ff0000';
+            for (let i = 0; i < 30; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 30 + Math.random() * 80;
+                
+                const debris = {
+                    x: playerX,
+                    y: playerY,
+                    velocityX: Math.cos(angle) * speed,
+                    velocityY: Math.sin(angle) * speed,
+                    size: 1 + Math.random() * 3,
+                    color: i % 3 === 0 ? shipColor : (i % 3 === 1 ? '#ffcc00' : '#ff4400'),
+                    life: 1.0,
+                    maxLife: 0.5 + Math.random() * 0.8,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 3,
+                    update(deltaTime) {
+                        // Move debris
+                        this.x += this.velocityX * deltaTime;
+                        this.y += this.velocityY * deltaTime;
+                        // Decrease lifetime
+                        this.life -= deltaTime / this.maxLife;
+                        // Slow down over time
+                        this.velocityX *= 0.98;
+                        this.velocityY *= 0.98;
+                        // Rotate debris
+                        this.rotation += this.rotationSpeed * deltaTime;
+                    }
+                };
+                
+                this.game.world.particles.push(debris);
+            }
+            
+            // Add slight camera shake if player is nearby (within 500 units)
+            const playerDistance = Math.sqrt(
+                Math.pow(this.game.player.x - playerX, 2) + 
+                Math.pow(this.game.player.y - playerY, 2)
+            );
+            
+            if (playerDistance < 500) {
+                const shakeIntensity = 15 * (1 - playerDistance / 500);
+                this.addCameraShake(shakeIntensity);
+            }
         }
     }
 
