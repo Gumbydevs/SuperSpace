@@ -397,6 +397,34 @@ export class MultiplayerManager {
             this.updatePlayerCount();
         });
         
+        // Handle player collision events from other players
+        this.socket.on('playerCollision', (data) => {
+            // Get the player objects involved in the collision
+            const sourcePlayer = this.players[data.sourceId];
+            const targetPlayer = this.players[data.targetId];
+            
+            // Make sure both players exist in our local game state
+            if (sourcePlayer && targetPlayer) {
+                // Calculate the collision point (midway between the two ships)
+                const collisionX = (sourcePlayer.x + targetPlayer.x) / 2;
+                const collisionY = (sourcePlayer.y + targetPlayer.y) / 2;
+                
+                // Create a visual effect at the collision point
+                if (this.game.world) {
+                    this.game.world.createCollisionEffect(collisionX, collisionY);
+                    
+                    // Play collision sound
+                    if (this.game.soundManager) {
+                        this.game.soundManager.play('hit', {
+                            volume: 0.4,
+                            playbackRate: 1.2,
+                            position: { x: collisionX, y: collisionY }
+                        });
+                    }
+                }
+            }
+        });
+        
         // Start ping interval to keep connection alive and reset inactivity timer
         this.startPingInterval();
     }
@@ -523,6 +551,21 @@ export class MultiplayerManager {
             type: type, // 'ship', 'weapon', 'upgrade'
             id: id,
             credits: credits
+        });
+    }
+
+    // Send player collision data when ships collide with each other
+    sendPlayerCollision(targetId) {
+        if (!this.connected || !this.socket) return;
+        
+        this.socket.emit('playerCollision', {
+            sourceId: this.socket.id,
+            targetId: targetId,
+            position: {
+                x: this.game.player.x,
+                y: this.game.player.y
+            },
+            velocity: this.game.player.velocity
         });
     }
 

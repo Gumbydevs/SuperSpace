@@ -204,6 +204,22 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Player collision with another player or asteroid
+  socket.on('playerCollision', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Broadcast the collision to other players
+    socket.broadcast.emit('playerCollision', {
+      sourceId: data.sourceId,
+      targetId: data.targetId,
+      position: data.position,
+      velocity: data.velocity
+    });
+    
+    console.log(`Player collision: ${data.sourceId} collided with ${data.targetId}`);
+  });
+  
   // Player respawn
   socket.on('respawn', (data) => {
     // Update activity timestamp
