@@ -357,14 +357,6 @@ export class MultiplayerManager {
 
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
-            if (data.playerId === this.playerId) {
-                // Local player destroyed
-                this.handleDeath(data.attackerId);
-            } else {
-                // Remote player destroyed
-                this.handleRemotePlayerDeath(data.playerId, data.attackerId);
-            }
-            
             // Get player names for the kill message
             const killerName = data.attackerId === this.playerId ? 
                 'You' : 
@@ -373,13 +365,27 @@ export class MultiplayerManager {
             const victimName = data.playerId === this.playerId ? 
                 'you' : 
                 (this.players[data.playerId]?.name || 'another player');
-            
-            // Announce the kill with special announcement UI for everyone
-            // Only show "You killed" to the actual killer
+                
+            // Announce the kill with the kill announcer system for all players
+            // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
+                // If you're the killer
                 this.killAnnouncer.announceKill('You', victimName);
+            } else if (data.playerId === this.playerId) {
+                // If you're the victim - you see who killed you
+                this.killAnnouncer.announceKill(killerName, 'you');
             } else {
+                // If you're a spectator - you see who killed whom
                 this.killAnnouncer.announceKill(killerName, victimName);
+            }
+            
+            // Now handle the actual player death events
+            if (data.playerId === this.playerId) {
+                // Local player destroyed
+                this.handleDeath(data.attackerId);
+            } else {
+                // Remote player destroyed
+                this.handleRemotePlayerDeath(data.playerId, data.attackerId);
             }
         });
 
