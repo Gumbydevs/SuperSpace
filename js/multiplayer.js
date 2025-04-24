@@ -1636,6 +1636,48 @@ export class MultiplayerManager {
         Object.values(this.players).forEach(player => {
             if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
             
+            // Draw shield effect for remote players when they have shields
+            // We'll assume they have shields if the shield property exists
+            if (player.shield && player.shield > 0) {
+                // Save context before drawing the shield
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                
+                // Create shield visual effect based on shield strength
+                const shieldPercentage = player.shield / 100; // Assume max is 100
+                const glowSize = 25 + (shieldPercentage * 8); // Similar to player shield
+                const glowOpacity = 0.3 + (shieldPercentage * 0.4);
+                
+                // Create radial gradient for shield effect
+                const shieldGradient = ctx.createRadialGradient(0, 0, glowSize * 0.3, 0, 0, glowSize);
+                shieldGradient.addColorStop(0, `rgba(64, 160, 255, ${glowOpacity * 0.15})`); // Inner glow
+                shieldGradient.addColorStop(0.6, `rgba(64, 160, 255, ${glowOpacity * 0.8})`); // Main shield glow
+                shieldGradient.addColorStop(1, `rgba(32, 100, 255, 0)`); // Fade out at the edge
+                
+                // Draw the shield glow
+                ctx.fillStyle = shieldGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add pulse effect
+                const pulsePhase = (Date.now() % 2000) / 2000;
+                if (pulsePhase < 0.7) {
+                    const rippleSize = glowSize * (0.8 + pulsePhase * 0.6);
+                    const rippleOpacity = (0.7 - Math.abs(0.35 - pulsePhase)) * 0.4 * shieldPercentage;
+                    
+                    // Draw ripple effect
+                    ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
+                    ctx.lineWidth = 1.8;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Restore context after drawing shield
+                ctx.restore();
+            }
+            
             // Draw remote player's ship
             ctx.save();
             ctx.translate(player.x, player.y);
@@ -1745,6 +1787,27 @@ export class MultiplayerManager {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 1;
             ctx.strokeRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
+            
+            // Add shield bar if player has shields - positioned just above health bar
+            if (player.shield && player.shield > 0) {
+                const shieldPercentage = Math.max(0, player.shield / 100);
+                
+                // Position the shield bar above the health bar
+                ctx.translate(0, -7); // Move up by the height of the bar + spacing
+                
+                // Background (dark)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
+                
+                // Shield fill (blue)
+                ctx.fillStyle = '#33f';
+                ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth * shieldPercentage, healthBarHeight);
+                
+                // Border
+                ctx.strokeStyle = 'rgba(100, 180, 255, 0.8)';
+                ctx.strokeRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
+            }
+            
             ctx.restore();
             
             // Draw remote player's projectiles
