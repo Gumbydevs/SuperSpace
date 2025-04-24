@@ -789,6 +789,16 @@ export class MultiplayerManager {
             player.velocity = playerData.velocity || player.velocity;
             player.health = playerData.health || player.health;
             player.ship = playerData.ship || player.ship;
+            
+            // Update name if provided and cache it
+            if (playerData.name && playerData.name !== 'Unknown') {
+                player.name = playerData.name;
+                this.playerNameCache[playerData.id] = playerData.name;
+            } 
+            // If player has Unknown name but we have a cached name, restore it
+            else if (player.name === 'Unknown' && this.playerNameCache[playerData.id]) {
+                player.name = this.playerNameCache[playerData.id];
+            }
         }
     }
 
