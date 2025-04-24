@@ -305,24 +305,81 @@ export class UI {
     
     addShieldDisplay() {
         const statusPanel = document.getElementById('status-panel');
+        if (!statusPanel) return;
         
+        // Create shield display wrapper
         const shieldDisplay = document.createElement('div');
         shieldDisplay.className = 'status-item';
         shieldDisplay.innerHTML = '<span class="status-label">SHIELD:</span> <span id="shield" class="status-value">0</span>';
-        this.styleStatusItem(shieldDisplay, '#00f');
+        this.styleStatusItem(shieldDisplay, '#33f');
         
-        statusPanel.appendChild(shieldDisplay);
+        // Create shield bar - similar to health bar but blue
+        const shieldBar = document.createElement('div');
+        shieldBar.style.width = '100%';
+        shieldBar.style.height = this.isMobileDevice ? '4px' : '6px';
+        shieldBar.style.backgroundColor = '#333';
+        shieldBar.style.borderRadius = '3px';
+        shieldBar.style.overflow = 'hidden';
+        shieldBar.style.marginTop = this.isMobileDevice ? '3px' : '4px';
+        
+        const shieldFill = document.createElement('div');
+        shieldFill.id = 'shield-fill';
+        shieldFill.style.width = '100%';
+        shieldFill.style.height = '100%';
+        shieldFill.style.backgroundColor = '#33f';
+        shieldFill.style.transition = 'width 0.3s ease';
+        
+        shieldBar.appendChild(shieldFill);
+        shieldDisplay.appendChild(shieldBar);
+        
+        // Insert shield display BEFORE health display (so shields appear above health)
+        const healthDisplay = statusPanel.querySelector('.status-item');
+        if (healthDisplay) {
+            statusPanel.insertBefore(shieldDisplay, healthDisplay);
+        } else {
+            statusPanel.appendChild(shieldDisplay);
+        }
     }
     
     addEnergyDisplay() {
         const statusPanel = document.getElementById('status-panel');
+        if (!statusPanel) return;
         
+        // Create energy display wrapper
         const energyDisplay = document.createElement('div');
         energyDisplay.className = 'status-item';
         energyDisplay.innerHTML = '<span class="status-label">ENERGY:</span> <span id="energy" class="status-value">0</span>';
         this.styleStatusItem(energyDisplay, '#f0f');
         
-        statusPanel.appendChild(energyDisplay);
+        // Create energy bar - similar to health bar but purple
+        const energyBar = document.createElement('div');
+        energyBar.style.width = '100%';
+        energyBar.style.height = this.isMobileDevice ? '4px' : '6px';
+        energyBar.style.backgroundColor = '#333';
+        energyBar.style.borderRadius = '3px';
+        energyBar.style.overflow = 'hidden';
+        energyBar.style.marginTop = this.isMobileDevice ? '3px' : '4px';
+        
+        const energyFill = document.createElement('div');
+        energyFill.id = 'energy-fill';
+        energyFill.style.width = '100%';
+        energyFill.style.height = '100%';
+        energyFill.style.backgroundColor = '#f0f';
+        energyFill.style.transition = 'width 0.3s ease';
+        
+        energyBar.appendChild(energyFill);
+        energyDisplay.appendChild(energyBar);
+        
+        // Add energy display after shield and health but before weapon
+        const weaponDisplay = Array.from(statusPanel.querySelectorAll('.status-item')).find(
+            item => item.innerHTML.includes('WEAPON:')
+        );
+        
+        if (weaponDisplay) {
+            statusPanel.insertBefore(energyDisplay, weaponDisplay);
+        } else {
+            statusPanel.appendChild(energyDisplay);
+        }
     }
     
     renderMinimap(ctx, player, world) {
@@ -503,6 +560,62 @@ export class UI {
                 healthFill.style.backgroundColor = '#ff3'; // Yellow
             } else {
                 healthFill.style.backgroundColor = '#f33'; // Red
+            }
+        }
+    }
+    
+    // Update shield bar display based on current shield percentage
+    updateShieldBar(currentShield, maxShield = 100) {
+        const shieldFill = document.getElementById('shield-fill');
+        const shieldValue = document.getElementById('shield');
+        
+        if (shieldFill && shieldValue) {
+            const shieldPercentage = Math.max(0, Math.min(100, (currentShield / maxShield) * 100));
+            shieldFill.style.width = `${shieldPercentage}%`;
+            shieldValue.textContent = Math.round(currentShield);
+            
+            // Change opacity based on shield level for visual feedback
+            const opacity = 0.7 + (shieldPercentage / 100) * 0.3;
+            shieldFill.style.opacity = opacity;
+            
+            // Add pulsing effect when shields are low
+            if (shieldPercentage < 30) {
+                shieldFill.style.animation = 'shield-pulse 1s infinite';
+                if (!shieldFill.style.animationName) {
+                    // Create the animation if it doesn't exist
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes shield-pulse {
+                            0% { opacity: ${opacity * 0.7}; }
+                            50% { opacity: ${opacity}; }
+                            100% { opacity: ${opacity * 0.7}; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else {
+                shieldFill.style.animation = 'none';
+            }
+        }
+    }
+    
+    // Update energy bar display based on current energy percentage
+    updateEnergyBar(currentEnergy, maxEnergy = 100) {
+        const energyFill = document.getElementById('energy-fill');
+        const energyValue = document.getElementById('energy');
+        
+        if (energyFill && energyValue) {
+            const energyPercentage = Math.max(0, Math.min(100, (currentEnergy / maxEnergy) * 100));
+            energyFill.style.width = `${energyPercentage}%`;
+            energyValue.textContent = Math.round(currentEnergy);
+            
+            // Change color based on energy level
+            if (energyPercentage > 60) {
+                energyFill.style.backgroundColor = '#f0f'; // Full purple
+            } else if (energyPercentage > 30) {
+                energyFill.style.backgroundColor = '#d0d'; // Dimmer purple
+            } else {
+                energyFill.style.backgroundColor = '#a0a'; // Low purple
             }
         }
     }
