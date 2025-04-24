@@ -458,7 +458,7 @@ class Game {
             
             // Here we update UI elements with current game state
             document.getElementById('score').textContent = this.player.score;
-            // Use the new health bar update method instead of just updating the text
+            // Use the new UI update methods for health, shields, and energy
             this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
             
             // Check if credits element exists (it might not be in your HTML yet)
@@ -471,20 +471,26 @@ class Game {
             if (this.player.shieldCapacity > 0) {
                 const shieldElement = document.getElementById('shield');
                 if (shieldElement) {
-                    shieldElement.textContent = Math.floor(this.player.shield);
+                    // Use the shield bar update method
+                    this.ui.updateShieldBar(this.player.shield, this.player.shieldCapacity);
                 } else {
                     // Add shield display if player has gained shield capability
                     this.ui.addShieldDisplay();
+                    // Initialize the shield bar
+                    setTimeout(() => this.ui.updateShieldBar(this.player.shield, this.player.shieldCapacity), 50);
                 }
             }
             
             if (this.player.maxEnergy > 0) {
                 const energyElement = document.getElementById('energy');
                 if (energyElement) {
-                    energyElement.textContent = Math.floor(this.player.energy);
+                    // Use the energy bar update method
+                    this.ui.updateEnergyBar(this.player.energy, this.player.maxEnergy);
                 } else {
                     // Add energy display if player has gained energy capability
                     this.ui.addEnergyDisplay();
+                    // Initialize the energy bar
+                    setTimeout(() => this.ui.updateEnergyBar(this.player.energy, this.player.maxEnergy), 50);
                 }
             }
             
