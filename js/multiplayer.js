@@ -1687,6 +1687,16 @@ export class MultiplayerManager {
             const shipColor = player.shipColor || player.color || '#f00';
             const engineColor = player.engineColor || '#6ff';
             
+            // Set thrust level based on player velocity (if not provided directly)
+            let thrustLevel = 0;
+            if (player.thrustLevel !== undefined) {
+                thrustLevel = player.thrustLevel;
+            } else if (player.velocity) {
+                // Estimate thrust level based on velocity magnitude
+                const speed = Math.sqrt(player.velocity.x ** 2 + player.velocity.y ** 2);
+                thrustLevel = Math.min(1.0, speed / 200); // Scale to 0-1 range
+            }
+            
             // Draw ship based on type
             if (player.ship === 'fighter') {
                 // Enhanced fighter ship design
@@ -1732,23 +1742,38 @@ export class MultiplayerManager {
                 ctx.closePath();
                 ctx.fill();
                 
-                // Engine glow
-                ctx.fillStyle = engineColor;
-                ctx.beginPath();
-                ctx.moveTo(-7, 8);
-                ctx.lineTo(-4, 16);
-                ctx.lineTo(0, 13);
-                ctx.lineTo(4, 16);
-                ctx.lineTo(7, 8);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Add engine glow effect
-                const engineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, 10);
-                engineGradient.addColorStop(0, engineColor);
-                engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = engineGradient;
-                ctx.fillRect(-8, 10, 16, 12);
+                // Dynamic engine flame based on thrust level
+                if (thrustLevel > 0) {
+                    // Base engine flame shape grows with thrust level
+                    ctx.fillStyle = engineColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-7, 8);
+                    ctx.lineTo(-4, 8 + (10 * thrustLevel)); // Left side extends with thrust
+                    ctx.lineTo(0, 8 + (6 * thrustLevel)); // Center point
+                    ctx.lineTo(4, 8 + (10 * thrustLevel)); // Right side extends with thrust
+                    ctx.lineTo(7, 8);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Engine glow effect - intensity increases with thrust
+                    const engineGlowSize = 8 + (10 * thrustLevel);
+                    const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, engineGlowSize);
+                    fighterEngineGradient.addColorStop(0, engineColor);
+                    fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = fighterEngineGradient;
+                    ctx.fillRect(-8, 10, 16, 8 + (12 * thrustLevel));
+                    
+                    // Add animated flickering for more realistic flame
+                    if (thrustLevel > 0.7) {
+                        const flickerIntensity = (Math.random() * 0.2) * thrustLevel;
+                        ctx.globalAlpha = 0.5 * flickerIntensity;
+                        ctx.beginPath();
+                        ctx.arc(0, 12 + (8 * thrustLevel), 6 * thrustLevel, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fff';
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
                 
             } else if (player.ship === 'cruiser' || player.ship === 'heavy') {
                 // Enhanced heavy cruiser design
@@ -1804,34 +1829,63 @@ export class MultiplayerManager {
                 ctx.rect(8, -1, 12, 2);
                 ctx.fill();
                 
-                // Engine glow - dual engines
-                ctx.fillStyle = engineColor;
-                ctx.beginPath();
-                ctx.moveTo(-10, 18);
-                ctx.lineTo(-14, 25);
-                ctx.lineTo(-6, 23);
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.beginPath();
-                ctx.moveTo(10, 18);
-                ctx.lineTo(14, 25);
-                ctx.lineTo(6, 23);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Add engine glow effect
-                const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, 8);
-                leftEngineGlow.addColorStop(0, engineColor);
-                leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = leftEngineGlow;
-                ctx.fillRect(-16, 20, 12, 10);
-                
-                const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, 8);
-                rightEngineGlow.addColorStop(0, engineColor);
-                rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = rightEngineGlow;
-                ctx.fillRect(4, 20, 12, 10);
+                // Dynamic dual engine flames based on thrust level
+                if (thrustLevel > 0) {
+                    ctx.fillStyle = engineColor;
+                    
+                    // Left engine
+                    ctx.beginPath();
+                    ctx.moveTo(-10, 18);
+                    ctx.lineTo(-14, 18 + (10 * thrustLevel));
+                    ctx.lineTo(-8, 18 + (8 * thrustLevel));
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Right engine
+                    ctx.beginPath();
+                    ctx.moveTo(10, 18);
+                    ctx.lineTo(14, 18 + (10 * thrustLevel)); 
+                    ctx.lineTo(8, 18 + (8 * thrustLevel));
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Engine glow effects - intensity increases with thrust
+                    const engineGlowSize = 6 + (8 * thrustLevel);
+                    
+                    // Left engine glow
+                    const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, engineGlowSize);
+                    leftEngineGlow.addColorStop(0, engineColor);
+                    leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = leftEngineGlow;
+                    ctx.fillRect(-16, 20, 12, 6 + (10 * thrustLevel));
+                    
+                    // Right engine glow
+                    const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, engineGlowSize);
+                    rightEngineGlow.addColorStop(0, engineColor);
+                    rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = rightEngineGlow;
+                    ctx.fillRect(4, 20, 12, 6 + (10 * thrustLevel));
+                    
+                    // Add animated flickering for more realistic flame
+                    if (thrustLevel > 0.6) {
+                        // Left engine flicker
+                        const leftFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
+                        ctx.globalAlpha = 0.5 * leftFlickerIntensity;
+                        ctx.beginPath();
+                        ctx.arc(-10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fff';
+                        ctx.fill();
+                        
+                        // Right engine flicker
+                        const rightFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
+                        ctx.globalAlpha = 0.5 * rightFlickerIntensity;
+                        ctx.beginPath();
+                        ctx.arc(10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fff';
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
                 
             } else if (player.ship === 'stealth') {
                 // Stealth ship design - sleek and angular
@@ -1881,18 +1935,32 @@ export class MultiplayerManager {
                 ctx.ellipse(0, -8, 2, 6, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Engine glow - subtle and sleek
-                ctx.fillStyle = engineColor;
-                ctx.globalAlpha = 0.7;
-                ctx.beginPath();
-                ctx.moveTo(-5, 12);
-                ctx.lineTo(-3, 18);
-                ctx.lineTo(0, 14);
-                ctx.lineTo(3, 18);
-                ctx.lineTo(5, 12);
-                ctx.closePath();
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
+                // Stealth engines have subtle glow that intensifies with thrust
+                if (thrustLevel > 0) {
+                    // More transparent for stealth ship
+                    ctx.globalAlpha = 0.3 + (0.4 * thrustLevel);
+                    ctx.fillStyle = engineColor;
+                    
+                    // Engine flame shape
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 12);
+                    ctx.lineTo(-3, 12 + (8 * thrustLevel));
+                    ctx.lineTo(0, 12 + (4 * thrustLevel));
+                    ctx.lineTo(3, 12 + (8 * thrustLevel));
+                    ctx.lineTo(5, 12);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add subtle pulsing effect unique to stealth engines
+                    const pulseIntensity = (Math.sin(Date.now() / 200) * 0.2 + 0.8) * thrustLevel;
+                    ctx.globalAlpha = 0.2 * pulseIntensity;
+                    ctx.beginPath();
+                    ctx.arc(0, 14 + (4 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                    ctx.fillStyle = engineColor;
+                    ctx.fill();
+                    
+                    ctx.globalAlpha = 1.0;
+                }
                 
             } else {
                 // Default scout ship design - modernized
@@ -1927,220 +1995,42 @@ export class MultiplayerManager {
                 ctx.lineTo(4, -8);
                 ctx.stroke();
                 
-                // Engine glow
-                ctx.fillStyle = engineColor;
-                ctx.beginPath();
-                ctx.moveTo(-5, 5);
-                ctx.lineTo(-3, 12);
-                ctx.lineTo(0, 9);
-                ctx.lineTo(3, 12);
-                ctx.lineTo(5, 5);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Add engine glow effect
-                const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, 6);
-                engineGradient.addColorStop(0, engineColor);
-                engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = engineGradient;
-                ctx.beginPath();
-                ctx.ellipse(0, 12, 5, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
+                // Dynamic engine flame based on thrust level
+                if (thrustLevel > 0) {
+                    ctx.fillStyle = engineColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 5);
+                    ctx.lineTo(-3, 5 + (9 * thrustLevel)); // Left flame point
+                    ctx.lineTo(0, 5 + (5 * thrustLevel)); // Center flame
+                    ctx.lineTo(3, 5 + (9 * thrustLevel)); // Right flame point
+                    ctx.lineTo(5, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add engine glow effect - size based on thrust level
+                    const engineGlowSize = 4 + (7 * thrustLevel);
+                    const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, engineGlowSize);
+                    engineGradient.addColorStop(0, engineColor);
+                    engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = engineGradient;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 9 + (3 * thrustLevel), 5 * thrustLevel, 6 * thrustLevel, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Add subtle flame variations when at high thrust
+                    if (thrustLevel > 0.5) {
+                        const flicker = Math.random() * 0.3 * thrustLevel;
+                        ctx.globalAlpha = 0.3 * flicker;
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.arc(0, 9 + (3 * thrustLevel), 2 * thrustLevel, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
             }
             
             ctx.restore();
-            
-            // Draw player name and health bar with horizontal orientation regardless of ship rotation
-            
-            // Draw player name - NOW LARGER AND FIXED HORIZONTALLY
-            ctx.save();
-            ctx.translate(player.x, player.y - 30); // Position above the ship
-            ctx.fillStyle = 'white';
-            ctx.font = '14px Arial'; // Increased from 12px
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // Add text shadow for better visibility
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-            ctx.shadowBlur = 3;
-            ctx.shadowOffsetX = 1;
-            ctx.shadowOffsetY = 1;
-            ctx.fillText(player.name, 0, 0);
-            ctx.restore();
-            
-            // Draw health bar - NOW LARGER AND FIXED HORIZONTALLY
-            ctx.save();
-            ctx.translate(player.x, player.y - 38); // Position above the name
-            
-            const healthBarWidth = 40; // Increased from 30
-            const healthBarHeight = 5; // Increased from 4
-            const healthPercentage = Math.max(0, player.health / 100);
-            
-            // Background (dark)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
-            
-            // Health fill (colored based on health amount)
-            ctx.fillStyle = healthPercentage > 0.6 ? '#0f0' : healthPercentage > 0.3 ? '#ff0' : '#f00';
-            ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth * healthPercentage, healthBarHeight);
-            
-            // Border
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
-            
-            // Add shield bar if player has shields - positioned just above health bar
-            if (player.shield && player.shield > 0) {
-                const shieldPercentage = Math.max(0, player.shield / 100);
-                
-                // Position the shield bar above the health bar
-                ctx.translate(0, -7); // Move up by the height of the bar + spacing
-                
-                // Background (dark)
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
-                
-                // Shield fill (blue)
-                ctx.fillStyle = '#33f';
-                ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth * shieldPercentage, healthBarHeight);
-                
-                // Border
-                ctx.strokeStyle = 'rgba(100, 180, 255, 0.8)';
-                ctx.strokeRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
-            }
-            
-            ctx.restore();
-            
-            // Draw remote player's projectiles
-            if (player.projectiles) {
-                player.projectiles.forEach((projectile, i) => {
-                    // Update projectile position
-                    projectile.x += projectile.velocityX * 0.016; // Assumes 60 FPS
-                    projectile.y += projectile.velocityY * 0.016;
-                    
-                    // Draw projectile based on type
-                    switch(projectile.type) {
-                        case 'laser':
-                            ctx.fillStyle = projectile.color || '#f00';
-                            ctx.beginPath();
-                            ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
-                            ctx.fill();
-                            
-                            // Add laser trail effect
-                            ctx.strokeStyle = projectile.color || '#f00';
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            ctx.moveTo(projectile.x, projectile.y);
-                            ctx.lineTo(
-                                projectile.x - projectile.velocityX * 0.02,
-                                projectile.y - projectile.velocityY * 0.02
-                            );
-                            ctx.stroke();
-                            break;
-                            
-                        case 'burst':
-                            ctx.fillStyle = '#ff0';
-                            ctx.beginPath();
-                            ctx.arc(projectile.x, projectile.y, 2, 0, Math.PI * 2);
-                            ctx.fill();
-                            break;
-                            
-                        case 'missile':
-                            // Draw missile body
-                            ctx.save();
-                            ctx.translate(projectile.x, projectile.y);
-                            
-                            // Calculate rotation from velocity
-                            let rotation = Math.atan2(projectile.velocityY, projectile.velocityX);
-                            ctx.rotate(rotation);
-                            
-                            ctx.fillStyle = '#f80';
-                            ctx.beginPath();
-                            ctx.moveTo(5, 0);
-                            ctx.lineTo(0, -2);
-                            ctx.lineTo(-5, -2);
-                            ctx.lineTo(-5, 2);
-                            ctx.lineTo(0, 2);
-                            ctx.closePath();
-                            ctx.fill();
-                            
-                            // Engine exhaust
-                            ctx.fillStyle = '#f00';
-                            ctx.beginPath();
-                            ctx.moveTo(-5, -1);
-                            ctx.lineTo(-8, 0);
-                            ctx.lineTo(-5, 1);
-                            ctx.closePath();
-                            ctx.fill();
-                            
-                            ctx.restore();
-                            break;
-                            
-                        default:
-                            // Generic projectile
-                            ctx.fillStyle = projectile.color || '#f00';
-                            ctx.beginPath();
-                            ctx.arc(projectile.x, projectile.y, 3, 0, Math.PI * 2);
-                            ctx.fill();
-                    }
-                    
-                    // Check collision with local player
-                    const dx = projectile.x - this.game.player.x;
-                    const dy = projectile.y - this.game.player.y;
-                    const distSq = dx * dx + dy * dy;
-                    
-                    if (distSq < 225) { // 15 squared - rough collision radius
-                        // Check if player is in safe zone before applying damage
-                        if (this.game.world && !this.game.world.isInSafeZone(this.game.player)) {
-                            // Hit the player!
-                            const damage = projectile.damage || 10;
-                            this.game.player.takeDamage(damage);
-                            
-                            // Record damage for kill attribution
-                            this.game.player.recordDamageFrom(player.id);
-                            
-                            // Create explosion effect at point of impact
-                            if (this.game.world) {
-                                this.game.world.createProjectileHitEffect(
-                                    projectile.x, 
-                                    projectile.y,
-                                    12 + damage * 0.3, // Size based on damage
-                                    this.game.soundManager
-                                );
-                            }
-                            
-                            // Show hit message
-                            this.showGameMessage(`Hit by ${player.name} (-${damage})`, '#f88');
-                            
-                            // Send hit confirmation to server
-                            this.socket.emit('hit', {
-                                type: 'player',
-                                targetId: this.playerId,
-                                damage: damage,
-                                attackerId: player.id
-                            });
-                            
-                            // Check if player was destroyed
-                            if (this.game.player.health <= 0) {
-                                this.socket.emit('playerDestroyed', {
-                                    playerId: this.playerId,
-                                    attackerId: player.id
-                                });
-                            }
-                        } else {
-                            // Player in safe zone - show protection message
-                            this.showGameMessage('Safe Zone Protection Active', '#ffcc00');
-                        }
-                        
-                        // Remove the projectile
-                        player.projectiles.splice(i, 1);
-                    }
-                    // Remove projectiles that are too far away
-                    else if (distSq > 1000000) { // 1000 distance squared
-                        player.projectiles.splice(i, 1);
-                    }
-                });
-            }
         });
     }
 
@@ -2387,6 +2277,28 @@ export class MultiplayerManager {
             // Count is current player (if connected) plus all remote players
             const count = (this.connected ? 1 : 0) + Object.keys(this.players).length;
             playerCountElement.textContent = count;
+        }
+    }
+
+    sendPositionUpdate() {
+        if (this.connected && this.player) {
+            // Calculate the current thrust level based on player velocity
+            const currentSpeed = Math.sqrt(this.player.velocity.x ** 2 + this.player.velocity.y ** 2);
+            const thrustLevel = Math.min(1.0, currentSpeed / (this.player.maxSpeed * 0.7));
+            
+            this.socket.emit('position', {
+                x: this.player.x,
+                y: this.player.y,
+                rotation: this.player.rotation,
+                ship: this.player.currentShip,
+                shipColor: this.player.shipColor,
+                engineColor: this.player.engineColor,
+                thrustLevel: this.player.thrustLevel || thrustLevel, // Send the actual thrust level if available
+                health: this.player.health,
+                maxHealth: this.player.maxHealth,
+                shield: this.player.shield,
+                destroyed: this.player.health <= 0
+            });
         }
     }
 }
