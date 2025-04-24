@@ -333,7 +333,7 @@ export class UI {
         const scale = minimapCanvas.width / world.width;
         
         // Clear minimap
-        minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
         
         // Draw world boundary
@@ -348,30 +348,30 @@ export class UI {
             const safeSize = world.safeZone.size * scale;
             
             // Draw safe zone fill with semi-transparent blue
-            minimapCtx.fillStyle = 'rgb(251, 255, 0)';
+            minimapCtx.fillStyle = 'rgb(255, 153, 0)';
             minimapCtx.fillRect(
-                safeX - safeSize/5, 
-                safeY - safeSize/5,
+                safeX - safeSize/2, 
+                safeY - safeSize/2,
                 safeSize,
                 safeSize
             );
             
             // Draw pulsing border
             const pulseAmount = 0.6 + 0.4 * Math.sin(Date.now() / 500); // Subtle pulsing effect
-            minimapCtx.strokeStyle = `rgba(251, 255, 0, ${pulseAmount})`;
+            minimapCtx.strokeStyle = `rgba(255, 251, 0, ${pulseAmount})`;
             minimapCtx.lineWidth = 1.5;
             minimapCtx.strokeRect(
-                safeX - safeSize/3, 
-                safeY - safeSize/3,
+                safeX - safeSize/2, 
+                safeY - safeSize/2,
                 safeSize,
                 safeSize
             );
             
             // Add "SAFE" text in the center of the safe zone
-            // minimapCtx.fillStyle = 'rgba(0, 150, 255, 0.8)';
-            // minimapCtx.font = '8px Arial';
-            // minimapCtx.textAlign = 'center';
-            // minimapCtx.fillText('SAFE', safeX, safeY + 3);
+            minimapCtx.fillStyle = 'rgba(238, 255, 0, 0.8)';
+            minimapCtx.font = '8px courier, monospace';
+            minimapCtx.textAlign = 'center';
+            minimapCtx.fillText('SAFE', safeX, safeY + 12);
         }
         
         // Draw asteroids
@@ -407,43 +407,47 @@ export class UI {
         });
         
         // Draw other players from multiplayer system
-        if (player.game && player.game.multiplayer) {
-            const otherPlayers = player.game.multiplayer.players;
+        // IMPORTANT: Use window.game.multiplayer instead of player.game.multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            const otherPlayers = window.game.multiplayer.players;
             
-            // Check if players object exists and has entries
-            if (otherPlayers && Object.keys(otherPlayers).length > 0) {
-                Object.values(otherPlayers).forEach(otherPlayer => {
-                    // Skip destroyed players
-                    if (otherPlayer.destroyed) return;
-                    
-                    // Convert player coords to minimap coords
-                    const px = (otherPlayer.x + world.width/2) * scale;
-                    const py = (otherPlayer.y + world.height/2) * scale;
-                    
-                    // Use player's ship color or default to red
-                    const playerColor = otherPlayer.color || '#f00';
-                    
-                    // Draw player dot
-                    minimapCtx.fillStyle = playerColor;
+            // Log players for debugging
+            console.log("Players on minimap:", Object.keys(otherPlayers).length);
+            
+            // Draw each player on the minimap
+            Object.values(otherPlayers).forEach(otherPlayer => {
+                // Skip destroyed players and the current player
+                if (otherPlayer.destroyed || (window.game.multiplayer.socket && otherPlayer.id === window.game.multiplayer.socket.id)) {
+                    return;
+                }
+                
+                // Convert player coords to minimap coords
+                const px = (otherPlayer.x + world.width/2) * scale;
+                const py = (otherPlayer.y + world.height/2) * scale;
+                
+                // Use player's ship color or default to red
+                const playerColor = otherPlayer.color || '#f00';
+                
+                // Draw player dot
+                minimapCtx.fillStyle = playerColor;
+                minimapCtx.beginPath();
+                minimapCtx.arc(px, py, this.isMobileDevice ? 2 : 2.5, 0, Math.PI * 2);
+                minimapCtx.fill();
+                
+                // Draw direction indicator if rotation is available
+                if (otherPlayer.rotation !== undefined) {
+                    const dirLength = this.isMobileDevice ? 3 : 4;
+                    minimapCtx.strokeStyle = playerColor;
+                    minimapCtx.lineWidth = 1;
                     minimapCtx.beginPath();
-                    minimapCtx.arc(px, py, this.isMobileDevice ? 2 : 2.5, 0, Math.PI * 2);
-                    minimapCtx.fill();
-                    
-                    // Draw direction indicator if rotation is available
-                    if (otherPlayer.rotation !== undefined) {
-                        const dirLength = this.isMobileDevice ? 3 : 4;
-                        minimapCtx.strokeStyle = playerColor;
-                        minimapCtx.lineWidth = 1;
-                        minimapCtx.beginPath();
-                        minimapCtx.moveTo(px, py);
-                        minimapCtx.lineTo(
-                            px + Math.sin(otherPlayer.rotation) * dirLength,
-                            py - Math.cos(otherPlayer.rotation) * dirLength
-                        );
-                        minimapCtx.stroke();
-                    }
-                });
-            }
+                    minimapCtx.moveTo(px, py);
+                    minimapCtx.lineTo(
+                        px + Math.sin(otherPlayer.rotation) * dirLength,
+                        py - Math.cos(otherPlayer.rotation) * dirLength
+                    );
+                    minimapCtx.stroke();
+                }
+            });
         }
         
         // Draw player (always draw last so it's on top)
