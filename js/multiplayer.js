@@ -448,6 +448,9 @@ export class MultiplayerManager {
                 }
             }
                 
+            // Ensure kill announcer is ready before announcing kills
+            this.ensureKillAnnouncerReady();
+
             // Announce the kill with the kill announcer system for all players
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
@@ -558,6 +561,16 @@ export class MultiplayerManager {
 
         // Start ping interval to keep connection alive and reset inactivity timer
         this.startPingInterval();
+    }
+
+    // Ensure kill announcer is properly setup before announcing kills
+    ensureKillAnnouncerReady() {
+        // Check if the kill announcements container exists
+        if (!document.getElementById('kill-announcements')) {
+            console.log('Kill announcements container missing, recreating it');
+            // If container is missing, recreate it
+            this.killAnnouncer.createAnnouncementContainer();
+        }
     }
 
     // Send periodic pings to keep the connection active
@@ -1324,8 +1337,16 @@ export class MultiplayerManager {
                 this.socket.emit('requestPlayerData', { playerId: playerId });
             }
             
-            this.showGameMessage(`A player respawned!`, '#8af');
+            // Show respawn message with player name if we have it cached
+            if (this.playerNameCache[playerId]) {
+                this.showGameMessage(`${this.playerNameCache[playerId]} respawned!`, '#8af');
+            } else {
+                this.showGameMessage(`A player respawned!`, '#8af');
+            }
         }
+        
+        // Ensure kill announcer is ready after respawn
+        this.ensureKillAnnouncerReady();
     }
 
     // Handle asteroid hit from another player
