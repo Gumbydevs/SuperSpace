@@ -1012,9 +1012,6 @@ export class MultiplayerManager {
             }
         }
 
-        // Announce the kill using KillAnnouncer
-        this.killAnnouncer.announceKill(attacker, deadPlayerName);
-
         // Remove the player after a delay to let death animation play out
         setTimeout(() => {
             delete this.players[playerId];
