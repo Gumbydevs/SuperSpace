@@ -20,6 +20,9 @@ export class MultiplayerManager {
         this.lastUpdate = 0;
         this.updateInterval = 50; // 50ms = 20 updates per second
         
+        // Add a cache to store player names even after they're removed
+        this.playerNameCache = {};
+        
         // Show offline status immediately
         this.addConnectionIndicator();
         this.createPlayerListUI();
@@ -758,6 +761,11 @@ export class MultiplayerManager {
         
         this.players[playerData.id] = player;
         
+        // Cache the player's name for future reference (after death/respawn)
+        if (player.name !== 'Unknown') {
+            this.playerNameCache[playerData.id] = player.name;
+        }
+        
         // Update the player list UI whenever a new player is added
         this.updatePlayerList();
         
@@ -786,6 +794,11 @@ export class MultiplayerManager {
 
     // Remove a remote player
     removeRemotePlayer(playerId) {
+        if (this.players[playerId]) {
+            // Cache the player's name before removing
+            this.playerNameCache[playerId] = this.players[playerId].name;
+        }
+        
         delete this.players[playerId];
         
         // Update the player list UI when a player is removed
@@ -1290,7 +1303,7 @@ export class MultiplayerManager {
                 rotation: 0,
                 health: 100,
                 ship: 'scout',
-                name: 'Unknown', // Will be updated by next playerMoved message
+                name: this.playerNameCache[playerId] || 'Unknown', // Use cached name if available
                 color: this.getRandomPlayerColor(),
                 projectiles: [],
                 destroyed: false
@@ -1401,7 +1414,7 @@ export class MultiplayerManager {
         // Create a single container for everything
         const contentContainer = document.createElement('div');
         
-        // Title text without any container or borders
+        // PLAYERS ONLINE title With live player count displayed in bracke
         const titleText = document.createElement('div');
         titleText.textContent = '🌐 PLAYERS ONLINE';
         titleText.style.fontWeight = 'bold';
