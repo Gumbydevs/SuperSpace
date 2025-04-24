@@ -28,7 +28,7 @@ export class ShopSystem {
                 id: 'fighter',
                 name: 'Fighter',
                 description: 'Balanced combat vessel with good speed and firepower.',
-                price: 5000,
+                price: 1000,
                 owned: localStorage.getItem('ship_fighter') === 'true',
                 stats: {
                     maxHealth: 150,
@@ -46,7 +46,7 @@ export class ShopSystem {
                 id: 'heavy',
                 name: 'Heavy Cruiser',
                 description: 'Slower but heavily armed and armored warship.',
-                price: 12000,
+                price: 1000,
                 owned: localStorage.getItem('ship_heavy') === 'true',
                 stats: {
                     maxHealth: 250,
@@ -64,7 +64,7 @@ export class ShopSystem {
                 id: 'stealth',
                 name: 'Stealth Ship',
                 description: 'Fast and hard to detect, but lightly armored.',
-                price: 20000,
+                price: 1000,
                 owned: localStorage.getItem('ship_stealth') === 'true',
                 stats: {
                     maxHealth: 120,

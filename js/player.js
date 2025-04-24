@@ -71,6 +71,11 @@ export class Player {
         this.lastDamageFrom = null;
         this.damageAttributionTimeout = null;
         this.deathTriggered = false;
+
+        // Engine flame animation variables
+        this.thrustLevel = 0; // Current visual size of engine flame (0-1)
+        this.targetThrustLevel = 0; // Target size based on throttle input
+        this.thrustTransitionSpeed = 2.0; // How quickly flame grows/shrinks
     }
 
     update(deltaTime, input, soundManager) {
@@ -120,6 +125,27 @@ export class Player {
                 this.velocity.x += accelerationX;
                 this.velocity.y += accelerationY;
             }
+        }
+
+        // Update engine thrust animation level
+        // Set target thrust level based on input
+        if (input.keys.includes('ArrowUp') || (input.thrustAmount && input.thrustAmount > 0)) {
+            this.targetThrustLevel = input.thrustAmount ? input.thrustAmount : 1.0;
+        } else {
+            this.targetThrustLevel = 0;
+        }
+        
+        // Gradually transition current thrust level toward target
+        if (this.thrustLevel < this.targetThrustLevel) {
+            this.thrustLevel = Math.min(
+                this.targetThrustLevel, 
+                this.thrustLevel + (this.thrustTransitionSpeed * deltaTime)
+            );
+        } else if (this.thrustLevel > this.targetThrustLevel) {
+            this.thrustLevel = Math.max(
+                this.targetThrustLevel, 
+                this.thrustLevel - (this.thrustTransitionSpeed * deltaTime)
+            );
         }
 
         // Here we check if player is braking (using down arrow)
