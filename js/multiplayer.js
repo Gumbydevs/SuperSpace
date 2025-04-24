@@ -1661,27 +1661,46 @@ export class MultiplayerManager {
                 ctx.fill();
             }
             
-            // Draw player name
+            ctx.restore(); // Restore context after drawing ship - this ensures name and health bar aren't rotated
+            
+            // Draw player name and health bar with horizontal orientation regardless of ship rotation
+            
+            // Draw player name - NOW LARGER AND FIXED HORIZONTALLY
+            ctx.save();
+            ctx.translate(player.x, player.y - 30); // Position above the ship
             ctx.fillStyle = 'white';
-            ctx.font = '12px Arial';
+            ctx.font = '14px Arial'; // Increased from 12px
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(player.name, 0, -25);
             
-            // Draw health bar
-            const healthBarWidth = 30;
+            // Add text shadow for better visibility
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.fillText(player.name, 0, 0);
+            ctx.restore();
+            
+            // Draw health bar - NOW LARGER AND FIXED HORIZONTALLY
+            ctx.save();
+            ctx.translate(player.x, player.y - 38); // Position above the name
+            
+            const healthBarWidth = 40; // Increased from 30
+            const healthBarHeight = 5; // Increased from 4
             const healthPercentage = Math.max(0, player.health / 100);
             
+            // Background (dark)
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(-healthBarWidth/2, -20, healthBarWidth, 4);
+            ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
             
+            // Health fill (colored based on health amount)
             ctx.fillStyle = healthPercentage > 0.6 ? '#0f0' : healthPercentage > 0.3 ? '#ff0' : '#f00';
-            ctx.fillRect(-healthBarWidth/2, -20, healthBarWidth * healthPercentage, 4);
+            ctx.fillRect(-healthBarWidth/2, 0, healthBarWidth * healthPercentage, healthBarHeight);
             
-            ctx.strokeStyle = '#fff';
+            // Border
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 1;
-            ctx.strokeRect(-healthBarWidth/2, -20, healthBarWidth, 4);
-            
+            ctx.strokeRect(-healthBarWidth/2, 0, healthBarWidth, healthBarHeight);
             ctx.restore();
             
             // Draw remote player's projectiles
@@ -1768,6 +1787,9 @@ export class MultiplayerManager {
                             // Hit the player!
                             const damage = projectile.damage || 10;
                             this.game.player.takeDamage(damage);
+                            
+                            // Record damage for kill attribution
+                            this.game.player.recordDamageFrom(player.id);
                             
                             // Create explosion effect at point of impact
                             if (this.game.world) {
