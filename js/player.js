@@ -718,6 +718,62 @@ export class Player {
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rotation);
             
+            // Draw shield effect when shields are active
+            if (this.shield > 0) {
+                // Create pulsing blue glow around ship based on shield percentage
+                const shieldPercentage = this.shield / this.shieldCapacity;
+                const glowSize = 25 + (shieldPercentage * 8); // Increased size for more visible shield
+                const glowOpacity = 0.3 + (shieldPercentage * 0.4); // Higher opacity for better visibility
+                
+                // Create radial gradient for shield effect
+                const shieldGradient = ctx.createRadialGradient(0, 0, glowSize * 0.3, 0, 0, glowSize);
+                shieldGradient.addColorStop(0, `rgba(64, 160, 255, ${glowOpacity * 0.15})`); // Inner glow
+                shieldGradient.addColorStop(0.6, `rgba(64, 160, 255, ${glowOpacity * 0.8})`); // Main shield glow
+                shieldGradient.addColorStop(1, `rgba(32, 100, 255, 0)`); // Fade out at the edge
+                
+                // Draw the shield glow
+                ctx.fillStyle = shieldGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add shield pulse ripple effects (multiple rings for stronger visual)
+                // Calculate pulse phase (0-1) based on time
+                const pulsePhase = (Date.now() % 2000) / 2000; // 2 second cycle
+                
+                // Draw multiple ripple rings with different timing
+                const drawRipple = (phase, width, opacity) => {
+                    const adjustedPhase = (pulsePhase + phase) % 1;
+                    if (adjustedPhase < 0.7) { // Only show ripple during part of the cycle
+                        // Calculate ripple size based on pulse phase
+                        const rippleSize = glowSize * (0.8 + adjustedPhase * 0.6);
+                        const rippleOpacity = (0.7 - Math.abs(0.35 - adjustedPhase)) * opacity * shieldPercentage;
+                        
+                        // Draw ripple effect
+                        ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
+                        ctx.lineWidth = width;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                };
+                
+                // Draw multiple ripples at different phases for a more dynamic effect
+                drawRipple(0, 1.8, 0.5);
+                drawRipple(0.3, 1.2, 0.4);
+                drawRipple(0.6, 1.0, 0.3);
+                
+                // Extra effect: shield impact flashes when taking recent damage
+                const timeSinceDamage = (Date.now() / 1000) - this.lastDamageTime;
+                if (timeSinceDamage < 0.3) {
+                    const flashOpacity = 0.7 * (1 - (timeSinceDamage / 0.3));
+                    ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
             // Ship body - triangular shape rotated so tip points in direction of travel
             ctx.fillStyle = this.shipColor;
             ctx.beginPath();
