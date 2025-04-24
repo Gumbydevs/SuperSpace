@@ -737,12 +737,9 @@ export class Player {
                 ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Add shield pulse ripple effects (multiple rings for stronger visual)
-                // Calculate pulse phase (0-1) based on time
-                const pulsePhase = (Date.now() % 2000) / 2000; // 2 second cycle
-                
                 // Draw multiple ripple rings with different timing
                 const drawRipple = (phase, width, opacity) => {
+                    const pulsePhase = (Date.now() % 2000) / 2000;
                     const adjustedPhase = (pulsePhase + phase) % 1;
                     if (adjustedPhase < 0.7) { // Only show ripple during part of the cycle
                         // Calculate ripple size based on pulse phase
@@ -774,25 +771,403 @@ export class Player {
                 }
             }
             
-            // Ship body - triangular shape rotated so tip points in direction of travel
-            ctx.fillStyle = this.shipColor;
-            ctx.beginPath();
-            ctx.moveTo(0, -15); // front (points upward when rotation = 0)
-            ctx.lineTo(-10, 10); // back left
-            ctx.lineTo(0, 5); // back middle
-            ctx.lineTo(10, 10); // back right
-            ctx.closePath();
-            ctx.fill();
+            // Draw different ship based on the currentShip property
+            switch(this.currentShip) {
+                case 'fighter':
+                    // Enhanced fighter ship design
+                    // Main body
+                    ctx.fillStyle = this.shipColor;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -22); // Front nose tip
+                    ctx.lineTo(-5, -15); // Left side of nose
+                    ctx.lineTo(-18, -5); // Left wing tip
+                    ctx.lineTo(-12, 0); // Left wing inner edge
+                    ctx.lineTo(-15, 12); // Left rear wing
+                    ctx.lineTo(-5, 8); // Left engine mount
+                    ctx.lineTo(0, 10); // Center bottom
+                    ctx.lineTo(5, 8); // Right engine mount
+                    ctx.lineTo(15, 12); // Right rear wing
+                    ctx.lineTo(12, 0); // Right wing inner edge
+                    ctx.lineTo(18, -5); // Right wing tip
+                    ctx.lineTo(5, -15); // Right side of nose
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Cockpit
+                    ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -8, 4, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Wing markings/details
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath();
+                    ctx.moveTo(-15, -4);
+                    ctx.lineTo(-10, -2);
+                    ctx.lineTo(-10, 0);
+                    ctx.lineTo(-15, -2);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(15, -4);
+                    ctx.lineTo(10, -2);
+                    ctx.lineTo(10, 0);
+                    ctx.lineTo(15, -2);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Engine glow
+                    ctx.fillStyle = this.engineColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-7, 8);
+                    ctx.lineTo(-4, 16);
+                    ctx.lineTo(0, 13);
+                    ctx.lineTo(4, 16);
+                    ctx.lineTo(7, 8);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add engine glow effect
+                    const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, 10);
+                    fighterEngineGradient.addColorStop(0, this.engineColor);
+                    fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = fighterEngineGradient;
+                    ctx.fillRect(-8, 10, 16, 12);
+                    
+                    break;
+                    
+                case 'heavy':
+                    // Enhanced heavy cruiser design
+                    // Main body
+                    ctx.fillStyle = this.shipColor;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -28); // Nose tip
+                    ctx.lineTo(-8, -20); // Left front angled edge
+                    ctx.lineTo(-12, -5); // Left mid-hull
+                    ctx.lineTo(-25, 0); // Left wing tip
+                    ctx.lineTo(-25, 5); // Left wing corner
+                    ctx.lineTo(-18, 8); // Left wing inner
+                    ctx.lineTo(-10, 18); // Left engine mount
+                    ctx.lineTo(0, 15); // Bottom center
+                    ctx.lineTo(10, 18); // Right engine mount
+                    ctx.lineTo(18, 8); // Right wing inner 
+                    ctx.lineTo(25, 5); // Right wing corner
+                    ctx.lineTo(25, 0); // Right wing tip
+                    ctx.lineTo(12, -5); // Right mid-hull
+                    ctx.lineTo(8, -20); // Right front angled edge
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Heavy armor plating
+                    ctx.strokeStyle = 'rgba(60, 60, 60, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, -15);
+                    ctx.lineTo(-15, -5);
+                    ctx.moveTo(10, -15);
+                    ctx.lineTo(15, -5);
+                    ctx.moveTo(-10, -5);
+                    ctx.lineTo(10, -5);
+                    ctx.stroke();
+                    
+                    // Cockpit
+                    ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -12, 5, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Side weapon mounts
+                    ctx.fillStyle = '#555';
+                    ctx.beginPath();
+                    ctx.rect(-22, -2, 8, 4);
+                    ctx.rect(14, -2, 8, 4);
+                    ctx.fill();
+                    
+                    // Weapon barrels
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath();
+                    ctx.rect(-20, -1, 12, 2);
+                    ctx.rect(8, -1, 12, 2);
+                    ctx.fill();
+                    
+                    // Engine glow - dual engines
+                    ctx.fillStyle = this.engineColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, 18);
+                    ctx.lineTo(-14, 25);
+                    ctx.lineTo(-6, 23);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(10, 18);
+                    ctx.lineTo(14, 25);
+                    ctx.lineTo(6, 23);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add engine glow effect
+                    const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, 8);
+                    leftEngineGlow.addColorStop(0, this.engineColor);
+                    leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = leftEngineGlow;
+                    ctx.fillRect(-16, 20, 12, 10);
+                    
+                    const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, 8);
+                    rightEngineGlow.addColorStop(0, this.engineColor);
+                    rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = rightEngineGlow;
+                    ctx.fillRect(4, 20, 12, 10);
+                    
+                    break;
+                    
+                case 'stealth':
+                    // Stealth ship design - sleek and angular
+                    ctx.fillStyle = this.shipColor;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -20); // Nose tip
+                    ctx.lineTo(-3, -15); // Narrow front section
+                    ctx.lineTo(-15, -5); // Left wing edge
+                    ctx.lineTo(-8, 5); // Left mid-wing
+                    ctx.lineTo(-12, 15); // Left wing extension
+                    ctx.lineTo(-5, 12); // Left engine
+                    ctx.lineTo(0, 10); // Center
+                    ctx.lineTo(5, 12); // Right engine
+                    ctx.lineTo(12, 15); // Right wing extension
+                    ctx.lineTo(8, 5); // Right mid-wing
+                    ctx.lineTo(15, -5); // Right wing edge
+                    ctx.lineTo(3, -15); // Narrow front section
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Stealth panels with subtle gradient
+                    const stealthGradient = ctx.createLinearGradient(0, -15, 0, 15);
+                    stealthGradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+                    stealthGradient.addColorStop(0.5, 'rgba(40, 40, 50, 0.5)');
+                    stealthGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+                    
+                    ctx.fillStyle = stealthGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(-10, -3);
+                    ctx.lineTo(-6, 0);
+                    ctx.lineTo(-8, 8);
+                    ctx.lineTo(-12, 12);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(10, -3);
+                    ctx.lineTo(6, 0);
+                    ctx.lineTo(8, 8);
+                    ctx.lineTo(12, 12);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Cockpit - tinted dark
+                    ctx.fillStyle = 'rgba(30, 50, 80, 0.8)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -8, 2, 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Engine glow - subtle and sleek
+                    ctx.fillStyle = this.engineColor;
+                    ctx.globalAlpha = 0.7;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 12);
+                    ctx.lineTo(-3, 18);
+                    ctx.lineTo(0, 14);
+                    ctx.lineTo(3, 18);
+                    ctx.lineTo(5, 12);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                    
+                    break;
+                    
+                default: // 'scout' as default
+                    // Default scout ship design - modernized
+                    ctx.fillStyle = this.shipColor;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -15); // front nose
+                    ctx.lineTo(-4, -10); // left nose edge
+                    ctx.lineTo(-12, 0); // left wing tip
+                    ctx.lineTo(-8, 8); // left rear corner
+                    ctx.lineTo(-5, 5); // left engine mount
+                    ctx.lineTo(0, 7); // center bottom
+                    ctx.lineTo(5, 5); // right engine mount
+                    ctx.lineTo(8, 8); // right rear corner
+                    ctx.lineTo(12, 0); // right wing tip
+                    ctx.lineTo(4, -10); // right nose edge
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Cockpit canopy
+                    ctx.fillStyle = 'rgba(130, 200, 255, 0.7)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -5, 3, 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Detail lines
+                    ctx.strokeStyle = 'rgba(50, 50, 50, 0.7)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(-4, -8);
+                    ctx.moveTo(8, 0);
+                    ctx.lineTo(4, -8);
+                    ctx.stroke();
+                    
+                    // Engine glow
+                    ctx.fillStyle = this.engineColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 5);
+                    ctx.lineTo(-3, 12);
+                    ctx.lineTo(0, 9);
+                    ctx.lineTo(3, 12);
+                    ctx.lineTo(5, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add engine glow effect
+                    const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, 6);
+                    engineGradient.addColorStop(0, this.engineColor);
+                    engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = engineGradient;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 12, 5, 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+            }
             
-            // Here we draw the engine glow effect
-            ctx.fillStyle = this.engineColor;
-            ctx.beginPath();
-            ctx.moveTo(0, 5);
-            ctx.lineTo(-5, 12);
-            ctx.lineTo(0, 15);
-            ctx.lineTo(5, 12);
-            ctx.closePath();
-            ctx.fill();
+            // Draw upgrade attachments based on purchased upgrades
+            // We can access the shop system through the global game object
+            if (window.game && window.game.shop) {
+                const shop = window.game.shop;
+                
+                // Check for weapon upgrades
+                if (this.currentWeaponId) {
+                    // Different weapon mounts based on weapon type
+                    switch(this.currentWeaponId) {
+                        case 'laser':
+                            // Basic laser - small single mount
+                            ctx.fillStyle = '#555';
+                            ctx.fillRect(-2, -10, 4, 4);
+                            break;
+                            
+                        case 'dual_laser':
+                            // Dual lasers - two small mounts
+                            ctx.fillStyle = '#555';
+                            ctx.fillRect(-6, -8, 3, 4);
+                            ctx.fillRect(3, -8, 3, 4);
+                            break;
+                            
+                        case 'burst':
+                            // Burst cannon - wider single mount
+                            ctx.fillStyle = '#555';
+                            ctx.fillRect(-4, -8, 8, 5);
+                            // Barrel detail
+                            ctx.fillStyle = '#333';
+                            ctx.fillRect(-3, -12, 6, 4);
+                            break;
+                            
+                        case 'missile':
+                            // Missile launchers on wing tips
+                            ctx.fillStyle = '#444';
+                            // Missile pods
+                            if (this.currentShip === 'heavy' || this.currentShip === 'cruiser') {
+                                // Heavy ships have bigger wing-mounted missile pods
+                                ctx.fillRect(-25, -3, 6, 6);
+                                ctx.fillRect(19, -3, 6, 6);
+                            } else {
+                                // Smaller ships have smaller pods on wings
+                                ctx.fillRect(-12, -3, 4, 4);
+                                ctx.fillRect(8, -3, 4, 4);
+                            }
+                            break;
+                    }
+                }
+                
+                // Check for engine upgrades
+                const engineUpgrade = shop.availableUpgrades.find(u => u.id === 'engine');
+                if (engineUpgrade && engineUpgrade.level > 0) {
+                    // Enhanced engine exhaust
+                    ctx.globalAlpha = 0.7;
+                    const engineLevelGlow = ctx.createRadialGradient(0, 15, 0, 0, 15, 10 + (engineUpgrade.level * 5));
+                    engineLevelGlow.addColorStop(0, this.engineColor);
+                    engineLevelGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = engineLevelGlow;
+                    
+                    if (this.currentShip === 'heavy') {
+                        // Dual engine trails
+                        ctx.fillRect(-16, 18, 12, 15 + engineUpgrade.level * 5);
+                        ctx.fillRect(4, 18, 12, 15 + engineUpgrade.level * 5);
+                    } else {
+                        // Single engine trail
+                        ctx.fillRect(-8, 12, 16, 15 + engineUpgrade.level * 5);
+                    }
+                    ctx.globalAlpha = 1.0;
+                }
+                
+                // Check for armor upgrades
+                const armorUpgrade = shop.availableUpgrades.find(u => u.id === 'armor');
+                if (armorUpgrade && armorUpgrade.level > 0) {
+                    // Armor plating visualization
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 1 + armorUpgrade.level * 0.5;
+                    
+                    if (this.currentShip === 'heavy') {
+                        // Heavy ship gets thicker hull lines
+                        ctx.beginPath();
+                        ctx.moveTo(-12, -15);
+                        ctx.lineTo(-15, -5);
+                        ctx.lineTo(-25, 0);
+                        ctx.moveTo(12, -15);
+                        ctx.lineTo(15, -5);
+                        ctx.lineTo(25, 0);
+                        ctx.stroke();
+                    } else if (this.currentShip === 'fighter') {
+                        // Fighter gets reinforced wings
+                        ctx.beginPath();
+                        ctx.moveTo(-5, -15);
+                        ctx.lineTo(-18, -5);
+                        ctx.lineTo(-12, 0);
+                        ctx.moveTo(5, -15);
+                        ctx.lineTo(18, -5);
+                        ctx.lineTo(12, 0);
+                        ctx.stroke();
+                    } else {
+                        // Default outline reinforcement
+                        ctx.beginPath();
+                        ctx.moveTo(0, -15);
+                        ctx.lineTo(-12, 0);
+                        ctx.lineTo(-8, 8);
+                        ctx.lineTo(0, 7);
+                        ctx.lineTo(8, 8);
+                        ctx.lineTo(12, 0);
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                }
+                
+                // Check for cargo upgrades
+                const cargoUpgrade = shop.availableUpgrades.find(u => u.id === 'cargo');
+                if (cargoUpgrade && cargoUpgrade.level > 0) {
+                    // Add cargo pods
+                    ctx.fillStyle = '#777';
+                    
+                    if (this.currentShip === 'heavy') {
+                        // Heavy ship gets large central cargo bay
+                        ctx.fillRect(-8, 0, 16, 10);
+                    } else if (this.currentShip === 'fighter') {
+                        // Fighter gets wing-mounted pods
+                        ctx.fillRect(-15, 2, 6, 6);
+                        ctx.fillRect(9, 2, 6, 6);
+                    } else {
+                        // Default gets small rear cargo pod
+                        ctx.fillRect(-4, 3, 8, 5);
+                    }
+                }
+            }
             
             ctx.restore();
         }

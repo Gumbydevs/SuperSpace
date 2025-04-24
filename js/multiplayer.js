@@ -1683,71 +1683,272 @@ export class MultiplayerManager {
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
             
+            // Get ship color - use player's color or fallback
+            const shipColor = player.shipColor || player.color || '#f00';
+            const engineColor = player.engineColor || '#6ff';
+            
             // Draw ship based on type
             if (player.ship === 'fighter') {
-                // Fighter ship design
-                ctx.fillStyle = player.color;
+                // Enhanced fighter ship design
+                // Main body
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(0, -20); // Front (points in direction of travel)
-                ctx.lineTo(-15, 10);
-                ctx.lineTo(-5, 5);
-                ctx.lineTo(5, 5); 
-                ctx.lineTo(15, 10);
+                ctx.moveTo(0, -22); // Front nose tip
+                ctx.lineTo(-5, -15); // Left side of nose
+                ctx.lineTo(-18, -5); // Left wing tip
+                ctx.lineTo(-12, 0); // Left wing inner edge
+                ctx.lineTo(-15, 12); // Left rear wing
+                ctx.lineTo(-5, 8); // Left engine mount
+                ctx.lineTo(0, 10); // Center bottom
+                ctx.lineTo(5, 8); // Right engine mount
+                ctx.lineTo(15, 12); // Right rear wing
+                ctx.lineTo(12, 0); // Right wing inner edge
+                ctx.lineTo(18, -5); // Right wing tip
+                ctx.lineTo(5, -15); // Right side of nose
+                ctx.closePath();
+                ctx.fill();
+                
+                // Cockpit
+                ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(0, -8, 4, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wing markings/details
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.moveTo(-15, -4);
+                ctx.lineTo(-10, -2);
+                ctx.lineTo(-10, 0);
+                ctx.lineTo(-15, -2);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(15, -4);
+                ctx.lineTo(10, -2);
+                ctx.lineTo(10, 0);
+                ctx.lineTo(15, -2);
                 ctx.closePath();
                 ctx.fill();
                 
                 // Engine glow
-                ctx.fillStyle = '#ff6';
+                ctx.fillStyle = engineColor;
                 ctx.beginPath();
                 ctx.moveTo(-7, 8);
-                ctx.lineTo(0, 15);
+                ctx.lineTo(-4, 16);
+                ctx.lineTo(0, 13);
+                ctx.lineTo(4, 16);
                 ctx.lineTo(7, 8);
                 ctx.closePath();
                 ctx.fill();
-            } else if (player.ship === 'cruiser') {
-                // Heavy cruiser design
-                ctx.fillStyle = player.color;
+                
+                // Add engine glow effect
+                const engineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, 10);
+                engineGradient.addColorStop(0, engineColor);
+                engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = engineGradient;
+                ctx.fillRect(-8, 10, 16, 12);
+                
+            } else if (player.ship === 'cruiser' || player.ship === 'heavy') {
+                // Enhanced heavy cruiser design
+                // Main body
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(0, -25); // Front
-                ctx.lineTo(-8, -10);
-                ctx.lineTo(-20, 15);
-                ctx.lineTo(-8, 10);
-                ctx.lineTo(8, 10);
-                ctx.lineTo(20, 15);
-                ctx.lineTo(8, -10);
+                ctx.moveTo(0, -28); // Nose tip
+                ctx.lineTo(-8, -20); // Left front angled edge
+                ctx.lineTo(-12, -5); // Left mid-hull
+                ctx.lineTo(-25, 0); // Left wing tip
+                ctx.lineTo(-25, 5); // Left wing corner
+                ctx.lineTo(-18, 8); // Left wing inner
+                ctx.lineTo(-10, 18); // Left engine mount
+                ctx.lineTo(0, 15); // Bottom center
+                ctx.lineTo(10, 18); // Right engine mount
+                ctx.lineTo(18, 8); // Right wing inner 
+                ctx.lineTo(25, 5); // Right wing corner
+                ctx.lineTo(25, 0); // Right wing tip
+                ctx.lineTo(12, -5); // Right mid-hull
+                ctx.lineTo(8, -20); // Right front angled edge
                 ctx.closePath();
                 ctx.fill();
                 
-                // Engine glow
-                ctx.fillStyle = '#f66';
+                // Heavy armor plating
+                ctx.strokeStyle = 'rgba(60, 60, 60, 0.8)';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(-12, 12);
-                ctx.lineTo(0, 20);
+                ctx.moveTo(-10, -15);
+                ctx.lineTo(-15, -5);
+                ctx.moveTo(10, -15);
+                ctx.lineTo(15, -5);
+                ctx.moveTo(-10, -5);
+                ctx.lineTo(10, -5);
+                ctx.stroke();
+                
+                // Cockpit
+                ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
+                ctx.beginPath();
+                ctx.ellipse(0, -12, 5, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Side weapon mounts
+                ctx.fillStyle = '#555';
+                ctx.beginPath();
+                ctx.rect(-22, -2, 8, 4);
+                ctx.rect(14, -2, 8, 4);
+                ctx.fill();
+                
+                // Weapon barrels
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.rect(-20, -1, 12, 2);
+                ctx.rect(8, -1, 12, 2);
+                ctx.fill();
+                
+                // Engine glow - dual engines
+                ctx.fillStyle = engineColor;
+                ctx.beginPath();
+                ctx.moveTo(-10, 18);
+                ctx.lineTo(-14, 25);
+                ctx.lineTo(-6, 23);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(10, 18);
+                ctx.lineTo(14, 25);
+                ctx.lineTo(6, 23);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Add engine glow effect
+                const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, 8);
+                leftEngineGlow.addColorStop(0, engineColor);
+                leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = leftEngineGlow;
+                ctx.fillRect(-16, 20, 12, 10);
+                
+                const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, 8);
+                rightEngineGlow.addColorStop(0, engineColor);
+                rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = rightEngineGlow;
+                ctx.fillRect(4, 20, 12, 10);
+                
+            } else if (player.ship === 'stealth') {
+                // Stealth ship design - sleek and angular
+                ctx.fillStyle = shipColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -20); // Nose tip
+                ctx.lineTo(-3, -15); // Narrow front section
+                ctx.lineTo(-15, -5); // Left wing edge
+                ctx.lineTo(-8, 5); // Left mid-wing
+                ctx.lineTo(-12, 15); // Left wing extension
+                ctx.lineTo(-5, 12); // Left engine
+                ctx.lineTo(0, 10); // Center
+                ctx.lineTo(5, 12); // Right engine
+                ctx.lineTo(12, 15); // Right wing extension
+                ctx.lineTo(8, 5); // Right mid-wing
+                ctx.lineTo(15, -5); // Right wing edge
+                ctx.lineTo(3, -15); // Narrow front section
+                ctx.closePath();
+                ctx.fill();
+                
+                // Stealth panels with subtle gradient
+                const stealthGradient = ctx.createLinearGradient(0, -15, 0, 15);
+                stealthGradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+                stealthGradient.addColorStop(0.5, 'rgba(40, 40, 50, 0.5)');
+                stealthGradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+                
+                ctx.fillStyle = stealthGradient;
+                ctx.beginPath();
+                ctx.moveTo(-10, -3);
+                ctx.lineTo(-6, 0);
+                ctx.lineTo(-8, 8);
+                ctx.lineTo(-12, 12);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(10, -3);
+                ctx.lineTo(6, 0);
+                ctx.lineTo(8, 8);
                 ctx.lineTo(12, 12);
                 ctx.closePath();
                 ctx.fill();
-            } else {
-                // Default scout ship design (pointing up at rotation 0)
-                ctx.fillStyle = player.color;
+                
+                // Cockpit - tinted dark
+                ctx.fillStyle = 'rgba(30, 50, 80, 0.8)';
                 ctx.beginPath();
-                ctx.moveTo(0, -15); // front (points upward when rotation = 0)
-                ctx.lineTo(-10, 10); // back left
-                ctx.lineTo(0, 5); // back middle
-                ctx.lineTo(10, 10); // back right
-                ctx.closePath();
+                ctx.ellipse(0, -8, 2, 6, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Engine glow
-                ctx.fillStyle = '#6ff';
+                // Engine glow - subtle and sleek
+                ctx.fillStyle = engineColor;
+                ctx.globalAlpha = 0.7;
                 ctx.beginPath();
                 ctx.moveTo(-5, 12);
-                ctx.lineTo(0, 15);
+                ctx.lineTo(-3, 18);
+                ctx.lineTo(0, 14);
+                ctx.lineTo(3, 18);
                 ctx.lineTo(5, 12);
                 ctx.closePath();
                 ctx.fill();
+                ctx.globalAlpha = 1.0;
+                
+            } else {
+                // Default scout ship design - modernized
+                ctx.fillStyle = shipColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -15); // front nose
+                ctx.lineTo(-4, -10); // left nose edge
+                ctx.lineTo(-12, 0); // left wing tip
+                ctx.lineTo(-8, 8); // left rear corner
+                ctx.lineTo(-5, 5); // left engine mount
+                ctx.lineTo(0, 7); // center bottom
+                ctx.lineTo(5, 5); // right engine mount
+                ctx.lineTo(8, 8); // right rear corner
+                ctx.lineTo(12, 0); // right wing tip
+                ctx.lineTo(4, -10); // right nose edge
+                ctx.closePath();
+                ctx.fill();
+                
+                // Cockpit canopy
+                ctx.fillStyle = 'rgba(130, 200, 255, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(0, -5, 3, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Detail lines
+                ctx.strokeStyle = 'rgba(50, 50, 50, 0.7)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(-4, -8);
+                ctx.moveTo(8, 0);
+                ctx.lineTo(4, -8);
+                ctx.stroke();
+                
+                // Engine glow
+                ctx.fillStyle = engineColor;
+                ctx.beginPath();
+                ctx.moveTo(-5, 5);
+                ctx.lineTo(-3, 12);
+                ctx.lineTo(0, 9);
+                ctx.lineTo(3, 12);
+                ctx.lineTo(5, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Add engine glow effect
+                const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, 6);
+                engineGradient.addColorStop(0, engineColor);
+                engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = engineGradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 12, 5, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
             
-            ctx.restore(); // Restore context after drawing ship - this ensures name and health bar aren't rotated
+            ctx.restore();
             
             // Draw player name and health bar with horizontal orientation regardless of ship rotation
             
