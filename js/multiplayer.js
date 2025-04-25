@@ -1652,6 +1652,45 @@ export class MultiplayerManager {
         Object.values(this.players).forEach(player => {
             if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
             
+            // Draw health bar above ship
+            if (player.health !== undefined) {
+                ctx.save();
+                
+                // Position the health bar above the ship
+                const healthBarWidth = 30;
+                const healthBarHeight = 4;
+                const healthBarY = player.y - 25; // Position above ship
+                const healthBarX = player.x - (healthBarWidth / 2);
+                
+                // Calculate health percentage
+                const healthPercent = player.health / (player.maxHealth || 100);
+                
+                // Draw background (dark red)
+                ctx.fillStyle = 'rgba(60, 0, 0, 0.7)';
+                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                
+                // Draw filled portion (gradient from yellow to green based on health)
+                let healthColor;
+                if (healthPercent > 0.7) {
+                    healthColor = '#0f0'; // Green for high health
+                } else if (healthPercent > 0.3) {
+                    healthColor = '#ff0'; // Yellow for medium health
+                } else {
+                    healthColor = '#f00'; // Red for low health
+                }
+                
+                const fillWidth = healthBarWidth * healthPercent;
+                ctx.fillStyle = healthColor;
+                ctx.fillRect(healthBarX, healthBarY, fillWidth, healthBarHeight);
+                
+                // Draw border
+                ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                
+                ctx.restore();
+            }
+            
             // Draw shield effect for remote players when they have shields
             // We'll assume they have shields if the shield property exists
             if (player.shield && player.shield > 0) {
@@ -2297,23 +2336,23 @@ export class MultiplayerManager {
     }
 
     sendPositionUpdate() {
-        if (this.connected && this.player) {
+        if (this.connected && this.game.player) {
             // Calculate the current thrust level based on player velocity
-            const currentSpeed = Math.sqrt(this.player.velocity.x ** 2 + this.player.velocity.y ** 2);
-            const thrustLevel = Math.min(1.0, currentSpeed / (this.player.maxSpeed * 0.7));
+            const currentSpeed = Math.sqrt(this.game.player.velocity.x ** 2 + this.game.player.velocity.y ** 2);
+            const thrustLevel = Math.min(1.0, currentSpeed / (this.game.player.maxSpeed * 0.7));
             
             this.socket.emit('position', {
-                x: this.player.x,
-                y: this.player.y,
-                rotation: this.player.rotation,
-                ship: this.player.currentShip,
-                shipColor: this.player.shipColor,
-                engineColor: this.player.engineColor,
-                thrustLevel: this.player.thrustLevel || thrustLevel, // Send the actual thrust level if available
-                health: this.player.health,
-                maxHealth: this.player.maxHealth,
-                shield: this.player.shield,
-                destroyed: this.player.health <= 0
+                x: this.game.player.x,
+                y: this.game.player.y,
+                rotation: this.game.player.rotation,
+                ship: this.game.player.currentShip,
+                shipColor: this.game.player.shipColor,
+                engineColor: this.game.player.engineColor,
+                thrustLevel: this.game.player.thrustLevel || thrustLevel, // Send the actual thrust level if available
+                health: this.game.player.health,
+                maxHealth: this.game.player.maxHealth,
+                shield: this.game.player.shield,
+                destroyed: this.game.player.health <= 0
             });
         }
     }
