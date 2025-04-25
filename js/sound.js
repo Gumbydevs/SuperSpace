@@ -563,37 +563,84 @@ export class SoundManager {
     
     // Generate a plasma weapon sound - hot, energy-based projectile
     generatePlasmaSound() {
-        const duration = 0.5;
+        const duration = 0.6; // Increased duration for more impact
         const buffer = this.audioContext.createBuffer(
             1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate
         );
         const data = buffer.getChannelData(0);
         
-        // Plasma uses a lower frequency with more body/heat
-        const baseFreq = 600;
-        for (let i = 0; i < buffer.length; i++) {
-            const t = i / buffer.length;
+        // Lower base frequency for a more powerful sound (was 600)
+        const baseFreq = 280;
+        
+        // Create initial electrical buildup/charge sound
+        for (let i = 0; i < buffer.length * 0.15; i++) {
+            const t = i / (buffer.length * 0.15);
             
-            // Frequency rises then falls to simulate plasma discharge
-            const freqEnvelope = t < 0.2 ? t * 5 : 1 - ((t - 0.2) / 0.8);
-            const freq = baseFreq + freqEnvelope * 400;
+            // Rapidly rising frequency for charge-up
+            const chargeFreq = baseFreq + t * t * 1200;
             
-            // Amplitude envelope with long sustain
+            // Amplitude ramps up quickly
+            const amp = t * 0.6;
+            
+            // Add electrical charge tone with some modulation
+            const phase = Math.sin(t * 80) * 0.4;
+            data[i] = Math.sin(i * chargeFreq / this.audioContext.sampleRate * Math.PI * 2 + phase) * amp;
+            
+            // Add electrical static
+            if (Math.random() < 0.3) {
+                data[i] += (Math.random() * 2 - 1) * 0.3 * amp;
+            }
+        }
+        
+        // Create main plasma discharge sound
+        for (let i = Math.floor(buffer.length * 0.15); i < buffer.length; i++) {
+            // Remap t to 0-1 for this section
+            const t = (i - buffer.length * 0.15) / (buffer.length * 0.85);
+            
+            // Frequency curve - starts high then decreases with fluctuations
+            const fluctuation = Math.sin(t * 30) * 80;
+            const freqEnvelope = Math.pow(1 - t, 0.7);
+            const freq = baseFreq + freqEnvelope * 600 + fluctuation;
+            
+            // Powerful amplitude envelope 
             let amp = 0;
-            if (t < 0.1) amp = t * 10; // Attack
-            else if (t < 0.3) amp = 1.0; // Sustain
-            else amp = (1 - ((t - 0.3) / 0.7)) * 0.8; // Decay
+            if (t < 0.05) amp = t * 20; // Very sharp attack
+            else if (t < 0.3) amp = 1.0; // Full sustain
+            else amp = Math.pow(1 - ((t - 0.3) / 0.7), 1.3) * 0.9; // Gradual decay
             
-            // Base tone with rich harmonics for energy feeling
-            data[i] = Math.sin(i * freq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
+            // Base tone - powerful low frequency component
+            data[i] = Math.sin(i * freq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.7;
             
-            // Add sizzling harmonics for the plasma effect
-            data[i] += Math.sin(i * freq * 2.0 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.25;
-            data[i] += Math.sin(i * freq * 3.0 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.15;
+            // Add deeper bass frequency for power
+            data[i] += Math.sin(i * (freq * 0.5) / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
             
-            // Add noise for the plasma "sizzle" effect
-            const noiseFactor = Math.pow(freqEnvelope, 2) * 0.3;
-            data[i] += (Math.random() * 2 - 1) * noiseFactor * amp;
+            // Add midrange harmonic for body
+            data[i] += Math.sin(i * freq * 1.5 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.3;
+            
+            // Add high frequency harmonic for sizzle
+            data[i] += Math.sin(i * freq * 3.0 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.2;
+            
+            // Add noise for plasma "sizzle" effect
+            if (t < 0.7) { // More intense sizzle in the first part
+                const noiseFactor = 0.3 - t * 0.2;
+                data[i] += (Math.random() * 2 - 1) * noiseFactor * amp;
+            }
+            
+            // Add pulsing modulation for plasma energy feel
+            data[i] *= 1.0 + Math.sin(t * 120) * 0.1;
+        }
+        
+        // Apply slight distortion for more aggressive sound
+        for (let i = 0; i < buffer.length; i++) {
+            // Soft clipping/distortion for more edge
+            if (data[i] > 0.6) data[i] = 0.6 + (data[i] - 0.6) * 0.6;
+            if (data[i] < -0.6) data[i] = -0.6 + (data[i] + 0.6) * 0.6;
+        }
+        
+        // Normalize to avoid clipping
+        const max = Math.max(...Array.from(data).map(x => Math.abs(x)));
+        for (let i = 0; i < data.length; i++) {
+            data[i] = data[i] / max * 0.95;
         }
         
         // Store the generated sound

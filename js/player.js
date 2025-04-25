@@ -244,18 +244,34 @@ export class Player {
                     const dy = projectile.y - remotePlayer.y;
                     const distSq = dx * dx + dy * dy;
                     
-                    // Check if projectile hit a remote player (using approximate collision radius of 15)
-                    if (distSq < 225) { // 15 squared
+                    // Adjust collision radius if player has shield
+                    const collisionRadius = remotePlayer.shield > 0 ? 25 : 15;
+                    const collisionRadiusSq = collisionRadius * collisionRadius;
+                    
+                    // Check if projectile hit a remote player
+                    if (distSq < collisionRadiusSq) {
                         // Check if remote player is in safe zone
                         if (window.game.world && !window.game.world.isInSafeZone(remotePlayer)) {
                             // Create explosion effect at point of impact for local visualization
                             if (window.game.world) {
-                                window.game.world.createProjectileHitEffect(
-                                    projectile.x,
-                                    projectile.y,
-                                    12 + projectile.damage * 0.3, // Size based on damage
-                                    window.game.soundManager
-                                );
+                                // Create different visual effect based on whether hit shield or hull
+                                if (remotePlayer.shield > 0) {
+                                    // Shield hit effect - blue energy ripple
+                                    this.createShieldHitEffect(
+                                        projectile.x,
+                                        projectile.y,
+                                        remotePlayer.x,
+                                        remotePlayer.y
+                                    );
+                                } else {
+                                    // Normal hit effect
+                                    window.game.world.createProjectileHitEffect(
+                                        projectile.x,
+                                        projectile.y,
+                                        12 + projectile.damage * 0.3, // Size based on damage
+                                        window.game.soundManager
+                                    );
+                                }
                             }
                             
                             // Send hit info to server
@@ -272,8 +288,11 @@ export class Player {
                             // Show hit message
                             window.game.multiplayer.showGameMessage(`Hit ${remotePlayer.name}!`, '#4f4');
                             
+                            // Record hit time for shield impact flash
+                            remotePlayer.lastDamageTime = Date.now() / 1000;
+                            
                             // Check if kill - Only trigger if remote player health will drop to 0 or below
-                            if (remotePlayer.health <= projectile.damage) {
+                            if (remotePlayer.shield <= 0 && remotePlayer.health <= projectile.damage) {
                                 // This hit will kill the player - announce it on all screens
                                 // We use setTimeout to make sure the server has time to process the hit first
                                 setTimeout(() => {
@@ -1533,5 +1552,116 @@ export class Player {
         }
         
         return false; // No new collision
+    }
+
+    // Create shield hit effect when projectiles hit shields
+    createShieldHitEffect(hitX, hitY, playerX, playerY) {
+        if (!window.game || !window.game.world) return;
+        
+        // Calculate hit direction vector relative to player center
+        const dx = hitX - playerX;
+        const dy = hitY - playerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Normalize the hit direction
+        const nx = dx / distance;
+        const ny = dy / distance;
+        
+        // Calculate impact point on shield perimeter
+        const shieldRadius = 25; // Match the collision radius used for shields
+        const impactX = playerX + nx * shieldRadius;
+        const impactY = playerY + ny * shieldRadius;
+        
+        // Create shield impact ripple effect
+        for (let i = 0; i < 2; i++) { // Create multiple ripples for a better effect
+            const delay = i * 50; // Stagger ripple timings
+            
+            setTimeout(() => {
+                if (!window.game || !window.game.world) return;
+                
+                // Create expanding ripple 
+                const ripple = {
+                    x: impactX,
+                    y: impactY,
+                    radius: 5, // Starting radius
+                    maxRadius: 30 + Math.random() * 10,
+                    thickness: 2 - (i * 0.5), // First ripple thicker
+                    opacity: 1.0,
+                    growth: 60 + Math.random() * 40, // Speed of expansion
+                    playerX: playerX, // Store reference to player position
+                    playerY: playerY,
+                    life: 1.0,
+                    color: 'rgba(100, 180, 255', // Shield blue color
+                    
+                    update(deltaTime) {
+                        // Expand the radius
+                        this.radius += this.growth * deltaTime;
+                        
+                        // Reduce opacity as it expands
+                        this.opacity = Math.max(0, 1.0 - (this.radius / this.maxRadius));
+                        
+                        // Set life based on radius
+                        this.life = Math.max(0, 1.0 - (this.radius / this.maxRadius));
+                    },
+                    
+                    render(ctx) {
+                        ctx.save();
+                        ctx.strokeStyle = `${this.color}, ${this.opacity})`;
+                        ctx.lineWidth = this.thickness;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                };
+                
+                // Add ripple to world particle system
+                window.game.world.particles.push(ripple);
+            }, delay);
+        }
+        
+        // Create shield impact flash - a quickly fading bright spot
+        const flash = {
+            x: impactX,
+            y: impactY, 
+            radius: 8,
+            opacity: 0.8,
+            life: 1.0,
+            duration: 0.2, // Short duration
+            
+            update(deltaTime) {
+                this.life -= deltaTime / this.duration;
+                this.opacity = Math.max(0, this.life);
+            },
+            
+            render(ctx) {
+                ctx.save();
+                // Gradient for a nicer glow effect
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.radius
+                );
+                gradient.addColorStop(0, `rgba(200, 230, 255, ${this.opacity})`);
+                gradient.addColorStop(1, `rgba(100, 180, 255, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        };
+        
+        // Add flash to world particle system
+        window.game.world.particles.push(flash);
+        
+        // Play shield impact sound
+        if (window.game.soundManager) {
+            window.game.soundManager.play('hit', {
+                volume: 0.3,
+                playbackRate: 1.5, // Higher pitch for shield hit
+                position: { x: impactX, y: impactY }
+            });
+        }
     }
 }

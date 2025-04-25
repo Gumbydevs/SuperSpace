@@ -2407,6 +2407,7 @@ export class MultiplayerManager {
                 health: this.game.player.health,
                 maxHealth: this.game.player.maxHealth,
                 shield: this.game.player.shield,
+                maxShield: this.game.player.shieldCapacity,
                 destroyed: this.game.player.health <= 0
             });
         }
