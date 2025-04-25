@@ -1659,7 +1659,7 @@ export class MultiplayerManager {
             const uiY = player.y - 30; // Position above ship
             const uiX = player.x;
             
-            // Draw player name
+            // Draw player name FIRST (at the top)
             ctx.font = '14px Arial';
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
@@ -1668,23 +1668,37 @@ export class MultiplayerManager {
             ctx.strokeText(player.name, uiX, uiY - 5);
             ctx.fillText(player.name, uiX, uiY - 5);
             
-            //Draw sheild bar if player has shields
+            // Draw shield bar SECOND (below the name) if player has shields
             if (player.shield !== undefined && player.shield > 0) {
                 const shieldBarWidth = 30;
                 const shieldBarHeight = 2;
-                const shieldBarY = uiY + 5;
+                const shieldBarY = uiY + 2; // Position BELOW name, ABOVE health bar
                 const shieldBarX = uiX - (shieldBarWidth / 2);
-                ctx.fillStyle = 'rgba(0, 0, 255, 0.7)';
-                ctx.fillText(`Shield: ${player.shield}`, uiX, uiY + 15);
+                
+                // Calculate shield percentage
+                const shieldPercent = player.shield / (player.maxShield || 100);
+                
+                // Draw background (dark blue)
+                ctx.fillStyle = 'rgba(0, 0, 60, 0.7)';
+                ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
+                
+                // Draw filled portion (blue for shield)
+                const shieldFillWidth = shieldBarWidth * shieldPercent;
+                ctx.fillStyle = '#00f';
+                ctx.fillRect(shieldBarX, shieldBarY, shieldFillWidth, shieldBarHeight);
+                
+                // Draw border
+                ctx.strokeStyle = 'rgba(100, 150, 255, 0.7)';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
             }
 
-            // Draw health bar
+            // Draw health bar THIRD (at the bottom)
             const healthBarWidth = 30;
             const healthBarHeight = 4;
-            const healthBarY = uiY;
+            const healthBarY = uiY + 5; // Position below shield bar
             const healthBarX = uiX - (healthBarWidth / 2);
-
-                        
+            
             // Calculate health percentage
             const healthPercent = player.health / (player.maxHealth || 100);
             
@@ -1710,31 +1724,6 @@ export class MultiplayerManager {
             ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
             ctx.lineWidth = 1;
             ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-            
-            // Draw shield bar if player has shields
-            if (player.shield !== undefined && player.shield > 0) {
-                const shieldBarWidth = 30;
-                const shieldBarHeight = 2;
-                const shieldBarY = uiY + 5;
-                const shieldBarX = uiX - (shieldBarWidth / 2);
-                
-                // Calculate shield percentage
-                const shieldPercent = player.shield / (player.maxShield || 100);
-                
-                // Draw background (dark blue)
-                ctx.fillStyle = 'rgba(0, 0, 60, 0.7)';
-                ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
-                
-                // Draw filled portion (blue for shield)
-                const shieldFillWidth = shieldBarWidth * shieldPercent;
-                ctx.fillStyle = '#00f';
-                ctx.fillRect(shieldBarX, shieldBarY, shieldFillWidth, shieldBarHeight);
-                
-                // Draw border
-                ctx.strokeStyle = 'rgba(100, 150, 255, 0.7)';
-                ctx.lineWidth = 0.5;
-                ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
-            }
             
             ctx.restore();
             
