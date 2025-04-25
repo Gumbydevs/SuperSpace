@@ -42,7 +42,16 @@ export class SoundManager {
         this.generateExplosionSound();
         this.generateHitSound();
         this.generatePowerupSound();
+        this.generateQuantumSound();
+        this.generatePlasmaSound();
+        this.generateRailgunSound();
+        this.generatePulseSound();
         console.log('All sounds generated successfully');
+    }
+    
+    // Check if a sound is loaded and available
+    isSoundLoaded(name) {
+        return !!this.sounds[name];
     }
     
     // Here we play a specified sound with optional parameters
@@ -502,6 +511,212 @@ export class SoundManager {
         
         // Store the generated sound
         this.sounds.powerup = buffer;
+    }
+    
+    // Generate a quantum weapon sound - high-energy unstable sound
+    generateQuantumSound() {
+        const duration = 0.4;
+        const buffer = this.audioContext.createBuffer(
+            1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate
+        );
+        const data = buffer.getChannelData(0);
+        
+        // High-energy quantum weapon has an unstable, fluctuating frequency
+        const baseFreq = 1800;
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / buffer.length;
+            
+            // Create quantum fluctuations in the frequency
+            const fluctuation = Math.sin(t * 80) * 200 + Math.sin(t * 55) * 100;
+            const freq = baseFreq + fluctuation;
+            
+            // Amplitude envelope with quantum instability
+            let amp = 0;
+            if (t < 0.05) amp = t * 20; // Fast attack
+            else if (t < 0.2) amp = 1.0; // Brief sustain
+            else amp = Math.pow(1 - ((t - 0.2) / 0.8), 1.2); // Long decay
+            
+            // Apply quantum phase distortion for sci-fi effect
+            const phase = t * 20 + Math.sin(t * 30) * 0.5;
+            
+            // Main carrier wave
+            data[i] = Math.sin(i * freq / this.audioContext.sampleRate * Math.PI * 2 + phase) * amp * 0.6;
+            
+            // Higher frequency overtones for "quantum" character
+            data[i] += Math.sin(i * freq * 1.5 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.25;
+            data[i] += Math.sin(i * freq * 2.7 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.15;
+            
+            // Add unstable noise burst artifacts
+            if (Math.random() < 0.05) {
+                data[i] += (Math.random() * 2 - 1) * amp * 0.6;
+            }
+        }
+        
+        // Apply a final filter to smooth out harsh artifacts
+        for (let i = 1; i < buffer.length - 1; i++) {
+            data[i] = (data[i - 1] * 0.2 + data[i] * 0.6 + data[i + 1] * 0.2);
+        }
+        
+        // Store the generated sound
+        this.sounds.quantum = buffer;
+    }
+    
+    // Generate a plasma weapon sound - hot, energy-based projectile
+    generatePlasmaSound() {
+        const duration = 0.5;
+        const buffer = this.audioContext.createBuffer(
+            1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate
+        );
+        const data = buffer.getChannelData(0);
+        
+        // Plasma uses a lower frequency with more body/heat
+        const baseFreq = 600;
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / buffer.length;
+            
+            // Frequency rises then falls to simulate plasma discharge
+            const freqEnvelope = t < 0.2 ? t * 5 : 1 - ((t - 0.2) / 0.8);
+            const freq = baseFreq + freqEnvelope * 400;
+            
+            // Amplitude envelope with long sustain
+            let amp = 0;
+            if (t < 0.1) amp = t * 10; // Attack
+            else if (t < 0.3) amp = 1.0; // Sustain
+            else amp = (1 - ((t - 0.3) / 0.7)) * 0.8; // Decay
+            
+            // Base tone with rich harmonics for energy feeling
+            data[i] = Math.sin(i * freq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
+            
+            // Add sizzling harmonics for the plasma effect
+            data[i] += Math.sin(i * freq * 2.0 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.25;
+            data[i] += Math.sin(i * freq * 3.0 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.15;
+            
+            // Add noise for the plasma "sizzle" effect
+            const noiseFactor = Math.pow(freqEnvelope, 2) * 0.3;
+            data[i] += (Math.random() * 2 - 1) * noiseFactor * amp;
+        }
+        
+        // Store the generated sound
+        this.sounds.plasma = buffer;
+    }
+    
+    // Generate a railgun weapon sound - electromagnetic accelerated projectile
+    generateRailgunSound() {
+        const duration = 0.6;
+        const buffer = this.audioContext.createBuffer(
+            1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate
+        );
+        const data = buffer.getChannelData(0);
+        
+        // First create the electromagnetic charging sound
+        for (let i = 0; i < buffer.length * 0.3; i++) {
+            const t = i / (buffer.length * 0.3);
+            
+            // Rising frequency for the charge-up
+            const chargeFreq = 200 + t * t * 1000;
+            
+            // Amplitude ramps up for charge effect
+            const amp = t * 0.4;
+            
+            // Add electrical charging tone
+            data[i] = Math.sin(i * chargeFreq / this.audioContext.sampleRate * Math.PI * 2) * amp;
+            
+            // Add electrical hum
+            const humFreq = 50 + t * 40;
+            data[i] += Math.sin(i * humFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
+            
+            // Add some electrical crackling noise
+            if (Math.random() < t * 0.4) {
+                data[i] += (Math.random() * 2 - 1) * 0.2 * amp;
+            }
+        }
+        
+        // Then create the main firing sound - powerful and sharp
+        const fireStart = Math.floor(buffer.length * 0.3);
+        for (let i = fireStart; i < buffer.length; i++) {
+            const t = (i - fireStart) / (buffer.length - fireStart);
+            
+            // Amplitude envelope - extremely sharp attack, moderate decay
+            const amp = t < 0.02 ? t * 50 : Math.pow(1 - t, 0.8);
+            
+            // Main firing sound - low frequency impact
+            const mainFreq = 120 + t * 50;
+            data[i] = Math.sin(i * mainFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.7;
+            
+            // Add sonic boom effect
+            const boomFreq = 80;
+            data[i] += Math.sin(i * boomFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
+            
+            // Add high-frequency rail acceleration sound
+            const railFreq = 2000 - t * 1000;
+            data[i] += Math.sin(i * railFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.2;
+            
+            // Add mechanical rattle for recoil
+            if (t < 0.2) {
+                const rattle = Math.sin(i * (300 + Math.random() * 200) / this.audioContext.sampleRate * Math.PI * 2) * 0.2;
+                data[i] += rattle * amp;
+            }
+            
+            // Add air disturbance noise
+            data[i] += (Math.random() * 2 - 1) * amp * 0.15;
+        }
+        
+        // Store the generated sound
+        this.sounds.railgun = buffer;
+    }
+    
+    // Generate a pulse weapon sound - rhythmic energy bursts
+    generatePulseSound() {
+        const duration = 0.35;
+        const buffer = this.audioContext.createBuffer(
+            1, this.audioContext.sampleRate * duration, this.audioContext.sampleRate
+        );
+        const data = buffer.getChannelData(0);
+        
+        // Create pulse pattern - multiple quick energy bursts
+        const pulseCount = 4;
+        const pulseDuration = buffer.length / pulseCount;
+        
+        for (let p = 0; p < pulseCount; p++) {
+            const startSample = Math.floor(p * pulseDuration);
+            const endSample = Math.floor((p + 0.7) * pulseDuration); // Overlapping pulses
+            
+            // Each pulse increases in frequency
+            const baseFreq = 800 + p * 120;
+            
+            for (let i = startSample; i < endSample && i < buffer.length; i++) {
+                const t = (i - startSample) / (endSample - startSample);
+                
+                // Fast attack, fast decay envelope for each pulse
+                const amp = t < 0.1 ? t * 10 : (1 - t) * 1.1;
+                
+                // Main pulse tone
+                const sample = Math.sin((i - startSample) * baseFreq / this.audioContext.sampleRate * Math.PI * 2) * amp;
+                
+                // Add harmonic for richness
+                const harmonic = Math.sin((i - startSample) * baseFreq * 1.5 / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.3;
+                
+                // Add to the buffer with slight envelope for each pulse
+                data[i] += (sample + harmonic) * (0.7 + 0.3 * (p / pulseCount));
+            }
+        }
+        
+        // Add subtle energy hum throughout
+        const humFreq = 200;
+        for (let i = 0; i < buffer.length; i++) {
+            const t = i / buffer.length;
+            const humAmp = 0.1 * (1 - t);
+            data[i] += Math.sin(i * humFreq / this.audioContext.sampleRate * Math.PI * 2) * humAmp;
+        }
+        
+        // Normalize to avoid clipping
+        const max = Math.max(...Array.from(data).map(x => Math.abs(x)));
+        for (let i = 0; i < data.length; i++) {
+            data[i] = data[i] / max * 0.9;
+        }
+        
+        // Store the generated sound
+        this.sounds.pulse = buffer;
     }
     
     // Use this method to ensure audio context is resumed after user interaction
