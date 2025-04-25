@@ -618,7 +618,7 @@ export class MultiplayerManager {
         this.socket.emit('playerJoin', playerData);
     }
 
-    // Update local player data to server
+    // Main update function called by game loop
     update(deltaTime) {
         if (!this.connected) return;
         
@@ -637,6 +637,22 @@ export class MultiplayerManager {
             this.socket.emit('playerUpdate', playerData);
             this.lastUpdate = 0;
         }
+        
+        // Update and clean up remote projectiles
+        Object.values(this.players).forEach(player => {
+            if (player.projectiles && Array.isArray(player.projectiles)) {
+                // Remove projectiles that have traveled too far (estimate a max lifetime)
+                player.projectiles = player.projectiles.filter(projectile => {
+                    // Calculate distance from origin
+                    const distX = projectile.x - player.x;
+                    const distY = projectile.y - player.y;
+                    const distanceTraveled = Math.sqrt(distX * distX + distY * distY);
+                    
+                    // Assume a standard max range of 800 units
+                    return distanceTraveled < 800;
+                });
+            }
+        });
     }
 
     // Send projectile data when player shoots

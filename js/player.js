@@ -738,6 +738,80 @@ export class Player {
             projectile.render(ctx);
         });
         
+        // Render remote projectiles from other players if multiplayer is active
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            // Iterate through all remote players
+            Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                // Check if the remote player has projectiles
+                if (remotePlayer.projectiles && Array.isArray(remotePlayer.projectiles)) {
+                    // Render each projectile from this remote player
+                    remotePlayer.projectiles.forEach(projectile => {
+                        // Skip rendering if projectile is missing critical properties
+                        if (projectile.x === undefined || projectile.y === undefined) return;
+                        
+                        // Save context state
+                        ctx.save();
+                        
+                        // Determine projectile color based on type or default
+                        let color = projectile.color || '#f00';
+                        let size = 3;
+                        
+                        switch(projectile.type) {
+                            case 'laser':
+                                color = projectile.color || '#f33';
+                                size = 3;
+                                break;
+                            case 'burst':
+                                color = projectile.color || '#ff3';
+                                size = 2;
+                                break;
+                            case 'missile':
+                                color = projectile.color || '#3af';
+                                size = 4;
+                                break;
+                            case 'plasma':
+                                color = projectile.color || '#f0f';
+                                size = 5;
+                                break;
+                            case 'quantum':
+                                color = projectile.color || '#fff';
+                                size = 3;
+                                break;
+                        }
+                        
+                        // Draw the projectile
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.arc(projectile.x, projectile.y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Add glow effect for certain projectile types
+                        if (['plasma', 'quantum', 'missile'].includes(projectile.type)) {
+                            const glowSize = size * 2;
+                            const gradient = ctx.createRadialGradient(
+                                projectile.x, projectile.y, size/2,
+                                projectile.x, projectile.y, glowSize
+                            );
+                            gradient.addColorStop(0, color);
+                            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                            
+                            ctx.fillStyle = gradient;
+                            ctx.beginPath();
+                            ctx.arc(projectile.x, projectile.y, glowSize, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        // Restore context state
+                        ctx.restore();
+                        
+                        // Update projectile position for next frame using its velocity
+                        projectile.x += projectile.velocityX * (1/60); // Assume 60fps if no deltaTime
+                        projectile.y += projectile.velocityY * (1/60);
+                    });
+                }
+            });
+        }
+        
         // Here we draw the player's ship
         if (this.visible) {
             ctx.save();
