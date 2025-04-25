@@ -1660,7 +1660,7 @@ export class MultiplayerManager {
             const uiX = player.x;
             
             // Draw player name
-            ctx.font = '12px Arial';
+            ctx.font = '14px Arial';
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
@@ -1668,12 +1668,23 @@ export class MultiplayerManager {
             ctx.strokeText(player.name, uiX, uiY - 5);
             ctx.fillText(player.name, uiX, uiY - 5);
             
+            //Draw sheild bar if player has shields
+            if (player.shield !== undefined && player.shield > 0) {
+                const shieldBarWidth = 30;
+                const shieldBarHeight = 2;
+                const shieldBarY = uiY + 5;
+                const shieldBarX = uiX - (shieldBarWidth / 2);
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.7)';
+                ctx.fillText(`Shield: ${player.shield}`, uiX, uiY + 15);
+            }
+
             // Draw health bar
             const healthBarWidth = 30;
             const healthBarHeight = 4;
             const healthBarY = uiY;
             const healthBarX = uiX - (healthBarWidth / 2);
-            
+
+                        
             // Calculate health percentage
             const healthPercent = player.health / (player.maxHealth || 100);
             

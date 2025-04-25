@@ -196,12 +196,72 @@ class Game {
     
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
+        // Track key sequence for cheat codes
+        let keySequence = [];
+        const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY']; // "MONEY" cheat code
+        
         window.addEventListener('keydown', e => {
             // Shop hotkey (B key)
             if (e.code === 'KeyB' && this.gameState === 'playing') {
                 this.toggleShop();
             }
+            
+            // Cheat code system
+            keySequence.push(e.code);
+            // Only keep the most recent X keys (X being the length of our longest cheat code)
+            if (keySequence.length > moneyCheatCode.length) {
+                keySequence.shift();
+            }
+            
+            // Check for money cheat code (M-O-N-E-Y)
+            if (this.gameState === 'playing' && arrayEquals(keySequence, moneyCheatCode)) {
+                // Give the player 100,000 credits
+                if (this.player) {
+                    this.player.credits += 100000;
+                    localStorage.setItem('playerCredits', this.player.credits.toString());
+                    
+                    // Show notification
+                    const message = document.createElement('div');
+                    message.textContent = '💰 CHEAT ACTIVATED: +100,000 CREDITS!';
+                    message.style.position = 'absolute';
+                    message.style.top = '30%';
+                    message.style.left = '50%';
+                    message.style.transform = 'translate(-50%, -50%)';
+                    message.style.background = 'rgba(0, 150, 0, 0.8)';
+                    message.style.color = 'white';
+                    message.style.padding = '15px 30px';
+                    message.style.borderRadius = '8px';
+                    message.style.fontSize = '24px';
+                    message.style.fontWeight = 'bold';
+                    message.style.zIndex = '1000';
+                    message.style.boxShadow = '0 0 20px gold';
+                    message.style.textShadow = '2px 2px 4px #000';
+                    document.body.appendChild(message);
+                    
+                    // Play money sound
+                    if (this.soundManager) {
+                        this.soundManager.play('powerup', { volume: 1.0 });
+                    }
+                    
+                    // Remove the message after a delay
+                    setTimeout(() => {
+                        document.body.removeChild(message);
+                    }, 3000);
+                    
+                    // Reset key sequence to prevent multiple activations
+                    keySequence = [];
+                }
+            }
         });
+        
+        // Helper function to compare arrays
+        function arrayEquals(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
     }
 
     // Here we transition from menu to active gameplay
