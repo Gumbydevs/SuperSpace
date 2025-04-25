@@ -1652,54 +1652,89 @@ export class MultiplayerManager {
         Object.values(this.players).forEach(player => {
             if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
             
-            // Draw health bar above ship
-            if (player.health !== undefined) {
-                ctx.save();
-                
-                // Position the health bar above the ship
-                const healthBarWidth = 30;
-                const healthBarHeight = 4;
-                const healthBarY = player.y - 25; // Position above ship
-                const healthBarX = player.x - (healthBarWidth / 2);
-                
-                // Calculate health percentage
-                const healthPercent = player.health / (player.maxHealth || 100);
-                
-                // Draw background (dark red)
-                ctx.fillStyle = 'rgba(60, 0, 0, 0.7)';
-                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-                
-                // Draw filled portion (gradient from yellow to green based on health)
-                let healthColor;
-                if (healthPercent > 0.7) {
-                    healthColor = '#0f0'; // Green for high health
-                } else if (healthPercent > 0.3) {
-                    healthColor = '#ff0'; // Yellow for medium health
-                } else {
-                    healthColor = '#f00'; // Red for low health
-                }
-                
-                const fillWidth = healthBarWidth * healthPercent;
-                ctx.fillStyle = healthColor;
-                ctx.fillRect(healthBarX, healthBarY, fillWidth, healthBarHeight);
-                
-                // Draw border
-                ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-                
-                ctx.restore();
+            // Draw name, health bar and shield info above ship - NOT ROTATING with ship
+            ctx.save();
+            
+            // Position the UI elements above the ship
+            const uiY = player.y - 30; // Position above ship
+            const uiX = player.x;
+            
+            // Draw player name
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.strokeText(player.name, uiX, uiY - 5);
+            ctx.fillText(player.name, uiX, uiY - 5);
+            
+            // Draw health bar
+            const healthBarWidth = 30;
+            const healthBarHeight = 4;
+            const healthBarY = uiY;
+            const healthBarX = uiX - (healthBarWidth / 2);
+            
+            // Calculate health percentage
+            const healthPercent = player.health / (player.maxHealth || 100);
+            
+            // Draw background (dark red)
+            ctx.fillStyle = 'rgba(60, 0, 0, 0.7)';
+            ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            
+            // Draw filled portion (gradient from yellow to green based on health)
+            let healthColor;
+            if (healthPercent > 0.7) {
+                healthColor = '#0f0'; // Green for high health
+            } else if (healthPercent > 0.3) {
+                healthColor = '#ff0'; // Yellow for medium health
+            } else {
+                healthColor = '#f00'; // Red for low health
             }
             
+            const fillWidth = healthBarWidth * healthPercent;
+            ctx.fillStyle = healthColor;
+            ctx.fillRect(healthBarX, healthBarY, fillWidth, healthBarHeight);
+            
+            // Draw border
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.7)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+            
+            // Draw shield bar if player has shields
+            if (player.shield !== undefined && player.shield > 0) {
+                const shieldBarWidth = 30;
+                const shieldBarHeight = 2;
+                const shieldBarY = uiY + 5;
+                const shieldBarX = uiX - (shieldBarWidth / 2);
+                
+                // Calculate shield percentage
+                const shieldPercent = player.shield / (player.maxShield || 100);
+                
+                // Draw background (dark blue)
+                ctx.fillStyle = 'rgba(0, 0, 60, 0.7)';
+                ctx.fillRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
+                
+                // Draw filled portion (blue for shield)
+                const shieldFillWidth = shieldBarWidth * shieldPercent;
+                ctx.fillStyle = '#00f';
+                ctx.fillRect(shieldBarX, shieldBarY, shieldFillWidth, shieldBarHeight);
+                
+                // Draw border
+                ctx.strokeStyle = 'rgba(100, 150, 255, 0.7)';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(shieldBarX, shieldBarY, shieldBarWidth, shieldBarHeight);
+            }
+            
+            ctx.restore();
+            
             // Draw shield effect for remote players when they have shields
-            // We'll assume they have shields if the shield property exists
             if (player.shield && player.shield > 0) {
                 // Save context before drawing the shield
                 ctx.save();
                 ctx.translate(player.x, player.y);
                 
                 // Create shield visual effect based on shield strength
-                const shieldPercentage = player.shield / 100; // Assume max is 100
+                const shieldPercentage = player.shield / (player.maxShield || 100); // Use maxShield if available, otherwise default to 100
                 const glowSize = 25 + (shieldPercentage * 8); // Similar to player shield
                 const glowOpacity = 0.3 + (shieldPercentage * 0.4);
                 
@@ -1715,21 +1750,41 @@ export class MultiplayerManager {
                 ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Add pulse effect
-                const pulsePhase = (Date.now() % 2000) / 2000;
-                if (pulsePhase < 0.7) {
-                    const rippleSize = glowSize * (0.8 + pulsePhase * 0.6);
-                    const rippleOpacity = (0.7 - Math.abs(0.35 - pulsePhase)) * 0.4 * shieldPercentage;
-                    
-                    // Draw ripple effect
-                    ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
-                    ctx.lineWidth = 1.8;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
-                    ctx.stroke();
+                // Add multiple ripple rings with different timing
+                const drawRipple = (phase, width, opacity) => {
+                    const pulsePhase = (Date.now() % 2000) / 2000;
+                    const adjustedPhase = (pulsePhase + phase) % 1;
+                    if (adjustedPhase < 0.7) { // Only show ripple during part of the cycle
+                        // Calculate ripple size based on pulse phase
+                        const rippleSize = glowSize * (0.8 + adjustedPhase * 0.6);
+                        const rippleOpacity = (0.7 - Math.abs(0.35 - adjustedPhase)) * opacity * shieldPercentage;
+                        
+                        // Draw ripple effect
+                        ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
+                        ctx.lineWidth = width;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                };
+                
+                // Draw multiple ripples at different phases for a more dynamic effect
+                drawRipple(0, 1.8, 0.5);
+                drawRipple(0.3, 1.2, 0.4);
+                drawRipple(0.6, 1.0, 0.3);
+                
+                // Extra effect: shield impact flashes when taking recent damage
+                if (player.lastDamageTime) {
+                    const timeSinceDamage = (Date.now() / 1000) - player.lastDamageTime;
+                    if (timeSinceDamage < 0.3) {
+                        const flashOpacity = 0.7 * (1 - (timeSinceDamage / 0.3));
+                        ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
                 
-                // Restore context after drawing shield
                 ctx.restore();
             }
             
