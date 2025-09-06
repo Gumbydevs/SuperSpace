@@ -7,6 +7,10 @@ export class SoundManager {
         this.isMuted = false;          // Mute state tracking
         this.thrusterSound = null;     // Reference to continuous thruster sound
         
+        // Ambient music system
+        this.ambientMusic = null;
+        this.ambientMusicGain = null;
+        
         // Initialize the audio system
         this.init();
     }
@@ -27,6 +31,9 @@ export class SoundManager {
             // Here we generate all procedural sounds 
             // Instead of loading audio files, we create sounds programmatically
             this.generateSounds();
+            
+            // Initialize ambient music system
+            this.initAmbientMusic();
             
             console.log('Sound system initialized successfully');
         } catch (error) {
@@ -794,7 +801,277 @@ export class SoundManager {
         // Store the generated sound
         this.sounds.pulse = buffer;
     }
-    
+
+    // Ambient Music System - Procedural space ambient music
+    initAmbientMusic() {
+        if (!this.audioContext || this.isMuted) return;
+
+        // Music state
+        this.ambientMusic = {
+            active: false,
+            layers: [],
+            currentChord: 0,
+            chordProgression: [
+                [220, 277, 330], // Am chord (A, C#, E)
+                [196, 247, 294], // F chord (F, A, C)
+                [165, 208, 247], // Dm chord (D, F, A)
+                [196, 247, 330]  // G chord (G, B, D)
+            ],
+            tempo: 120,
+            measureLength: 8, // seconds per measure
+            nextChordTime: 0
+        };
+
+        // Create ambient music gain node
+        this.ambientMusicGain = this.audioContext.createGain();
+        this.ambientMusicGain.gain.value = 0.15; // Quiet background music
+        this.ambientMusicGain.connect(this.masterGainNode);
+    }
+
+    startAmbientMusic() {
+        if (!this.audioContext || this.isMuted || this.ambientMusic.active) return;
+
+        this.ambientMusic.active = true;
+        this.ambientMusic.nextChordTime = this.audioContext.currentTime;
+        
+        // Start the ambient music loop
+        this.scheduleNextAmbientLayer();
+        
+        console.log('Ambient music started');
+    }
+
+    stopAmbientMusic() {
+        if (!this.ambientMusic.active) return;
+        
+        this.ambientMusic.active = false;
+        
+        // Stop all current ambient layers
+        this.ambientMusic.layers.forEach(layer => {
+            if (layer.oscillator) {
+                try {
+                    layer.gain.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 2);
+                    layer.oscillator.stop(this.audioContext.currentTime + 2);
+                } catch (e) {
+                    console.error('Error stopping ambient layer:', e);
+                }
+            }
+        });
+        
+        this.ambientMusic.layers = [];
+        console.log('Ambient music stopped');
+    }
+
+    scheduleNextAmbientLayer() {
+        if (!this.ambientMusic.active) return;
+
+        const now = this.audioContext.currentTime;
+        
+        // Schedule next chord change
+        if (now >= this.ambientMusic.nextChordTime) {
+            this.createAmbientLayer();
+            this.ambientMusic.currentChord = (this.ambientMusic.currentChord + 1) % this.ambientMusic.chordProgression.length;
+            this.ambientMusic.nextChordTime = now + this.ambientMusic.measureLength;
+        }
+
+        // Continue scheduling if music is still active
+        if (this.ambientMusic.active) {
+            setTimeout(() => this.scheduleNextAmbientLayer(), 1000); // Check every second
+        }
+    }
+
+    createAmbientLayer() {
+        if (!this.audioContext || !this.ambientMusic.active) return;
+
+        const now = this.audioContext.currentTime;
+        const chord = this.ambientMusic.chordProgression[this.ambientMusic.currentChord];
+        const duration = this.ambientMusic.measureLength;
+
+        // Create multiple layers for richness
+        const layerTypes = ['pad', 'lead', 'bass', 'atmosphere'];
+        const selectedType = layerTypes[Math.floor(Math.random() * layerTypes.length)];
+
+        switch (selectedType) {
+            case 'pad':
+                this.createPadLayer(chord, now, duration);
+                break;
+            case 'lead':
+                this.createLeadLayer(chord, now, duration);
+                break;
+            case 'bass':
+                this.createBassLayer(chord, now, duration);
+                break;
+            case 'atmosphere':
+                this.createAtmosphereLayer(chord, now, duration);
+                break;
+        }
+
+        // Clean up old layers
+        this.cleanupOldLayers(now);
+    }
+
+    createPadLayer(chord, startTime, duration) {
+        const layer = { oscillators: [], gains: [] };
+
+        chord.forEach((freq, index) => {
+            // Create oscillator for each note in chord
+            const oscillator = this.audioContext.createOscillator();
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(freq * (0.5 + Math.random() * 0.1), startTime);
+
+            // Create filter for warmth
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800 + Math.random() * 400, startTime);
+            filter.Q.value = 0.5;
+
+            // Create gain with slow attack and release
+            const gain = this.audioContext.createGain();
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.1 / chord.length, startTime + 2);
+            gain.gain.setValueAtTime(0.1 / chord.length, startTime + duration - 2);
+            gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+            // Connect audio nodes
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ambientMusicGain);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+
+            layer.oscillators.push(oscillator);
+            layer.gains.push(gain);
+        });
+
+        layer.stopTime = startTime + duration;
+        this.ambientMusic.layers.push(layer);
+    }
+
+    createLeadLayer(chord, startTime, duration) {
+        // Select a note from the chord
+        const noteIndex = Math.floor(Math.random() * chord.length);
+        const baseFreq = chord[noteIndex] * (1 + Math.floor(Math.random() * 3)); // Octave up
+
+        const oscillator = this.audioContext.createOscillator();
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(baseFreq, startTime);
+
+        // Add subtle vibrato
+        const vibrato = this.audioContext.createOscillator();
+        vibrato.type = 'sine';
+        vibrato.frequency.setValueAtTime(6, startTime); // 6 Hz vibrato
+
+        const vibratoGain = this.audioContext.createGain();
+        vibratoGain.gain.setValueAtTime(10, startTime); // Subtle pitch modulation
+
+        vibrato.connect(vibratoGain);
+        vibratoGain.connect(oscillator.frequency);
+
+        // Create reverb-like delay
+        const delay = this.audioContext.createDelay(1.0);
+        delay.delayTime.setValueAtTime(0.3, startTime);
+
+        const delayGain = this.audioContext.createGain();
+        delayGain.gain.setValueAtTime(0.3, startTime);
+
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.08, startTime + 0.5);
+        gain.gain.setValueAtTime(0.08, startTime + duration - 1);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        // Connect nodes
+        oscillator.connect(gain);
+        oscillator.connect(delay);
+        delay.connect(delayGain);
+        delayGain.connect(gain);
+        gain.connect(this.ambientMusicGain);
+
+        vibrato.start(startTime);
+        oscillator.start(startTime);
+        vibrato.stop(startTime + duration);
+        oscillator.stop(startTime + duration);
+
+        const layer = {
+            oscillator,
+            gain,
+            stopTime: startTime + duration
+        };
+
+        this.ambientMusic.layers.push(layer);
+    }
+
+    createBassLayer(chord, startTime, duration) {
+        const rootFreq = chord[0] * 0.5; // Bass octave
+
+        const oscillator = this.audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(rootFreq, startTime);
+
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.1);
+        gain.gain.setValueAtTime(0.15, startTime + duration - 0.5);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        oscillator.connect(gain);
+        gain.connect(this.ambientMusicGain);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+
+        const layer = {
+            oscillator,
+            gain,
+            stopTime: startTime + duration
+        };
+
+        this.ambientMusic.layers.push(layer);
+    }
+
+    createAtmosphereLayer(chord, startTime, duration) {
+        // Create white noise for atmosphere
+        const noiseBuffer = this.createNoiseBuffer(duration);
+        const noiseSource = this.audioContext.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+
+        // Filter the noise to create wind-like sound
+        const filter = this.audioContext.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(200 + Math.random() * 300, startTime);
+        filter.Q.value = 0.5;
+
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.05, startTime + 2);
+        gain.gain.setValueAtTime(0.05, startTime + duration - 2);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        noiseSource.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ambientMusicGain);
+
+        noiseSource.start(startTime);
+
+        const layer = {
+            source: noiseSource,
+            gain,
+            stopTime: startTime + duration
+        };
+
+        this.ambientMusic.layers.push(layer);
+    }
+
+    cleanupOldLayers(currentTime) {
+        this.ambientMusic.layers = this.ambientMusic.layers.filter(layer => {
+            if (currentTime > layer.stopTime + 1) {
+                // Layer should be cleaned up
+                return false;
+            }
+            return true;
+        });
+    }
+
     // Use this method to ensure audio context is resumed after user interaction
     // Browsers require user interaction to start audio playback
     resumeAudio() {

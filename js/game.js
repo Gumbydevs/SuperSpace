@@ -41,8 +41,9 @@ class Game {
         document.getElementById('play-btn').addEventListener('click', () => this.startGame());
         document.getElementById('options-btn').addEventListener('click', () => this.showOptions());
         
-        // Here we create UI controls for mute and shop
+        // Here we create UI controls for mute, music, and shop
         this.createMuteButton();
+        this.createMusicButton();
         this.createShopButton();
         
         // Set up keyboard shortcuts
@@ -164,6 +165,42 @@ class Game {
         document.body.appendChild(muteBtn);
     }
     
+    // Here we create a music toggle button to control ambient music
+    createMusicButton() {
+        const musicBtn = document.createElement('button');
+        musicBtn.textContent = '🎵';
+        musicBtn.id = 'music-btn';
+        
+        // Style the music button
+        musicBtn.style.position = 'absolute';
+        musicBtn.style.top = '20px';
+        musicBtn.style.right = '100px'; // Position next to mute button
+        musicBtn.style.zIndex = '1002';
+        musicBtn.style.background = 'rgba(0, 0, 50, 0.7)';
+        musicBtn.style.color = 'white';
+        musicBtn.style.border = '1px solid #33f';
+        musicBtn.style.borderRadius = '5px';
+        musicBtn.style.padding = '5px 10px';
+        musicBtn.style.cursor = 'pointer';
+        musicBtn.style.fontSize = '16px';
+        
+        // Set up click handler to toggle music
+        musicBtn.onclick = () => {
+            if (this.soundManager.ambientMusic && this.soundManager.ambientMusic.active) {
+                this.soundManager.stopAmbientMusic();
+                musicBtn.textContent = '🎵';
+                musicBtn.style.opacity = '0.5';
+            } else {
+                this.soundManager.startAmbientMusic();
+                musicBtn.textContent = '🎵';
+                musicBtn.style.opacity = '1';
+            }
+        };
+        
+        // Add the button to the document body
+        document.body.appendChild(musicBtn);
+    }
+    
     // Here we create a shop button to access the in-game store
     createShopButton() {
         const shopBtn = document.createElement('button');
@@ -275,6 +312,9 @@ class Game {
         
         // Resume audio context (needed because of browser autoplay policy)
         this.soundManager.resumeAudio();
+        
+        // Start ambient music
+        this.soundManager.startAmbientMusic();
         
         this.gameState = 'playing';
         document.getElementById('menu').classList.add('hidden');
@@ -1100,6 +1140,10 @@ class Game {
         
         // Reset game state to playing
         this.gameState = 'playing';
+        
+        // Restart ambient music
+        this.soundManager.stopAmbientMusic();
+        this.soundManager.startAmbientMusic();
         
         // Reinitialize health bar with new player's health
         this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
