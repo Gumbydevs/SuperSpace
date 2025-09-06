@@ -177,31 +177,13 @@ export class UI {
         topInfoPanel.style.transform = `scale(${topPanelScale})`;
         topInfoPanel.style.transformOrigin = 'top left';
         
-        // Move the server info element (Online players) into our panel
-        const serverInfo = document.getElementById('server-info');
-        if (serverInfo) {
-            // Detach from its current location
-            serverInfo.parentNode.removeChild(serverInfo);
-            
-            // Style to match other elements
-            serverInfo.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            serverInfo.style.padding = this.isMobileDevice ? 
-                (this.isSmallMobile ? '2px 4px' : '2px 5px') : '3px 6px';
-            serverInfo.style.borderRadius = '3px';
-            serverInfo.style.border = '1px solid #555';
-            serverInfo.style.fontSize = this.isMobileDevice ? 
-                (this.isSmallMobile ? '0.75em' : '0.8em') : '0.85em';
-            
-            // Add to our panel
-            topInfoPanel.appendChild(serverInfo);
-        } else {
-            // Create placeholder if not found (shouldn't happen)
-            const onlineDisplay = document.createElement('div');
-            onlineDisplay.className = 'status-item-small';
-            onlineDisplay.innerHTML = '<span class="status-label">ONLINE:</span> <span id="player-count" class="status-value">0</span>';
-            this.styleStatusItemSmall(onlineDisplay, '#0af');
-            topInfoPanel.appendChild(onlineDisplay);
-        }
+        // Create empty placeholder to maintain spacing where server info was
+        const placeholderDisplay = document.createElement('div');
+        placeholderDisplay.className = 'status-item-small';
+        placeholderDisplay.style.visibility = 'hidden'; // Invisible but takes up space
+        placeholderDisplay.innerHTML = '<span class="status-label">ONLINE:</span> <span class="status-value">0</span>';
+        this.styleStatusItemSmall(placeholderDisplay, '#0af');
+        topInfoPanel.appendChild(placeholderDisplay);
         
     // Score display
     const scoreDisplay = document.createElement('div');
@@ -342,6 +324,51 @@ export class UI {
         hudContainer.appendChild(topInfoPanel);
         hudContainer.appendChild(statusPanel);
         hudContainer.appendChild(minimapContainer);
+        
+        // Create top right panel for Online Players
+        const topRightPanel = document.createElement('div');
+        topRightPanel.id = 'top-right-panel';
+        topRightPanel.style.position = 'absolute';
+        topRightPanel.style.top = topPanelPosition;
+        topRightPanel.style.right = '10px';
+        topRightPanel.style.display = 'flex';
+        topRightPanel.style.flexDirection = 'row';
+        topRightPanel.style.alignItems = 'center';
+        topRightPanel.style.zIndex = '1001';
+        topRightPanel.style.transform = `scale(${topPanelScale})`;
+        topRightPanel.style.transformOrigin = 'top right';
+        
+        // Move the server info element (Online players) into the top right panel
+        const serverInfo = document.getElementById('server-info');
+        if (serverInfo) {
+            // Detach from its current location if it exists somewhere else
+            if (serverInfo.parentNode) {
+                serverInfo.parentNode.removeChild(serverInfo);
+            }
+            
+            // Style to match other elements
+            serverInfo.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            serverInfo.style.padding = this.isMobileDevice ? 
+                (this.isSmallMobile ? '2px 4px' : '2px 5px') : '3px 6px';
+            serverInfo.style.borderRadius = '3px';
+            serverInfo.style.border = '1px solid #555';
+            serverInfo.style.fontSize = this.isMobileDevice ? 
+                (this.isSmallMobile ? '0.75em' : '0.8em') : '0.85em';
+            serverInfo.style.color = 'white';
+            serverInfo.style.fontFamily = 'Arial, sans-serif';
+            
+            // Add to top right panel
+            topRightPanel.appendChild(serverInfo);
+        } else {
+            // Create online display if server-info doesn't exist
+            const onlineDisplay = document.createElement('div');
+            onlineDisplay.className = 'status-item-small';
+            onlineDisplay.innerHTML = '<span class="status-label">ONLINE:</span> <span id="player-count" class="status-value">0</span>';
+            this.styleStatusItemSmall(onlineDisplay, '#0af');
+            topRightPanel.appendChild(onlineDisplay);
+        }
+        
+        hudContainer.appendChild(topRightPanel);
         
         // Ensure the HUD is always created AFTER other elements
         const existingHud = document.getElementById('hud-container');
