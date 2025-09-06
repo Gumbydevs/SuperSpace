@@ -62,7 +62,33 @@ class Game {
         this.setupGuaranteedExplosionSystem();
     }
     
-    // Connect to the server to get player count without joining the game
+        // Helper function to track analytics events
+        trackAnalyticsEvent(eventName, properties = {}) {
+            try {
+                // Try multiple methods to track the event
+                if (window.va && typeof window.va.track === 'function') {
+                    window.va.track(eventName, properties);
+                    console.log(`📊 Analytics tracked: ${eventName}`, properties);
+                } else if (window.gtag) {
+                    window.gtag('event', eventName, properties);
+                    console.log(`📊 GA4 tracked: ${eventName}`, properties);
+                } else {
+                    console.log(`📊 Analytics not available for event: ${eventName}`, properties);
+                }
+            } catch (error) {
+                console.warn('Analytics tracking error:', error);
+            }
+        }
+        
+        // Test function for debugging analytics (can be called from browser console)
+        testAnalytics() {
+            console.log('🧪 Testing Vercel Analytics...');
+            this.trackAnalyticsEvent('test_event', { 
+                timestamp: new Date().toISOString(),
+                user_agent: navigator.userAgent,
+                page_url: window.location.href
+            });
+        }    // Connect to the server to get player count without joining the game
     initializePlayerCount() {
         const serverUrl = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000'
@@ -326,6 +352,15 @@ class Game {
         // Start ambient music
         this.soundManager.startAmbientMusic();
         
+        // Track game start event
+        this.trackAnalyticsEvent('game_started', { 
+            player_health: this.player.health,
+            multiplayer_connected: this.multiplayerConnected 
+        });
+        
+        // Record start time for survival tracking
+        this.gameStartTime = Date.now();
+        
         this.gameState = 'playing';
         document.getElementById('menu').classList.add('hidden');
         
@@ -348,9 +383,19 @@ class Game {
                 .then(() => {
                     console.log('Connected to multiplayer server at', serverUrl);
                     this.multiplayerConnected = true;
+                    
+                    // Track multiplayer connection
+                    this.trackAnalyticsEvent('multiplayer_connected', { 
+                        server_url: serverUrl,
+                        game_state: this.gameState 
+                    });
                 })
                 .catch(error => {
                     console.error('Failed to connect to multiplayer server:', error);
+                    this.trackAnalyticsEvent('multiplayer_connection_failed', { 
+                        server_url: serverUrl,
+                        error: error.message 
+                    });
                 });
         }
     }
@@ -689,6 +734,14 @@ class Game {
         // Only show game over screen after a delay to see the explosion
         setTimeout(() => {
             this.gameState = 'gameover';
+            
+            // Track game over event
+            this.trackAnalyticsEvent('game_over', { 
+                final_score: this.player.score,
+                final_credits: this.player.credits,
+                survival_time: Date.now() - (this.gameStartTime || 0),
+                multiplayer_connected: this.multiplayerConnected 
+            });
             
             // Here we create game over screen UI
             const gameOverScreen = document.createElement('div');

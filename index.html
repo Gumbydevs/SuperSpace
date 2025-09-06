@@ -6,10 +6,47 @@
     <title>SuperSpace - Multiplayer Space Combat Game</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@vercel/analytics@1.0.0/dist/index.js"></script>
-    <script>
-        // Initialize Vercel Analytics
-        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    <!-- Vercel Analytics: Multiple methods for reliability -->
+    <script type="module">
+        // Method 1: Try ESM import
+        try {
+            const { inject } = await import('https://cdn.skypack.dev/@vercel/analytics');
+            inject({
+                mode: 'production',
+                debug: true
+            });
+            console.log('✅ Vercel Analytics (ESM) initialized successfully');
+            
+            // Track page view
+            if (window.va && window.va.track) {
+                window.va.track('page_view', { page: 'index' });
+            }
+        } catch (error) {
+            console.warn('⚠️ ESM Analytics failed, trying UMD fallback:', error);
+            
+            // Method 2: UMD fallback
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1.5.0/dist/index.umd.js';
+            script.onload = () => {
+                if (window.va && window.va.inject) {
+                    window.va.inject({ mode: 'production', debug: true });
+                    console.log('✅ Vercel Analytics (UMD) initialized successfully');
+                } else {
+                    console.error('❌ Vercel Analytics UMD global not found');
+                }
+            };
+            script.onerror = () => {
+                console.error('❌ Failed to load Vercel Analytics UMD script');
+                
+                // Method 3: Direct Vercel script injection (last resort)
+                const directScript = document.createElement('script');
+                directScript.defer = true;
+                directScript.src = '/_vercel/insights/script.js';
+                document.head.appendChild(directScript);
+                console.log('📦 Direct Vercel script injection attempted');
+            };
+            document.head.appendChild(script);
+        }
     </script>
     <script>
         // Connect to the server to get player count as soon as the page loads

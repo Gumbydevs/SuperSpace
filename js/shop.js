@@ -1689,6 +1689,17 @@ export class ShopSystem {
         // Increase level
         upgrade.level += 1;
         
+        // Track shop purchase
+        if (window.game && typeof window.game.trackAnalyticsEvent === 'function') {
+            window.game.trackAnalyticsEvent('shop_purchase', {
+                upgrade_id: upgradeId,
+                upgrade_name: upgrade.name,
+                upgrade_level: upgrade.level,
+                price_paid: price,
+                remaining_credits: this.player.credits
+            });
+        }
+        
         // Save upgrade level to localStorage
         localStorage.setItem(`upgrade_${upgradeId}`, upgrade.level.toString());
         localStorage.setItem('playerCredits', this.player.credits.toString());
