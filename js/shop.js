@@ -119,8 +119,8 @@ export class ShopSystem {
                 price: 5000,
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
-                    damage: 40, // High damage
-                    cooldown: 0.22, // Fast for a missile
+                    damage: 60, // Higher damage
+                    cooldown: 0.38, // Slower
                     speed: 500,
                     range: 1000,
                     energyCost: 15,
@@ -134,8 +134,8 @@ export class ShopSystem {
                 price: 8000,
                 owned: localStorage.getItem('weapon_plasma') === 'true',
                 stats: {
-                    damage: 18, // Splash, moderate
-                    cooldown: 0.09, // Fast plasma
+                    damage: 32, // Higher damage
+                    cooldown: 0.18, // Slower
                     speed: 600,
                     range: 500,
                     energyCost: 20,
@@ -149,8 +149,8 @@ export class ShopSystem {
                 price: 15000,
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
-                    damage: 55, // Very high, rare
-                    cooldown: 0.32, // Still slowest, but much faster
+                    damage: 90, // Even higher
+                    cooldown: 0.55, // Slowest
                     speed: 900,
                     range: 800,
                     energyCost: 25,

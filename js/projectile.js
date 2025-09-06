@@ -156,7 +156,7 @@ export class Projectile {
                 const dy = nearest.y - this.y;
                 const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
                 // Gradually adjust missile angle towards target
-                const turnSpeed = 2.5 * deltaTime; // radians per second
+                const turnSpeed = 6.0 * deltaTime; // much more aggressive turning
                 let angleDiff = angleToTarget - this.angle;
                 // Normalize angle difference to between -PI and PI
                 while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
