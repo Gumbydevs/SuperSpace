@@ -11,6 +11,11 @@ export class SoundManager {
         this.ambientMusic = null;
         this.ambientMusicGain = null;
         
+        // Volume settings with default values
+        this._musicVolume = 0.7;       // Default music volume
+        this._sfxVolume = 0.7;         // Default SFX volume
+        this._musicEnabled = true;     // Music enabled by default
+        
         // Initialize the audio system
         this.init();
     }
@@ -78,7 +83,10 @@ export class SoundManager {
         
         // Here we create gain node for this individual sound's volume
         const gainNode = this.audioContext.createGain();
-        gainNode.gain.value = options.volume || 1.0;
+        // Apply both the individual sound volume and the global SFX volume
+        const baseVolume = options.volume || 1.0;
+        const sfxVolume = this._sfxVolume !== undefined ? this._sfxVolume : 0.7;
+        gainNode.gain.value = baseVolume * sfxVolume;
         
         // Here we connect the audio nodes in sequence
         // source → gain → master gain → output
@@ -157,7 +165,9 @@ export class SoundManager {
         
         // Final output gain for the thruster sound
         const outputGain = this.audioContext.createGain();
-        outputGain.gain.value = options.volume || 0.5;
+        const baseVolume = options.volume || 0.5;
+        const sfxVolume = this._sfxVolume !== undefined ? this._sfxVolume : 0.7;
+        outputGain.gain.value = baseVolume * sfxVolume;
         
         // Here we connect all the audio nodes
         oscillator.connect(oscillatorFilter);
@@ -225,10 +235,12 @@ export class SoundManager {
                 
                 // Update volume if provided
                 if (options.volume !== undefined && this.thrusterSound.outputGain) {
+                    // Apply both the requested volume and the global SFX volume
+                    const effectiveVolume = options.volume * (this._sfxVolume !== undefined ? this._sfxVolume : 0.7);
                     this.thrusterSound.outputGain.gain.setValueAtTime(
                         this.thrusterSound.outputGain.gain.value, now
                     );
-                    this.thrusterSound.outputGain.gain.linearRampToValueAtTime(options.volume, now + 0.1);
+                    this.thrusterSound.outputGain.gain.linearRampToValueAtTime(effectiveVolume, now + 0.1);
                 }
                 
                 // Update frequency for afterburner effect
@@ -827,7 +839,7 @@ export class SoundManager {
 
         // Create ambient music gain node
         this.ambientMusicGain = this.audioContext.createGain();
-        this.ambientMusicGain.gain.value = 0.4; // Increased from 0.15 for better audibility
+        this.ambientMusicGain.gain.value = 0.8; // Increased from 0.4 for better balance with SFX
         this.ambientMusicGain.connect(this.masterGainNode);
     }
 
@@ -1420,14 +1432,15 @@ export class SoundManager {
 
     setMusicEnabled(enabled) {
         if (this.ambientMusicGain) {
-            this.ambientMusicGain.gain.value = enabled ? this._musicVolume || 0.7 : 0;
+            this.ambientMusicGain.gain.value = enabled ? this._musicVolume || 0.8 : 0;
         }
         this._musicEnabled = enabled;
     }
     setMusicVolume(vol) {
         this._musicVolume = vol;
         if (this.ambientMusicGain && (this._musicEnabled === undefined || this._musicEnabled)) {
-            this.ambientMusicGain.gain.value = vol;
+            // Apply the volume with the higher base multiplier
+            this.ambientMusicGain.gain.value = vol * 0.8;
         }
     }
     setSfxVolume(vol) {

@@ -49,24 +49,24 @@ export class UI {
         // Music toggle
         if (this.musicToggle) {
             this.musicToggle.addEventListener('change', (e) => {
-                if (window.game && window.game.soundSystem) {
-                    window.game.soundSystem.setMusicEnabled(e.target.checked);
+                if (window.game && window.game.soundManager) {
+                    window.game.soundManager.setMusicEnabled(e.target.checked);
                 }
             });
         }
         // Music volume
         if (this.musicVolume) {
             this.musicVolume.addEventListener('input', (e) => {
-                if (window.game && window.game.soundSystem) {
-                    window.game.soundSystem.setMusicVolume(parseFloat(e.target.value));
+                if (window.game && window.game.soundManager) {
+                    window.game.soundManager.setMusicVolume(parseFloat(e.target.value));
                 }
             });
         }
         // SFX volume
         if (this.sfxVolume) {
             this.sfxVolume.addEventListener('input', (e) => {
-                if (window.game && window.game.soundSystem) {
-                    window.game.soundSystem.setSfxVolume(parseFloat(e.target.value));
+                if (window.game && window.game.soundManager) {
+                    window.game.soundManager.setSfxVolume(parseFloat(e.target.value));
                 }
             });
         }
