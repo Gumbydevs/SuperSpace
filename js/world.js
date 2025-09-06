@@ -1,4 +1,4 @@
-﻿export class World {
+export class World {
     // Generate an array of new powerups
     generatePowerups(count = 1) {
         const powerups = [];
@@ -492,7 +492,7 @@
         // Here we create irregular polygon shapes for asteroids
         const vertices = [];
         for (let i = 0; i < count; i++) {
-            // Calculate angle for this vertex (evenly distributed around 360Â°)
+            // Calculate angle for this vertex (evenly distributed around 360°)
             const angle = (i / count) * Math.PI * 2;
             // Vary the radius to create an irregular shape
             const radius = 1 + (Math.random() * irregularity * 2 - irregularity);
@@ -1326,16 +1326,16 @@
                 if (weaponIcon) {
                     switch(player.currentWeapon) {
                         case 'Basic Laser':
-                            weaponIcon.innerHTML = 'ðŸ”«';
+                            weaponIcon.innerHTML = '🔫';
                             break;
                         case 'Burst Cannon':
-                            weaponIcon.innerHTML = 'ðŸ’¥';
+                            weaponIcon.innerHTML = '💥';
                             break;
                         case 'Seeker Missile':
-                            weaponIcon.innerHTML = 'ðŸš€';
+                            weaponIcon.innerHTML = '🚀';
                             break;
                         default:
-                            weaponIcon.innerHTML = 'ðŸ”«';
+                            weaponIcon.innerHTML = '🔫';
                     }
                 }
                 break;
