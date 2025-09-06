@@ -238,6 +238,16 @@ export class Projectile {
             soundManager
         );
         
+        // Broadcast splash explosion to other players in multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('projectileExplosion', {
+                x: this.x,
+                y: this.y,
+                radius: this.splashRadius,
+                type: 'splash'
+            });
+        }
+        
         // In a real implementation, this would damage all entities within splash radius
         // Example logic:
         /*
@@ -300,6 +310,16 @@ export class Projectile {
             soundManager,
             'rocket' // Explosion type for different visual/sound effects
         );
+        
+        // Broadcast explosion to other players in multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('projectileExplosion', {
+                x: this.x,
+                y: this.y,
+                radius: this.explosionRadius,
+                type: 'fusionMortar'
+            });
+        }
         
         // Apply area damage to asteroids within explosion radius
         if (world.asteroids) {

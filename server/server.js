@@ -116,11 +116,13 @@ io.on('connection', (socket) => {
       y: playerData.y || 0,
       rotation: playerData.rotation || 0,
       health: playerData.health || 100,
+      shield: playerData.shield || 0,
+      maxShield: playerData.maxShield || 0,
       ship: playerData.ship || 'scout',
       name: playerData.name || `Player-${socket.id.substring(0, 4)}`,
-      score: 0,
-      wins: 0,
-      losses: 0,
+      score: playerData.score || 0,
+      wins: playerData.wins || 0,
+      losses: playerData.losses || 0,
       credits: 0,
       color: playerData.color || getRandomColor(),
       projectiles: []
@@ -221,6 +223,20 @@ io.on('connection', (socket) => {
         projectile: projectile
       });
     }
+  });
+
+  // Handle projectile explosions
+  socket.on('projectileExplosion', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Broadcast the explosion to all other players
+    socket.broadcast.emit('projectileExplosion', {
+      x: data.x,
+      y: data.y,
+      radius: data.radius,
+      type: data.type || 'rocket'
+    });
   });
   
   // Player hit something (asteroid, enemy, etc.)

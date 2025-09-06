@@ -299,9 +299,15 @@ export class MultiplayerManager {
                 x: this.game.player.x,
                 y: this.game.player.y,
                 rotation: this.game.player.rotation,
+                health: this.game.player.health,
+                shield: this.game.player.shield || 0,
+                maxShield: this.game.player.shieldCapacity || 0,
                 ship: this.game.player.currentShip || 'scout',
                 name: this.playerName,
-                color: this.game.player.color || '#0f0'
+                color: this.game.player.color || '#0f0',
+                score: this.game.player.score || 0,
+                wins: this.game.player.wins || 0,
+                losses: this.game.player.losses || 0
             });
             
             // Show connection indicator
@@ -636,6 +642,20 @@ export class MultiplayerManager {
             this.handleRemoteEngineColorUpdate(data.playerId, data.color);
         });
 
+        // Handle projectile explosions from other players
+        this.socket.on('projectileExplosion', (data) => {
+            if (this.game.world) {
+                // Create explosion effect at the received coordinates
+                this.game.world.createExplosion(
+                    data.x,
+                    data.y,
+                    data.radius,
+                    this.game.soundManager,
+                    data.type || 'rocket'
+                );
+            }
+        });
+
         // Start ping interval to keep connection alive and reset inactivity timer
         this.startPingInterval();
     }
@@ -687,9 +707,15 @@ export class MultiplayerManager {
             x: this.game.player.x,
             y: this.game.player.y,
             rotation: this.game.player.rotation,
+            health: this.game.player.health,
+            shield: this.game.player.shield || 0,
+            maxShield: this.game.player.shieldCapacity || 0,
             ship: this.game.player.shipId || 'scout',
             name: this.playerName,
-            color: this.getRandomPlayerColor()
+            color: this.getRandomPlayerColor(),
+            score: this.game.player.score || 0,
+            wins: this.game.player.wins || 0,
+            losses: this.game.player.losses || 0
         };
         
         this.socket.emit('playerJoin', playerData);
