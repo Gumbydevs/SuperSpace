@@ -263,21 +263,58 @@ export class Projectile {
             'rocket' // Explosion type for different visual/sound effects
         );
         
-        // Apply area damage to all entities within explosion radius
-        const entitiesInRange = world.getEntitiesInRadius(this.x, this.y, this.explosionRadius);
-        entitiesInRange.forEach(entity => {
-            // Calculate damage falloff based on distance from explosion center
-            const dx = entity.x - this.x;
-            const dy = entity.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const damageFalloff = Math.max(0, 1 - (distance / this.explosionRadius));
-            
-            // Apply explosion damage with falloff (uses explosionDamage, not direct damage)
-            const explosionDamage = this.explosionDamage * damageFalloff;
-            if (explosionDamage > 0) {
-                entity.takeDamage(explosionDamage);
-            }
-        });
+        // Apply area damage to asteroids within explosion radius
+        if (world.asteroids) {
+            world.asteroids.forEach(asteroid => {
+                if (!asteroid.active) return;
+                
+                // Calculate distance from explosion center to asteroid
+                const dx = asteroid.x - this.x;
+                const dy = asteroid.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Check if asteroid is within explosion radius
+                if (distance <= this.explosionRadius + asteroid.radius) {
+                    // Calculate damage falloff based on distance from explosion center
+                    const damageFalloff = Math.max(0, 1 - (distance / this.explosionRadius));
+                    
+                    // Apply explosion damage with falloff
+                    const explosionDamage = this.explosionDamage * damageFalloff;
+                    if (explosionDamage > 0) {
+                        asteroid.health -= explosionDamage;
+                        
+                        // Award score if asteroid is destroyed
+                        if (asteroid.health <= 0 && window.game && window.game.player) {
+                            window.game.player.score += asteroid.scoreValue;
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Apply area damage to other players in multiplayer (if applicable)
+        if (world.players && window.game && window.game.player) {
+            world.players.forEach(player => {
+                if (!player.visible || player.health <= 0 || player === window.game.player) return;
+                
+                // Calculate distance from explosion center to player
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Check if player is within explosion radius
+                if (distance <= this.explosionRadius) {
+                    // Calculate damage falloff based on distance from explosion center
+                    const damageFalloff = Math.max(0, 1 - (distance / this.explosionRadius));
+                    
+                    // Apply explosion damage with falloff
+                    const explosionDamage = this.explosionDamage * damageFalloff;
+                    if (explosionDamage > 0 && player.takeDamage) {
+                        player.takeDamage(explosionDamage);
+                    }
+                }
+            });
+        }
     }
     
     render(ctx) {
