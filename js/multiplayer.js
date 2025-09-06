@@ -1603,7 +1603,7 @@ export class MultiplayerManager {
         
         // PLAYERS ONLINE title With live player count displayed in bracke
         const titleText = document.createElement('div');
-        titleText.textContent = '🌐 PLAYERS ONLINE';
+        titleText.textContent = '🌐 LEADERBOARD';
         titleText.style.fontWeight = 'bold';
         titleText.style.marginBottom = '5px'; // Reduced margin to be closer to divider
         contentContainer.appendChild(titleText);
