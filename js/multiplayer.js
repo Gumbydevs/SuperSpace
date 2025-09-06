@@ -1995,10 +1995,12 @@ export class MultiplayerManager {
     handleAsteroidDestroyedWithFragments(data) {
         console.log('Handling asteroid destruction with fragments:', data);
         
-        // Find and remove the original asteroid by ID
+        // Find and remove the original asteroid by ID (if it still exists)
+        let asteroidFound = false;
         for (let i = 0; i < this.game.world.asteroids.length; i++) {
             if (this.game.world.asteroids[i].id === data.asteroidId) {
                 console.log(`Found asteroid ${data.asteroidId} to destroy at index ${i}`);
+                asteroidFound = true;
                 
                 // Create explosion effect
                 this.game.world.createExplosion(
@@ -2012,6 +2014,12 @@ export class MultiplayerManager {
                 console.log(`Removed original asteroid ${data.asteroidId}`);
                 break;
             }
+        }
+        
+        if (!asteroidFound) {
+            console.log(`Asteroid ${data.asteroidId} already removed locally - creating explosion at server position`);
+            // Create explosion at the position provided by server
+            this.game.world.createExplosion(data.position.x, data.position.y, 50);
         }
         
         // Add any fragments from the server

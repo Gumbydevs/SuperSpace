@@ -678,9 +678,10 @@
                         }
                         
                         if (isMultiplayerMode) {
-                            // In multiplayer: DO NOT remove asteroid locally - wait for server response
-                            // Server will send asteroidDestroyed event with fragments that all players will see
-                            console.log(`Asteroid ${asteroid.id} destroyed - waiting for server fragments`);
+                            // In multiplayer: immediately remove asteroid to prevent multiple hits
+                            // Server will send asteroidDestroyed event with fragments to ALL clients (including us)
+                            console.log(`Asteroid ${asteroid.id} destroyed locally - server will sync fragments to all players`);
+                            this.asteroids.splice(i, 1);
                         } else {
                             // Fallback for offline mode
                             if (asteroid.size !== 'small') {
