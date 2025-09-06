@@ -44,14 +44,15 @@ export class Player {
 
         this.score = 0;   // Points for game score
 
-        // Here we set up the weapon systems
-        this.weapons = ['Basic Laser', 'Burst Cannon', 'Seeker Missile'];
-        this.currentWeapon = this.weapons[0];
-        this.weaponIndex = 0;
-        this.projectiles = []; // Active projectiles fired by player
+    // Here we set up the weapon systems
+    this.weapons = ['Basic Laser', 'Burst Cannon', 'Seeker Missile'];
+    this.currentWeapon = this.weapons[0];
+    this.weaponIndex = 0;
+    this.projectiles = []; // Active projectiles fired by player
     this.fireCooldown = 0; // Current cooldown time before can fire again
     this.fireCooldownTime = 0.12; // Default, will be set by weapon
     this.fireCooldownPenalty = 0; // Extra penalty when energy is 0
+    this.weaponSwitchCooldown = 0; // Prevents rapid cycling
 
         // Here we define the energy system (optional until upgraded)
         this.maxEnergy = 100;
@@ -220,10 +221,13 @@ export class Player {
             this.fireCooldown = baseCooldown * cooldownMod;
         }
 
-        // Here we handle weapon switching with Q and E keys
-        if ((input.keys.includes('KeyQ') || input.keys.includes('KeyE')) && soundManager) {
+        // Weapon switch cooldown logic
+        if (this.weaponSwitchCooldown > 0) {
+            this.weaponSwitchCooldown -= deltaTime;
+        }
+        // Here we handle weapon switching with Q and E keys (debounced)
+        if ((input.keys.includes('KeyQ') || input.keys.includes('KeyE')) && soundManager && this.weaponSwitchCooldown <= 0) {
             const previousWeapon = this.currentWeapon;
-            
             if (input.keys.includes('KeyQ')) {
                 // Cycle backwards through weapons
                 this.weaponIndex = (this.weaponIndex - 1 + this.weapons.length) % this.weapons.length;
@@ -231,19 +235,16 @@ export class Player {
                 // Cycle forwards through weapons
                 this.weaponIndex = (this.weaponIndex + 1) % this.weapons.length;
             }
-            
             this.currentWeapon = this.weapons[this.weaponIndex];
-            
+            this.weaponSwitchCooldown = 0.3; // 300ms cooldown
             // Only play sound if weapon actually changed
             if (previousWeapon !== this.currentWeapon) {
                 soundManager.play('powerup', { volume: 0.4, playbackRate: 1.5 });
-                
                 // Update weapon display in UI
                 const weaponElement = document.getElementById('weapons');
                 if (weaponElement) {
                     weaponElement.textContent = this.currentWeapon;
                 }
-                
                 // Update weapon icon based on weapon type
                 const weaponIcon = document.getElementById('weapon-icon');
                 if (weaponIcon) {
