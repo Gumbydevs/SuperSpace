@@ -8,35 +8,49 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
-// Configure CORS to allow requests from any origin
-// In production, you might want to restrict this to your frontend domain
-app.use(cors());
+// Configure CORS to allow requests from specific domains
+app.use(cors({
+  origin: '*',
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false
+}));
 
 // Serve static files from the parent directory
 app.use(express.static(path.join(__dirname, '..')));
 
 // Add a home route that shows server status
 app.get('/status', (req, res) => {
+  console.log('Status endpoint hit from origin:', req.get('origin'));
   res.json({
     status: 'running',
     players: Object.keys(gameState.players).length,
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
+});
+
+// Add a simple test endpoint for CORS testing
+app.get('/test', (req, res) => {
+  console.log('Test endpoint hit from origin:', req.get('origin'));
+  res.json({ message: 'CORS test successful', origin: req.get('origin') });
 });
 
 // Create Socket.IO server with CORS configuration
 const io = socketIO(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000", 
-      "https://superspacegame.vercel.app",
-      "https://*.vercel.app",
-      "*"
-    ],
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: false
   }
+});
+
+// Add Socket.IO error handling
+io.engine.on("connection_error", (err) => {
+  console.log('Socket.IO connection error:', err.req);      // the request object
+  console.log('Error code:', err.code);     // the error code, for example 1
+  console.log('Error message:', err.message);  // the error message, for example "Session ID unknown"
+  console.log('Error context:', err.context);  // some additional error context
 });
 
 // Constants for inactivity timeout
@@ -131,6 +145,9 @@ setInterval(() => {
 // Connection handling
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
+  console.log(`Connection origin: ${socket.request.headers.origin}`);
+  console.log(`Connection referer: ${socket.request.headers.referer}`);
+  console.log(`Connection host: ${socket.request.headers.host}`);
   
   // Set initial activity timestamp
   playerLastActivity[socket.id] = Date.now();
