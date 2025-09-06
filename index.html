@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -16,14 +16,14 @@
                 debug: true
             });
             console.log('✅ Vercel Analytics (ESM) initialized successfully');
-            
+
             // Track page view
             if (window.va && window.va.track) {
                 window.va.track('page_view', { page: 'index' });
             }
         } catch (error) {
             console.warn('⚠️ ESM Analytics failed, trying UMD fallback:', error);
-            
+
             // Method 2: UMD fallback
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/@vercel/analytics@1.5.0/dist/index.umd.js';
@@ -37,7 +37,7 @@
             };
             script.onerror = () => {
                 console.error('❌ Failed to load Vercel Analytics UMD script');
-                
+
                 // Method 3: Direct Vercel script injection (last resort)
                 const directScript = document.createElement('script');
                 directScript.defer = true;
@@ -51,10 +51,10 @@
     <script>
         // Connect to the server to get player count as soon as the page loads
         window.addEventListener('load', function() {
-            const serverUrl = window.location.hostname === 'localhost' 
+            const serverUrl = window.location.hostname === 'localhost'
                 ? 'http://localhost:3000'
                 : 'https://superspace-server.onrender.com';
-                
+
             // Connect to server
             const socket = io(serverUrl, {
                 reconnection: true,
@@ -63,22 +63,22 @@
                 reconnectionDelayMax: 10000,
                 timeout: 10000
             });
-            
+
             // When connected, request player count
             socket.on('connect', function() {
                 socket.emit('getPlayerCount');
             });
-            
+
             // Listen for player count updates
             socket.on('playerCountUpdate', function(count) {
                 document.getElementById('player-count').textContent = count;
             });
-            
+
             // Handle disconnect/errors gracefully
             socket.on('disconnect', function() {
                 document.getElementById('player-count').textContent = '?';
             });
-            
+
             socket.on('connect_error', function() {
                 document.getElementById('player-count').textContent = '?';
             });
@@ -120,13 +120,13 @@
             <button id="options-btn">Options</button>
             <div id="server-info">Online Players (<span id="player-count">0</span>)</div>
             <div id="branding">
-                <div class="copyright">Â© Gumbysoft - Made by Gumby</div>
+                <div class="copyright">© Gumbysoft - Made by Gumby</div>
                 <div class="links">
-                    <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener">ðŸŽ® Other Games</a>
-                    <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener">â˜• Support</a>
+                    <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener">🎮 Other Games</a>
+                    <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener">☕ Support</a>
                 </div>
                 <div class="links">
-                    <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener">ðŸ’¬ Join Discord</a>
+                    <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener">💬 Join Discord</a>
                 </div>
             </div>
         </div>
@@ -134,10 +134,10 @@
         <div id="options-overlay" class="hidden">
             <div class="options-panel">
                     <h2>Options & Controls</h2>
-                <button id="close-options-btn" class="close-btn">âœ•</button>
+                <button id="close-options-btn" class="close-btn">✕</button>
                     <div class="section">
                         <div class="pilot-row">
-                            <span class="pilot-label">ðŸ‘¨â€âœˆï¸ Pilot Name:</span>
+                            <span class="pilot-label">👨‍✈️ Pilot Name:</span>
                             <span id="pilot-name">(Loading...)</span>
                             <button id="rename-btn">Rename</button>
                         </div>
@@ -177,37 +177,37 @@
                 </div>
                 <div class="section branding-section">
                     <div class="game-branding">
-                        <div class="copyright-text">Â© Gumbysoft - Made by Gumby</div>
+                        <div class="copyright-text">© Gumbysoft - Made by Gumby</div>
                         <div class="brand-links">
-                            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener" class="brand-link">ðŸŽ® More Games</a>
-                            <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener" class="brand-link">â˜• Support Dev</a>
+                            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener" class="brand-link">🎮 More Games</a>
+                            <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener" class="brand-link">☕ Support Dev</a>
                         </div>
                         <div class="brand-links">
-                            <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener" class="brand-link">ðŸ’¬ Join Discord</a>
+                            <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener" class="brand-link">💬 Join Discord</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    
+
     <script>
         // Disclaimer popup logic
         document.addEventListener('DOMContentLoaded', function() {
             const disclaimerPopup = document.getElementById('disclaimer-popup');
             const agreeBtn = document.getElementById('disclaimer-agree-btn');
             const dontShowCheckbox = document.getElementById('dont-show-again');
-            
+
             // Check if user has already agreed
             const hasAgreed = localStorage.getItem('superspace-disclaimer-agreed');
-            
+
             if (!hasAgreed) {
                 disclaimerPopup.style.display = 'flex';
             }
-            
+
             agreeBtn.addEventListener('click', function() {
                 // Hide the disclaimer
                 disclaimerPopup.style.display = 'none';
-                
+
                 // Save preference if checkbox is checked
                 if (dontShowCheckbox.checked) {
                     localStorage.setItem('superspace-disclaimer-agreed', 'true');
@@ -215,7 +215,7 @@
             });
         });
     </script>
-    
+
     <script src="js/game.js" type="module"></script>
 </body>
 </html>
