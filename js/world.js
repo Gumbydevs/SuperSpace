@@ -478,6 +478,8 @@ export class World {
                         // Update multiplayer UI immediately if connected
                         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
                             window.game.multiplayer.updatePlayerList();
+                            // Broadcast stats update for real-time leaderboard sync
+                            window.game.multiplayer.broadcastStatsUpdate();
                         }
 
                         // Award credits based on asteroid size

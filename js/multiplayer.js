@@ -307,6 +307,9 @@ export class MultiplayerManager {
             // Show connection indicator
             this.updateConnectionIndicator(true);
             
+            // Start periodic leaderboard updates for real-time sync
+            this.startLeaderboardUpdates();
+            
             // Update the player count display
             this.updatePlayerCount();
         });
@@ -370,6 +373,12 @@ export class MultiplayerManager {
             console.log('Disconnected from server');
             this.connected = false;
             this.players = {}; // Clear remote players
+            
+            // Clear leaderboard update timer
+            if (this.leaderboardTimer) {
+                clearInterval(this.leaderboardTimer);
+                this.leaderboardTimer = null;
+            }
             
             // Show disconnected indicator
             this.updateConnectionIndicator(false);
@@ -814,6 +823,36 @@ export class MultiplayerManager {
         });
     }
 
+    // Broadcast stats update immediately when wins/losses/score changes
+    broadcastStatsUpdate() {
+        if (!this.connected || !this.game.player) return;
+        
+        const statsData = {
+            id: this.playerId,
+            score: this.game.player.score || 0,
+            wins: this.game.player.wins || 0,
+            losses: this.game.player.losses || 0
+        };
+        
+        console.log('Broadcasting stats update:', statsData);
+        this.socket.emit('playerStatsUpdate', statsData);
+    }
+
+    // Start periodic leaderboard updates for smooth real-time competition
+    startLeaderboardUpdates() {
+        // Clear any existing timer
+        if (this.leaderboardTimer) {
+            clearInterval(this.leaderboardTimer);
+        }
+        
+        // Update leaderboard every 2 seconds for smooth real-time updates
+        this.leaderboardTimer = setInterval(() => {
+            if (this.connected && document.getElementById('player-list-container')) {
+                this.updatePlayerList();
+            }
+        }, 2000);
+    }
+
     // Send respawn request
     sendRespawn(x, y) {
         if (!this.connected) return;
@@ -1197,6 +1236,9 @@ export class MultiplayerManager {
         if (this.game.player) {
             this.game.player.losses += 1;
             this.updatePlayerList(); // Update UI immediately
+            
+            // Broadcast stats update immediately
+            this.broadcastStatsUpdate();
         }
         
         // Send death event to server
@@ -1279,6 +1321,9 @@ export class MultiplayerManager {
                 this.game.player.addCredits(250);
                 this.game.player.wins += 1;  // Track wins locally too
                 this.updatePlayerList(); // Update UI immediately
+                
+                // Broadcast stats update immediately
+                this.broadcastStatsUpdate();
             }
         } else {
             this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
