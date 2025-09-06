@@ -189,6 +189,7 @@ export class UI {
     const scoreDisplay = document.createElement('div');
     scoreDisplay.className = 'status-item-small';
     scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
+    scoreDisplay.style.marginLeft = '5ch'; // Add spacing equivalent to 5 capital characters
     this.styleStatusItemSmall(scoreDisplay, '#fff');
     topInfoPanel.appendChild(scoreDisplay);
 
