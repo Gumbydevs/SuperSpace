@@ -151,6 +151,8 @@ io.on('connection', (socket) => {
       player.rotation = data.rotation;
       player.velocity = data.velocity;
       // player.health = data.health; // REMOVED - server manages health, not clients
+      player.shield = data.shield || 0;
+      player.maxShield = data.maxShield || 0;
       player.ship = data.ship;
       player.color = data.color || player.color;
       
@@ -180,11 +182,14 @@ io.on('connection', (socket) => {
       // Broadcast the updated position to all other players
       socket.broadcast.emit('playerMoved', {
         id: socket.id,
+        name: player.name,
         x: player.x,
         y: player.y,
         rotation: player.rotation,
         velocity: player.velocity,
         health: player.health,
+        shield: player.shield,
+        maxShield: player.maxShield,
         ship: player.ship,
         color: player.color,
         score: player.score,
