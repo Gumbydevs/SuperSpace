@@ -150,8 +150,8 @@ class Game {
         muteBtn.id = 'mute-btn';
         // Here we style the button with CSS
         muteBtn.style.position = 'absolute';
-        muteBtn.style.top = '20px';
-        muteBtn.style.right = '20px';
+        muteBtn.style.top = '26px';
+        muteBtn.style.right = '15px';
         muteBtn.style.zIndex = '1002'; 
         muteBtn.style.background = 'rgba(0, 0, 0, 0.5)';
         muteBtn.style.color = 'white';
@@ -178,8 +178,8 @@ class Game {
         
         // Style the music button
         musicBtn.style.position = 'absolute';
-        musicBtn.style.top = '20px';
-        musicBtn.style.right = '70px'; // Position directly left of mute button
+        musicBtn.style.top = '26px';
+        musicBtn.style.right = '65px'; // Position directly left of mute button
         musicBtn.style.zIndex = '1002';
         musicBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         musicBtn.style.color = 'white';
@@ -215,8 +215,8 @@ class Game {
         shopBtn.id = 'shop-btn';
         // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
-        shopBtn.style.top = '65px'; // Position below the top row (moved down from 60px)
-        shopBtn.style.right = '20px';
+        shopBtn.style.top = '71px'; // Position below the top row (moved down from 60px)
+        shopBtn.style.right = '15px';
         shopBtn.style.zIndex = '1002';
         shopBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         shopBtn.style.color = 'white';
