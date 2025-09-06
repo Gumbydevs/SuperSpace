@@ -15,6 +15,14 @@ export class InputHandler {
         this.touchButtons = {};
         
         window.addEventListener('keydown', (e) => {
+            // Don't capture keys if user is typing in an input field
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+            
+            if (isTyping) {
+                return; // Let the browser handle the key normally
+            }
+            
             // Prevent default behaviors for game control keys
             if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
                 e.preventDefault();
@@ -34,6 +42,14 @@ export class InputHandler {
         });
         
         window.addEventListener('keyup', (e) => {
+            // Don't handle key releases if user is typing in an input field
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+            
+            if (isTyping) {
+                return; // Let the browser handle the key normally
+            }
+            
             // Remove key from the array
             const index = this.keys.indexOf(e.code);
             if(index > -1) {
