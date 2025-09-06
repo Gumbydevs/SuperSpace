@@ -54,6 +54,7 @@ export class World {
         }
         
         // Here we create the initial asteroids in the world
+        this.asteroidIdCounter = 0; // Unique ID counter for asteroids
         this.asteroids = this.generateAsteroids(150);
         // Here we initialize arrays for game objects
         this.powerups = [];
@@ -363,6 +364,7 @@ export class World {
 
             // Here we create an asteroid with random position and properties
             asteroids.push({
+                id: `asteroid_${this.asteroidIdCounter++}`, // Unique identifier
                 // Random position within world bounds
                 x: (Math.random() - 0.5) * this.width,
                 y: (Math.random() - 0.5) * this.height,
@@ -463,8 +465,8 @@ export class World {
 
                     // Here we handle asteroid destruction
                     if (asteroid.health <= 0) {
-                        // Award score to player
-                        player.score += asteroid.scoreValue;
+                        // Don't update score locally - let server handle it
+                        // player.score += asteroid.scoreValue;
 
                         // Award credits based on asteroid size
                         let creditReward;
@@ -487,6 +489,12 @@ export class World {
                                     this.asteroidCreditValues.small.max
                                 );
                         }
+
+                        // Send hit event to server for multiplayer
+                        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
+                        }
+
                         player.addCredits(creditReward);
 
                         // Create explosion effect
@@ -702,6 +710,7 @@ export class World {
 
             // Create the new smaller asteroid
             const newAsteroid = {
+                id: `asteroid_${this.asteroidIdCounter++}`, // Unique identifier for new asteroid
                 x: asteroid.x + offsetX,
                 y: asteroid.y + offsetY,
                 radius: asteroid.radius * 0.55,

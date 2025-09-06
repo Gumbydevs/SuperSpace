@@ -1113,9 +1113,10 @@ export class MultiplayerManager {
         if (attackerId === this.playerId) {
             this.showGameMessage(`You destroyed ${deadPlayerName}! (+500 pts, +250 credits)`, '#4f4');
             
-            // Award credits and points if local player was the killer
+            // Don't update score locally - let server handle it
+            // Award only credits locally (server doesn't track credits in detail)
             if (this.game.player) {
-                this.game.player.score += 500;
+                // this.game.player.score += 500;  // Let server handle score
                 this.game.player.addCredits(250);
             }
         } else {
