@@ -511,7 +511,13 @@ export class World {
         
         // Here we handle asteroid spawning over time (ONLY in single player mode)
         // In multiplayer mode, server handles ALL asteroid management - ZERO local generation
-        const isMultiplayerMode = window.game && window.game.multiplayer;
+        let isMultiplayerMode = false;
+        try {
+            isMultiplayerMode = window.game && window.game.multiplayer;
+        } catch (error) {
+            console.warn('Error checking multiplayer mode for spawning:', error);
+            isMultiplayerMode = false;
+        }
         
         if (!isMultiplayerMode) {
             // Single player only - spawn asteroids over time
