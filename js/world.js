@@ -602,9 +602,9 @@
                                     console.warn(`⏰ Asteroid ${asteroid.id} timed out - removing locally (no server response)`);
                                     
                                     // Award credits and spawn powerups locally as fallback
-                                    const asteroid = this.asteroids[index];
+                                    const timedOutAsteroid = this.asteroids[index];
                                     let creditReward;
-                                    switch (asteroid.size) {
+                                    switch (timedOutAsteroid.size) {
                                         case 'large':
                                             creditReward = this.getRandomInt(
                                                 this.asteroidCreditValues.large.min,
@@ -626,12 +626,12 @@
                                     player.addCredits(creditReward);
                                     
                                     // Spawn powerups locally
-                                    if (asteroid.size !== 'small') {
+                                    if (timedOutAsteroid.size !== 'small') {
                                         if (Math.random() < 0.3) {
-                                            this.spawnPowerup(asteroid.x, asteroid.y);
+                                            this.spawnPowerup(timedOutAsteroid.x, timedOutAsteroid.y);
                                         }
                                     } else if (Math.random() < 0.1) {
-                                        this.spawnPowerup(asteroid.x, asteroid.y);
+                                        this.spawnPowerup(timedOutAsteroid.x, timedOutAsteroid.y);
                                     }
                                     
                                     this.asteroids.splice(index, 1);
