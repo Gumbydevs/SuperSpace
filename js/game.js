@@ -39,7 +39,12 @@ class Game {
 
         // Set up event listeners for menu buttons
         document.getElementById('play-btn').addEventListener('click', () => this.startGame());
-        document.getElementById('options-btn').addEventListener('click', () => this.showOptions());
+        // Use the new overlay logic for options
+        document.getElementById('options-btn').addEventListener('click', () => {
+            if (this.ui && this.ui.showOptionsOverlay) {
+                this.ui.showOptionsOverlay();
+            }
+        });
         
         // Here we create UI controls for mute, music, and shop
         this.createMuteButton();
