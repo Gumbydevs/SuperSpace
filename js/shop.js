@@ -330,7 +330,7 @@ export class ShopSystem {
         shopContainer.style.padding = '20px';
         shopContainer.style.color = 'white';
         shopContainer.style.fontFamily = 'Arial, sans-serif';
-        shopContainer.style.zIndex = '100';
+        shopContainer.style.zIndex = '200';
         
         // Header
         const header = document.createElement('div');
