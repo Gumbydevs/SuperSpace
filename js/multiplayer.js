@@ -255,6 +255,16 @@ export class MultiplayerManager {
     }
 
     setupSocketEvents() {
+        // Listen for real-time player stats updates
+        this.socket.on('playerStatsUpdate', (data) => {
+            if (data.id === this.playerId) return; // Don't overwrite local stats
+            if (this.players[data.id]) {
+                this.players[data.id].score = data.score;
+                this.players[data.id].wins = data.wins;
+                this.players[data.id].losses = data.losses;
+                this.updatePlayerList();
+            }
+        });
         // Handle connection to server
         this.socket.on('connect', () => {
             console.log('Connected to server with ID:', this.socket.id);

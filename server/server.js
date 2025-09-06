@@ -204,6 +204,13 @@ io.on('connection', (socket) => {
       if (gameState.players[socket.id]) {
         gameState.players[socket.id].score += data.points || 0;
         gameState.players[socket.id].credits += data.credits || 0;
+        // Broadcast updated stats to all clients
+        io.emit('playerStatsUpdate', {
+          id: socket.id,
+          score: gameState.players[socket.id].score,
+          wins: gameState.players[socket.id].wins || 0,
+          losses: gameState.players[socket.id].losses || 0
+        });
       }
       
       // Check if asteroid is destroyed
@@ -236,7 +243,13 @@ io.on('connection', (socket) => {
           if (gameState.players[socket.id]) {
             gameState.players[socket.id].score += 500; // Points for defeating a player
             gameState.players[socket.id].credits += 250; // Credits for defeating a player
-            
+            // Broadcast updated stats to all clients
+            io.emit('playerStatsUpdate', {
+              id: socket.id,
+              score: gameState.players[socket.id].score,
+              wins: gameState.players[socket.id].wins || 0,
+              losses: gameState.players[socket.id].losses || 0
+            });
             console.log(`Player ${gameState.players[socket.id].name} destroyed ${gameState.players[data.targetId].name}`);
           }
         }
