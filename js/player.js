@@ -74,6 +74,15 @@ export class Player {
         this.shield = 0;
         this.shieldRechargeRate = 10; // Shield points per second when recharging
         this.shieldRechargeDelay = 3; // Seconds to wait after damage before recharging
+        
+        // Shield disruption tracking
+        this.shieldDisrupted = false;
+        this.disruptionEndTime = null;
+        this.electricShockEffect = {
+            active: false,
+            startTime: 0,
+            duration: 3000 // 3 seconds
+        };
         this.lastDamageTime = 0;
 
         // Here we define the cargo system
@@ -1046,6 +1055,57 @@ export class Player {
                     ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
                     ctx.beginPath();
                     ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw electric shock effect if shields are disrupted
+            if (this.electricShockEffect && this.electricShockEffect.active) {
+                const currentTime = Date.now();
+                const elapsed = currentTime - this.electricShockEffect.startTime;
+                const intensity = 1 - (elapsed / this.electricShockEffect.duration);
+                
+                if (intensity > 0) {
+                    // Draw multiple random lightning bolts around the ship
+                    const numBolts = 8 + Math.floor(Math.random() * 6);
+                    
+                    for (let i = 0; i < numBolts; i++) {
+                        // Random angle for each bolt
+                        const angle = (Math.PI * 2 * i) / numBolts + Math.random() * 0.5;
+                        const distance = 20 + Math.random() * 15;
+                        
+                        // Calculate bolt endpoints
+                        const startX = Math.cos(angle) * 10;
+                        const startY = Math.sin(angle) * 10;
+                        const endX = Math.cos(angle) * distance;
+                        const endY = Math.sin(angle) * distance;
+                        
+                        // Draw jagged lightning bolt
+                        ctx.strokeStyle = `rgba(255, 255, 100, ${intensity * (0.7 + Math.random() * 0.3)})`;
+                        ctx.lineWidth = 1 + Math.random() * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        
+                        // Add jagged segments
+                        const segments = 3 + Math.floor(Math.random() * 3);
+                        for (let j = 1; j <= segments; j++) {
+                            const t = j / segments;
+                            const jaggedX = startX + (endX - startX) * t + (Math.random() - 0.5) * 8;
+                            const jaggedY = startY + (endY - startY) * t + (Math.random() - 0.5) * 8;
+                            ctx.lineTo(jaggedX, jaggedY);
+                        }
+                        ctx.stroke();
+                    }
+                    
+                    // Add electric aura around ship
+                    const auraGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
+                    auraGradient.addColorStop(0, `rgba(255, 255, 0, ${intensity * 0.3})`);
+                    auraGradient.addColorStop(0.5, `rgba(255, 100, 0, ${intensity * 0.2})`);
+                    auraGradient.addColorStop(1, `rgba(255, 0, 0, 0)`);
+                    
+                    ctx.fillStyle = auraGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }

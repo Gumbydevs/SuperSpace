@@ -452,6 +452,9 @@ export class MultiplayerManager {
         this.socket.on('shieldDisruption', (data) => {
             if (data.targetId === this.playerId) {
                 this.handleShieldDisruption(data.duration, data.attackerId);
+            } else {
+                // Handle shield disruption for remote players (visual effects only)
+                this.handleRemoteShieldDisruption(data.targetId, data.duration);
             }
         });
 
@@ -903,7 +906,13 @@ export class MultiplayerManager {
             wins: playerData.wins || 0,
             losses: playerData.losses || 0,
             projectiles: [],
-            destroyed: false // Add destroyed flag
+            destroyed: false, // Add destroyed flag
+            // Initialize electric shock effect
+            electricShockEffect: {
+                active: false,
+                startTime: 0,
+                duration: 3000
+            }
         };
         
         this.players[playerData.id] = player;
@@ -1124,6 +1133,13 @@ export class MultiplayerManager {
         this.game.player.shieldDisrupted = true;
         this.game.player.disruptionEndTime = Date.now() + (duration * 1000);
         
+        // Activate electric shock visual effect
+        this.game.player.electricShockEffect = {
+            active: true,
+            startTime: Date.now(),
+            duration: duration * 1000
+        };
+        
         // Set up a timer to restore shields
         setTimeout(() => {
             if (this.game.player && this.game.player.shieldDisrupted && 
@@ -1131,6 +1147,7 @@ export class MultiplayerManager {
                 this.game.player.shield = originalShield;
                 this.game.player.shieldDisrupted = false;
                 this.game.player.disruptionEndTime = null;
+                this.game.player.electricShockEffect.active = false;
                 
                 // Show shield restoration message
                 this.showGameMessage('Shields restored!', '#4f4');
@@ -1140,6 +1157,38 @@ export class MultiplayerManager {
         // Show disruption message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Shields disrupted by ${attacker}!`, '#f84');
+    }
+
+    // Handle shield disruption for remote players (visual effects only)
+    handleRemoteShieldDisruption(targetId, duration) {
+        const remotePlayer = this.players[targetId];
+        if (!remotePlayer) return;
+        
+        // Store original shield value
+        const originalShield = remotePlayer.shield;
+        
+        // Disable shield visually for remote player
+        remotePlayer.shield = 0;
+        remotePlayer.shieldDisrupted = true;
+        remotePlayer.disruptionEndTime = Date.now() + (duration * 1000);
+        
+        // Activate electric shock visual effect
+        remotePlayer.electricShockEffect = {
+            active: true,
+            startTime: Date.now(),
+            duration: duration * 1000
+        };
+        
+        // Set up a timer to restore shield visuals
+        setTimeout(() => {
+            if (remotePlayer && remotePlayer.shieldDisrupted && 
+                remotePlayer.disruptionEndTime <= Date.now()) {
+                remotePlayer.shield = originalShield;
+                remotePlayer.shieldDisrupted = false;
+                remotePlayer.disruptionEndTime = null;
+                remotePlayer.electricShockEffect.active = false;
+            }
+        }, duration * 1000);
     }
 
     // Handle player death (local)
@@ -1533,7 +1582,13 @@ export class MultiplayerManager {
                 name: this.playerNameCache[playerId] || 'Unknown', // Use cached name if available
                 color: this.getRandomPlayerColor(),
                 projectiles: [],
-                destroyed: false
+                destroyed: false,
+                // Initialize electric shock effect
+                electricShockEffect: {
+                    active: false,
+                    startTime: 0,
+                    duration: 3000
+                }
             };
             
             // Request current player data from server to get correct name
@@ -1996,6 +2051,62 @@ export class MultiplayerManager {
                         ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
                         ctx.fill();
                     }
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw electric shock effect if shields are disrupted
+            if (player.electricShockEffect && player.electricShockEffect.active) {
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                
+                const currentTime = Date.now();
+                const elapsed = currentTime - player.electricShockEffect.startTime;
+                const intensity = 1 - (elapsed / player.electricShockEffect.duration);
+                
+                if (intensity > 0) {
+                    // Draw multiple random lightning bolts around the ship
+                    const numBolts = 8 + Math.floor(Math.random() * 6);
+                    
+                    for (let i = 0; i < numBolts; i++) {
+                        // Random angle for each bolt
+                        const angle = (Math.PI * 2 * i) / numBolts + Math.random() * 0.5;
+                        const distance = 20 + Math.random() * 15;
+                        
+                        // Calculate bolt endpoints
+                        const startX = Math.cos(angle) * 10;
+                        const startY = Math.sin(angle) * 10;
+                        const endX = Math.cos(angle) * distance;
+                        const endY = Math.sin(angle) * distance;
+                        
+                        // Draw jagged lightning bolt
+                        ctx.strokeStyle = `rgba(255, 255, 100, ${intensity * (0.7 + Math.random() * 0.3)})`;
+                        ctx.lineWidth = 1 + Math.random() * 2;
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        
+                        // Add jagged segments
+                        const segments = 3 + Math.floor(Math.random() * 3);
+                        for (let j = 1; j <= segments; j++) {
+                            const t = j / segments;
+                            const jaggedX = startX + (endX - startX) * t + (Math.random() - 0.5) * 8;
+                            const jaggedY = startY + (endY - startY) * t + (Math.random() - 0.5) * 8;
+                            ctx.lineTo(jaggedX, jaggedY);
+                        }
+                        ctx.stroke();
+                    }
+                    
+                    // Add electric aura around ship
+                    const auraGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
+                    auraGradient.addColorStop(0, `rgba(255, 255, 0, ${intensity * 0.3})`);
+                    auraGradient.addColorStop(0.5, `rgba(255, 100, 0, ${intensity * 0.2})`);
+                    auraGradient.addColorStop(1, `rgba(255, 0, 0, 0)`);
+                    
+                    ctx.fillStyle = auraGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2);
+                    ctx.fill();
                 }
                 
                 ctx.restore();

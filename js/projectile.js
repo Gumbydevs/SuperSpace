@@ -262,12 +262,20 @@ export class Projectile {
             target.shieldDisrupted = true;
             target.disruptionEndTime = Date.now() + (this.disruptionDuration * 1000);
             
+            // Activate electric shock visual effect
+            target.electricShockEffect = {
+                active: true,
+                startTime: Date.now(),
+                duration: this.disruptionDuration * 1000
+            };
+            
             // Set up a timer to restore shields
             setTimeout(() => {
                 if (target.shieldDisrupted && target.disruptionEndTime <= Date.now()) {
                     target.shield = originalShield;
                     target.shieldDisrupted = false;
                     target.disruptionEndTime = null;
+                    target.electricShockEffect.active = false;
                 }
             }, this.disruptionDuration * 1000);
             
