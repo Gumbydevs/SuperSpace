@@ -1993,9 +1993,13 @@ export class MultiplayerManager {
 
     // Handle asteroid destruction with fragments from server
     handleAsteroidDestroyedWithFragments(data) {
+        console.log('Handling asteroid destruction with fragments:', data);
+        
         // Find and remove the original asteroid by ID
         for (let i = 0; i < this.game.world.asteroids.length; i++) {
             if (this.game.world.asteroids[i].id === data.asteroidId) {
+                console.log(`Found asteroid ${data.asteroidId} to destroy at index ${i}`);
+                
                 // Create explosion effect
                 this.game.world.createExplosion(
                     this.game.world.asteroids[i].x, 
@@ -2005,12 +2009,14 @@ export class MultiplayerManager {
                 
                 // Remove the original asteroid
                 this.game.world.asteroids.splice(i, 1);
+                console.log(`Removed original asteroid ${data.asteroidId}`);
                 break;
             }
         }
         
         // Add any fragments from the server
         if (data.fragments && data.fragments.length > 0) {
+            console.log(`Adding ${data.fragments.length} fragments:`, data.fragments);
             data.fragments.forEach(fragment => {
                 const size = fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small';
                 const scoreValue = size === 'large' ? 50 : size === 'medium' ? 20 : 10;
@@ -2027,8 +2033,11 @@ export class MultiplayerManager {
                     size: size,
                     scoreValue: scoreValue
                 });
+                console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
             });
-            console.log(`Added ${data.fragments.length} asteroid fragments from server`);
+            console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
+        } else {
+            console.log('No fragments in server response');
         }
     }
 

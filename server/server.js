@@ -319,6 +319,8 @@ io.on('connection', (socket) => {
           if (asteroid.radius > 30) { // Only split larger asteroids
             if (Math.random() < 0.7) { // 70% chance to split
               const fragmentCount = 2 + Math.floor(Math.random() * 3); // 2-4 fragments
+              console.log(`Creating ${fragmentCount} fragments for asteroid ${data.id} with radius ${asteroid.radius}`);
+              
               for (let i = 0; i < fragmentCount; i++) {
                 const angle = (Math.PI * 2 / fragmentCount) * i + Math.random() * 0.5;
                 const distance = 20 + Math.random() * 30;
@@ -337,8 +339,13 @@ io.on('connection', (socket) => {
                 
                 fragments.push(fragment);
                 gameState.asteroids.push(fragment);
+                console.log(`Created fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
               }
+            } else {
+              console.log(`Asteroid ${data.id} destroyed without splitting (30% chance)`);
             }
+          } else {
+            console.log(`Asteroid ${data.id} too small to split (radius: ${asteroid.radius})`);
           }
           
           // Remove original asteroid from server state
@@ -355,7 +362,7 @@ io.on('connection', (socket) => {
             fragments: fragments // Include fragment data
           });
           
-          console.log(`Asteroid ${data.id} destroyed by player ${socket.id}. Created ${fragments.length} fragments. ${gameState.asteroids.length} asteroids remaining.`);
+          console.log(`Asteroid ${data.id} destroyed by player ${socket.id}. Created ${fragments.length} fragments. Broadcasting to all clients. ${gameState.asteroids.length} asteroids remaining.`);
         } else {
           // Broadcast asteroid hit (damage) to all clients
           io.emit('asteroidHit', {

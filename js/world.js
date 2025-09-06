@@ -583,6 +583,11 @@
 
             // Here we check for collisions with player projectiles
             player.projectiles.forEach((projectile, j) => {
+                // Skip asteroids that are pending destruction
+                if (asteroid.pendingDestruction) {
+                    return;
+                }
+                
                 const dx = projectile.x - asteroid.x;
                 const dy = projectile.y - asteroid.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -663,10 +668,11 @@
                         }
                         
                         if (isMultiplayerMode) {
-                            // In multiplayer: immediately remove asteroid locally for responsive gameplay
-                            // Server will handle authoritative state and send updates to other players
-                            this.asteroids.splice(i, 1);
-                            console.log(`Asteroid ${asteroid.id} destroyed locally - server handling sync to other players`);
+                            // In multiplayer: DO NOT remove asteroid locally - wait for server response
+                            // Server will send asteroidDestroyed event with fragments that all players will see
+                            console.log(`Asteroid ${asteroid.id} destroyed - waiting for server fragments`);
+                            // Mark asteroid as pending destruction to prevent multiple hits
+                            asteroid.pendingDestruction = true;
                         } else {
                             // Fallback for offline mode
                             if (asteroid.size !== 'small') {
