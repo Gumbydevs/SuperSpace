@@ -276,7 +276,9 @@ export class MultiplayerManager {
         
         // Listen for real-time player health updates
         this.socket.on('playerHealthUpdate', (data) => {
+            console.log('Received playerHealthUpdate:', data);
             if (data.id !== this.playerId && this.players[data.id]) {
+                console.log(`Updating player ${this.players[data.id].name} health from ${this.players[data.id].health} to ${data.health}`);
                 this.players[data.id].health = data.health;
             }
         });

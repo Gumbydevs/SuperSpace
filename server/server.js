@@ -145,12 +145,12 @@ io.on('connection', (socket) => {
     
     const player = gameState.players[socket.id];
     if (player) {
-      // Update player state
+      // Update player state (but NOT health - server manages health)
       player.x = data.x;
       player.y = data.y;
       player.rotation = data.rotation;
       player.velocity = data.velocity;
-      player.health = data.health;
+      // player.health = data.health; // REMOVED - server manages health, not clients
       player.ship = data.ship;
       player.color = data.color || player.color;
       
@@ -238,7 +238,11 @@ io.on('connection', (socket) => {
       
       // Update target player health
       if (gameState.players[data.targetId]) {
+        const oldHealth = gameState.players[data.targetId].health;
         gameState.players[data.targetId].health -= data.damage;
+        const newHealth = gameState.players[data.targetId].health;
+        
+        console.log(`Player ${gameState.players[data.targetId].name} took ${data.damage} damage. Health: ${oldHealth} -> ${newHealth}`);
         
         // Broadcast updated health to all clients
         io.emit('playerHealthUpdate', {
