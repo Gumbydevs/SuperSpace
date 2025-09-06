@@ -1065,6 +1065,13 @@ export class Player {
                 const elapsed = currentTime - this.electricShockEffect.startTime;
                 const intensity = 1 - (elapsed / this.electricShockEffect.duration);
                 
+                // Debug log to verify rendering
+                console.log('Rendering electric shock effect:', {
+                    elapsed: elapsed,
+                    duration: this.electricShockEffect.duration,
+                    intensity: intensity
+                });
+                
                 if (intensity > 0) {
                     // Draw multiple random lightning bolts around the ship
                     const numBolts = 8 + Math.floor(Math.random() * 6);
