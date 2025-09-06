@@ -331,9 +331,9 @@ export class Projectile {
         }
         
         // Apply area damage to other players in multiplayer (if applicable)
-        if (world.players && window.game && window.game.player) {
-            world.players.forEach(player => {
-                if (!player.visible || player.health <= 0 || player === window.game.player) return;
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            Object.values(window.game.multiplayer.players).forEach(player => {
+                if (player.destroyed || player.health <= 0) return;
                 
                 // Calculate distance from explosion center to player
                 const dx = player.x - this.x;
@@ -347,8 +347,11 @@ export class Projectile {
                     
                     // Apply explosion damage with falloff
                     const explosionDamage = this.explosionDamage * damageFalloff;
-                    if (explosionDamage > 0 && player.takeDamage) {
-                        player.takeDamage(explosionDamage);
+                    if (explosionDamage > 0) {
+                        // Send damage to remote player through multiplayer system
+                        if (window.game.multiplayer) {
+                            window.game.multiplayer.sendHit('player', player.id, explosionDamage);
+                        }
                     }
                 }
             });
