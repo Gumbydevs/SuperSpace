@@ -1224,7 +1224,7 @@ export class MultiplayerManager {
             type: projectileData.type || 'laser',
             color: projectileData.color || '#f00',
             // Enhanced projectile properties for proper visual rendering
-            speed: projectileData.speed || 300,
+            speed: projectileData.speed || (projectileData.type === 'missile' && projectileData.homing ? 350 : 300), // Slower for homing missiles
             range: projectileData.range || 800,
             homing: projectileData.homing || false,
             splashRadius: projectileData.splashRadius || 0,
@@ -1247,6 +1247,61 @@ export class MultiplayerManager {
             remoteId: playerId,
             // Add update method for remote projectiles to handle trails and homing
             update: function(deltaTime, world) {
+                // Implement homing behavior for seeker missiles
+                if (this.homing && this.type === 'missile' && world) {
+                    // Find nearest target (players or asteroids)
+                    let nearest = null;
+                    let nearestDist = Infinity;
+                    
+                    // Check for multiplayer players first
+                    if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+                        Object.values(window.game.multiplayer.players).forEach(p => {
+                            if (p.destroyed || p.health <= 0) return;
+                            const dx = p.x - this.x;
+                            const dy = p.y - this.y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist < nearestDist && dist > 50) { // Avoid self-targeting at close range
+                                nearest = p;
+                                nearestDist = dist;
+                            }
+                        });
+                    }
+                    
+                    // Also check local player as potential target
+                    if (window.game && window.game.player) {
+                        const dx = window.game.player.x - this.x;
+                        const dy = window.game.player.y - this.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < nearestDist && dist > 50) {
+                            nearest = window.game.player;
+                            nearestDist = dist;
+                        }
+                    }
+                    
+                    // Apply homing behavior if target found
+                    if (nearest) {
+                        // Calculate direction to target
+                        const dx = nearest.x - this.x;
+                        const dy = nearest.y - this.y;
+                        const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
+                        
+                        // Gradually adjust missile angle towards target
+                        const turnSpeed = 5.0 * deltaTime; // Smooth turning for visual appeal
+                        let angleDiff = angleToTarget - this.angle;
+                        
+                        // Normalize angle difference to between -PI and PI
+                        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                        
+                        // Apply steering with smooth turning
+                        this.angle += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), turnSpeed);
+                        
+                        // Update velocity based on new angle
+                        this.velocity.x = Math.sin(this.angle) * this.speed;
+                        this.velocity.y = -Math.cos(this.angle) * this.speed;
+                    }
+                }
+                
                 // Update position
                 this.x += this.velocity.x * deltaTime;
                 this.y += this.velocity.y * deltaTime;

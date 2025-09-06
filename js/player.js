@@ -735,13 +735,13 @@ export class Player {
                 break;
                 
             case 'Seeker Missile':
-                // Fire a single homing missile
+                // Fire a single homing missile - slower for better tracking visibility
                 projectiles.push(new Projectile(
                     this.x, this.y,
                     this.rotation,
                     'missile',
                     weaponStats ? weaponStats.damage : 15, // Reduced fallback damage
-                    weaponStats ? weaponStats.speed : 500, // Slower speed
+                    weaponStats ? weaponStats.speed : 350, // Slower speed for better homing visualization
                     weaponStats ? weaponStats.range : 1000, // Longer range
                     true  // Homing capability
                 ));
