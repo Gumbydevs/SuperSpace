@@ -67,7 +67,7 @@ export class World {
             console.log('Single player mode - generating local asteroids');
             this.asteroids = this.generateAsteroids(150);
         } else {
-            console.log('Multiplayer mode - waiting for server asteroids, NO local generation');
+            console.log('Multiplayer mode detected - waiting for server asteroids, NO local generation');
         }
         // Here we initialize arrays for game objects
         this.powerups = [];
