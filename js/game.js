@@ -215,7 +215,7 @@ class Game {
         shopBtn.id = 'shop-btn';
         // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
-        shopBtn.style.top = '71px'; // Position below the top row (moved down from 60px)
+        shopBtn.style.top = '76px'; // Position below the top row (moved down from 60px)
         shopBtn.style.right = '15px';
         shopBtn.style.zIndex = '1002';
         shopBtn.style.background = 'rgba(0, 0, 50, 0.7)';
