@@ -223,6 +223,85 @@ input[type="range"] {
     background: #33f;
 }
 
+/* Branding styles for main menu */
+#branding {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: #8af;
+    font-size: 14px;
+}
+
+.copyright {
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.links a {
+    color: #4af;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.links a:hover {
+    color: #fff;
+    background: rgba(68, 170, 255, 0.2);
+    border-color: #4af;
+    text-shadow: 0 0 5px #4af;
+}
+
+/* Branding styles for options overlay */
+.branding-section {
+    border-top: 1px solid #334;
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.game-branding {
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.copyright-text {
+    color: #8af;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+.brand-links {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.brand-link {
+    color: #4af;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    font-size: 0.9em;
+}
+
+.brand-link:hover {
+    color: #fff;
+    background: rgba(68, 170, 255, 0.2);
+    border-color: #4af;
+    text-shadow: 0 0 5px #4af;
+}
+
 /* Mobile responsiveness for touch controls */
 @media (hover: none) and (pointer: coarse) {
     /* Adjust UI elements to avoid overlap with touch controls */
