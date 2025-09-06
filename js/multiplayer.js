@@ -2021,6 +2021,13 @@ export class MultiplayerManager {
                 const size = fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small';
                 const scoreValue = size === 'large' ? 50 : size === 'medium' ? 20 : 10;
                 
+                // Use the server-provided seed to generate deterministic vertices
+                let vertices;
+                if (fragment.seed !== undefined) {
+                    vertices = this.game.world.generateAsteroidVertices(8, 0.4, fragment.seed);
+                } else {
+                    vertices = this.game.world.generateAsteroidVertices(Math.floor(6 + Math.random() * 4), 0.5);
+                }
                 this.game.world.asteroids.push({
                     id: fragment.id,
                     x: fragment.x,
@@ -2032,8 +2039,7 @@ export class MultiplayerManager {
                     rotationSpeed: fragment.rotationSpeed,
                     size: size,
                     scoreValue: scoreValue,
-                    // Generate vertices for rendering - this was missing!
-                    vertices: this.game.world.generateAsteroidVertices(Math.floor(6 + Math.random() * 4), 0.5)
+                    vertices: vertices
                 });
                 console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
             });

@@ -490,12 +490,25 @@
 
     generateAsteroidVertices(count, irregularity) {
         // Here we create irregular polygon shapes for asteroids
+        // Optionally accept a seed for deterministic generation
+        let seed = undefined;
+        if (typeof arguments[2] !== 'undefined') {
+            seed = arguments[2];
+        }
+        let randomFunc = Math.random;
+        if (seed !== undefined) {
+            let s = seed;
+            randomFunc = function() {
+                var x = Math.sin(s++) * 10000;
+                return x - Math.floor(x);
+            };
+        }
         const vertices = [];
         for (let i = 0; i < count; i++) {
-            // Calculate angle for this vertex (evenly distributed around 360Â°)
+            // Calculate angle for this vertex (evenly distributed around 360°)
             const angle = (i / count) * Math.PI * 2;
             // Vary the radius to create an irregular shape
-            const radius = 1 + (Math.random() * irregularity * 2 - irregularity);
+            const radius = 1 + (randomFunc() * irregularity * 2 - irregularity);
             // Add the vertex using polar coordinates
             vertices.push({
                 x: Math.cos(angle) * radius,

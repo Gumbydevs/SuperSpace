@@ -322,10 +322,15 @@ io.on('connection', (socket) => {
               console.log(`Creating ${fragmentCount} fragments for asteroid ${data.id} with radius ${asteroid.radius}`);
               
               for (let i = 0; i < fragmentCount; i++) {
-                const angle = (Math.PI * 2 / fragmentCount) * i + Math.random() * 0.5;
-                const distance = 20 + Math.random() * 30;
-                const fragmentRadius = asteroid.radius * 0.3 + Math.random() * asteroid.radius * 0.2; // 30-50% of original size
-                
+                // Generate a random seed for this fragment
+                const seed = Math.floor(Math.random() * 1e9);
+                function seededRandom(seed) {
+                  var x = Math.sin(seed++) * 10000;
+                  return x - Math.floor(x);
+                }
+                const angle = (Math.PI * 2 / fragmentCount) * i + seededRandom(seed) * 0.5;
+                const distance = 20 + seededRandom(seed + 1) * 30;
+                const fragmentRadius = asteroid.radius * 0.3 + seededRandom(seed + 2) * asteroid.radius * 0.2;
                 const fragment = {
                   id: `fragment-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
                   x: asteroid.x + Math.cos(angle) * distance,
@@ -333,13 +338,13 @@ io.on('connection', (socket) => {
                   radius: fragmentRadius,
                   health: fragmentRadius * 1.5, // Fragments are a bit weaker
                   type: asteroid.type,
-                  rotation: Math.random() * Math.PI * 2,
-                  rotationSpeed: (Math.random() - 0.5) * 0.3
+                  rotation: seededRandom(seed + 3) * Math.PI * 2,
+                  rotationSpeed: (seededRandom(seed + 4) - 0.5) * 0.3,
+                  seed: seed
                 };
-                
                 fragments.push(fragment);
                 gameState.asteroids.push(fragment);
-                console.log(`Created fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
+                console.log(`Created fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}, seed ${seed}`);
               }
             } else {
               console.log(`Asteroid ${data.id} destroyed without splitting (30% chance)`);
