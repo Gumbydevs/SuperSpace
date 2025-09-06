@@ -397,6 +397,23 @@ input[type="range"] {
     color: #ffcc02;
 }
 
+.disclaimer-content .disclaimer-list {
+    text-align: center;
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.disclaimer-content .disclaimer-list li {
+    margin: 8px 0;
+    list-style-type: none;
+    color: #ffcc02;
+}
+
+.disclaimer-content .disclaimer-list li::before {
+    content: "⚠️ ";
+}
+
 .disclaimer-content li {
     margin: 8px 0;
     list-style-type: "⚠️ ";
