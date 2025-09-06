@@ -1,4 +1,25 @@
 export class World {
+    // Generate an array of new powerups
+    generatePowerups(count = 1) {
+        const powerups = [];
+        for (let i = 0; i < count; i++) {
+            // Random position within world bounds
+            const x = this.getRandomInt(-this.width / 2 + 50, this.width / 2 - 50);
+            const y = this.getRandomInt(-this.height / 2 + 50, this.height / 2 - 50);
+            // Random type
+            const types = ['health', 'shield', 'energy', 'credits'];
+            const selectedType = types[Math.floor(Math.random() * types.length)];
+            powerups.push({
+                x,
+                y,
+                type: selectedType,
+                radius: 15,
+                pulsePhase: Math.random() * Math.PI * 2,
+                pulseSpeed: 5 + Math.random() * 2
+            });
+        }
+        return powerups;
+    }
     constructor() {
         // Here we define the game world dimensions
         this.width = 10000;
