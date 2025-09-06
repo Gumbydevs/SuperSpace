@@ -210,9 +210,12 @@ io.on('connection', (socket) => {
       
       // Award points and credits to the player
       if (gameState.players[socket.id]) {
+        const oldScore = gameState.players[socket.id].score;
         gameState.players[socket.id].score += data.points || 0;
         gameState.players[socket.id].credits += data.credits || 0;
+        console.log(`Player ${gameState.players[socket.id].name} scored ${data.points || 0} points. Score: ${oldScore} -> ${gameState.players[socket.id].score}`);
         // Broadcast updated stats to all clients
+        console.log(`Broadcasting score update for asteroid kill: ${socket.id}`);
         io.emit('playerStatsUpdate', {
           id: socket.id,
           score: gameState.players[socket.id].score,
@@ -245,6 +248,7 @@ io.on('connection', (socket) => {
         console.log(`Player ${gameState.players[data.targetId].name} took ${data.damage} damage. Health: ${oldHealth} -> ${newHealth}`);
         
         // Broadcast updated health to all clients
+        console.log(`Broadcasting health update for player ${data.targetId}: health = ${newHealth}`);
         io.emit('playerHealthUpdate', {
           id: data.targetId,
           health: gameState.players[data.targetId].health
@@ -262,7 +266,9 @@ io.on('connection', (socket) => {
             gameState.players[socket.id].score += 500; // Points for defeating a player
             gameState.players[socket.id].credits += 250; // Credits for defeating a player
             gameState.players[socket.id].wins += 1; // Increment wins for attacker
+            console.log(`Player ${gameState.players[socket.id].name} got a win! Wins: ${gameState.players[socket.id].wins}`);
             // Broadcast updated stats to all clients
+            console.log(`Broadcasting attacker stats update for ${socket.id}`);
             io.emit('playerStatsUpdate', {
               id: socket.id,
               score: gameState.players[socket.id].score,
@@ -275,7 +281,9 @@ io.on('connection', (socket) => {
           // Increment losses for the destroyed player
           if (gameState.players[data.targetId]) {
             gameState.players[data.targetId].losses += 1;
+            console.log(`Player ${gameState.players[data.targetId].name} got a loss! Losses: ${gameState.players[data.targetId].losses}`);
             // Broadcast updated stats to all clients
+            console.log(`Broadcasting victim stats update for ${data.targetId}`);
             io.emit('playerStatsUpdate', {
               id: data.targetId,
               score: gameState.players[data.targetId].score,

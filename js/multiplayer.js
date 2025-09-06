@@ -257,8 +257,10 @@ export class MultiplayerManager {
     setupSocketEvents() {
         // Listen for real-time player stats updates
         this.socket.on('playerStatsUpdate', (data) => {
+            console.log('Received playerStatsUpdate:', data);
             if (data.id === this.playerId) {
                 // Update local player stats
+                console.log('Updating LOCAL player stats:', data);
                 if (this.game.player) {
                     this.game.player.wins = data.wins;
                     this.game.player.losses = data.losses;
@@ -267,10 +269,13 @@ export class MultiplayerManager {
                 }
                 this.updatePlayerList();
             } else if (this.players[data.id]) {
+                console.log('Updating REMOTE player stats:', data);
                 this.players[data.id].score = data.score;
                 this.players[data.id].wins = data.wins;
                 this.players[data.id].losses = data.losses;
                 this.updatePlayerList();
+            } else {
+                console.log('Received stats update for unknown player:', data.id);
             }
         });
         
