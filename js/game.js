@@ -539,7 +539,8 @@ class Game {
             if (this.shop.shopOpen) return;
             
             // Here we handle thruster sound based on player input and afterburner
-            const isThrusting = this.input.keys && Array.isArray(this.input.keys) && this.input.keys.includes('ArrowUp');
+            const isThrusting = this.input.keys && Array.isArray(this.input.keys) && 
+                (this.input.keys.includes('ArrowUp') || this.input.keys.includes('KeyW'));
             const isAfterburning = this.player.afterburnerActive;
             
             if (isThrusting) {

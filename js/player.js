@@ -139,10 +139,10 @@ export class Player {
             // Standard keyboard controls
             
             // Here we handle rotation based on player input
-            if (input.keys.includes('ArrowLeft')) {
+            if (input.keys.includes('ArrowLeft') || input.keys.includes('KeyA')) {
                 this.rotation -= this.rotationSpeed * deltaTime;
             }
-            if (input.keys.includes('ArrowRight')) {
+            if (input.keys.includes('ArrowRight') || input.keys.includes('KeyD')) {
                 this.rotation += this.rotationSpeed * deltaTime;
             }
     
@@ -151,7 +151,7 @@ export class Player {
             if (this.rotation < 0) this.rotation += Math.PI * 2;
     
             // Here we handle thrust/acceleration
-            if (input.keys.includes('ArrowUp')) {
+            if (input.keys.includes('ArrowUp') || input.keys.includes('KeyW')) {
                 // Calculate acceleration components based on ship's rotation
                 // Sine for X because 0 radians points up in our coordinate system
                 const accelerationX = Math.sin(this.rotation) * this.acceleration * deltaTime;
@@ -165,7 +165,7 @@ export class Player {
 
         // Update engine thrust animation level
         // Set target thrust level based on input
-        if (input.keys.includes('ArrowUp') || (input.thrustAmount && input.thrustAmount > 0)) {
+        if (input.keys.includes('ArrowUp') || input.keys.includes('KeyW') || (input.thrustAmount && input.thrustAmount > 0)) {
             this.targetThrustLevel = input.thrustAmount ? input.thrustAmount : 1.0;
         } else {
             this.targetThrustLevel = 0;
@@ -222,7 +222,7 @@ export class Player {
         }
 
         // Here we check if player is braking (using down arrow)
-        this.braking = input.keys.includes('ArrowDown');
+        this.braking = input.keys.includes('ArrowDown') || input.keys.includes('KeyS');
 
         // Here we apply physics based on whether the player is braking or coasting
         if (this.braking) {

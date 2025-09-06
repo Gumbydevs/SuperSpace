@@ -16,7 +16,7 @@ export class InputHandler {
         
         window.addEventListener('keydown', (e) => {
             // Prevent default behaviors for game control keys
-            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
                 e.preventDefault();
             }
             
@@ -56,6 +56,18 @@ export class InputHandler {
         
         // Add touch controls for mobile
         this.setupTouchControls();
+    }
+    
+    // Helper function to remove all direction keys (both arrow keys and WASD)
+    removeAllDirectionKeys() {
+        this.removeKey('ArrowUp');
+        this.removeKey('ArrowDown');
+        this.removeKey('ArrowLeft');
+        this.removeKey('ArrowRight');
+        this.removeKey('KeyW');
+        this.removeKey('KeyA');
+        this.removeKey('KeyS');
+        this.removeKey('KeyD');
     }
 
     detectTouchDevice() {
@@ -383,10 +395,7 @@ export class InputHandler {
     
     handleDirectJoystickControl() {
         // Remove all direction keys first
-        this.removeKey('ArrowUp');
-        this.removeKey('ArrowDown');
-        this.removeKey('ArrowLeft');
-        this.removeKey('ArrowRight');
+        this.removeAllDirectionKeys();
         
         // Only apply controls if the joystick is moved enough
         if (this.touchJoystick.magnitude > 0.2) {
@@ -428,10 +437,7 @@ export class InputHandler {
             this.thrustAmount = 0;
             
             // Remove all direction keys
-            this.removeKey('ArrowUp');
-            this.removeKey('ArrowDown');
-            this.removeKey('ArrowLeft');
-            this.removeKey('ArrowRight');
+            this.removeAllDirectionKeys();
         } else {
             // Check if joystick touch is still active
             let joystickTouchActive = false;
@@ -461,10 +467,7 @@ export class InputHandler {
                 this.thrustAmount = 0;
                 
                 // Remove all direction keys
-                this.removeKey('ArrowUp');
-                this.removeKey('ArrowDown');
-                this.removeKey('ArrowLeft');
-                this.removeKey('ArrowRight');
+                this.removeAllDirectionKeys();
             }
         }
     }
