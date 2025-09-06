@@ -59,7 +59,7 @@ export class World {
         // or by generateAsteroids in single player mode
         this.asteroids = [];
         
-        // NEVER generate local asteroids in multiplayer mode
+        // NEVER generate local asteroids in multiplayer mode 
         // Only generate asteroids if explicitly in single player mode
         // In multiplayer, ALL asteroids come from server via setupServerAsteroidField
         let isMultiplayerMode = false;
