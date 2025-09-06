@@ -809,6 +809,47 @@ export class Player {
                 }
                 break;
                 
+            case 'Rocket Launcher':
+                // Fire an explosive rocket
+                const rocketProj = new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'rocket',
+                    weaponStats ? weaponStats.damage : 45, // High direct damage
+                    weaponStats ? weaponStats.speed : 400, // Medium speed
+                    weaponStats ? weaponStats.range : 700, // Good range
+                    false, // Not homing
+                    0, // No splash radius (uses explosion instead)
+                    weaponStats ? weaponStats.explosionRadius : 80, // Explosion radius
+                    weaponStats ? weaponStats.explosionDamage : 25 // Explosion damage
+                );
+                
+                // Set rocket visual properties
+                rocketProj.color = '#ff4';
+                rocketProj.trail = true;
+                rocketProj.trailColor = '#fa0';
+                rocketProj.explosive = true;
+                
+                projectiles.push(rocketProj);
+                
+                // Play rocket sound
+                if (soundManager) {
+                    soundManager.play('rocket', { 
+                        volume: 0.8,
+                        position: { x: this.x, y: this.y }
+                    });
+                    
+                    // If rocket sound doesn't exist, use a fallback sound
+                    if (!soundManager.isSoundLoaded('rocket')) {
+                        soundManager.play('laser', {
+                            volume: 0.8,
+                            playbackRate: 0.5,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
+                }
+                break;
+                
             default:
                 // Fallback to basic laser if weapon not recognized
                 projectiles.push(new Projectile(

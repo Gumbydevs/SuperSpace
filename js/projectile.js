@@ -1,11 +1,11 @@
 export class Projectile {
-    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0) {
+    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0) {
         // Here we set the projectile's starting position
         this.x = x;
         this.y = y;
         // Here we set the direction the projectile travels
         this.angle = angle;
-        // Here we define the type of projectile (laser, burst, missile, plasma, quantum)
+        // Here we define the type of projectile (laser, burst, missile, plasma, quantum, rocket)
         this.type = type;
         // Here we set the damage this projectile does when hitting targets
         this.damage = damage;
@@ -24,12 +24,15 @@ export class Projectile {
         };
         // New properties for advanced projectile types
         this.splashRadius = splashRadius; // For plasma cannon
+        this.explosionRadius = explosionRadius; // For rocket launcher
+        this.explosionDamage = explosionDamage; // Explosion damage for rockets
         this.phasing = false; // For quantum disruptor to pass through obstacles
         this.glow = false; // Visual effect for some projectiles
         this.trail = false; // Whether to leave a trail
         this.trailColor = null; // Color of the trail if enabled
         this.size = null; // Custom size value for specific projectiles
         this.trailParticles = []; // Stores trail particle data
+        this.explosive = false; // Whether projectile explodes on impact
         
         // Here we define visual properties based on projectile type
         switch (type) {
@@ -67,6 +70,15 @@ export class Projectile {
                 this.color = '#fff';  // White color with glow
                 this.glow = true;
                 this.phasing = true;
+                break;
+            case 'rocket':
+                // Explosive rocket projectile
+                this.width = 5;
+                this.height = 14;
+                this.color = '#ff4';  // Yellow-orange color
+                this.trail = true;
+                this.trailColor = '#fa0';
+                this.explosive = true;
                 break;
             default:
                 // Default fallback appearance
@@ -209,6 +221,36 @@ export class Projectile {
             entity.takeDamage(splashDamage);
         });
         */
+    }
+    
+    // Method to create explosive area damage when rocket hits
+    createExplosion(world, soundManager) {
+        if (!this.explosionRadius || !world) return;
+        
+        // Create visual explosion effect (larger than splash)
+        world.createExplosion(
+            this.x, 
+            this.y, 
+            this.explosionRadius, // Size of explosion
+            soundManager,
+            'rocket' // Explosion type for different visual/sound effects
+        );
+        
+        // Apply area damage to all entities within explosion radius
+        const entitiesInRange = world.getEntitiesInRadius(this.x, this.y, this.explosionRadius);
+        entitiesInRange.forEach(entity => {
+            // Calculate damage falloff based on distance from explosion center
+            const dx = entity.x - this.x;
+            const dy = entity.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const damageFalloff = Math.max(0, 1 - (distance / this.explosionRadius));
+            
+            // Apply explosion damage with falloff (uses explosionDamage, not direct damage)
+            const explosionDamage = this.explosionDamage * damageFalloff;
+            if (explosionDamage > 0) {
+                entity.takeDamage(explosionDamage);
+            }
+        });
     }
     
     render(ctx) {

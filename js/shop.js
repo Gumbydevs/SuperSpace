@@ -156,6 +156,23 @@ export class ShopSystem {
                     energyCost: 25,
                     phasing: true
                 }
+            },
+            {
+                id: 'rocket',
+                name: 'Rocket Launcher',
+                description: 'Fires explosive rockets that detonate on impact with area damage.',
+                price: 12000,
+                owned: localStorage.getItem('weapon_rocket') === 'true',
+                stats: {
+                    damage: 45, // High direct damage
+                    cooldown: 0.45, // Slow reload
+                    speed: 400,
+                    range: 700,
+                    energyCost: 30,
+                    explosive: true,
+                    explosionRadius: 80, // Large explosion radius
+                    explosionDamage: 25 // Additional explosion damage
+                }
             }
         ];
         

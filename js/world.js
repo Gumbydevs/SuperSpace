@@ -460,6 +460,13 @@ export class World {
                     // Create hit effect at the impact point
                     this.createProjectileHitEffect(impactX, impactY, asteroid.radius, soundManager);
 
+                    // Handle special projectile effects before removing the projectile
+                    if (projectile.type === 'plasma' && projectile.splashRadius) {
+                        projectile.createSplashEffect(this, soundManager);
+                    } else if (projectile.type === 'rocket' && projectile.explosive) {
+                        projectile.createExplosion(this, soundManager);
+                    }
+
                     // Remove the projectile
                     player.projectiles.splice(j, 1);
 
@@ -773,22 +780,38 @@ export class World {
         }
     }
 
-    createExplosion(x, y, radius, soundManager) {
-        // Here we play the explosion sound
+    createExplosion(x, y, radius, soundManager, type = 'default') {
+        // Here we play the explosion sound based on type
         if (soundManager) {
-            soundManager.play('explosion', {
-                volume: Math.min(0.7, 0.4 * (radius / 30)),
+            let soundName = 'explosion';
+            let volume = Math.min(0.7, 0.4 * (radius / 30));
+            
+            if (type === 'rocket') {
+                soundName = 'rocket_explosion';
+                volume = Math.min(0.8, 0.5 * (radius / 30));
+                // Fallback to explosion sound if rocket_explosion doesn't exist
+                if (!soundManager.isSoundLoaded('rocket_explosion')) {
+                    soundName = 'explosion';
+                }
+            }
+            
+            soundManager.play(soundName, {
+                volume: volume,
                 position: { x, y }
             });
         }
 
-        // Here we create the main explosion effect
+        // Here we create the main explosion effect with type-specific properties
+        const explosionColor = type === 'rocket' ? '#ff6600' : '#ff4400'; // Orange for rockets, red-orange for others
+        
         this.explosions.push({
             x: x,
             y: y,
             radius: radius,
-            maxRadius: radius * 2,
-            timeLeft: 0.5,
+            maxRadius: radius * (type === 'rocket' ? 2.5 : 2), // Rockets have larger explosions
+            timeLeft: type === 'rocket' ? 0.7 : 0.5, // Rockets last longer
+            color: explosionColor,
+            type: type,
             update(deltaTime) {
                 this.timeLeft -= deltaTime;
             }
@@ -1469,15 +1492,30 @@ export class World {
 
             // Here we draw explosions
             this.explosions.forEach(explosion => {
-                const radiusRatio = explosion.timeLeft / 0.5;
+                const maxTime = explosion.type === 'rocket' ? 0.7 : 0.5;
+                const radiusRatio = explosion.timeLeft / maxTime;
                 const currentRadius = explosion.maxRadius * (1 - radiusRatio);
-                const opacity = explosion.timeLeft * 2;
+                const opacity = explosion.timeLeft * (explosion.type === 'rocket' ? 1.4 : 2);
+
+                // Get explosion colors based on type
+                const baseColor = explosion.color || '#ff4400';
+                let strokeColor, centerColor, middleColor;
+                
+                if (explosion.type === 'rocket') {
+                    strokeColor = `rgba(255, 150, 0, ${opacity * 0.8})`;     // Bright orange for rockets
+                    centerColor = `rgba(255, 255, 150, ${opacity})`;         // Bright yellow center
+                    middleColor = `rgba(255, 100, 0, ${opacity * 0.8})`;     // Deep orange middle
+                } else {
+                    strokeColor = `rgba(255, 200, 50, ${opacity * 0.7})`;    // Default orange-yellow
+                    centerColor = `rgba(255, 255, 200, ${opacity})`;         // Bright center
+                    middleColor = `rgba(255, 120, 50, ${opacity * 0.8})`;    // Orange middle
+                }
 
                 // Draw explosion ring
                 ctx.beginPath();
                 ctx.arc(explosion.x, explosion.y, currentRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(255, 200, 50, ${opacity * 0.7})`;  // Orange-yellow
-                ctx.lineWidth = 3;
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = explosion.type === 'rocket' ? 4 : 3;
                 ctx.stroke();
 
                 // Draw explosion glow using radial gradient
@@ -1485,9 +1523,9 @@ export class World {
                     explosion.x, explosion.y, 0,
                     explosion.x, explosion.y, currentRadius * 0.8
                 );
-                gradient.addColorStop(0, `rgba(255, 255, 200, ${opacity})`);      // Bright center
-                gradient.addColorStop(0.3, `rgba(255, 120, 50, ${opacity * 0.8})`); // Orange middle
-                gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');                   // Transparent edge
+                gradient.addColorStop(0, centerColor);      // Bright center
+                gradient.addColorStop(0.3, middleColor);    // Colored middle
+                gradient.addColorStop(1, 'rgba(255, 50, 0, 0)'); // Transparent edge
 
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
