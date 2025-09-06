@@ -273,6 +273,14 @@ export class MultiplayerManager {
                 this.updatePlayerList();
             }
         });
+        
+        // Listen for real-time player health updates
+        this.socket.on('playerHealthUpdate', (data) => {
+            if (data.id !== this.playerId && this.players[data.id]) {
+                this.players[data.id].health = data.health;
+            }
+        });
+
         // Handle connection to server
         this.socket.on('connect', () => {
             console.log('Connected to server with ID:', this.socket.id);

@@ -240,6 +240,12 @@ io.on('connection', (socket) => {
       if (gameState.players[data.targetId]) {
         gameState.players[data.targetId].health -= data.damage;
         
+        // Broadcast updated health to all clients
+        io.emit('playerHealthUpdate', {
+          id: data.targetId,
+          health: gameState.players[data.targetId].health
+        });
+        
         // Check if player is destroyed
         if (gameState.players[data.targetId].health <= 0) {
           io.emit('playerDestroyed', {
