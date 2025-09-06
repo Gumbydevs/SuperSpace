@@ -812,32 +812,36 @@ export class SoundManager {
             layers: [],
             currentChord: 0,
             chordProgression: [
-                [220, 277, 330], // Am chord (A, C#, E)
-                [196, 247, 294], // F chord (F, A, C)
-                [165, 208, 247], // Dm chord (D, F, A)
-                [196, 247, 330]  // G chord (G, B, D)
+                [440, 523, 659], // Am chord (A4, C5, E5) - higher octave
+                [349, 440, 523], // F chord (F4, A4, C5) - higher octave  
+                [294, 349, 440], // Dm chord (D4, F4, A4) - higher octave
+                [392, 494, 587]  // G chord (G4, B4, D5) - higher octave
             ],
             tempo: 120,
-            measureLength: 8, // seconds per measure
+            measureLength: 6, // seconds per measure (reduced from 8)
             nextChordTime: 0
         };
 
         // Create ambient music gain node
         this.ambientMusicGain = this.audioContext.createGain();
-        this.ambientMusicGain.gain.value = 0.15; // Quiet background music
+        this.ambientMusicGain.gain.value = 0.4; // Increased from 0.15 for better audibility
         this.ambientMusicGain.connect(this.masterGainNode);
     }
 
     startAmbientMusic() {
         if (!this.audioContext || this.isMuted || this.ambientMusic.active) return;
 
+        console.log('Starting ambient music system...');
         this.ambientMusic.active = true;
         this.ambientMusic.nextChordTime = this.audioContext.currentTime;
+        
+        // Start immediately with the first layer
+        this.createAmbientLayer();
         
         // Start the ambient music loop
         this.scheduleNextAmbientLayer();
         
-        console.log('Ambient music started');
+        console.log('Ambient music started successfully');
     }
 
     stopAmbientMusic() {
@@ -890,6 +894,8 @@ export class SoundManager {
         const layerTypes = ['pad', 'lead', 'bass', 'atmosphere'];
         const selectedType = layerTypes[Math.floor(Math.random() * layerTypes.length)];
 
+        console.log(`Creating ambient layer: ${selectedType}, chord: ${this.ambientMusic.currentChord}`);
+
         switch (selectedType) {
             case 'pad':
                 this.createPadLayer(chord, now, duration);
@@ -927,8 +933,8 @@ export class SoundManager {
             // Create gain with slow attack and release
             const gain = this.audioContext.createGain();
             gain.gain.setValueAtTime(0, startTime);
-            gain.gain.linearRampToValueAtTime(0.1 / chord.length, startTime + 2);
-            gain.gain.setValueAtTime(0.1 / chord.length, startTime + duration - 2);
+            gain.gain.linearRampToValueAtTime(0.2 / chord.length, startTime + 2); // Increased volume
+            gain.gain.setValueAtTime(0.2 / chord.length, startTime + duration - 2);
             gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
             // Connect audio nodes
@@ -976,8 +982,8 @@ export class SoundManager {
 
         const gain = this.audioContext.createGain();
         gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.08, startTime + 0.5);
-        gain.gain.setValueAtTime(0.08, startTime + duration - 1);
+        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.5); // Increased volume
+        gain.gain.setValueAtTime(0.15, startTime + duration - 1);
         gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
         // Connect nodes
@@ -1010,8 +1016,8 @@ export class SoundManager {
 
         const gain = this.audioContext.createGain();
         gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.1);
-        gain.gain.setValueAtTime(0.15, startTime + duration - 0.5);
+        gain.gain.linearRampToValueAtTime(0.25, startTime + 0.1); // Increased volume
+        gain.gain.setValueAtTime(0.25, startTime + duration - 0.5);
         gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
         oscillator.connect(gain);

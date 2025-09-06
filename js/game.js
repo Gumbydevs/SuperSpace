@@ -174,7 +174,7 @@ class Game {
         // Style the music button
         musicBtn.style.position = 'absolute';
         musicBtn.style.top = '20px';
-        musicBtn.style.right = '100px'; // Position next to mute button
+        musicBtn.style.right = '70px'; // Position directly left of mute button
         musicBtn.style.zIndex = '1002';
         musicBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         musicBtn.style.color = 'white';
@@ -188,12 +188,14 @@ class Game {
         musicBtn.onclick = () => {
             if (this.soundManager.ambientMusic && this.soundManager.ambientMusic.active) {
                 this.soundManager.stopAmbientMusic();
-                musicBtn.textContent = '🎵';
+                musicBtn.textContent = '🔇♪';
                 musicBtn.style.opacity = '0.5';
+                console.log('Music stopped by user');
             } else {
                 this.soundManager.startAmbientMusic();
                 musicBtn.textContent = '🎵';
                 musicBtn.style.opacity = '1';
+                console.log('Music started by user');
             }
         };
         
@@ -208,7 +210,7 @@ class Game {
         shopBtn.id = 'shop-btn';
         // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
-        shopBtn.style.top = '60px'; // Position below the top row
+        shopBtn.style.top = '65px'; // Position below the top row (moved down from 60px)
         shopBtn.style.right = '20px';
         shopBtn.style.zIndex = '1002';
         shopBtn.style.background = 'rgba(0, 0, 50, 0.7)';
