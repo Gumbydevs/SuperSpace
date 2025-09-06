@@ -536,20 +536,20 @@ export class World {
         // Update safe zone pulse phase for docking lights
         this.safeZone.pulsePhase += deltaTime * 2;
 
-        // Check if we're in multiplayer mode for asteroid movement and collision handling
-        // Use try-catch to prevent errors if window.game is not fully initialized
-        let isMultiplayerConnected = false;
-        try {
-            isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-        } catch (error) {
-            console.warn('Error checking multiplayer status:', error);
-            isMultiplayerConnected = false;
-        }
+        // Multiplayer connection status check
+        const multiplayerConnected = (function() {
+            try {
+                return window.game && window.game.multiplayer && window.game.multiplayer.connected;
+            } catch (e) {
+                console.warn('Multiplayer check error:', e);
+                return false;
+            }
+        })();
 
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
             // Debug: Log any asteroids that have non-zero velocity in multiplayer
-            if (isMultiplayerConnected && (asteroid.velocityX !== 0 || asteroid.velocityY !== 0)) {
+            if (multiplayerConnected && (asteroid.velocityX !== 0 || asteroid.velocityY !== 0)) {
                 console.warn(`Asteroid ${asteroid.id} has velocity in multiplayer:`, asteroid.velocityX, asteroid.velocityY);
                 // Force reset to 0
                 asteroid.velocityX = 0;
@@ -557,7 +557,7 @@ export class World {
             }
             
             // Only move asteroids in single player mode - multiplayer asteroids are stationary for tactical gameplay
-            if (!isMultiplayerConnected) {
+            if (!multiplayerConnected) {
                 // Move asteroid based on its velocity
                 asteroid.x += asteroid.velocityX * deltaTime;
                 asteroid.y += asteroid.velocityY * deltaTime;
