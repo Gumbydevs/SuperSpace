@@ -86,6 +86,41 @@ function generateAsteroids() {
   console.log(`Generated ${gameState.asteroids.length} asteroids`);
 }
 
+// Periodic asteroid regeneration to maintain battlefield density
+setInterval(() => {
+  // Only regenerate if we have connected players and are below minimum asteroid count
+  if (Object.keys(gameState.players).length > 0 && gameState.asteroids.length < ASTEROID_COUNT * 0.7) {
+    console.log(`Regenerating asteroids. Current: ${gameState.asteroids.length}, Target: ${ASTEROID_COUNT}`);
+    
+    // Generate new asteroids to reach target count
+    const asteroidsToGenerate = ASTEROID_COUNT - gameState.asteroids.length;
+    const newAsteroids = [];
+    
+    for (let i = 0; i < asteroidsToGenerate; i++) {
+      const radius = ASTEROID_MIN_SIZE + Math.random() * (ASTEROID_MAX_SIZE - ASTEROID_MIN_SIZE);
+      const newAsteroid = {
+        id: `asteroid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        x: (Math.random() - 0.5) * WORLD_SIZE,
+        y: (Math.random() - 0.5) * WORLD_SIZE,
+        radius: radius,
+        health: radius * 2,
+        type: Math.random() > 0.7 ? 'ice' : 'rock',
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.2
+      };
+      
+      gameState.asteroids.push(newAsteroid);
+      newAsteroids.push(newAsteroid);
+    }
+    
+    // Broadcast new asteroids to all clients
+    if (newAsteroids.length > 0) {
+      io.emit('newAsteroids', { asteroids: newAsteroids });
+      console.log(`Generated ${newAsteroids.length} new asteroids. Total: ${gameState.asteroids.length}`);
+    }
+  }
+}, ASTEROID_REGENERATION_TIME);
+
 // Connection handling
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
@@ -245,12 +280,40 @@ io.on('connection', (socket) => {
     playerLastActivity[socket.id] = Date.now();
     
     if (data.type === 'asteroid') {
-      // Handle asteroid hit
-      socket.broadcast.emit('asteroidHit', {
-        asteroidId: data.id,
-        damage: data.damage,
-        playerId: socket.id
-      });
+      // Handle asteroid hit - server-side asteroid health management
+      const asteroid = gameState.asteroids.find(a => a.id === data.id);
+      if (asteroid) {
+        // Reduce asteroid health
+        asteroid.health -= data.damage;
+        
+        console.log(`Asteroid ${data.id} hit for ${data.damage} damage. Health: ${asteroid.health}/${asteroid.health + data.damage}`);
+        
+        // Check if asteroid is destroyed
+        if (asteroid.health <= 0) {
+          // Remove asteroid from server state
+          const asteroidIndex = gameState.asteroids.findIndex(a => a.id === data.id);
+          if (asteroidIndex >= 0) {
+            gameState.asteroids.splice(asteroidIndex, 1);
+          }
+          
+          // Broadcast asteroid destruction to all clients
+          io.emit('asteroidDestroyed', {
+            asteroidId: data.id,
+            destroyedBy: socket.id,
+            position: { x: asteroid.x, y: asteroid.y }
+          });
+          
+          console.log(`Asteroid ${data.id} destroyed by player ${socket.id}. ${gameState.asteroids.length} asteroids remaining.`);
+        } else {
+          // Broadcast asteroid hit (damage) to all clients
+          io.emit('asteroidHit', {
+            asteroidId: data.id,
+            damage: data.damage,
+            playerId: socket.id,
+            remainingHealth: asteroid.health
+          });
+        }
+      }
       
       // Award points and credits to the player
       if (gameState.players[socket.id]) {

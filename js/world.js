@@ -55,7 +55,15 @@ export class World {
         
         // Here we create the initial asteroids in the world
         this.asteroidIdCounter = 0; // Unique ID counter for asteroids
-        this.asteroids = this.generateAsteroids(150);
+        // Initialize empty asteroid array - will be populated by server in multiplayer mode
+        // or by generateAsteroids in single player mode
+        this.asteroids = [];
+        
+        // Generate local asteroids only if we're not in multiplayer mode
+        // In multiplayer, asteroids will be received from server via setupServerAsteroidField
+        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.connected) {
+            this.asteroids = this.generateAsteroids(150);
+        }
         // Here we initialize arrays for game objects
         this.powerups = [];
         this.enemies = [];
@@ -386,6 +394,80 @@ export class World {
         return asteroids;
     }
 
+    // Method to set up asteroids from server data (for multiplayer synchronization)
+    setupServerAsteroidField(serverAsteroids) {
+        console.log('Setting up server asteroid field:', serverAsteroids.length, 'asteroids');
+        
+        // Convert server asteroids to client format
+        this.asteroids = serverAsteroids.map(serverAsteroid => {
+            // Determine size category based on radius
+            let size, health, scoreValue;
+            if (serverAsteroid.radius <= 25) {
+                size = 'small';
+                health = 50;
+                scoreValue = 100;
+            } else if (serverAsteroid.radius <= 45) {
+                size = 'medium';
+                health = 100;
+                scoreValue = 200;
+            } else {
+                size = 'large';
+                health = 200;
+                scoreValue = 400;
+            }
+
+            // Create client-side asteroid object compatible with existing code
+            return {
+                id: serverAsteroid.id,
+                x: serverAsteroid.x,
+                y: serverAsteroid.y,
+                radius: serverAsteroid.radius,
+                health: serverAsteroid.health || health, // Use server health if available, fallback to calculated
+                maxHealth: serverAsteroid.health || health,
+                rotation: serverAsteroid.rotation || 0,
+                rotationSpeed: serverAsteroid.rotationSpeed || (Math.random() - 0.5) * 2,
+                // Generate vertices for irregular shape
+                vertices: this.generateAsteroidVertices(8 + Math.floor(Math.random() * 4), 0.3),
+                // Set movement (asteroids can drift slowly)
+                velocityX: (Math.random() - 0.5) * 20,
+                velocityY: (Math.random() - 0.5) * 20,
+                size: size,
+                scoreValue: scoreValue,
+                type: serverAsteroid.type || 'rock' // Default to rock if no type specified
+            };
+        });
+
+        console.log('Successfully synchronized', this.asteroids.length, 'asteroids from server');
+    }
+
+    // Method to update asteroid health from server (for multiplayer synchronization)
+    updateAsteroidHealth(asteroidId, damage) {
+        const asteroid = this.asteroids.find(a => a.id === asteroidId);
+        if (asteroid) {
+            asteroid.health -= damage;
+            // Ensure health doesn't go below 0
+            asteroid.health = Math.max(0, asteroid.health);
+            console.log(`Updated asteroid ${asteroidId} health to ${asteroid.health} after ${damage} damage`);
+        }
+    }
+
+    // Method to destroy asteroid from server command (for multiplayer synchronization)
+    destroyServerAsteroid(asteroidId, createExplosion = true) {
+        const asteroidIndex = this.asteroids.findIndex(a => a.id === asteroidId);
+        if (asteroidIndex >= 0) {
+            const asteroid = this.asteroids[asteroidIndex];
+            
+            if (createExplosion) {
+                // Create explosion particles at asteroid location
+                this.createAsteroidExplosion(asteroid.x, asteroid.y, asteroid.radius);
+            }
+            
+            // Remove asteroid from client array
+            this.asteroids.splice(asteroidIndex, 1);
+            console.log(`Destroyed asteroid ${asteroidId} by server command. ${this.asteroids.length} asteroids remaining locally.`);
+        }
+    }
+
     generateAsteroidVertices(count, irregularity) {
         // Here we create irregular polygon shapes for asteroids
         const vertices = [];
@@ -407,12 +489,17 @@ export class World {
         // Update star animations and parallax effect
         this.updateStars(deltaTime, player);
         
-        // Here we handle asteroid spawning over time
-        this.asteroidSpawnTimer += deltaTime;
-        if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
-            // Add a new asteroid when timer expires and below max count
-            this.asteroids.push(...this.generateAsteroids(1));
-            this.asteroidSpawnTimer = 0;
+        // Here we handle asteroid spawning over time (only in single player mode)
+        // In multiplayer mode, server handles asteroid regeneration
+        const isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+        
+        if (!isMultiplayerConnected) {
+            this.asteroidSpawnTimer += deltaTime;
+            if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
+                // Add a new asteroid when timer expires and below max count
+                this.asteroids.push(...this.generateAsteroids(1));
+                this.asteroidSpawnTimer = 0;
+            }
         }
 
         // Update safe zone pulse phase for docking lights

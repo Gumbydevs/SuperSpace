@@ -348,12 +348,62 @@ export class MultiplayerManager {
                 this.showGameMessage('Asteroid field synchronized', '#aaf', 3000);
             }
         });
+
+        // Handle new asteroids being added from server
+        this.socket.on('newAsteroids', (data) => {
+            console.log('Received new asteroids from server:', data.asteroids.length, 'asteroids');
+            if (this.game.world) {
+                // Add new asteroids to existing field
+                const newClientAsteroids = data.asteroids.map(serverAsteroid => {
+                    // Convert server asteroid format to client format (same as setupServerAsteroidField)
+                    let size, health, scoreValue;
+                    if (serverAsteroid.radius <= 25) {
+                        size = 'small';
+                        health = 50;
+                        scoreValue = 100;
+                    } else if (serverAsteroid.radius <= 45) {
+                        size = 'medium';
+                        health = 100;
+                        scoreValue = 200;
+                    } else {
+                        size = 'large';
+                        health = 200;
+                        scoreValue = 400;
+                    }
+
+                    return {
+                        id: serverAsteroid.id,
+                        x: serverAsteroid.x,
+                        y: serverAsteroid.y,
+                        radius: serverAsteroid.radius,
+                        health: serverAsteroid.health || health,
+                        maxHealth: serverAsteroid.health || health,
+                        rotation: serverAsteroid.rotation || 0,
+                        rotationSpeed: serverAsteroid.rotationSpeed || (Math.random() - 0.5) * 2,
+                        vertices: this.game.world.generateAsteroidVertices(8 + Math.floor(Math.random() * 4), 0.3),
+                        velocityX: (Math.random() - 0.5) * 20,
+                        velocityY: (Math.random() - 0.5) * 20,
+                        size: size,
+                        scoreValue: scoreValue,
+                        type: serverAsteroid.type || 'rock'
+                    };
+                });
+                
+                // Add the new asteroids to the existing field
+                this.game.world.asteroids.push(...newClientAsteroids);
+                console.log('Added', newClientAsteroids.length, 'new asteroids. Total:', this.game.world.asteroids.length);
+            }
+        });
         
         // Handle asteroid hit from server
         this.socket.on('asteroidHit', (data) => {
             if (this.game.world) {
-                // Update the asteroid's health
-                this.game.world.updateAsteroidHealth(data.asteroidId, data.damage);
+                // Update the asteroid's health to server's authoritative value
+                const asteroid = this.game.world.asteroids.find(a => a.id === data.asteroidId);
+                if (asteroid) {
+                    asteroid.health = data.remainingHealth;
+                    console.log(`Asteroid ${data.asteroidId} health synchronized to ${data.remainingHealth}`);
+                }
             }
         });
         
@@ -421,6 +471,12 @@ export class MultiplayerManager {
                     this.addRemotePlayer(player);
                 }
             });
+            
+            // Set up synchronized asteroid field if provided
+            if (data.asteroids && this.game.world) {
+                this.game.world.setupServerAsteroidField(data.asteroids);
+                console.log('Synchronized asteroid field from game state:', data.asteroids.length, 'asteroids');
+            }
             
             // Update the player count display
             this.updatePlayerCount();
