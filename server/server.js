@@ -331,6 +331,11 @@ io.on('connection', (socket) => {
                 const angle = (Math.PI * 2 / fragmentCount) * i + seededRandom(seed) * 0.5;
                 const distance = 20 + seededRandom(seed + 1) * 30;
                 const fragmentRadius = asteroid.radius * 0.3 + seededRandom(seed + 2) * asteroid.radius * 0.2;
+                
+                // Calculate fragment velocity for movement
+                const velocityMagnitude = 30 + seededRandom(seed + 5) * 40; // Random speed between 30-70
+                const velocityAngle = angle + (seededRandom(seed + 6) - 0.5) * Math.PI * 0.5; // Slight random direction
+                
                 const fragment = {
                   id: `fragment-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
                   x: asteroid.x + Math.cos(angle) * distance,
@@ -340,6 +345,8 @@ io.on('connection', (socket) => {
                   type: asteroid.type,
                   rotation: seededRandom(seed + 3) * Math.PI * 2,
                   rotationSpeed: (seededRandom(seed + 4) - 0.5) * 0.3,
+                  velocityX: Math.cos(velocityAngle) * velocityMagnitude,
+                  velocityY: Math.sin(velocityAngle) * velocityMagnitude,
                   seed: seed
                 };
                 fragments.push(fragment);

@@ -59,23 +59,8 @@
         // or by generateAsteroids in single player mode
         this.asteroids = [];
         
-        // NEVER generate local asteroids in multiplayer mode 
-        // Only generate asteroids if explicitly in single player mode
-        // In multiplayer, ALL asteroids come from server via setupServerAsteroidField
-        let isMultiplayerMode = false;
-        try {
-            isMultiplayerMode = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-        } catch (error) {
-            console.warn('Error checking multiplayer mode during initialization:', error);
-            isMultiplayerMode = false;
-        }
-        
-        if (!isMultiplayerMode) {
-            console.log('Single player mode - generating local asteroids');
-            this.asteroids = this.generateAsteroids(150);
-        } else {
-            console.log('Multiplayer mode detected - waiting for server asteroids, NO local generation');
-        }
+        // ONLY multiplayer mode - asteroids come from server via setupServerAsteroidField
+        console.log('Multiplayer mode - waiting for server asteroids, NO local generation');
         // Here we initialize arrays for game objects
         this.powerups = [];
         this.enemies = [];
@@ -522,61 +507,18 @@
         // Update star animations and parallax effect
         this.updateStars(deltaTime, player);
         
-        // Here we handle asteroid spawning over time (ONLY in single player mode)
-        // In multiplayer mode, server handles ALL asteroid management - ZERO local generation
-        let isMultiplayerMode = false;
-        try {
-            isMultiplayerMode = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-        } catch (error) {
-            console.warn('Error checking multiplayer mode for spawning:', error);
-            isMultiplayerMode = false;
-        }
-        
-        if (!isMultiplayerMode) {
-            // Single player only - spawn asteroids over time
-            this.asteroidSpawnTimer += deltaTime;
-            if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
-                // Add a new asteroid when timer expires and below max count
-                console.log('Single player - spawning new asteroid');
-                this.asteroids.push(...this.generateAsteroids(1));
-                this.asteroidSpawnTimer = 0;
-            }
-        } else {
-            // Multiplayer mode - absolutely no local asteroid generation
-            // All asteroids managed by server
-        }
+        // In multiplayer-only mode, server handles ALL asteroid management - ZERO local generation
 
         // Update safe zone pulse phase for docking lights
         this.safeZone.pulsePhase += deltaTime * 2;
 
-        // Multiplayer connection status check
-        const multiplayerConnected = (function() {
-            try {
-                return window.game && window.game.multiplayer && window.game.multiplayer.connected;
-            } catch (e) {
-                console.warn('Multiplayer check error:', e);
-                return false;
-            }
-        })();
-
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
-            // Debug: Log any asteroids that have non-zero velocity in multiplayer
-            if (multiplayerConnected && (asteroid.velocityX !== 0 || asteroid.velocityY !== 0)) {
-                console.warn(`Asteroid ${asteroid.id} has velocity in multiplayer:`, asteroid.velocityX, asteroid.velocityY);
-                // Force reset to 0
-                asteroid.velocityX = 0;
-                asteroid.velocityY = 0;
-            }
-            
-            // Only move asteroids in single player mode - multiplayer asteroids are stationary for tactical gameplay
-            if (!multiplayerConnected) {
-                // Move asteroid based on its velocity
-                asteroid.x += asteroid.velocityX * deltaTime;
-                asteroid.y += asteroid.velocityY * deltaTime;
-                // Keep asteroid within world boundaries
-                this.wrapPosition(asteroid);
-            }
+            // Move asteroid based on its velocity (fragments can have velocity from server)
+            asteroid.x += (asteroid.velocityX || 0) * deltaTime;
+            asteroid.y += (asteroid.velocityY || 0) * deltaTime;
+            // Keep asteroid within world boundaries
+            this.wrapPosition(asteroid);
             
             // Always rotate asteroids for visual appeal
             asteroid.rotation += asteroid.rotationSpeed * deltaTime;
@@ -658,44 +600,18 @@
                                 );
                         }
 
-                        // Send hit event to server for multiplayer with all calculated values
-                        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
-                        }
+                        // Send hit event to server with all calculated values
+                        window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
 
                         player.addCredits(creditReward);
 
                         // Create explosion effect
                         this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
 
-                        // Handle asteroid destruction in multiplayer mode
-                        let isMultiplayerMode = false;
-                        try {
-                            isMultiplayerMode = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-                        } catch (error) {
-                            console.warn('Error checking multiplayer mode in collision:', error);
-                            isMultiplayerMode = false;
-                        }
-                        
-                        if (isMultiplayerMode) {
-                            // In multiplayer: immediately remove asteroid to prevent multiple hits
-                            // Server will send asteroidDestroyed event with fragments to ALL clients (including us)
-                            console.log(`Asteroid ${asteroid.id} destroyed locally - server will sync fragments to all players`);
-                            this.asteroids.splice(i, 1);
-                        } else {
-                            // Fallback for offline mode
-                            if (asteroid.size !== 'small') {
-                                if (Math.random() < 0.7) {
-                                    this.splitAsteroid(asteroid, soundManager);
-                                } else {
-                                    this.spawnPowerup(asteroid.x, asteroid.y);
-                                }
-                            } else if (Math.random() < 0.1) {
-                                this.spawnPowerup(asteroid.x, asteroid.y);
-                            }
-                            this.asteroids.splice(i, 1);
-                        }
-                        // In multiplayer: asteroid removal handled by server events
+                        // Immediately remove asteroid to prevent multiple hits
+                        // Server will send asteroidDestroyed event with fragments to ALL clients (including us)
+                        console.log(`Asteroid ${asteroid.id} destroyed locally - server will sync fragments to all players`);
+                        this.asteroids.splice(i, 1);
                     }
                 }
             });
@@ -704,36 +620,34 @@
         // Keep player within world boundaries
         this.wrapPosition(player);
 
-        // Check collisions with other players in multiplayer
-        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-            const otherPlayers = window.game.multiplayer.players;
-            if (otherPlayers) {
-                // Fix: Use Object.values to convert the players object into an array that we can iterate
-                Object.values(otherPlayers).forEach(otherPlayer => {
-                    // Skip collision with self or players in safe zone
-                    if (otherPlayer.id === window.game.multiplayer.socket.id || 
-                        this.isInSafeZone(player) || 
-                        this.isInSafeZone(otherPlayer)) {
-                        return;
-                    }
+        // Check collisions with other players
+        const otherPlayers = window.game.multiplayer.players;
+        if (otherPlayers) {
+            // Fix: Use Object.values to convert the players object into an array that we can iterate
+            Object.values(otherPlayers).forEach(otherPlayer => {
+                // Skip collision with self or players in safe zone
+                if (otherPlayer.id === window.game.multiplayer.socket.id || 
+                    this.isInSafeZone(player) || 
+                    this.isInSafeZone(otherPlayer)) {
+                    return;
+                }
+                
+                // Calculate distance between players
+                const dx = player.x - otherPlayer.x;
+                const dy = player.y - otherPlayer.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Collision occurs when distance is less than combined collision radii
+                if (distance < player.collisionRadius + 15) { // Using 15 as approximate collision radius for other players
+                    // Handle collision with other player
+                    player.handlePlayerCollision(otherPlayer, soundManager);
                     
-                    // Calculate distance between players
-                    const dx = player.x - otherPlayer.x;
-                    const dy = player.y - otherPlayer.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    // Collision occurs when distance is less than combined collision radii
-                    if (distance < player.collisionRadius + 15) { // Using 15 as approximate collision radius for other players
-                        // Handle collision with other player
-                        player.handlePlayerCollision(otherPlayer, soundManager);
-                        
-                        // Send collision event to server
-                        if (window.game.multiplayer.connected) {
-                            window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
-                        }
+                    // Send collision event to server
+                    if (window.game.multiplayer.connected) {
+                        window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
                     }
-                });
-            }
+                }
+            });
         }
 
         // Here we update powerups and check for player collection
@@ -855,13 +769,6 @@
     }
 
     splitAsteroid(asteroid, soundManager) {
-        // SAFETY CHECK: Never split asteroids in multiplayer mode
-        const isMultiplayerMode = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-        if (isMultiplayerMode) {
-            console.warn('splitAsteroid called in multiplayer mode - skipping! Server should handle this.');
-            return;
-        }
-        
         // Here we create visual debris when an asteroid is split
         this.createAsteroidDebris(asteroid.x, asteroid.y, asteroid.radius);
 

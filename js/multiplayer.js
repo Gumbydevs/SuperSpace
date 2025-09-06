@@ -2045,6 +2045,8 @@ export class MultiplayerManager {
                     type: fragment.type,
                     rotation: fragment.rotation,
                     rotationSpeed: fragment.rotationSpeed,
+                    velocityX: fragment.velocityX || 0, // Include fragment velocity
+                    velocityY: fragment.velocityY || 0, // Include fragment velocity
                     size: size,
                     scoreValue: scoreValue,
                     vertices: vertices
