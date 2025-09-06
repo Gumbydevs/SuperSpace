@@ -108,6 +108,88 @@ h1 {
     text-shadow: 0 0 10px #33f, 0 0 20px #33f;
 }
 
+/* Space-themed Options/Instructions Overlay */
+#options-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(10, 10, 30, 0.92);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+}
+#options-overlay.hidden { display: none !important; }
+.options-panel {
+    background: linear-gradient(135deg, #111a3a 80%, #223 100%);
+    border: 2px solid #33f;
+    border-radius: 18px;
+    box-shadow: 0 0 32px #33f8, 0 0 8px #fff2;
+    padding: 32px 36px 28px 36px;
+    min-width: 340px;
+    max-width: 95vw;
+    color: #e0e6ff;
+    position: relative;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+}
+.options-panel h2 {
+    color: #6cf;
+    text-shadow: 0 0 8px #33f, 0 0 2px #fff;
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 2.1em;
+    letter-spacing: 0.04em;
+}
+.options-panel h3 {
+    color: #8af;
+    margin-bottom: 8px;
+    margin-top: 18px;
+    font-size: 1.1em;
+    letter-spacing: 0.03em;
+}
+.section { margin-bottom: 18px; }
+.controls-list, .instructions-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0 0 0 0;
+    font-size: 1em;
+}
+.controls-list li, .instructions-list li {
+    margin-bottom: 4px;
+    padding-left: 0.5em;
+}
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+input[type="range"] {
+    width: 120px;
+    accent-color: #33f;
+    background: #222;
+    border-radius: 6px;
+    height: 4px;
+}
+.close-btn {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: #222b;
+    color: #fff;
+    border: none;
+    font-size: 1.5em;
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    box-shadow: 0 0 8px #33f8;
+    transition: background 0.2s, color 0.2s;
+    z-index: 2;
+}
+.close-btn:hover {
+    background: #33f;
+    color: #fff;
+}
+
 /* Mobile responsiveness for touch controls */
 @media (hover: none) and (pointer: coarse) {
     /* Adjust UI elements to avoid overlap with touch controls */

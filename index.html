@@ -47,6 +47,46 @@
             <div id="server-info">Online Players (<span id="player-count">0</span>)</div>
         </div>
     </div>
+    <!-- Space-themed Options/Instructions Overlay -->
+    <div id="options-overlay" class="hidden">
+        <div class="options-panel">
+            <h2>Options & Controls</h2>
+            <button id="close-options-btn" class="close-btn">✕</button>
+            <div class="section">
+                <h3>Controls</h3>
+                <ul class="controls-list">
+                    <li><b>Move:</b> Arrow Keys / WASD</li>
+                    <li><b>Shoot:</b> Spacebar</li>
+                    <li><b>Afterburner:</b> Left Shift (hold)</li>
+                    <li><b>Shop:</b> B</li>
+                    <li><b>Mute Music:</b> M</li>
+                    <li><b>Mute SFX:</b> N</li>
+                    <li><b>Show/Hide Menu:</b> Esc</li>
+                </ul>
+            </div>
+            <div class="section">
+                <h3>Audio</h3>
+                <label><input type="checkbox" id="music-toggle" checked> Music On/Off</label>
+                <div class="slider-row">
+                    <label for="music-volume">Music Volume</label>
+                    <input type="range" id="music-volume" min="0" max="1" step="0.01" value="0.7">
+                </div>
+                <div class="slider-row">
+                    <label for="sfx-volume">SFX Volume</label>
+                    <input type="range" id="sfx-volume" min="0" max="1" step="0.01" value="0.7">
+                </div>
+            </div>
+            <div class="section">
+                <h3>Instructions</h3>
+                <ul class="instructions-list">
+                    <li>Destroy asteroids and enemy ships to earn points.</li>
+                    <li>Use the shop (B) to upgrade your ship.</li>
+                    <li>Hold Left Shift for afterburner speed boost (uses energy).</li>
+                    <li>Music and SFX can be toggled or adjusted here or with hotkeys.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
     <script src="js/game.js" type="module"></script>
 </body>
 </html>

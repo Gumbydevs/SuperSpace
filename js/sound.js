@@ -1416,5 +1416,22 @@ export class SoundManager {
         if (this.audioContext && this.audioContext.state === 'suspended') {
             this.audioContext.resume();
         }
+   }
+
+    setMusicEnabled(enabled) {
+        if (this.ambientMusicGain) {
+            this.ambientMusicGain.gain.value = enabled ? this._musicVolume || 0.7 : 0;
+        }
+        this._musicEnabled = enabled;
+    }
+    setMusicVolume(vol) {
+        this._musicVolume = vol;
+        if (this.ambientMusicGain && (this._musicEnabled === undefined || this._musicEnabled)) {
+            this.ambientMusicGain.gain.value = vol;
+        }
+    }
+    setSfxVolume(vol) {
+        this._sfxVolume = vol;
+        // If you use gain nodes for SFX, set their gain here. If not, use this._sfxVolume in play() calls.
     }
 }

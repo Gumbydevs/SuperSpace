@@ -19,6 +19,57 @@ export class UI {
                 this.createHudElements();
             }
         });
+        
+        // --- Options/Instructions Overlay Logic ---
+        this.optionsOverlay = document.getElementById('options-overlay');
+        this.optionsBtn = document.getElementById('options-btn');
+        this.closeOptionsBtn = document.getElementById('close-options-btn');
+        this.musicToggle = document.getElementById('music-toggle');
+        this.musicVolume = document.getElementById('music-volume');
+        this.sfxVolume = document.getElementById('sfx-volume');
+
+        // Show overlay from menu button
+        if (this.optionsBtn) {
+            this.optionsBtn.addEventListener('click', () => this.showOptionsOverlay());
+        }
+        // Close overlay from close button
+        if (this.closeOptionsBtn) {
+            this.closeOptionsBtn.addEventListener('click', () => this.hideOptionsOverlay());
+        }
+        // Escape toggles overlay
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (this.optionsOverlay && this.optionsOverlay.classList.contains('hidden')) {
+                    this.showOptionsOverlay();
+                } else {
+                    this.hideOptionsOverlay();
+                }
+            }
+        });
+        // Music toggle
+        if (this.musicToggle) {
+            this.musicToggle.addEventListener('change', (e) => {
+                if (window.game && window.game.soundSystem) {
+                    window.game.soundSystem.setMusicEnabled(e.target.checked);
+                }
+            });
+        }
+        // Music volume
+        if (this.musicVolume) {
+            this.musicVolume.addEventListener('input', (e) => {
+                if (window.game && window.game.soundSystem) {
+                    window.game.soundSystem.setMusicVolume(parseFloat(e.target.value));
+                }
+            });
+        }
+        // SFX volume
+        if (this.sfxVolume) {
+            this.sfxVolume.addEventListener('input', (e) => {
+                if (window.game && window.game.soundSystem) {
+                    window.game.soundSystem.setSfxVolume(parseFloat(e.target.value));
+                }
+            });
+        }
     }
     
     // Show or hide gameplay UI elements based on game state
@@ -644,5 +695,12 @@ export class UI {
                 energyFill.style.backgroundColor = '#a0a'; // Low purple
             }
         }
+    }
+    
+    showOptionsOverlay() {
+        if (this.optionsOverlay) this.optionsOverlay.classList.remove('hidden');
+    }
+    hideOptionsOverlay() {
+        if (this.optionsOverlay) this.optionsOverlay.classList.add('hidden');
     }
 }
