@@ -810,7 +810,7 @@ export class Player {
                 }
                 break;
                 
-            case '💥 Fusion Mortar':
+            case 'Fusion Mortar 💥':
             case 'Fusion Mortar':
                 // Fire an explosive mortar shell
                 const mortarProj = new Projectile(
