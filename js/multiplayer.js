@@ -1,3 +1,5 @@
+    // Track last displayed leaderboard state for real-time updates
+    lastLeaderboardState = '';
 import { KillAnnouncer } from './killannouncer.js';
 
 export class MultiplayerManager {
@@ -621,9 +623,9 @@ export class MultiplayerManager {
     // Main update function called by game loop
     update(deltaTime) {
         if (!this.connected) return;
-        
+
         this.lastUpdate += deltaTime * 1000; // Convert to milliseconds
-        
+
         if (this.lastUpdate >= this.updateInterval) {
             const playerData = {
                 x: this.game.player.x,
@@ -633,11 +635,42 @@ export class MultiplayerManager {
                 health: this.game.player.health,
                 ship: this.game.player.shipId || 'scout'
             };
-            
+
             this.socket.emit('playerUpdate', playerData);
             this.lastUpdate = 0;
         }
-        
+
+        // Real-time leaderboard update: only update if player stats changed
+        if (document.getElementById('player-list-container')) {
+            const allPlayers = [
+                {
+                    id: this.playerId,
+                    name: this.playerName,
+                    color: '#0f0',
+                    score: this.game.player?.score || 0,
+                    wins: this.game.player?.wins || 0,
+                    losses: this.game.player?.losses || 0,
+                    isSelf: true
+                },
+                ...Object.values(this.players).filter(p => !p.destroyed).map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    color: p.color || '#f00',
+                    score: p.score || 0,
+                    wins: p.wins || 0,
+                    losses: p.losses || 0,
+                    isSelf: false
+                }))
+            ];
+            allPlayers.sort((a, b) => b.score - a.score);
+            // Serialize leaderboard state for change detection
+            const leaderboardState = JSON.stringify(allPlayers.map(p => ({id:p.id,score:p.score,wins:p.wins,losses:p.losses})));
+            if (leaderboardState !== this.lastLeaderboardState) {
+                this.updatePlayerList();
+                this.lastLeaderboardState = leaderboardState;
+            }
+        }
+
         // Update and clean up remote projectiles
         Object.values(this.players).forEach(player => {
             if (player.projectiles && Array.isArray(player.projectiles)) {
@@ -647,7 +680,7 @@ export class MultiplayerManager {
                     const distX = projectile.x - player.x;
                     const distY = projectile.y - player.y;
                     const distanceTraveled = Math.sqrt(distX * distX + distY * distY);
-                    
+
                     // Assume a standard max range of 800 units
                     return distanceTraveled < 800;
                 });
