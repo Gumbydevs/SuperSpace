@@ -179,7 +179,7 @@ class Game {
         // Style the music button
         musicBtn.style.position = 'absolute';
         musicBtn.style.top = '26px';
-        musicBtn.style.right = '60px'; // Position directly left of mute button
+        musicBtn.style.right = '40px'; // Position directly left of mute button
         musicBtn.style.zIndex = '1002';
         musicBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         musicBtn.style.color = 'white';
@@ -216,7 +216,7 @@ class Game {
         // Style the shop button similar to mute button
         shopBtn.style.position = 'absolute';
         shopBtn.style.top = '76px'; // Position below the top row (moved down from 60px)
-        shopBtn.style.right = '10px';
+        shopBtn.style.right = '0px';
         shopBtn.style.zIndex = '1002';
         shopBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         shopBtn.style.color = 'white';
