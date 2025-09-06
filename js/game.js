@@ -179,7 +179,7 @@ class Game {
         // Style the music button
         musicBtn.style.position = 'absolute';
         musicBtn.style.top = '26px';
-        musicBtn.style.right = '45px'; // Position directly left of mute button
+        musicBtn.style.right = '55px'; // Position directly left of mute button
         musicBtn.style.zIndex = '1002';
         musicBtn.style.background = 'rgba(0, 0, 50, 0.7)';
         musicBtn.style.color = 'white';
