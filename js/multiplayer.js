@@ -1237,13 +1237,6 @@ export class MultiplayerManager {
             duration: duration * 1000
         };
         
-        // Debug log to verify effect is being set
-        console.log('Shield disruption effect activated for local player:', {
-            active: this.game.player.electricShockEffect.active,
-            startTime: this.game.player.electricShockEffect.startTime,
-            duration: this.game.player.electricShockEffect.duration
-        });
-        
         // Set up a timer to restore shields
         setTimeout(() => {
             if (this.game.player && this.game.player.shieldDisrupted && 

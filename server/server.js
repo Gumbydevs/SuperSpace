@@ -467,6 +467,22 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Handle shield disruption events
+  socket.on('shieldDisruption', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Relay the shield disruption event to all clients
+    // The clients will determine if they are the target
+    io.emit('shieldDisruption', {
+      targetId: data.targetId,
+      duration: data.duration,
+      attackerId: socket.id
+    });
+    
+    console.log(`Shield disruption: ${socket.id} -> ${data.targetId} for ${data.duration}s`);
+  });
+  
   // Ping/heartbeat from client (to keep connection alive and reset inactivity timer)
   socket.on('ping', () => {
     playerLastActivity[socket.id] = Date.now();
