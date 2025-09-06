@@ -2,7 +2,8 @@ export class Projectile {
     constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0, shieldDisruption = false, disruptionDuration = 0) {
     // For seeker missile logic
     this.hasHomed = false; // Only curve once
-    this.homingMinDistance = 60; // Must travel at least 60px before homing
+    this.homingMinDistance = 200; // Must travel at least 200px before homing (increased for more travel time)
+    this.homingStarted = false; // Track when homing begins for gradual turning
         // Here we set the projectile's starting position
         this.x = x;
         this.y = y;
@@ -183,24 +184,33 @@ export class Projectile {
                         }
                     }
                 }
-                // Only home if within 300px and only curve once
+                // Only home if within 300px and gradual turning instead of instant snap
                 const homingRadius = 300;
-                if (nearest && nearestDist <= homingRadius) {
+                if (nearest && nearestDist <= homingRadius && !this.hasHomed) {
                     // Calculate direction to target
                     const dx = nearest.x - this.x;
                     const dy = nearest.y - this.y;
                     const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
-                    // Curve missile once toward the target
+                    
+                    // Gradual turning instead of instant snap
                     let angleDiff = angleToTarget - this.angle;
                     while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                     while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                    this.angle += angleDiff; // Snap/curve once
+                    
+                    // Turn gradually - only turn 15% of the way each frame
+                    const turnAmount = angleDiff * 0.15 * deltaTime * 60; // Smooth gradual turn
+                    this.angle += turnAmount;
+                    
                     // Update velocity based on new angle
                     this.velocity = {
                         x: Math.sin(this.angle) * this.speed,
                         y: -Math.cos(this.angle) * this.speed
                     };
-                    this.hasHomed = true;
+                    
+                    // Mark as homed after turning significantly (about 80% of the way)
+                    if (Math.abs(angleDiff) < 0.3) { // When close to target angle
+                        this.hasHomed = true;
+                    }
                 }
             }
         }
