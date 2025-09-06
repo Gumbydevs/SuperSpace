@@ -437,6 +437,11 @@ export class MultiplayerManager {
             this.updateRemotePlayer(playerData);
         });
 
+        // Handle player general updates (stats, etc.)
+        this.socket.on('playerUpdate', (playerData) => {
+            this.updateRemotePlayer(playerData);
+        });
+
         // Handle player projectile firing
         this.socket.on('projectileFired', (data) => {
             this.handleRemoteProjectile(data.playerId, data.projectile);
@@ -827,15 +832,34 @@ export class MultiplayerManager {
     broadcastStatsUpdate() {
         if (!this.connected || !this.game.player) return;
         
-        const statsData = {
+        // Force immediate playerUpdate with current stats
+        const playerData = {
             id: this.playerId,
+            x: this.game.player.x,
+            y: this.game.player.y,
+            rotation: this.game.player.rotation,
+            velocity: this.game.player.velocity,
+            health: this.game.player.health,
+            ship: this.game.player.shipId || 'scout',
+            color: this.game.player.color || '#0f0',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0
         };
         
-        console.log('Broadcasting stats update:', statsData);
-        this.socket.emit('playerStatsUpdate', statsData);
+        console.log('Force broadcasting player stats:', { score: playerData.score, wins: playerData.wins, losses: playerData.losses });
+        
+        // Send as both playerUpdate and playerMoved to ensure server compatibility
+        this.socket.emit('playerUpdate', playerData);
+        this.socket.emit('playerMoved', playerData);
+        
+        // Also try the dedicated stats update in case server supports it
+        this.socket.emit('playerStatsUpdate', {
+            id: this.playerId,
+            score: playerData.score,
+            wins: playerData.wins,
+            losses: playerData.losses
+        });
     }
 
     // Start periodic leaderboard updates for smooth real-time competition
