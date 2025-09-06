@@ -159,7 +159,7 @@ export class ShopSystem {
             },
             {
                 id: 'rocket',
-                name: '💥 FUSION MORTAR',
+                name: '💥 Fusion Mortar',
                 description: 'Fires explosive fusion shells that detonate at range with massive area damage.',
                 price: 12000,
                 owned: localStorage.getItem('weapon_rocket') === 'true',

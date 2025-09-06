@@ -390,6 +390,36 @@ export class Projectile {
                 ctx.stroke();
                 break;
                 
+            case 'rocket':
+                // Draw a short, stubby mortar shell
+                ctx.fillStyle = this.color;
+                
+                // Draw main shell body as oval/ellipse
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add a darker tip for the shell
+                ctx.fillStyle = '#cc4400';
+                ctx.beginPath();
+                ctx.ellipse(0, -this.height/4, this.width/3, this.height/6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add some flame/exhaust trail particles
+                if (this.trail) {
+                    ctx.fillStyle = this.trailColor || '#ffaa00';
+                    ctx.beginPath();
+                    ctx.arc(0, this.height/2 + 1, this.width/4, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Additional small flame particle
+                    ctx.fillStyle = '#ff6600';
+                    ctx.beginPath();
+                    ctx.arc(this.width/4, this.height/2 + 2, this.width/6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+                
             default:
                 // Default projectile rendering
                 ctx.fillStyle = this.color;

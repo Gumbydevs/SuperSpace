@@ -318,10 +318,10 @@ export class UI {
         energyBar.appendChild(energyFill);
         energyDisplay.appendChild(energyBar);
         
-        // Add status items to panel
+        // Add status items to panel in correct order: Health, Energy, Weapon
         statusPanel.appendChild(healthDisplay);
-        statusPanel.appendChild(weaponDisplay);
         statusPanel.appendChild(energyDisplay);
+        statusPanel.appendChild(weaponDisplay);
         
         // Add panels to HUD
         hudContainer.appendChild(topInfoPanel);
