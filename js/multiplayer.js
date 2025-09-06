@@ -708,6 +708,8 @@ export class MultiplayerManager {
                 rotation: this.game.player.rotation,
                 velocity: this.game.player.velocity,
                 health: this.game.player.health,
+                shield: this.game.player.shield || 0,
+                maxShield: this.game.player.shieldCapacity || 0,
                 ship: this.game.player.shipId || 'scout',
                 color: this.game.player.color || '#0f0',
                 score: this.game.player.score || 0,
@@ -840,6 +842,8 @@ export class MultiplayerManager {
             rotation: this.game.player.rotation,
             velocity: this.game.player.velocity,
             health: this.game.player.health,
+            shield: this.game.player.shield || 0,
+            maxShield: this.game.player.shieldCapacity || 0,
             ship: this.game.player.shipId || 'scout',
             color: this.game.player.color || '#0f0',
             score: this.game.player.score || 0,
@@ -962,6 +966,8 @@ export class MultiplayerManager {
             y: playerData.y || 0,
             rotation: playerData.rotation || 0,
             health: playerData.health || 100,
+            shield: playerData.shield || 0,
+            maxShield: playerData.maxShield || 0,
             ship: playerData.ship || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
@@ -1007,6 +1013,8 @@ export class MultiplayerManager {
             player.rotation = playerData.rotation || player.rotation;
             player.velocity = playerData.velocity || player.velocity;
             player.health = playerData.health !== undefined ? playerData.health : player.health;
+            player.shield = playerData.shield !== undefined ? playerData.shield : (player.shield || 0);
+            player.maxShield = playerData.maxShield !== undefined ? playerData.maxShield : (player.maxShield || 0);
             player.ship = playerData.ship || player.ship;
             player.color = playerData.color || player.color;
             
