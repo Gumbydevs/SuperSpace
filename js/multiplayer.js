@@ -1506,79 +1506,88 @@ export class MultiplayerManager {
         // Clear existing list
         listContainer.innerHTML = '';
         
-        // Add current player with very explicit styling
-        const currentPlayerItem = document.createElement('div');
-        currentPlayerItem.style.display = 'flex';
-        currentPlayerItem.style.alignItems = 'center';
-        currentPlayerItem.style.marginBottom = '5px';
-        currentPlayerItem.style.position = 'relative'; // Ensure proper positioning
-        currentPlayerItem.style.padding = '2px';
-        currentPlayerItem.style.borderRadius = '3px';
-        
-        const currentPlayerColor = document.createElement('span');
-        currentPlayerColor.style.display = 'inline-block';
-        currentPlayerColor.style.width = '10px';
-        currentPlayerColor.style.height = '10px';
-        currentPlayerColor.style.backgroundColor = '#0f0';
-        currentPlayerColor.style.borderRadius = '50%';
-        currentPlayerColor.style.marginRight = '5px';
-        currentPlayerColor.style.flexShrink = '0';
-        
-        const currentPlayerText = document.createElement('span');
-        currentPlayerText.textContent = `${this.playerName} (You)`;
-        currentPlayerText.style.color = '#0f0';
-        // Very explicit style reset to prevent any decoration
-        currentPlayerText.style.textDecoration = 'none';
-        currentPlayerText.style.borderBottom = 'none';
-        currentPlayerText.style.borderTop = 'none';
-        currentPlayerText.style.textShadow = 'none';
-        currentPlayerText.style.boxShadow = 'none';
-        currentPlayerText.style.position = 'relative';
-        currentPlayerText.style.whiteSpace = 'nowrap';
-        currentPlayerText.style.overflow = 'hidden';
-        currentPlayerText.style.textOverflow = 'ellipsis';
-        
-        // Clear any potential overlays
-        currentPlayerItem.appendChild(currentPlayerColor);
-        currentPlayerItem.appendChild(currentPlayerText);
-        listContainer.appendChild(currentPlayerItem);
-        
-        // Add other players with same explicit styling
-        Object.values(this.players).forEach(player => {
-            if (player.id === this.playerId || player.destroyed) return; // Skip destroyed players
-            
+        // Gather all players (including self) and sort by score descending
+        const allPlayers = [
+            {
+                id: this.playerId,
+                name: this.playerName,
+                color: '#0f0',
+                score: this.game.player?.score || 0,
+                wins: this.game.player?.wins || 0,
+                losses: this.game.player?.losses || 0,
+                isSelf: true
+            },
+            ...Object.values(this.players).filter(p => !p.destroyed).map(p => ({
+                id: p.id,
+                name: p.name,
+                color: p.color || '#f00',
+                score: p.score || 0,
+                wins: p.wins || 0,
+                losses: p.losses || 0,
+                isSelf: false
+            }))
+        ];
+        allPlayers.sort((a, b) => b.score - a.score);
+
+        // Header row
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.fontWeight = 'bold';
+        header.style.marginBottom = '4px';
+        header.innerHTML = `<span style="width:16px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
+        listContainer.appendChild(header);
+
+        allPlayers.forEach(player => {
             const playerItem = document.createElement('div');
             playerItem.style.display = 'flex';
             playerItem.style.alignItems = 'center';
-            playerItem.style.marginBottom = '5px';
-            playerItem.style.position = 'relative'; // Ensure proper positioning
+            playerItem.style.marginBottom = '3px';
+            playerItem.style.position = 'relative';
             playerItem.style.padding = '2px';
             playerItem.style.borderRadius = '3px';
-            
+            playerItem.style.background = player.isSelf ? 'rgba(0,255,0,0.08)' : '';
+
             const playerColor = document.createElement('span');
             playerColor.style.display = 'inline-block';
             playerColor.style.width = '10px';
             playerColor.style.height = '10px';
-            playerColor.style.backgroundColor = player.color || '#f00';
+            playerColor.style.backgroundColor = player.color;
             playerColor.style.borderRadius = '50%';
             playerColor.style.marginRight = '5px';
             playerColor.style.flexShrink = '0';
-            
-            const playerText = document.createElement('span');
-            playerText.textContent = player.name;
-            // Very explicit style reset to prevent any decoration
-            playerText.style.textDecoration = 'none';
-            playerText.style.borderBottom = 'none';
-            playerText.style.borderTop = 'none';
-            playerText.style.textShadow = 'none';
-            playerText.style.boxShadow = 'none';
-            playerText.style.position = 'relative';
-            playerText.style.whiteSpace = 'nowrap';
-            playerText.style.overflow = 'hidden';
-            playerText.style.textOverflow = 'ellipsis';
-            
+
+            const playerName = document.createElement('span');
+            playerName.textContent = player.isSelf ? `${player.name} (You)` : player.name;
+            playerName.style.flex = '1';
+            playerName.style.color = player.isSelf ? '#0f0' : '#fff';
+            playerName.style.textDecoration = 'none';
+            playerName.style.overflow = 'hidden';
+            playerName.style.textOverflow = 'ellipsis';
+            playerName.style.whiteSpace = 'nowrap';
+
+            const score = document.createElement('span');
+            score.textContent = player.score;
+            score.style.width = '60px';
+            score.style.textAlign = 'center';
+            score.style.color = '#3af';
+
+            const wins = document.createElement('span');
+            wins.textContent = player.wins;
+            wins.style.width = '50px';
+            wins.style.textAlign = 'center';
+            wins.style.color = '#4f4';
+
+            const losses = document.createElement('span');
+            losses.textContent = player.losses;
+            losses.style.width = '60px';
+            losses.style.textAlign = 'center';
+            losses.style.color = '#f44';
+
             playerItem.appendChild(playerColor);
-            playerItem.appendChild(playerText);
+            playerItem.appendChild(playerName);
+            playerItem.appendChild(score);
+            playerItem.appendChild(wins);
+            playerItem.appendChild(losses);
             listContainer.appendChild(playerItem);
         });
         
