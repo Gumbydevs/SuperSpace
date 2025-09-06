@@ -40,7 +40,8 @@ export class Player {
 
         // Here we define the player's economy and score
         // Load persisted credits from localStorage or default to 0
-        this.credits = parseInt(localStorage.getItem('playerCredits') || 0);
+    this._credits = parseInt(localStorage.getItem('playerCredits') || 0);
+
         this.score = 0;   // Points for game score
 
         // Here we set up the weapon systems
@@ -75,7 +76,21 @@ export class Player {
         // Engine flame animation variables
         this.thrustLevel = 0; // Current visual size of engine flame (0-1)
         this.targetThrustLevel = 0; // Target size based on throttle input
+
         this.thrustTransitionSpeed = 2.0; // How quickly flame grows/shrinks
+    }
+
+    // Credits property with setter to auto-update shop UI
+    get credits() {
+        return this._credits;
+    }
+    set credits(value) {
+        this._credits = value;
+        localStorage.setItem('playerCredits', value);
+        // If shop is open, update the UI
+        if (window.shopSystem && window.shopSystem.shopOpen) {
+            window.shopSystem.updateShopContent();
+        }
     }
 
     update(deltaTime, input, soundManager) {

@@ -227,7 +227,9 @@ export class ShopSystem {
         this.loadCurrentEquipment();
         
         // Initialize UI elements
-        this.createShopUI();
+    this.createShopUI();
+    // Expose shopSystem globally for credits setter
+    window.shopSystem = this;
     }
     
     // New method to apply all purchased upgrades to the player
