@@ -151,7 +151,7 @@ class Game {
         // Here we style the button with CSS
         muteBtn.style.position = 'absolute';
         muteBtn.style.top = '26px';
-        muteBtn.style.right = '10px';
+        muteBtn.style.right = '0px';
         muteBtn.style.zIndex = '1002'; 
         muteBtn.style.background = 'rgba(0, 0, 0, 0.5)';
         muteBtn.style.color = 'white';
