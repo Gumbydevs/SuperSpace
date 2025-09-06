@@ -90,8 +90,8 @@ export class ShopSystem {
                 price: 0, // Starting weapon
                 owned: true, // Always owned
                 stats: {
-                    damage: 10,
-                    cooldown: 0.20,
+                    damage: 7, // Fast, low damage
+                    cooldown: 0.10, // Very rapid
                     speed: 800,
                     range: 600,
                     energyCost: 5
@@ -104,8 +104,8 @@ export class ShopSystem {
                 price: 2000,
                 owned: localStorage.getItem('weapon_burst') === 'true',
                 stats: {
-                    damage: 5, // Per projectile
-                    cooldown: 0.30,
+                    damage: 4, // Per projectile, but fires 3
+                    cooldown: 0.22, // Slower than laser, bursty
                     speed: 700,
                     range: 400,
                     energyCost: 7,
@@ -119,8 +119,8 @@ export class ShopSystem {
                 price: 5000,
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
-                    damage: 20,
-                    cooldown: 1.0,
+                    damage: 40, // High damage
+                    cooldown: 1.0, // Slow, heavy
                     speed: 500,
                     range: 1000,
                     energyCost: 15,
@@ -134,8 +134,8 @@ export class ShopSystem {
                 price: 8000,
                 owned: localStorage.getItem('weapon_plasma') === 'true',
                 stats: {
-                    damage: 25,
-                    cooldown: 0.6,
+                    damage: 18, // Splash, moderate
+                    cooldown: 0.28, // Medium
                     speed: 600,
                     range: 500,
                     energyCost: 20,
@@ -149,8 +149,8 @@ export class ShopSystem {
                 price: 15000,
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
-                    damage: 30,
-                    cooldown: 0.7,
+                    damage: 55, // Very high, rare
+                    cooldown: 1.4, // Very slow
                     speed: 900,
                     range: 800,
                     energyCost: 25,

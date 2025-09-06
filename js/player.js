@@ -49,8 +49,9 @@ export class Player {
         this.currentWeapon = this.weapons[0];
         this.weaponIndex = 0;
         this.projectiles = []; // Active projectiles fired by player
-        this.fireCooldown = 0; // Current cooldown time before can fire again
-        this.fireCooldownTime = 0.20; // Base time between shots
+    this.fireCooldown = 0; // Current cooldown time before can fire again
+    this.fireCooldownTime = 0.12; // Default, will be set by weapon
+    this.fireCooldownPenalty = 0; // Extra penalty when energy is 0
 
         // Here we define the energy system (optional until upgraded)
         this.maxEnergy = 100;
@@ -195,9 +196,29 @@ export class Player {
         }
 
         // Here we handle weapon firing
-        if (input.keys.includes('Space') && this.fireCooldown <= 0) {
+        // Dynamic fire rate based on energy
+        let canFire = input.keys.includes('Space') && this.fireCooldown <= 0;
+        let weapon = null;
+        if (this.currentWeaponId && window.shopSystem && window.shopSystem.availableWeapons) {
+            weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
+        }
+        let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
+        // Fire rate slows as energy drops below 50%
+        let energyRatio = this.energy / this.maxEnergy;
+        let cooldownMod = 1;
+        if (energyRatio < 0.5) {
+            cooldownMod = 1 + (1 - energyRatio) * 1.5; // up to 2.5x slower at 0 energy
+        }
+        if (this.energy <= 0) {
+            canFire = false;
+            // Briefly lock out firing when energy is 0
+            if (this.fireCooldown <= 0) {
+                this.fireCooldown = baseCooldown * 2.5; // Longer lockout
+            }
+        }
+        if (canFire) {
             this.fire(soundManager);
-            this.fireCooldown = this.fireCooldownTime;
+            this.fireCooldown = baseCooldown * cooldownMod;
         }
 
         // Here we handle weapon switching with Q and E keys
