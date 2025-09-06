@@ -164,6 +164,11 @@ h1 {
     align-items: center;
     gap: 12px;
     margin-bottom: 8px;
+    margin-left: 15px; /* Move the entire row right by 15px */
+}
+.slider-row label {
+    min-width: 90px; /* Set a minimum width to align sliders */
+    text-align: left;
 }
 input[type="range"] {
     width: 120px;
