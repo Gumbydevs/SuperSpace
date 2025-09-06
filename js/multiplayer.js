@@ -155,7 +155,7 @@ export class MultiplayerManager {
             
             // Create confirm button
             const confirmButton = document.createElement('button');
-            confirmButton.textContent = '🚀 Connect';
+            confirmButton.textContent = '🚀 Authenticate';
             confirmButton.style.padding = '10px 20px';
             confirmButton.style.borderRadius = '5px';
             confirmButton.style.border = 'none';
