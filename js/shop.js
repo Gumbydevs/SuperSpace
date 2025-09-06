@@ -159,7 +159,7 @@ export class ShopSystem {
             },
             {
                 id: 'rocket',
-                name: 'Fusion Mortar 💥',
+                name: 'Fusion Mortar',
                 description: 'Fires explosive fusion shells that detonate at range with massive area damage.',
                 price: 12000,
                 owned: localStorage.getItem('weapon_rocket') === 'true',
@@ -858,6 +858,11 @@ export class ShopSystem {
                 iconInner.style.height = '30px';
                 iconInner.style.backgroundColor = '#fff';
                 iconInner.style.boxShadow = '0 0 15px #fff, 0 0 25px #0ff';
+            } else if (weapon.id === 'rocket') {
+                // Large explosion emoji icon for Fusion Mortar
+                iconInner.textContent = '💥';
+                iconInner.style.fontSize = '40px';
+                iconInner.style.textShadow = '0 0 10px #ff6600';
             }
             
             icon.appendChild(iconInner);
