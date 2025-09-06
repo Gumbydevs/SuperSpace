@@ -1052,6 +1052,12 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
+        // Track losses locally 
+        if (this.game.player) {
+            this.game.player.losses += 1;
+            this.updatePlayerList(); // Update UI immediately
+        }
+        
         // Store current credits value
         const currentCredits = this.game.player.credits;
         
@@ -1113,11 +1119,12 @@ export class MultiplayerManager {
         if (attackerId === this.playerId) {
             this.showGameMessage(`You destroyed ${deadPlayerName}! (+500 pts, +250 credits)`, '#4f4');
             
-            // Don't update score locally - let server handle it
-            // Award only credits locally (server doesn't track credits in detail)
+            // Award credits and points immediately for responsive gameplay
             if (this.game.player) {
-                // this.game.player.score += 500;  // Let server handle score
+                this.game.player.score += 500;  // Restore immediate score update
                 this.game.player.addCredits(250);
+                this.game.player.wins += 1;  // Track wins locally too
+                this.updatePlayerList(); // Update UI immediately
             }
         } else {
             this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');

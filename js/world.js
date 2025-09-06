@@ -465,8 +465,13 @@ export class World {
 
                     // Here we handle asteroid destruction
                     if (asteroid.health <= 0) {
-                        // Don't update score locally - let server handle it
-                        // player.score += asteroid.scoreValue;
+                        // Award score to player immediately for responsive gameplay
+                        player.score += asteroid.scoreValue;
+
+                        // Update multiplayer UI immediately if connected
+                        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+                            window.game.multiplayer.updatePlayerList();
+                        }
 
                         // Award credits based on asteroid size
                         let creditReward;
