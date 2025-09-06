@@ -438,8 +438,8 @@ export class MultiplayerManager {
         // Handle asteroid destruction from server
         this.socket.on('asteroidDestroyed', (data) => {
             if (this.game.world) {
-                // Destroy the asteroid with explosion
-                this.game.world.destroyServerAsteroid(data.asteroidId, true);
+                // Use the new fragment handling method
+                this.handleAsteroidDestroyedWithFragments(data);
             }
         });
         
@@ -1988,6 +1988,43 @@ export class MultiplayerManager {
                 this.game.world.asteroids.splice(i, 1);
                 break;
             }
+        }
+    }
+
+    // Handle asteroid destruction with fragments from server
+    handleAsteroidDestroyedWithFragments(data) {
+        // Find and remove the original asteroid by ID
+        for (let i = 0; i < this.game.world.asteroids.length; i++) {
+            if (this.game.world.asteroids[i].id === data.asteroidId) {
+                // Create explosion effect
+                this.game.world.createExplosion(
+                    this.game.world.asteroids[i].x, 
+                    this.game.world.asteroids[i].y, 
+                    this.game.world.asteroids[i].radius
+                );
+                
+                // Remove the original asteroid
+                this.game.world.asteroids.splice(i, 1);
+                break;
+            }
+        }
+        
+        // Add any fragments from the server
+        if (data.fragments && data.fragments.length > 0) {
+            data.fragments.forEach(fragment => {
+                this.game.world.asteroids.push({
+                    id: fragment.id,
+                    x: fragment.x,
+                    y: fragment.y,
+                    radius: fragment.radius,
+                    health: fragment.health,
+                    type: fragment.type,
+                    rotation: fragment.rotation,
+                    rotationSpeed: fragment.rotationSpeed,
+                    size: fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small'
+                });
+            });
+            console.log(`Added ${data.fragments.length} asteroid fragments from server`);
         }
     }
 

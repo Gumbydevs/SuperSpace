@@ -314,20 +314,48 @@ io.on('connection', (socket) => {
         
         // Check if asteroid is destroyed
         if (asteroid.health <= 0) {
-          // Remove asteroid from server state
+          // Handle asteroid splitting before removal
+          const fragments = [];
+          if (asteroid.radius > 30) { // Only split larger asteroids
+            if (Math.random() < 0.7) { // 70% chance to split
+              const fragmentCount = 2 + Math.floor(Math.random() * 3); // 2-4 fragments
+              for (let i = 0; i < fragmentCount; i++) {
+                const angle = (Math.PI * 2 / fragmentCount) * i + Math.random() * 0.5;
+                const distance = 20 + Math.random() * 30;
+                const fragmentRadius = asteroid.radius * 0.3 + Math.random() * asteroid.radius * 0.2; // 30-50% of original size
+                
+                const fragment = {
+                  id: `fragment-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+                  x: asteroid.x + Math.cos(angle) * distance,
+                  y: asteroid.y + Math.sin(angle) * distance,
+                  radius: fragmentRadius,
+                  health: fragmentRadius * 1.5, // Fragments are a bit weaker
+                  type: asteroid.type,
+                  rotation: Math.random() * Math.PI * 2,
+                  rotationSpeed: (Math.random() - 0.5) * 0.3
+                };
+                
+                fragments.push(fragment);
+                gameState.asteroids.push(fragment);
+              }
+            }
+          }
+          
+          // Remove original asteroid from server state
           const asteroidIndex = gameState.asteroids.findIndex(a => a.id === data.id);
           if (asteroidIndex >= 0) {
             gameState.asteroids.splice(asteroidIndex, 1);
           }
           
-          // Broadcast asteroid destruction to all clients
+          // Broadcast asteroid destruction and any fragments to all clients
           io.emit('asteroidDestroyed', {
             asteroidId: data.id,
             destroyedBy: socket.id,
-            position: { x: asteroid.x, y: asteroid.y }
+            position: { x: asteroid.x, y: asteroid.y },
+            fragments: fragments // Include fragment data
           });
           
-          console.log(`Asteroid ${data.id} destroyed by player ${socket.id}. ${gameState.asteroids.length} asteroids remaining.`);
+          console.log(`Asteroid ${data.id} destroyed by player ${socket.id}. Created ${fragments.length} fragments. ${gameState.asteroids.length} asteroids remaining.`);
         } else {
           // Broadcast asteroid hit (damage) to all clients
           io.emit('asteroidHit', {
