@@ -538,7 +538,8 @@
 
             // Here we check for collisions with player projectiles
             player.projectiles.forEach((projectile, j) => {
-                // No longer skip asteroids marked as pending destruction
+                // Skip asteroids marked as pending destruction
+                if (asteroid.pendingDestruction) return;
                 
                 const dx = projectile.x - asteroid.x;
                 const dy = projectile.y - asteroid.y;
@@ -578,40 +579,63 @@
                             window.game.multiplayer.broadcastStatsUpdate();
                         }
 
-                        // Award credits based on asteroid size
-                        let creditReward;
-                        switch (asteroid.size) {
-                            case 'large':
-                                creditReward = this.getRandomInt(
-                                    this.asteroidCreditValues.large.min,
-                                    this.asteroidCreditValues.large.max
-                                );
-                                break;
-                            case 'medium':
-                                creditReward = this.getRandomInt(
-                                    this.asteroidCreditValues.medium.min,
-                                    this.asteroidCreditValues.medium.max
-                                );
-                                break;
-                            default:
-                                creditReward = this.getRandomInt(
-                                    this.asteroidCreditValues.small.min,
-                                    this.asteroidCreditValues.small.max
-                                );
-                        }
-
                         // Send hit event to server with all calculated values
-                        window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
-
-                        player.addCredits(creditReward);
-
-                        // Create explosion effect
-                        this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
-
-                        // Immediately remove asteroid to prevent multiple hits
-                        // Server will send asteroidDestroyed event with fragments to ALL clients (including us)
-                        console.log(`Asteroid ${asteroid.id} destroyed locally - server will sync fragments to all players`);
-                        this.asteroids.splice(i, 1);
+                        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, 0, true);
+                            
+                            // Mark asteroid as pending destruction to prevent multiple hits
+                            asteroid.pendingDestruction = true;
+                            asteroid.destructionTimeout = setTimeout(() => {
+                                // Fallback: remove asteroid if server doesn't respond within 3 seconds
+                                const index = this.asteroids.findIndex(a => a.id === asteroid.id);
+                                if (index >= 0 && this.asteroids[index].pendingDestruction) {
+                                    console.warn(`Asteroid ${asteroid.id} timed out - removing locally`);
+                                    this.asteroids.splice(index, 1);
+                                }
+                            }, 3000);
+                            
+                            console.log(`Asteroid ${asteroid.id} marked for destruction - waiting for server fragments`);
+                        } else {
+                            console.warn('Multiplayer not available - using local destruction');
+                            
+                            // Award credits based on asteroid size
+                            let creditReward;
+                            switch (asteroid.size) {
+                                case 'large':
+                                    creditReward = this.getRandomInt(
+                                        this.asteroidCreditValues.large.min,
+                                        this.asteroidCreditValues.large.max
+                                    );
+                                    break;
+                                case 'medium':
+                                    creditReward = this.getRandomInt(
+                                        this.asteroidCreditValues.medium.min,
+                                        this.asteroidCreditValues.medium.max
+                                    );
+                                    break;
+                                default:
+                                    creditReward = this.getRandomInt(
+                                        this.asteroidCreditValues.small.min,
+                                        this.asteroidCreditValues.small.max
+                                    );
+                            }
+                            player.addCredits(creditReward);
+                            
+                            // Create explosion effect
+                            this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
+                            
+                            // Spawn powerups locally
+                            if (asteroid.size !== 'small') {
+                                if (Math.random() < 0.3) { // 30% chance for large/medium asteroids
+                                    this.spawnPowerup(asteroid.x, asteroid.y);
+                                }
+                            } else if (Math.random() < 0.1) { // 10% chance for small asteroids
+                                this.spawnPowerup(asteroid.x, asteroid.y);
+                            }
+                            
+                            // Fallback: immediate removal if no multiplayer
+                            this.asteroids.splice(i, 1);
+                        }
                     }
                 }
             });

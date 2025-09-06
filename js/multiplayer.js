@@ -948,7 +948,10 @@ export class MultiplayerManager {
 
     // Send hit data when player hits something
     sendHit(type, id, damage, points = 0, credits = 0, destroyed = false) {
-        if (!this.connected) return;
+        if (!this.connected) {
+            console.warn('Cannot send hit - multiplayer not connected');
+            return;
+        }
         
         const hitData = {
             type: type, // 'asteroid' or 'player'
@@ -964,6 +967,7 @@ export class MultiplayerManager {
             hitData.targetId = id;
         }
         
+        console.log('Sending hit to server:', hitData);
         this.socket.emit('hit', hitData);
     }
 
@@ -2001,6 +2005,48 @@ export class MultiplayerManager {
             if (this.game.world.asteroids[i].id === data.asteroidId) {
                 console.log(`Found asteroid ${data.asteroidId} to destroy at index ${i}`);
                 asteroidFound = true;
+                
+                const asteroid = this.game.world.asteroids[i];
+                
+                // Clear any pending destruction timeout
+                if (asteroid.destructionTimeout) {
+                    clearTimeout(asteroid.destructionTimeout);
+                }
+                
+                // Award credits locally (since we destroyed it)
+                if (data.destroyedBy === this.socket.id && this.game.player) {
+                    // Calculate credit reward based on asteroid size
+                    let creditReward;
+                    switch (asteroid.size) {
+                        case 'large':
+                            creditReward = this.game.world.getRandomInt(
+                                this.game.world.asteroidCreditValues.large.min,
+                                this.game.world.asteroidCreditValues.large.max
+                            );
+                            break;
+                        case 'medium':
+                            creditReward = this.game.world.getRandomInt(
+                                this.game.world.asteroidCreditValues.medium.min,
+                                this.game.world.asteroidCreditValues.medium.max
+                            );
+                            break;
+                        default:
+                            creditReward = this.game.world.getRandomInt(
+                                this.game.world.asteroidCreditValues.small.min,
+                                this.game.world.asteroidCreditValues.small.max
+                            );
+                    }
+                    this.game.player.addCredits(creditReward);
+                    
+                    // Spawn powerups locally
+                    if (asteroid.size !== 'small') {
+                        if (Math.random() < 0.3) { // 30% chance for large/medium asteroids
+                            this.game.world.spawnPowerup(asteroid.x, asteroid.y);
+                        }
+                    } else if (Math.random() < 0.1) { // 10% chance for small asteroids
+                        this.game.world.spawnPowerup(asteroid.x, asteroid.y);
+                    }
+                }
                 
                 // Create explosion effect
                 this.game.world.createExplosion(
