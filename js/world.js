@@ -59,10 +59,15 @@ export class World {
         // or by generateAsteroids in single player mode
         this.asteroids = [];
         
-        // Generate local asteroids only if we're not in multiplayer mode
-        // In multiplayer, asteroids will be received from server via setupServerAsteroidField
-        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.connected) {
+        // NEVER generate local asteroids in multiplayer mode
+        // Only generate asteroids if explicitly in single player mode
+        // In multiplayer, ALL asteroids come from server via setupServerAsteroidField
+        const isMultiplayerMode = window.game && window.game.multiplayer;
+        if (!isMultiplayerMode) {
+            console.log('Single player mode - generating local asteroids');
             this.asteroids = this.generateAsteroids(150);
+        } else {
+            console.log('Multiplayer mode - waiting for server asteroids, NO local generation');
         }
         // Here we initialize arrays for game objects
         this.powerups = [];
@@ -394,6 +399,13 @@ export class World {
         return asteroids;
     }
 
+    // Method to force clear all local asteroids (for multiplayer mode)
+    clearLocalAsteroids() {
+        const count = this.asteroids.length;
+        this.asteroids = [];
+        console.log(`Cleared ${count} local asteroids for multiplayer mode`);
+    }
+
     // Method to set up asteroids from server data (for multiplayer synchronization)
     setupServerAsteroidField(serverAsteroids) {
         console.log('Setting up server asteroid field:', serverAsteroids.length, 'asteroids');
@@ -490,17 +502,22 @@ export class World {
         // Update star animations and parallax effect
         this.updateStars(deltaTime, player);
         
-        // Here we handle asteroid spawning over time (only in single player mode)
-        // In multiplayer mode, server handles asteroid regeneration
-        const isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+        // Here we handle asteroid spawning over time (ONLY in single player mode)
+        // In multiplayer mode, server handles ALL asteroid management - ZERO local generation
+        const isMultiplayerMode = window.game && window.game.multiplayer;
         
-        if (!isMultiplayerConnected) {
+        if (!isMultiplayerMode) {
+            // Single player only - spawn asteroids over time
             this.asteroidSpawnTimer += deltaTime;
             if (this.asteroidSpawnTimer >= this.asteroidSpawnInterval && this.asteroids.length < this.maxAsteroids) {
                 // Add a new asteroid when timer expires and below max count
+                console.log('Single player - spawning new asteroid');
                 this.asteroids.push(...this.generateAsteroids(1));
                 this.asteroidSpawnTimer = 0;
             }
+        } else {
+            // Multiplayer mode - absolutely no local asteroid generation
+            // All asteroids managed by server
         }
 
         // Update safe zone pulse phase for docking lights
@@ -613,22 +630,32 @@ export class World {
                         // Create explosion effect
                         this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
 
-                        // Here we handle asteroid splitting or powerup spawning
-                        if (asteroid.size !== 'small') {
-                            if (Math.random() < 0.7) {
-                                // 70% chance to split into smaller asteroids
-                                this.splitAsteroid(asteroid, soundManager);
-                            } else {
-                                // 30% chance to spawn a powerup
+                        // Here we handle asteroid splitting or powerup spawning (SINGLE PLAYER ONLY)
+                        // In multiplayer, server manages all asteroid state including splitting
+                        const isMultiplayerMode = window.game && window.game.multiplayer;
+                        if (!isMultiplayerMode) {
+                            // Single player only - handle splitting and powerups
+                            if (asteroid.size !== 'small') {
+                                if (Math.random() < 0.7) {
+                                    // 70% chance to split into smaller asteroids
+                                    this.splitAsteroid(asteroid, soundManager);
+                                } else {
+                                    // 30% chance to spawn a powerup
+                                    this.spawnPowerup(asteroid.x, asteroid.y);
+                                }
+                            } else if (Math.random() < 0.1) {
+                                // 10% chance for small asteroids to spawn a powerup
                                 this.spawnPowerup(asteroid.x, asteroid.y);
                             }
-                        } else if (Math.random() < 0.1) {
-                            // 10% chance for small asteroids to spawn a powerup
-                            this.spawnPowerup(asteroid.x, asteroid.y);
                         }
+                        // In multiplayer: server handles splitting and sends updates
 
-                        // Remove the destroyed asteroid
-                        this.asteroids.splice(i, 1);
+                        // Remove the destroyed asteroid (SINGLE PLAYER ONLY)
+                        // In multiplayer, server manages asteroid removal via destroyServerAsteroid
+                        if (!isMultiplayerMode) {
+                            this.asteroids.splice(i, 1);
+                        }
+                        // In multiplayer: asteroid removal handled by server events
                     }
                 }
             });
@@ -788,6 +815,13 @@ export class World {
     }
 
     splitAsteroid(asteroid, soundManager) {
+        // SAFETY CHECK: Never split asteroids in multiplayer mode
+        const isMultiplayerMode = window.game && window.game.multiplayer;
+        if (isMultiplayerMode) {
+            console.warn('splitAsteroid called in multiplayer mode - skipping! Server should handle this.');
+            return;
+        }
+        
         // Here we create visual debris when an asteroid is split
         this.createAsteroidDebris(asteroid.x, asteroid.y, asteroid.radius);
 
