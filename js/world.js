@@ -1,4 +1,4 @@
-export class World {
+﻿export class World {
     // Generate an array of new powerups
     generatePowerups(count = 1) {
         const powerups = [];
@@ -492,7 +492,7 @@ export class World {
         // Here we create irregular polygon shapes for asteroids
         const vertices = [];
         for (let i = 0; i < count; i++) {
-            // Calculate angle for this vertex (evenly distributed around 360°)
+            // Calculate angle for this vertex (evenly distributed around 360Â°)
             const angle = (i / count) * Math.PI * 2;
             // Vary the radius to create an irregular shape
             const radius = 1 + (Math.random() * irregularity * 2 - irregularity);
@@ -1326,16 +1326,16 @@ export class World {
                 if (weaponIcon) {
                     switch(player.currentWeapon) {
                         case 'Basic Laser':
-                            weaponIcon.innerHTML = '🔫';
+                            weaponIcon.innerHTML = 'ðŸ”«';
                             break;
                         case 'Burst Cannon':
-                            weaponIcon.innerHTML = '💥';
+                            weaponIcon.innerHTML = 'ðŸ’¥';
                             break;
                         case 'Seeker Missile':
-                            weaponIcon.innerHTML = '🚀';
+                            weaponIcon.innerHTML = 'ðŸš€';
                             break;
                         default:
-                            weaponIcon.innerHTML = '🔫';
+                            weaponIcon.innerHTML = 'ðŸ”«';
                     }
                 }
                 break;
@@ -1997,5 +1997,5 @@ export class World {
             ctx.fill();
         });
     }
-}/ /   F o r c e   d e p l o y m e n t   0 9 / 0 6 / 2 0 2 5   1 5 : 5 6 : 0 8  
+}
  
