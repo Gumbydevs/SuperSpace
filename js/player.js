@@ -405,8 +405,9 @@ export class Player {
             for (let i = this.projectiles.length - 1; i >= 0; i--) {
                 this.projectiles[i].update(deltaTime);
                 
-                // Remove projectiles that travel beyond their range
-                if (this.projectiles[i].distanceTraveled > this.projectiles[i].range) {
+                // Remove projectiles that travel beyond their range or have exploded
+                if (this.projectiles[i].distanceTraveled > this.projectiles[i].range ||
+                    this.projectiles[i].hasExploded) {
                     this.projectiles.splice(i, 1);
                 }
             }
@@ -809,41 +810,43 @@ export class Player {
                 }
                 break;
                 
-            case 'Rocket Launcher':
-                // Fire an explosive rocket
-                const rocketProj = new Projectile(
+            case 'FUSION MORTAR':
+                // Fire an explosive mortar shell
+                const mortarProj = new Projectile(
                     this.x, this.y,
                     this.rotation,
                     'rocket',
-                    weaponStats ? weaponStats.damage : 45, // High direct damage
-                    weaponStats ? weaponStats.speed : 400, // Medium speed
+                    weaponStats ? weaponStats.damage : 15, // Lower direct damage
+                    weaponStats ? weaponStats.speed : 350, // Medium-slow speed
                     weaponStats ? weaponStats.range : 700, // Good range
                     false, // Not homing
                     0, // No splash radius (uses explosion instead)
-                    weaponStats ? weaponStats.explosionRadius : 80, // Explosion radius
-                    weaponStats ? weaponStats.explosionDamage : 25 // Explosion damage
+                    weaponStats ? weaponStats.explosionRadius : 100, // Large explosion radius
+                    weaponStats ? weaponStats.explosionDamage : 40, // High explosion damage
+                    weaponStats ? weaponStats.minDetonationRange : 200, // Min detonation distance
+                    weaponStats ? weaponStats.maxDetonationRange : 500 // Max detonation distance
                 );
                 
-                // Set rocket visual properties
-                rocketProj.color = '#ff4';
-                rocketProj.trail = true;
-                rocketProj.trailColor = '#fa0';
-                rocketProj.explosive = true;
+                // Set mortar shell visual properties
+                mortarProj.color = '#ff6600';
+                mortarProj.trail = true;
+                mortarProj.trailColor = '#ffaa00';
+                mortarProj.explosive = true;
                 
-                projectiles.push(rocketProj);
+                projectiles.push(mortarProj);
                 
-                // Play rocket sound
+                // Play mortar sound
                 if (soundManager) {
-                    soundManager.play('rocket', { 
-                        volume: 0.8,
+                    soundManager.play('mortar', { 
+                        volume: 0.9,
                         position: { x: this.x, y: this.y }
                     });
                     
-                    // If rocket sound doesn't exist, use a fallback sound
-                    if (!soundManager.isSoundLoaded('rocket')) {
+                    // If mortar sound doesn't exist, use a fallback sound
+                    if (!soundManager.isSoundLoaded('mortar')) {
                         soundManager.play('laser', {
-                            volume: 0.8,
-                            playbackRate: 0.5,
+                            volume: 0.9,
+                            playbackRate: 0.4,
                             position: { x: this.x, y: this.y }
                         });
                     }

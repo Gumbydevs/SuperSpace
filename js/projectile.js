@@ -1,5 +1,5 @@
 export class Projectile {
-    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0) {
+    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0) {
         // Here we set the projectile's starting position
         this.x = x;
         this.y = y;
@@ -26,6 +26,8 @@ export class Projectile {
         this.splashRadius = splashRadius; // For plasma cannon
         this.explosionRadius = explosionRadius; // For rocket launcher
         this.explosionDamage = explosionDamage; // Explosion damage for rockets
+        this.minDetonationRange = minDetonationRange; // Minimum distance before mortar can explode
+        this.maxDetonationRange = maxDetonationRange; // Maximum distance before forced detonation
         this.phasing = false; // For quantum disruptor to pass through obstacles
         this.glow = false; // Visual effect for some projectiles
         this.trail = false; // Whether to leave a trail
@@ -33,6 +35,7 @@ export class Projectile {
         this.size = null; // Custom size value for specific projectiles
         this.trailParticles = []; // Stores trail particle data
         this.explosive = false; // Whether projectile explodes on impact
+        this.hasExploded = false; // Track if projectile has already exploded
         
         // Here we define visual properties based on projectile type
         switch (type) {
@@ -72,13 +75,16 @@ export class Projectile {
                 this.phasing = true;
                 break;
             case 'rocket':
-                // Explosive rocket projectile
-                this.width = 5;
-                this.height = 14;
-                this.color = '#ff4';  // Yellow-orange color
+                // Explosive mortar shell projectile - short and stubby
+                this.width = 8;
+                this.height = 6;
+                this.color = '#ff6600';  // Orange color
                 this.trail = true;
-                this.trailColor = '#fa0';
+                this.trailColor = '#ffaa00';
                 this.explosive = true;
+                // Set detonation ranges from constructor parameters
+                this.minDetonationRange = minDetonationRange || 0;
+                this.maxDetonationRange = maxDetonationRange || 0;
                 break;
             default:
                 // Default fallback appearance
@@ -180,6 +186,27 @@ export class Projectile {
                     x: Math.sin(this.angle) * this.speed,
                     y: -Math.cos(this.angle) * this.speed
                 };
+            }
+        }
+        
+        // Check for distance-based detonation for mortar shells
+        if (this.type === 'rocket' && this.explosive && !this.hasExploded && 
+            this.minDetonationRange > 0 && this.maxDetonationRange > 0) {
+            
+            // Check if we're in the detonation range
+            if (this.distanceTraveled >= this.minDetonationRange) {
+                // Random chance to explode within the range, higher chance as we get closer to max range
+                const rangeProgress = (this.distanceTraveled - this.minDetonationRange) / 
+                                    (this.maxDetonationRange - this.minDetonationRange);
+                const detonationChance = Math.min(rangeProgress * 0.15 + 0.02, 0.25); // 2% to 25% chance per frame
+                
+                if (Math.random() < detonationChance || this.distanceTraveled >= this.maxDetonationRange) {
+                    this.hasExploded = true;
+                    // Trigger explosion in the world
+                    if (window.game && window.game.world) {
+                        this.createExplosion(window.game.world, window.game.soundManager);
+                    }
+                }
             }
         }
     }
