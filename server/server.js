@@ -152,6 +152,7 @@ io.on('connection', (socket) => {
       player.velocity = data.velocity;
       player.health = data.health;
       player.ship = data.ship;
+      player.color = data.color || player.color;
       
       // Broadcast the updated position to all other players
       socket.broadcast.emit('playerMoved', {
@@ -160,7 +161,12 @@ io.on('connection', (socket) => {
         y: player.y,
         rotation: player.rotation,
         velocity: player.velocity,
-        ship: player.ship
+        health: player.health,
+        ship: player.ship,
+        color: player.color,
+        score: player.score,
+        wins: player.wins,
+        losses: player.losses
       });
     }
   });
@@ -210,8 +216,8 @@ io.on('connection', (socket) => {
         io.emit('playerStatsUpdate', {
           id: socket.id,
           score: gameState.players[socket.id].score,
-          wins: gameState.players[socket.id].wins || 0,
-          losses: gameState.players[socket.id].losses || 0
+          wins: gameState.players[socket.id].wins,
+          losses: gameState.players[socket.id].losses
         });
       }
       

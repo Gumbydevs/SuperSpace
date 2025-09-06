@@ -21,6 +21,7 @@ export class Player {
         // Ship color - load from localStorage or use default blue
         this.shipColor = localStorage.getItem('playerShipColor') || '#33f';
         this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
+        this.color = this.shipColor; // Multiplayer color reference
 
         // Add collision properties
         this.collisionRadius = 15; // Radius used for collision detection

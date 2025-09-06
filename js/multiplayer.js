@@ -285,7 +285,8 @@ export class MultiplayerManager {
                 y: this.game.player.y,
                 rotation: this.game.player.rotation,
                 ship: this.game.player.currentShip || 'scout',
-                name: this.playerName
+                name: this.playerName,
+                color: this.game.player.color || '#0f0'
             });
             
             // Show connection indicator
@@ -651,7 +652,8 @@ export class MultiplayerManager {
                 rotation: this.game.player.rotation,
                 velocity: this.game.player.velocity,
                 health: this.game.player.health,
-                ship: this.game.player.shipId || 'scout'
+                ship: this.game.player.shipId || 'scout',
+                color: this.game.player.color || '#0f0'
             };
 
             this.socket.emit('playerUpdate', playerData);
@@ -835,6 +837,9 @@ export class MultiplayerManager {
             ship: playerData.ship || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
+            score: playerData.score || 0,
+            wins: playerData.wins || 0,
+            losses: playerData.losses || 0,
             projectiles: [],
             destroyed: false // Add destroyed flag
         };
@@ -867,8 +872,12 @@ export class MultiplayerManager {
             player.y = playerData.y || player.y;
             player.rotation = playerData.rotation || player.rotation;
             player.velocity = playerData.velocity || player.velocity;
-            player.health = playerData.health || player.health;
+            player.health = playerData.health !== undefined ? playerData.health : player.health;
             player.ship = playerData.ship || player.ship;
+            player.color = playerData.color || player.color;
+            player.score = playerData.score !== undefined ? playerData.score : player.score;
+            player.wins = playerData.wins !== undefined ? playerData.wins : player.wins;
+            player.losses = playerData.losses !== undefined ? playerData.losses : player.losses;
             
             // Update name if provided and cache it
             if (playerData.name && playerData.name !== 'Unknown') {
