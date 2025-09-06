@@ -156,13 +156,25 @@ io.on('connection', (socket) => {
       
       // Update stats from client (since client calculates scores immediately)
       if (data.score !== undefined) {
+        const oldScore = player.score;
         player.score = data.score;
+        if (oldScore !== player.score) {
+          console.log(`SCORE UPDATE: Player ${player.name} score changed from ${oldScore} to ${player.score}`);
+        }
       }
       if (data.wins !== undefined) {
+        const oldWins = player.wins;
         player.wins = data.wins;
+        if (oldWins !== player.wins) {
+          console.log(`WINS UPDATE: Player ${player.name} wins changed from ${oldWins} to ${player.wins}`);
+        }
       }
       if (data.losses !== undefined) {
+        const oldLosses = player.losses;
         player.losses = data.losses;
+        if (oldLosses !== player.losses) {
+          console.log(`LOSSES UPDATE: Player ${player.name} losses changed from ${oldLosses} to ${player.losses}`);
+        }
       }
       
       // Broadcast the updated position to all other players

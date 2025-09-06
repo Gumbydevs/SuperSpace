@@ -674,6 +674,15 @@ export class MultiplayerManager {
                 losses: this.game.player.losses || 0
             };
 
+            // Debug: Log when sending significant stat changes
+            if (!this.lastSentStats || 
+                this.lastSentStats.score !== playerData.score ||
+                this.lastSentStats.wins !== playerData.wins ||
+                this.lastSentStats.losses !== playerData.losses) {
+                console.log('SENDING PLAYER UPDATE:', { score: playerData.score, wins: playerData.wins, losses: playerData.losses });
+                this.lastSentStats = { score: playerData.score, wins: playerData.wins, losses: playerData.losses };
+            }
+
             this.socket.emit('playerUpdate', playerData);
             this.lastUpdate = 0;
         }
@@ -893,9 +902,19 @@ export class MultiplayerManager {
             player.health = playerData.health !== undefined ? playerData.health : player.health;
             player.ship = playerData.ship || player.ship;
             player.color = playerData.color || player.color;
+            
+            // Debug: Log stat updates
+            const oldScore = player.score;
+            const oldWins = player.wins;
+            const oldLosses = player.losses;
+            
             player.score = playerData.score !== undefined ? playerData.score : player.score;
             player.wins = playerData.wins !== undefined ? playerData.wins : player.wins;
             player.losses = playerData.losses !== undefined ? playerData.losses : player.losses;
+            
+            if (oldScore !== player.score || oldWins !== player.wins || oldLosses !== player.losses) {
+                console.log(`REMOTE PLAYER UPDATE: ${player.name} - Score: ${oldScore}->${player.score}, Wins: ${oldWins}->${player.wins}, Losses: ${oldLosses}->${player.losses}`);
+            }
             
             // Update name if provided and cache it
             if (playerData.name && playerData.name !== 'Unknown') {
@@ -1613,7 +1632,14 @@ export class MultiplayerManager {
                 isSelf: false
             }))
         ];
+        
+        // Debug: Log player data before sorting
+        console.log('PLAYER LIST UPDATE - Before sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses })));
+        
         allPlayers.sort((a, b) => b.score - a.score);
+        
+        // Debug: Log player data after sorting
+        console.log('PLAYER LIST UPDATE - After sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses })));
 
         // Header row
         const header = document.createElement('div');
