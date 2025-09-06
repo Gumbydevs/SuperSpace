@@ -1521,9 +1521,9 @@ export class Player {
                     // Mark death as triggered
                     this.deathTriggered = true;
                     
-                    // Notify multiplayer if available
+                    // Notify multiplayer if available - this was an asteroid death
                     if (window.game.multiplayer && window.game.multiplayer.handleDeath) {
-                        window.game.multiplayer.handleDeath(this.lastDamageFrom);
+                        window.game.multiplayer.handleDeath('asteroid');
                     }
                 }
             }

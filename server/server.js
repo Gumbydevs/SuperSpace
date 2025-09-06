@@ -335,6 +335,32 @@ io.on('connection', (socket) => {
     console.log(`Player collision: ${data.sourceId} collided with ${data.targetId}`);
   });
   
+  // Player death by asteroid
+  socket.on('playerDestroyedByAsteroid', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    if (gameState.players[socket.id]) {
+      // Increment losses for the player who died
+      gameState.players[socket.id].losses += 1;
+      console.log(`Player ${gameState.players[socket.id].name} was destroyed by an asteroid! Losses: ${gameState.players[socket.id].losses}`);
+      
+      // Broadcast the asteroid death to all clients
+      io.emit('playerDestroyedByAsteroid', {
+        playerId: socket.id,
+        playerName: gameState.players[socket.id].name
+      });
+      
+      // Broadcast updated stats to all clients
+      io.emit('playerStatsUpdate', {
+        id: socket.id,
+        score: gameState.players[socket.id].score,
+        wins: gameState.players[socket.id].wins,
+        losses: gameState.players[socket.id].losses
+      });
+    }
+  });
+  
   // Player respawn
   socket.on('respawn', (data) => {
     // Update activity timestamp

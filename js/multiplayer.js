@@ -454,7 +454,7 @@ export class MultiplayerManager {
             const killerName = data.attackerId === this.playerId ? 
                 'You' : 
                 (this.players[data.attackerId]?.name || 'Another player');
-            
+
             const victimName = data.playerId === this.playerId ? 
                 'you' : 
                 (this.players[data.playerId]?.name || 'another player');
@@ -510,7 +510,24 @@ export class MultiplayerManager {
             }
         });
 
-        // Handle player disconnection
+        // Handle player destruction by asteroid
+        this.socket.on('playerDestroyedByAsteroid', (data) => {
+            const victimName = data.playerId === this.playerId ? 
+                'You' : 
+                (this.players[data.playerId]?.name || data.playerName || 'A player');
+                
+            // Show appropriate message based on perspective
+            if (data.playerId === this.playerId) {
+                // This should not happen as local asteroid deaths are handled locally
+                console.log('Received own asteroid death from server (unexpected)');
+            } else {
+                // Show message for other players
+                this.showGameMessage(`${victimName} was destroyed by an asteroid`, '#fa0');
+                
+                // Handle remote player death (no killer)
+                this.handleRemotePlayerDeath(data.playerId, 'asteroid');
+            }
+        });        // Handle player disconnection
         this.socket.on('playerLeft', (playerId) => {
             const playerName = this.players[playerId]?.name || 'A player';
             this.removeRemotePlayer(playerId);
@@ -1080,6 +1097,13 @@ export class MultiplayerManager {
             this.updatePlayerList(); // Update UI immediately
         }
         
+        // Send death event to server
+        if (attackerId === 'asteroid') {
+            this.socket.emit('playerDestroyedByAsteroid', {
+                playerId: this.playerId
+            });
+        }
+        
         // Store current credits value
         const currentCredits = this.game.player.credits;
         
@@ -1088,9 +1112,15 @@ export class MultiplayerManager {
             this.game.player.die();
         }
         
-        // Show death message
-        const attacker = this.players[attackerId]?.name || 'Another player';
-        this.showGameMessage(`Destroyed by ${attacker}!`, '#f44', 3000);
+        // Show death message based on cause
+        let deathMessage;
+        if (attackerId === 'asteroid') {
+            deathMessage = 'Destroyed by an asteroid!';
+        } else {
+            const attacker = this.players[attackerId]?.name || 'Another player';
+            deathMessage = `Destroyed by ${attacker}!`;
+        }
+        this.showGameMessage(deathMessage, '#f44', 3000);
         
         // Respawn after delay
         setTimeout(() => {
