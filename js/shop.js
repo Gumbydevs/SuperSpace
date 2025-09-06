@@ -159,19 +159,21 @@ export class ShopSystem {
             },
             {
                 id: 'rocket',
-                name: 'Rocket Launcher',
-                description: 'Fires explosive rockets that detonate on impact with area damage.',
+                name: '💥 FUSION MORTAR',
+                description: 'Fires explosive fusion shells that detonate at range with massive area damage.',
                 price: 12000,
                 owned: localStorage.getItem('weapon_rocket') === 'true',
                 stats: {
-                    damage: 45, // High direct damage
-                    cooldown: 0.45, // Slow reload
-                    speed: 400,
+                    damage: 15, // Lower direct damage since it's area-focused
+                    cooldown: 0.65, // Slower reload for heavy weapon
+                    speed: 350,
                     range: 700,
-                    energyCost: 30,
+                    energyCost: 35,
                     explosive: true,
-                    explosionRadius: 80, // Large explosion radius
-                    explosionDamage: 25 // Additional explosion damage
+                    explosionRadius: 100, // Larger explosion radius
+                    explosionDamage: 40, // Higher explosion damage
+                    minDetonationRange: 200, // Minimum distance before it can explode
+                    maxDetonationRange: 500  // Maximum distance before forced detonation
                 }
             }
         ];
