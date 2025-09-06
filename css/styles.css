@@ -248,6 +248,11 @@ input[type="range"] {
     display: flex;
     justify-content: center;
     gap: 20px;
+    margin-bottom: 8px;
+}
+
+.links:last-child {
+    margin-bottom: 0;
 }
 
 .links a {
@@ -288,6 +293,11 @@ input[type="range"] {
     display: flex;
     justify-content: center;
     gap: 16px;
+    margin-bottom: 8px;
+}
+
+.brand-links:last-child {
+    margin-bottom: 0;
 }
 
 .brand-link {
