@@ -231,6 +231,45 @@ export class InputHandler {
             }
         }
     }
+    handleTouchStart(e) {
+        // Only activate joystick if touch starts within joystick area
+        if (!this.touchElements || !this.touchElements.joystick) return;
+        const joystickRect = this.touchElements.joystick.getBoundingClientRect();
+        let found = false;
+        for (let i = 0; i < e.touches.length; i++) {
+            const touch = e.touches[i];
+            const touchX = touch.clientX;
+            const touchY = touch.clientY;
+            if (
+                touchX >= joystickRect.left &&
+                touchX <= joystickRect.right &&
+                touchY >= joystickRect.top &&
+                touchY <= joystickRect.bottom
+            ) {
+                found = true;
+                if (!this.touchJoystick.active) {
+                    e.preventDefault();
+                    this.touchJoystick.active = true;
+                    // Always use joystick center as origin
+                    this.touchJoystick.startX = joystickRect.left + joystickRect.width / 2;
+                    this.touchJoystick.startY = joystickRect.top + joystickRect.height / 2;
+                    this.touchJoystick.moveX = touchX;
+                    this.touchJoystick.moveY = touchY;
+                    // Center knob
+                    if (this.touchElements && this.touchElements.knob) {
+                        this.touchElements.knob.style.left = '50%';
+                        this.touchElements.knob.style.top = '50%';
+                    }
+                }
+                break;
+            }
+        }
+        // If no touch is in joystick area, do not activate joystick
+        if (!found) {
+            // Allow other UI to handle the touch
+            return;
+        }
+    }
     
     handleTouchMove(e) {
         // Handle joystick movement

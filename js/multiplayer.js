@@ -1,5 +1,3 @@
-    // Track last displayed leaderboard state for real-time updates
-    lastLeaderboardState = '';
 import { KillAnnouncer } from './killannouncer.js';
 
 export class MultiplayerManager {
@@ -8,6 +6,8 @@ export class MultiplayerManager {
         this.socket = null;
         this.connected = false;
         this.players = {};
+        // Track last displayed leaderboard state for real-time updates
+        this.lastLeaderboardState = '';
         this.playerId = null;
         
         // Initialize our kill announcer system
