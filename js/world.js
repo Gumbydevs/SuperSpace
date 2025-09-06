@@ -62,7 +62,14 @@ export class World {
         // NEVER generate local asteroids in multiplayer mode
         // Only generate asteroids if explicitly in single player mode
         // In multiplayer, ALL asteroids come from server via setupServerAsteroidField
-        const isMultiplayerMode = window.game && window.game.multiplayer;
+        let isMultiplayerMode = false;
+        try {
+            isMultiplayerMode = window.game && window.game.multiplayer;
+        } catch (error) {
+            console.warn('Error checking multiplayer mode during initialization:', error);
+            isMultiplayerMode = false;
+        }
+        
         if (!isMultiplayerMode) {
             console.log('Single player mode - generating local asteroids');
             this.asteroids = this.generateAsteroids(150);
@@ -524,7 +531,14 @@ export class World {
         this.safeZone.pulsePhase += deltaTime * 2;
 
         // Check if we're in multiplayer mode for asteroid movement and collision handling
-        const isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+        // Use try-catch to prevent errors if window.game is not fully initialized
+        let isMultiplayerConnected = false;
+        try {
+            isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+        } catch (error) {
+            console.warn('Error checking multiplayer status:', error);
+            isMultiplayerConnected = false;
+        }
 
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
@@ -635,7 +649,14 @@ export class World {
 
                         // Here we handle asteroid splitting or powerup spawning (SINGLE PLAYER ONLY)
                         // In multiplayer, server manages all asteroid state including splitting
-                        const isMultiplayerMode = window.game && window.game.multiplayer;
+                        let isMultiplayerMode = false;
+                        try {
+                            isMultiplayerMode = window.game && window.game.multiplayer;
+                        } catch (error) {
+                            console.warn('Error checking multiplayer mode in collision:', error);
+                            isMultiplayerMode = false;
+                        }
+                        
                         if (!isMultiplayerMode) {
                             // Single player only - handle splitting and powerups
                             if (asteroid.size !== 'small') {
