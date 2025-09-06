@@ -1046,6 +1046,11 @@ export class MultiplayerManager {
             this.game.player.recordDamageFrom(attackerId);
         }
         
+        // Trigger combat tension music
+        if (this.game.soundSystem) {
+            this.game.soundSystem.triggerCombatTension();
+        }
+        
         // Apply damage
         this.game.player.takeDamage(damage);
         

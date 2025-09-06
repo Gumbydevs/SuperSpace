@@ -819,7 +819,10 @@ export class SoundManager {
             ],
             tempo: 120,
             measureLength: 6, // seconds per measure (reduced from 8)
-            nextChordTime: 0
+            nextChordTime: 0,
+            layerStack: [], // Track what layers are currently playing
+            tensionLevel: 0, // 0-1 scale for combat tension
+            lastTensionHit: 0
         };
 
         // Create ambient music gain node
@@ -890,39 +893,108 @@ export class SoundManager {
         const chord = this.ambientMusic.chordProgression[this.ambientMusic.currentChord];
         const duration = this.ambientMusic.measureLength;
 
-        // Create multiple layers for richness
-        const layerTypes = ['pad', 'lead', 'bass', 'atmosphere'];
-        const selectedType = layerTypes[Math.floor(Math.random() * layerTypes.length)];
+        // Determine current active layer types
+        const activeLayers = this.ambientMusic.layerStack.filter(layer => 
+            now < layer.endTime
+        ).map(layer => layer.type);
 
-        console.log(`Creating ambient layer: ${selectedType}, chord: ${this.ambientMusic.currentChord}`);
+        // Smart layer selection for cohesive music
+        let selectedTypes = this.selectCohesiveLayers(activeLayers);
 
-        switch (selectedType) {
-            case 'pad':
-                this.createPadLayer(chord, now, duration);
-                break;
-            case 'lead':
-                this.createLeadLayer(chord, now, duration);
-                break;
-            case 'bass':
-                this.createBassLayer(chord, now, duration);
-                break;
-            case 'atmosphere':
-                this.createAtmosphereLayer(chord, now, duration);
-                break;
-        }
+        selectedTypes.forEach(layerType => {
+            console.log(`Creating ambient layer: ${layerType}, chord: ${this.ambientMusic.currentChord}`);
+            
+            switch (layerType) {
+                case 'pad':
+                    this.createPadLayer(chord, now, duration);
+                    break;
+                case 'lead':
+                    this.createLeadLayer(chord, now, duration);
+                    break;
+                case 'bass':
+                    this.createBassLayer(chord, now, duration);
+                    break;
+                case 'atmosphere':
+                    this.createAtmosphereLayer(chord, now, duration);
+                    break;
+                case 'tension':
+                    this.createTensionHit(chord, now);
+                    break;
+                case 'rhythm':
+                    this.createRhythmicLayer(chord, now, duration);
+                    break;
+            }
+
+            // Track this layer
+            this.ambientMusic.layerStack.push({
+                type: layerType,
+                startTime: now,
+                endTime: now + duration
+            });
+        });
 
         // Clean up old layers
         this.cleanupOldLayers(now);
     }
 
+    selectCohesiveLayers(activeLayers) {
+        const availableTypes = ['pad', 'lead', 'bass', 'atmosphere', 'tension', 'rhythm'];
+        let selectedTypes = [];
+
+        // Always ensure we have a foundation
+        if (!activeLayers.includes('pad') && !activeLayers.includes('bass')) {
+            selectedTypes.push(Math.random() < 0.7 ? 'pad' : 'bass');
+        }
+
+        // Add complementary layers
+        if (activeLayers.includes('pad') || selectedTypes.includes('pad')) {
+            if (Math.random() < 0.6 && !activeLayers.includes('lead')) {
+                selectedTypes.push('lead');
+            }
+        }
+
+        if ((activeLayers.includes('bass') || selectedTypes.includes('bass')) && Math.random() < 0.4) {
+            if (!activeLayers.includes('rhythm')) {
+                selectedTypes.push('rhythm');
+            }
+        }
+
+        // Add atmosphere occasionally for texture
+        if (Math.random() < 0.3 && !activeLayers.includes('atmosphere')) {
+            selectedTypes.push('atmosphere');
+        }
+
+        // Add tension hits during potential combat (random chance)
+        if (Math.random() < 0.2 && Date.now() - this.ambientMusic.lastTensionHit > 10000) {
+            selectedTypes.push('tension');
+            this.ambientMusic.lastTensionHit = Date.now();
+        }
+
+        // Ensure we're not creating too sparse music
+        if (selectedTypes.length === 0 && activeLayers.length < 2) {
+            selectedTypes.push('pad');
+            if (Math.random() < 0.5) selectedTypes.push('lead');
+        }
+
+        return selectedTypes;
+    }
+
     createPadLayer(chord, startTime, duration) {
         const layer = { oscillators: [], gains: [] };
 
-        chord.forEach((freq, index) => {
+        // Create fuller chord by adding more voices
+        const fullChord = [...chord];
+        // Add octave doubling for richness
+        fullChord.push(...chord.map(freq => freq * 0.5)); // Lower octave
+        
+        fullChord.forEach((freq, index) => {
             // Create oscillator for each note in chord
             const oscillator = this.audioContext.createOscillator();
             oscillator.type = 'sawtooth';
-            oscillator.frequency.setValueAtTime(freq * (0.5 + Math.random() * 0.1), startTime);
+            // Add slight detuning for chorus effect
+            const detune = (Math.random() - 0.5) * 10;
+            oscillator.frequency.setValueAtTime(freq, startTime);
+            oscillator.detune.setValueAtTime(detune, startTime);
 
             // Create filter for warmth
             const filter = this.audioContext.createBiquadFilter();
@@ -933,8 +1005,8 @@ export class SoundManager {
             // Create gain with slow attack and release
             const gain = this.audioContext.createGain();
             gain.gain.setValueAtTime(0, startTime);
-            gain.gain.linearRampToValueAtTime(0.2 / chord.length, startTime + 2); // Increased volume
-            gain.gain.setValueAtTime(0.2 / chord.length, startTime + duration - 2);
+            gain.gain.linearRampToValueAtTime(0.15 / fullChord.length, startTime + 3); // Slower attack
+            gain.gain.setValueAtTime(0.15 / fullChord.length, startTime + duration - 3);
             gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
             // Connect audio nodes
@@ -1068,7 +1140,100 @@ export class SoundManager {
         this.ambientMusic.layers.push(layer);
     }
 
+    createTensionHit(chord, startTime) {
+        // Create a low-frequency tympani-like hit
+        const oscilator = this.audioContext.createOscillator();
+        oscilator.type = 'sine';
+        const baseFreq = chord[0] * 0.25; // Very low frequency
+        oscilator.frequency.setValueAtTime(baseFreq, startTime);
+        
+        // Add frequency sweep for dramatic effect
+        oscilator.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, startTime + 0.3);
+
+        // Create noise for impact texture
+        const noiseBuffer = this.createNoiseBuffer(1.0);
+        const noiseSource = this.audioContext.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+
+        // Filter noise to low frequencies
+        const noiseFilter = this.audioContext.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(150, startTime);
+        noiseFilter.Q.value = 2;
+
+        // Sharp attack, quick decay envelope
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01); // Sharp attack
+        gain.gain.exponentialRampToValueAtTime(0.1, startTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
+
+        const noiseGain = this.audioContext.createGain();
+        noiseGain.gain.setValueAtTime(0, startTime);
+        noiseGain.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+
+        // Connect nodes
+        oscilator.connect(gain);
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(gain);
+        gain.connect(this.ambientMusicGain);
+
+        oscilator.start(startTime);
+        noiseSource.start(startTime);
+        oscilator.stop(startTime + 1.5);
+
+        const layer = {
+            oscillator: oscilator,
+            source: noiseSource,
+            gain,
+            stopTime: startTime + 1.5
+        };
+
+        this.ambientMusic.layers.push(layer);
+    }
+
+    createRhythmicLayer(chord, startTime, duration) {
+        // Create subtle rhythmic pulses using the root note
+        const baseFreq = chord[0];
+        const pulseCount = Math.floor(duration / 1.5); // Pulse every 1.5 seconds
+
+        for (let i = 0; i < pulseCount; i++) {
+            const pulseStart = startTime + (i * 1.5);
+            
+            const oscillator = this.audioContext.createOscillator();
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(baseFreq * 0.5, pulseStart);
+
+            const filter = this.audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(400, pulseStart);
+            filter.Q.value = 1;
+
+            const gain = this.audioContext.createGain();
+            gain.gain.setValueAtTime(0, pulseStart);
+            gain.gain.linearRampToValueAtTime(0.1, pulseStart + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, pulseStart + 0.4);
+
+            oscillator.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ambientMusicGain);
+
+            oscillator.start(pulseStart);
+            oscillator.stop(pulseStart + 0.4);
+        }
+
+        const layer = {
+            type: 'rhythm',
+            stopTime: startTime + duration
+        };
+
+        this.ambientMusic.layers.push(layer);
+    }
+
     cleanupOldLayers(currentTime) {
+        // Clean up audio layers
         this.ambientMusic.layers = this.ambientMusic.layers.filter(layer => {
             if (currentTime > layer.stopTime + 1) {
                 // Layer should be cleaned up
@@ -1076,6 +1241,26 @@ export class SoundManager {
             }
             return true;
         });
+
+        // Clean up layer stack tracking
+        this.ambientMusic.layerStack = this.ambientMusic.layerStack.filter(layer => {
+            return currentTime < layer.endTime + 1;
+        });
+    }
+
+    // Method to trigger tension hits during combat
+    triggerCombatTension() {
+        if (!this.ambientMusic.active || !this.audioContext) return;
+        
+        const now = this.audioContext.currentTime;
+        const chord = this.ambientMusic.chordProgression[this.ambientMusic.currentChord];
+        
+        // Only trigger if enough time has passed since last tension hit
+        if (Date.now() - this.ambientMusic.lastTensionHit > 3000) {
+            this.createTensionHit(chord, now);
+            this.ambientMusic.lastTensionHit = Date.now();
+            console.log('Combat tension hit triggered');
+        }
     }
 
     // Use this method to ensure audio context is resumed after user interaction
