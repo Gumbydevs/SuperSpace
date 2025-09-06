@@ -2031,7 +2031,9 @@ export class MultiplayerManager {
                     rotation: fragment.rotation,
                     rotationSpeed: fragment.rotationSpeed,
                     size: size,
-                    scoreValue: scoreValue
+                    scoreValue: scoreValue,
+                    // Generate vertices for rendering - this was missing!
+                    vertices: this.game.world.generateAsteroidVertices(Math.floor(6 + Math.random() * 4), 0.5)
                 });
                 console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
             });

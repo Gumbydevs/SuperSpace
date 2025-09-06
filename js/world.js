@@ -1573,6 +1573,13 @@
             // Draw the asteroid using its vertices
             ctx.fillStyle = '#aaa';
             ctx.beginPath();
+            
+            // Safety check for vertices
+            if (!asteroid.vertices || !Array.isArray(asteroid.vertices)) {
+                console.warn(`Asteroid ${asteroid.id} missing vertices, generating new ones`);
+                asteroid.vertices = this.generateAsteroidVertices(Math.floor(6 + Math.random() * 4), 0.5);
+            }
+            
             asteroid.vertices.forEach((vertex, i) => {
                 const scaledX = vertex.x * asteroid.radius;
                 const scaledY = vertex.y * asteroid.radius;
