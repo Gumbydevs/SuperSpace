@@ -52,7 +52,25 @@ export class MultiplayerManager {
         }
         
         // Then connect to the server
-        return connectionPromise.then(() => {
+        return connectionPromise.then(async () => {
+            // Check server status before attempting Socket.IO connection
+            try {
+                console.log('Checking server status at', serverUrl);
+                const response = await fetch(serverUrl + '/status', { 
+                    method: 'GET',
+                    mode: 'cors',
+                    signal: AbortSignal.timeout(5000)
+                });
+                if (response.ok) {
+                    const status = await response.json();
+                    console.log('Server is online:', status);
+                } else {
+                    console.warn('Server status check returned:', response.status);
+                }
+            } catch (error) {
+                console.warn('Server status check failed:', error.message, '- Proceeding with connection attempt');
+            }
+
             // Now load Socket.IO client library dynamically
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -61,7 +79,13 @@ export class MultiplayerManager {
                 script.crossOrigin = 'anonymous';
                 script.onload = () => {
                     try {
-                        this.socket = io(serverUrl);
+                        this.socket = io(serverUrl, {
+                            reconnection: true,
+                            reconnectionAttempts: 5,
+                            reconnectionDelay: 2000,
+                            reconnectionDelayMax: 10000,
+                            timeout: 10000
+                        });
                         this.setupSocketEvents();
                         resolve(true);
                     } catch (error) {
@@ -294,6 +318,9 @@ export class MultiplayerManager {
             this.playerId = this.socket.id;
             this.connected = true;
             
+            // Reset connection error count on successful connection
+            this.connectionErrorCount = 0;
+            
             // Send player data to server after connecting
             this.socket.emit('playerJoin', {
                 x: this.game.player.x,
@@ -448,7 +475,16 @@ export class MultiplayerManager {
 
         // Handle connection error
         this.socket.on('connect_error', (error) => {
-            console.error('Connection error:', error);
+            // Reduce console spam - only log first few errors
+            if (!this.connectionErrorCount) this.connectionErrorCount = 0;
+            this.connectionErrorCount++;
+            
+            if (this.connectionErrorCount <= 3) {
+                console.error('Connection error:', error.message || error);
+            } else if (this.connectionErrorCount === 4) {
+                console.error('Connection errors continuing... (suppressing further logs)');
+            }
+            
             this.connected = false;
             
             // Show disconnected indicator
@@ -457,8 +493,10 @@ export class MultiplayerManager {
             // Update the player count display
             this.updatePlayerCount();
             
-            // Show error message
-            this.showGameMessage('Connection error: ' + error.message, '#f44', 5000);
+            // Show error message only on first few failures to avoid spam
+            if (this.connectionErrorCount <= 2) {
+                this.showGameMessage('Connection error: ' + (error.message || error), '#f44', 5000);
+            }
         });
 
         // Handle receiving game state from server

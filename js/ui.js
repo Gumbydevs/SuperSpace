@@ -606,9 +606,6 @@ export class UI {
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
             const otherPlayers = window.game.multiplayer.players;
             
-            // Log players for debugging
-            console.log("Players on minimap:", Object.keys(otherPlayers).length);
-            
             // Draw each player on the minimap
             Object.values(otherPlayers).forEach(otherPlayer => {
                 // Skip destroyed players and the current player

@@ -95,7 +95,10 @@ class Game {
     createPlayerCountConnection(serverUrl) {
         try {
             console.log('Creating temporary socket connection for player count');
-            const tempSocket = io(serverUrl);
+            const tempSocket = io(serverUrl, {
+                reconnection: false,
+                timeout: 5000
+            });
             
             // Setup event handlers
             tempSocket.on('connect', () => {

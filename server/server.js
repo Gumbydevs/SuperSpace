@@ -27,8 +27,15 @@ app.get('/status', (req, res) => {
 // Create Socket.IO server with CORS configuration
 const io = socketIO(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000", 
+      "https://superspacegame.vercel.app",
+      "https://*.vercel.app",
+      "*"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 

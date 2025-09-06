@@ -14,7 +14,13 @@
                 : 'https://superspace-server.onrender.com';
                 
             // Connect to server
-            const socket = io(serverUrl);
+            const socket = io(serverUrl, {
+                reconnection: true,
+                reconnectionAttempts: 3,
+                reconnectionDelay: 3000,
+                reconnectionDelayMax: 10000,
+                timeout: 10000
+            });
             
             // When connected, request player count
             socket.on('connect', function() {
