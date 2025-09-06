@@ -938,7 +938,7 @@ export class SoundManager {
     }
 
     selectCohesiveLayers(activeLayers) {
-        const availableTypes = ['pad', 'lead', 'bass', 'atmosphere', 'tension', 'rhythm'];
+        const availableTypes = ['pad', 'lead', 'bass', 'atmosphere', 'tension'];
         let selectedTypes = [];
 
         // Always ensure we have a foundation
@@ -953,24 +953,15 @@ export class SoundManager {
             }
         }
 
-        // Add rhythmic elements more frequently
-        if (Math.random() < 0.6 && !activeLayers.includes('rhythm')) { // Much more frequent rhythm
-            selectedTypes.push('rhythm');
-        }
-
-        if ((activeLayers.includes('bass') || selectedTypes.includes('bass')) && Math.random() < 0.4) {
-            if (!activeLayers.includes('rhythm') && !selectedTypes.includes('rhythm')) {
-                selectedTypes.push('rhythm');
-            }
-        }
+        // NO MORE RHYTHMIC ELEMENTS IN AMBIENT MUSIC - they'll only trigger during combat
 
         // Add atmosphere occasionally for texture
         if (Math.random() < 0.3 && !activeLayers.includes('atmosphere')) {
             selectedTypes.push('atmosphere');
         }
 
-        // Add tension hits more frequently
-        if (Math.random() < 0.35 && Date.now() - this.ambientMusic.lastTensionHit > 8000) { // More frequent and shorter cooldown
+        // Add tension hits occasionally (but not in combat trigger)
+        if (Math.random() < 0.15 && Date.now() - this.ambientMusic.lastTensionHit > 12000) { // Less frequent
             selectedTypes.push('tension');
             this.ambientMusic.lastTensionHit = Date.now();
         }
@@ -1107,16 +1098,23 @@ export class SoundManager {
         const rootFreq = chord[0] * 0.5; // Bass octave
 
         const oscillator = this.audioContext.createOscillator();
-        oscillator.type = 'sine';
+        oscillator.type = 'sine'; // Keep sine wave but make it softer
         oscillator.frequency.setValueAtTime(rootFreq, startTime);
+
+        // Add a low-pass filter to make it warmer and less harsh
+        const filter = this.audioContext.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(200, startTime); // Cut high frequencies
+        filter.Q.value = 0.5; // Gentle filtering
 
         const gain = this.audioContext.createGain();
         gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.25, startTime + 0.1); // Increased volume
-        gain.gain.setValueAtTime(0.25, startTime + duration - 0.5);
+        gain.gain.linearRampToValueAtTime(0.08, startTime + 1.0); // Much lower volume, slower attack
+        gain.gain.setValueAtTime(0.08, startTime + duration - 1);
         gain.gain.linearRampToValueAtTime(0, startTime + duration);
 
-        oscillator.connect(gain);
+        oscillator.connect(filter);
+        filter.connect(gain);
         gain.connect(this.ambientMusicGain);
 
         oscillator.start(startTime);
@@ -1368,10 +1366,47 @@ export class SoundManager {
         const chord = this.ambientMusic.chordProgression[this.ambientMusic.currentChord];
         
         // Only trigger if enough time has passed since last tension hit
-        if (Date.now() - this.ambientMusic.lastTensionHit > 3000) {
+        if (Date.now() - this.ambientMusic.lastTensionHit > 2500) {
             this.createTensionHit(chord, now);
+            
+            // 30% chance to add sparse rhythmic elements during combat
+            if (Math.random() < 0.3) {
+                this.createCombatRhythm(chord, now, 3.0); // Short 3-second rhythm burst
+            }
+            
             this.ambientMusic.lastTensionHit = Date.now();
             console.log('Combat tension hit triggered');
+        }
+    }
+
+    // Create combat-specific rhythmic elements (sparse and impactful)
+    createCombatRhythm(chord, startTime, duration) {
+        const baseFreq = chord[0];
+        const hitCount = 2; // Only 2 hits over 3 seconds
+        
+        for (let i = 0; i < hitCount; i++) {
+            const hitStart = startTime + (i * 1.5); // Spread out hits
+            
+            // HIGH IMPACT HIT (no low frequency pulse wave!)
+            const midNoiseBuffer = this.createNoiseBuffer(0.2);
+            const midSource = this.audioContext.createBufferSource();
+            midSource.buffer = midNoiseBuffer;
+
+            const midFilter = this.audioContext.createBiquadFilter();
+            midFilter.type = 'bandpass';
+            midFilter.frequency.setValueAtTime(400, hitStart); // Mid-frequency punch
+            midFilter.Q.value = 2;
+
+            const midGain = this.audioContext.createGain();
+            midGain.gain.setValueAtTime(0, hitStart);
+            midGain.gain.linearRampToValueAtTime(0.15, hitStart + 0.01);
+            midGain.gain.exponentialRampToValueAtTime(0.001, hitStart + 0.3);
+
+            midSource.connect(midFilter);
+            midFilter.connect(midGain);
+            midGain.connect(this.ambientMusicGain);
+
+            midSource.start(hitStart);
         }
     }
 

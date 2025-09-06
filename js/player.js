@@ -648,6 +648,11 @@ export class Player {
     fire(soundManager) {
         let projectiles = [];
         
+        // Trigger combat tension in ambient music when shooting
+        if (soundManager && soundManager.triggerCombatTension) {
+            soundManager.triggerCombatTension();
+        }
+        
         // Get the weapon stats from the available weapons in shop
         let weaponStats = null;
         if (window.game && window.game.shop) {
