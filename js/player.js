@@ -740,7 +740,7 @@ export class Player {
                     this.x, this.y,
                     this.rotation,
                     'missile',
-                    weaponStats ? weaponStats.damage : 20, // High damage
+                    weaponStats ? weaponStats.damage : 15, // Reduced fallback damage
                     weaponStats ? weaponStats.speed : 500, // Slower speed
                     weaponStats ? weaponStats.range : 1000, // Longer range
                     true  // Homing capability

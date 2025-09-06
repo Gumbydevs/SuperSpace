@@ -119,7 +119,7 @@ export class ShopSystem {
                 price: 5000,
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
-                    damage: 60, // Higher damage
+                    damage: 35, // Reduced from 60 to balance homing capability
                     cooldown: 0.38, // Slower
                     speed: 500,
                     range: 1000,
