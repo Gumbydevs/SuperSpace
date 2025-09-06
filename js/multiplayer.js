@@ -2012,6 +2012,9 @@ export class MultiplayerManager {
         // Add any fragments from the server
         if (data.fragments && data.fragments.length > 0) {
             data.fragments.forEach(fragment => {
+                const size = fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small';
+                const scoreValue = size === 'large' ? 50 : size === 'medium' ? 20 : 10;
+                
                 this.game.world.asteroids.push({
                     id: fragment.id,
                     x: fragment.x,
@@ -2021,7 +2024,8 @@ export class MultiplayerManager {
                     type: fragment.type,
                     rotation: fragment.rotation,
                     rotationSpeed: fragment.rotationSpeed,
-                    size: fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small'
+                    size: size,
+                    scoreValue: scoreValue
                 });
             });
             console.log(`Added ${data.fragments.length} asteroid fragments from server`);

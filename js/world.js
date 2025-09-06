@@ -643,7 +643,7 @@
                                 );
                         }
 
-                        // Send hit event to server for multiplayer
+                        // Send hit event to server for multiplayer with all calculated values
                         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
                             window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
                         }
@@ -654,7 +654,6 @@
                         this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
 
                         // Handle asteroid destruction in multiplayer mode
-                        // In multiplayer, client still needs to process destruction but server manages the authoritative state
                         let isMultiplayerMode = false;
                         try {
                             isMultiplayerMode = window.game && window.game.multiplayer && window.game.multiplayer.connected;
@@ -664,23 +663,19 @@
                         }
                         
                         if (isMultiplayerMode) {
-                            // In multiplayer: server will send asteroidDestroyed event to handle splitting/removal
-                            // Client just needs to mark for server processing
-                            console.log(`Asteroid ${asteroid.id} destroyed - server will handle splitting and removal`);
+                            // In multiplayer: immediately remove asteroid locally for responsive gameplay
+                            // Server will handle authoritative state and send updates to other players
+                            this.asteroids.splice(i, 1);
+                            console.log(`Asteroid ${asteroid.id} destroyed locally - server handling sync to other players`);
                         } else {
-                            // Single player mode would handle splitting and powerups here, but this is a multiplayer-only game
-                            console.warn('Non-multiplayer mode detected in multiplayer game - this should not happen');
-                            // Fallback: still allow asteroid removal for game functionality
+                            // Fallback for offline mode
                             if (asteroid.size !== 'small') {
                                 if (Math.random() < 0.7) {
-                                    // 70% chance to split into smaller asteroids
                                     this.splitAsteroid(asteroid, soundManager);
                                 } else {
-                                    // 30% chance to spawn a powerup
                                     this.spawnPowerup(asteroid.x, asteroid.y);
                                 }
                             } else if (Math.random() < 0.1) {
-                                // 10% chance for small asteroids to spawn a powerup
                                 this.spawnPowerup(asteroid.x, asteroid.y);
                             }
                             this.asteroids.splice(i, 1);
