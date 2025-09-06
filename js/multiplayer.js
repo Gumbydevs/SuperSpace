@@ -257,8 +257,16 @@ export class MultiplayerManager {
     setupSocketEvents() {
         // Listen for real-time player stats updates
         this.socket.on('playerStatsUpdate', (data) => {
-            if (data.id === this.playerId) return; // Don't overwrite local stats
-            if (this.players[data.id]) {
+            if (data.id === this.playerId) {
+                // Update local player stats
+                if (this.game.player) {
+                    this.game.player.wins = data.wins;
+                    this.game.player.losses = data.losses;
+                    // Score is already handled locally, but sync it too
+                    this.game.player.score = data.score;
+                }
+                this.updatePlayerList();
+            } else if (this.players[data.id]) {
                 this.players[data.id].score = data.score;
                 this.players[data.id].wins = data.wins;
                 this.players[data.id].losses = data.losses;

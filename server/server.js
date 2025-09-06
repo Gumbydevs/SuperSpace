@@ -119,6 +119,8 @@ io.on('connection', (socket) => {
       ship: playerData.ship || 'scout',
       name: playerData.name || `Player-${socket.id.substring(0, 4)}`,
       score: 0,
+      wins: 0,
+      losses: 0,
       credits: 0,
       color: playerData.color || getRandomColor(),
       projectiles: []
@@ -243,14 +245,27 @@ io.on('connection', (socket) => {
           if (gameState.players[socket.id]) {
             gameState.players[socket.id].score += 500; // Points for defeating a player
             gameState.players[socket.id].credits += 250; // Credits for defeating a player
+            gameState.players[socket.id].wins += 1; // Increment wins for attacker
             // Broadcast updated stats to all clients
             io.emit('playerStatsUpdate', {
               id: socket.id,
               score: gameState.players[socket.id].score,
-              wins: gameState.players[socket.id].wins || 0,
-              losses: gameState.players[socket.id].losses || 0
+              wins: gameState.players[socket.id].wins,
+              losses: gameState.players[socket.id].losses
             });
             console.log(`Player ${gameState.players[socket.id].name} destroyed ${gameState.players[data.targetId].name}`);
+          }
+          
+          // Increment losses for the destroyed player
+          if (gameState.players[data.targetId]) {
+            gameState.players[data.targetId].losses += 1;
+            // Broadcast updated stats to all clients
+            io.emit('playerStatsUpdate', {
+              id: data.targetId,
+              score: gameState.players[data.targetId].score,
+              wins: gameState.players[data.targetId].wins,
+              losses: gameState.players[data.targetId].losses
+            });
           }
         }
       }

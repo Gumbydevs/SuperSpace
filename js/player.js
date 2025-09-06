@@ -43,6 +43,8 @@ export class Player {
     this._credits = parseInt(localStorage.getItem('playerCredits') || 0);
 
         this.score = 0;   // Points for game score
+        this.wins = 0;    // Player wins count
+        this.losses = 0;  // Player losses count
 
     // Here we set up the weapon systems
     this.weapons = ['Basic Laser', 'Burst Cannon', 'Seeker Missile'];
