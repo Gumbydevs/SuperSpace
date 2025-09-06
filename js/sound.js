@@ -948,13 +948,18 @@ export class SoundManager {
 
         // Add complementary layers
         if (activeLayers.includes('pad') || selectedTypes.includes('pad')) {
-            if (Math.random() < 0.6 && !activeLayers.includes('lead')) {
+            if (Math.random() < 0.4 && !activeLayers.includes('lead')) { // Reduced lead frequency
                 selectedTypes.push('lead');
             }
         }
 
+        // Add rhythmic elements more frequently
+        if (Math.random() < 0.6 && !activeLayers.includes('rhythm')) { // Much more frequent rhythm
+            selectedTypes.push('rhythm');
+        }
+
         if ((activeLayers.includes('bass') || selectedTypes.includes('bass')) && Math.random() < 0.4) {
-            if (!activeLayers.includes('rhythm')) {
+            if (!activeLayers.includes('rhythm') && !selectedTypes.includes('rhythm')) {
                 selectedTypes.push('rhythm');
             }
         }
@@ -964,8 +969,8 @@ export class SoundManager {
             selectedTypes.push('atmosphere');
         }
 
-        // Add tension hits during potential combat (random chance)
-        if (Math.random() < 0.2 && Date.now() - this.ambientMusic.lastTensionHit > 10000) {
+        // Add tension hits more frequently
+        if (Math.random() < 0.35 && Date.now() - this.ambientMusic.lastTensionHit > 8000) { // More frequent and shorter cooldown
             selectedTypes.push('tension');
             this.ambientMusic.lastTensionHit = Date.now();
         }
@@ -973,7 +978,7 @@ export class SoundManager {
         // Ensure we're not creating too sparse music
         if (selectedTypes.length === 0 && activeLayers.length < 2) {
             selectedTypes.push('pad');
-            if (Math.random() < 0.5) selectedTypes.push('lead');
+            if (Math.random() < 0.3) selectedTypes.push('lead'); // Reduced chance for lead in fallback
         }
 
         return selectedTypes;
@@ -1026,37 +1031,50 @@ export class SoundManager {
     }
 
     createLeadLayer(chord, startTime, duration) {
-        // Select a note from the chord
-        const noteIndex = Math.floor(Math.random() * chord.length);
-        const baseFreq = chord[noteIndex] * (1 + Math.floor(Math.random() * 3)); // Octave up
+        // Create more melodic patterns instead of random notes
+        const melodyPatterns = [
+            [0, 2, 1, 3], // Ascending then step back
+            [2, 1, 0, 2], // Down then up
+            [0, 1, 2, 1], // Simple walk up and back
+            [1, 0, 2, 1]  // Neighbor tones
+        ];
+        
+        const pattern = melodyPatterns[Math.floor(Math.random() * melodyPatterns.length)];
+        const noteCount = Math.min(pattern.length, 3); // Limit to 3 notes max
+        const noteDuration = duration / noteCount;
 
-        const oscillator = this.audioContext.createOscillator();
-        oscillator.type = 'triangle';
-        oscillator.frequency.setValueAtTime(baseFreq, startTime);
+        for (let i = 0; i < noteCount; i++) {
+            const noteStart = startTime + (i * noteDuration);
+            const chordIndex = pattern[i] % chord.length;
+            const baseFreq = chord[chordIndex] * (1 + Math.floor(Math.random() * 2)); // Max 2 octaves up
 
-        // Add subtle vibrato
-        const vibrato = this.audioContext.createOscillator();
-        vibrato.type = 'sine';
-        vibrato.frequency.setValueAtTime(6, startTime); // 6 Hz vibrato
+            const oscillator = this.audioContext.createOscillator();
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(baseFreq, noteStart);
 
-        const vibratoGain = this.audioContext.createGain();
-        vibratoGain.gain.setValueAtTime(10, startTime); // Subtle pitch modulation
+            // Add subtle vibrato
+            const vibrato = this.audioContext.createOscillator();
+            vibrato.type = 'sine';
+            vibrato.frequency.setValueAtTime(5, noteStart); // Slightly slower vibrato
 
-        vibrato.connect(vibratoGain);
-        vibratoGain.connect(oscillator.frequency);
+            const vibratoGain = this.audioContext.createGain();
+            vibratoGain.gain.setValueAtTime(8, noteStart); // Reduced pitch modulation
 
-        // Create reverb-like delay
-        const delay = this.audioContext.createDelay(1.0);
-        delay.delayTime.setValueAtTime(0.3, startTime);
+            vibrato.connect(vibratoGain);
+            vibratoGain.connect(oscillator.frequency);
 
-        const delayGain = this.audioContext.createGain();
-        delayGain.gain.setValueAtTime(0.3, startTime);
+            // Create reverb-like delay
+            const delay = this.audioContext.createDelay(1.0);
+            delay.delayTime.setValueAtTime(0.25, noteStart);
 
-        const gain = this.audioContext.createGain();
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.5); // Increased volume
-        gain.gain.setValueAtTime(0.15, startTime + duration - 1);
-        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+            const delayGain = this.audioContext.createGain();
+            delayGain.gain.setValueAtTime(0.2, noteStart);
+
+            const gain = this.audioContext.createGain();
+            gain.gain.setValueAtTime(0, noteStart);
+            gain.gain.linearRampToValueAtTime(0.06, noteStart + 0.3); // Much lower volume
+            gain.gain.setValueAtTime(0.06, noteStart + noteDuration - 0.5);
+            gain.gain.linearRampToValueAtTime(0, noteStart + noteDuration);
 
         // Connect nodes
         oscillator.connect(gain);
@@ -1064,15 +1082,21 @@ export class SoundManager {
         delay.connect(delayGain);
         delayGain.connect(gain);
         gain.connect(this.ambientMusicGain);
+            // Connect nodes
+            oscillator.connect(gain);
+            oscillator.connect(delay);
+            delay.connect(delayGain);
+            delayGain.connect(gain);
+            gain.connect(this.ambientMusicGain);
 
-        vibrato.start(startTime);
-        oscillator.start(startTime);
-        vibrato.stop(startTime + duration);
-        oscillator.stop(startTime + duration);
+            vibrato.start(noteStart);
+            oscillator.start(noteStart);
+            vibrato.stop(noteStart + noteDuration);
+            oscillator.stop(noteStart + noteDuration);
+        }
 
         const layer = {
-            oscillator,
-            gain,
+            type: 'lead',
             stopTime: startTime + duration
         };
 
@@ -1141,87 +1165,175 @@ export class SoundManager {
     }
 
     createTensionHit(chord, startTime) {
-        // Create a low-frequency tympani-like hit
-        const oscilator = this.audioContext.createOscillator();
-        oscilator.type = 'sine';
-        const baseFreq = chord[0] * 0.25; // Very low frequency
-        oscilator.frequency.setValueAtTime(baseFreq, startTime);
+        // LOW FREQUENCY IMPACT (Tympani-like)
+        const lowOsc = this.audioContext.createOscillator();
+        lowOsc.type = 'sine';
+        const baseFreq = chord[0] * 0.4; // Slightly higher than before for more audibility
+        lowOsc.frequency.setValueAtTime(baseFreq, startTime);
+        lowOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.6, startTime + 0.3);
+
+        // MID FREQUENCY IMPACT (Body of the drum)
+        const midOsc = this.audioContext.createOscillator();
+        midOsc.type = 'triangle';
+        midOsc.frequency.setValueAtTime(baseFreq * 3, startTime);
+        midOsc.frequency.exponentialRampToValueAtTime(baseFreq * 2, startTime + 0.2);
+
+        // Create noise for impact texture with multiple layers
+        const lowNoiseBuffer = this.createNoiseBuffer(1.2);
+        const lowNoiseSource = this.audioContext.createBufferSource();
+        lowNoiseSource.buffer = lowNoiseBuffer;
+
+        const midNoiseBuffer = this.createNoiseBuffer(0.8);
+        const midNoiseSource = this.audioContext.createBufferSource();
+        midNoiseSource.buffer = midNoiseBuffer;
+
+        // LOW NOISE FILTER
+        const lowNoiseFilter = this.audioContext.createBiquadFilter();
+        lowNoiseFilter.type = 'lowpass';
+        lowNoiseFilter.frequency.setValueAtTime(200, startTime);
+        lowNoiseFilter.Q.value = 2;
+
+        // MID NOISE FILTER
+        const midNoiseFilter = this.audioContext.createBiquadFilter();
+        midNoiseFilter.type = 'bandpass';
+        midNoiseFilter.frequency.setValueAtTime(600, startTime);
+        midNoiseFilter.Q.value = 1.5;
+
+        // MAIN GAIN (much louder and more prominent)
+        const mainGain = this.audioContext.createGain();
+        mainGain.gain.setValueAtTime(0, startTime);
+        mainGain.gain.linearRampToValueAtTime(0.6, startTime + 0.01); // Much louder attack
+        mainGain.gain.exponentialRampToValueAtTime(0.15, startTime + 0.15);
+        mainGain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.8);
+
+        // MID GAIN
+        const midGain = this.audioContext.createGain();
+        midGain.gain.setValueAtTime(0, startTime);
+        midGain.gain.linearRampToValueAtTime(0.3, startTime + 0.005);
+        midGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+
+        // LOW NOISE GAIN
+        const lowNoiseGain = this.audioContext.createGain();
+        lowNoiseGain.gain.setValueAtTime(0, startTime);
+        lowNoiseGain.gain.linearRampToValueAtTime(0.4, startTime + 0.01);
+        lowNoiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
+
+        // MID NOISE GAIN
+        const midNoiseGain = this.audioContext.createGain();
+        midNoiseGain.gain.setValueAtTime(0, startTime);
+        midNoiseGain.gain.linearRampToValueAtTime(0.2, startTime + 0.005);
+        midNoiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+
+        // Connect all elements
+        lowOsc.connect(mainGain);
+        midOsc.connect(midGain);
+        midGain.connect(mainGain);
         
-        // Add frequency sweep for dramatic effect
-        oscilator.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, startTime + 0.3);
+        lowNoiseSource.connect(lowNoiseFilter);
+        lowNoiseFilter.connect(lowNoiseGain);
+        lowNoiseGain.connect(mainGain);
+        
+        midNoiseSource.connect(midNoiseFilter);
+        midNoiseFilter.connect(midNoiseGain);
+        midNoiseGain.connect(mainGain);
+        
+        mainGain.connect(this.ambientMusicGain);
 
-        // Create noise for impact texture
-        const noiseBuffer = this.createNoiseBuffer(1.0);
-        const noiseSource = this.audioContext.createBufferSource();
-        noiseSource.buffer = noiseBuffer;
-
-        // Filter noise to low frequencies
-        const noiseFilter = this.audioContext.createBiquadFilter();
-        noiseFilter.type = 'lowpass';
-        noiseFilter.frequency.setValueAtTime(150, startTime);
-        noiseFilter.Q.value = 2;
-
-        // Sharp attack, quick decay envelope
-        const gain = this.audioContext.createGain();
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01); // Sharp attack
-        gain.gain.exponentialRampToValueAtTime(0.1, startTime + 0.2);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
-
-        const noiseGain = this.audioContext.createGain();
-        noiseGain.gain.setValueAtTime(0, startTime);
-        noiseGain.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-
-        // Connect nodes
-        oscilator.connect(gain);
-        noiseSource.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(gain);
-        gain.connect(this.ambientMusicGain);
-
-        oscilator.start(startTime);
-        noiseSource.start(startTime);
-        oscilator.stop(startTime + 1.5);
+        // Start all elements
+        lowOsc.start(startTime);
+        midOsc.start(startTime);
+        lowNoiseSource.start(startTime);
+        midNoiseSource.start(startTime);
+        
+        // Stop all elements
+        lowOsc.stop(startTime + 1.8);
+        midOsc.stop(startTime + 0.8);
 
         const layer = {
-            oscillator: oscilator,
-            source: noiseSource,
-            gain,
-            stopTime: startTime + 1.5
+            type: 'tension',
+            gain: mainGain,
+            stopTime: startTime + 2.0
         };
 
         this.ambientMusic.layers.push(layer);
     }
 
     createRhythmicLayer(chord, startTime, duration) {
-        // Create subtle rhythmic pulses using the root note
+        // Create multi-layered rhythmic elements with different frequencies
         const baseFreq = chord[0];
-        const pulseCount = Math.floor(duration / 1.5); // Pulse every 1.5 seconds
-
+        const pulseCount = Math.floor(duration / 2.0); // Pulse every 2 seconds
+        
+        const rhythmPattern = [1, 0.7, 0.5, 0.8]; // Varying intensities
+        
         for (let i = 0; i < pulseCount; i++) {
-            const pulseStart = startTime + (i * 1.5);
+            const pulseStart = startTime + (i * 2.0);
+            const intensity = rhythmPattern[i % rhythmPattern.length];
             
-            const oscillator = this.audioContext.createOscillator();
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(baseFreq * 0.5, pulseStart);
+            // LOW FREQUENCY LAYER (Bass drum-like)
+            const lowOsc = this.audioContext.createOscillator();
+            lowOsc.type = 'sine';
+            lowOsc.frequency.setValueAtTime(baseFreq * 0.25, pulseStart);
+            lowOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.125, pulseStart + 0.2);
 
-            const filter = this.audioContext.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(400, pulseStart);
-            filter.Q.value = 1;
+            const lowFilter = this.audioContext.createBiquadFilter();
+            lowFilter.type = 'lowpass';
+            lowFilter.frequency.setValueAtTime(150, pulseStart);
+            lowFilter.Q.value = 2;
 
-            const gain = this.audioContext.createGain();
-            gain.gain.setValueAtTime(0, pulseStart);
-            gain.gain.linearRampToValueAtTime(0.1, pulseStart + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.001, pulseStart + 0.4);
+            const lowGain = this.audioContext.createGain();
+            lowGain.gain.setValueAtTime(0, pulseStart);
+            lowGain.gain.linearRampToValueAtTime(0.25 * intensity, pulseStart + 0.01);
+            lowGain.gain.exponentialRampToValueAtTime(0.001, pulseStart + 0.6);
+            
+            // MID FREQUENCY LAYER (Snare/clap-like)
+            const midNoiseBuffer = this.createNoiseBuffer(0.3);
+            const midSource = this.audioContext.createBufferSource();
+            midSource.buffer = midNoiseBuffer;
 
-            oscillator.connect(filter);
-            filter.connect(gain);
-            gain.connect(this.ambientMusicGain);
+            const midFilter = this.audioContext.createBiquadFilter();
+            midFilter.type = 'bandpass';
+            midFilter.frequency.setValueAtTime(800, pulseStart);
+            midFilter.Q.value = 3;
 
-            oscillator.start(pulseStart);
-            oscillator.stop(pulseStart + 0.4);
+            const midGain = this.audioContext.createGain();
+            midGain.gain.setValueAtTime(0, pulseStart);
+            midGain.gain.linearRampToValueAtTime(0.15 * intensity, pulseStart + 0.005);
+            midGain.gain.exponentialRampToValueAtTime(0.001, pulseStart + 0.2);
+            
+            // HIGH FREQUENCY LAYER (Hi-hat-like)
+            const highNoiseBuffer = this.createNoiseBuffer(0.15);
+            const highSource = this.audioContext.createBufferSource();
+            highSource.buffer = highNoiseBuffer;
+
+            const highFilter = this.audioContext.createBiquadFilter();
+            highFilter.type = 'highpass';
+            highFilter.frequency.setValueAtTime(3000, pulseStart);
+            highFilter.Q.value = 1;
+
+            const highGain = this.audioContext.createGain();
+            highGain.gain.setValueAtTime(0, pulseStart);
+            highGain.gain.linearRampToValueAtTime(0.08 * intensity, pulseStart + 0.002);
+            highGain.gain.exponentialRampToValueAtTime(0.001, pulseStart + 0.1);
+
+            // Connect all layers
+            lowOsc.connect(lowFilter);
+            lowFilter.connect(lowGain);
+            lowGain.connect(this.ambientMusicGain);
+
+            midSource.connect(midFilter);
+            midFilter.connect(midGain);
+            midGain.connect(this.ambientMusicGain);
+
+            highSource.connect(highFilter);
+            highFilter.connect(highGain);
+            highGain.connect(this.ambientMusicGain);
+
+            // Start all elements
+            lowOsc.start(pulseStart);
+            lowOsc.stop(pulseStart + 0.6);
+            
+            midSource.start(pulseStart);
+            highSource.start(pulseStart);
         }
 
         const layer = {
