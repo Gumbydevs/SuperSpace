@@ -121,39 +121,54 @@ export class Projectile {
         }
         
         // Implement homing behavior for seeker missiles
-        if (this.homing && this.type === 'missile') {
-            // In a real implementation, we would find nearby targets
-            // and adjust the missile's velocity to home in on them
-            // For now this is a placeholder
-            
-            // Example logic for when integrated with game world:
-            /*
-            const target = findNearestTarget(this.x, this.y);
-            if (target) {
+        if (this.homing && this.type === 'missile' && window.game && window.game.world) {
+            // Find nearest ship or asteroid (excluding the owner if possible)
+            let nearest = null;
+            let nearestDist = Infinity;
+            const candidates = [];
+            if (window.game.world.players) {
+                for (const p of window.game.world.players) {
+                    if (!p.visible || p.health <= 0) continue;
+                    const dx = p.x - this.x;
+                    const dy = p.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < nearestDist) {
+                        nearest = p;
+                        nearestDist = dist;
+                    }
+                }
+            }
+            if (window.game.world.asteroids) {
+                for (const a of window.game.world.asteroids) {
+                    if (!a.active) continue;
+                    const dx = a.x - this.x;
+                    const dy = a.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < nearestDist) {
+                        nearest = a;
+                        nearestDist = dist;
+                    }
+                }
+            }
+            if (nearest) {
                 // Calculate direction to target
-                const dx = target.x - this.x;
-                const dy = target.y - this.y;
+                const dx = nearest.x - this.x;
+                const dy = nearest.y - this.y;
                 const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
-                
                 // Gradually adjust missile angle towards target
-                const turnSpeed = 1.5 * deltaTime; // radians per second
-                const angleDiff = angleToTarget - this.angle;
-                
+                const turnSpeed = 2.5 * deltaTime; // radians per second
+                let angleDiff = angleToTarget - this.angle;
                 // Normalize angle difference to between -PI and PI
-                let normalizedDiff = angleDiff;
-                while (normalizedDiff > Math.PI) normalizedDiff -= Math.PI * 2;
-                while (normalizedDiff < -Math.PI) normalizedDiff += Math.PI * 2;
-                
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
                 // Apply steering
-                this.angle += Math.sign(normalizedDiff) * Math.min(Math.abs(normalizedDiff), turnSpeed);
-                
+                this.angle += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), turnSpeed);
                 // Update velocity based on new angle
                 this.velocity = {
                     x: Math.sin(this.angle) * this.speed,
                     y: -Math.cos(this.angle) * this.speed
                 };
             }
-            */
         }
     }
     

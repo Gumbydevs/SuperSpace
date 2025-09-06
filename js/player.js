@@ -196,24 +196,23 @@ export class Player {
         }
 
         // Here we handle weapon firing
-        // Dynamic fire rate based on energy
+        // Dramatic energy-based fire rate penalty
         let canFire = input.keys.includes('Space') && this.fireCooldown <= 0;
         let weapon = null;
         if (this.currentWeaponId && window.shopSystem && window.shopSystem.availableWeapons) {
             weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
         }
         let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
-        // Fire rate slows as energy drops below 50%
         let energyRatio = this.energy / this.maxEnergy;
+        // Fire rate slows dramatically as energy drops
         let cooldownMod = 1;
-        if (energyRatio < 0.5) {
-            cooldownMod = 1 + (1 - energyRatio) * 1.5; // up to 2.5x slower at 0 energy
+        if (energyRatio < 0.8) {
+            cooldownMod = 1 + (1 - energyRatio) * 6; // Up to 7x slower at 0 energy
         }
         if (this.energy <= 0) {
             canFire = false;
-            // Briefly lock out firing when energy is 0
             if (this.fireCooldown <= 0) {
-                this.fireCooldown = baseCooldown * 2.5; // Longer lockout
+                this.fireCooldown = baseCooldown * 7; // Big lockout at 0 energy
             }
         }
         if (canFire) {

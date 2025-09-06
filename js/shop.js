@@ -91,7 +91,7 @@ export class ShopSystem {
                 owned: true, // Always owned
                 stats: {
                     damage: 7, // Fast, low damage
-                    cooldown: 0.10, // Very rapid
+                    cooldown: 0.06, // Extremely rapid
                     speed: 800,
                     range: 600,
                     energyCost: 5
@@ -105,7 +105,7 @@ export class ShopSystem {
                 owned: localStorage.getItem('weapon_burst') === 'true',
                 stats: {
                     damage: 4, // Per projectile, but fires 3
-                    cooldown: 0.22, // Slower than laser, bursty
+                    cooldown: 0.10, // Rapid burst
                     speed: 700,
                     range: 400,
                     energyCost: 7,
@@ -120,7 +120,7 @@ export class ShopSystem {
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
                     damage: 40, // High damage
-                    cooldown: 1.0, // Slow, heavy
+                    cooldown: 0.22, // Fast for a missile
                     speed: 500,
                     range: 1000,
                     energyCost: 15,
@@ -135,7 +135,7 @@ export class ShopSystem {
                 owned: localStorage.getItem('weapon_plasma') === 'true',
                 stats: {
                     damage: 18, // Splash, moderate
-                    cooldown: 0.28, // Medium
+                    cooldown: 0.09, // Fast plasma
                     speed: 600,
                     range: 500,
                     energyCost: 20,
@@ -150,7 +150,7 @@ export class ShopSystem {
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
                     damage: 55, // Very high, rare
-                    cooldown: 1.4, // Very slow
+                    cooldown: 0.32, // Still slowest, but much faster
                     speed: 900,
                     range: 800,
                     energyCost: 25,
