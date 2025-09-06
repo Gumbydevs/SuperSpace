@@ -523,6 +523,9 @@ export class World {
         // Update safe zone pulse phase for docking lights
         this.safeZone.pulsePhase += deltaTime * 2;
 
+        // Check if we're in multiplayer mode for asteroid movement and collision handling
+        const isMultiplayerConnected = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
             // Debug: Log any asteroids that have non-zero velocity in multiplayer
