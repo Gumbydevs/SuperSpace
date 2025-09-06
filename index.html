@@ -48,16 +48,16 @@
         </div>
         <!-- Unified Options/Instructions Overlay -->
         <div id="options-overlay" class="hidden">
-            <div class="options-panel" style="background:rgba(10,12,32,0.98);color:#eaf2ff;max-width:420px;">
-                <h2 style="color:#8cf;text-shadow:0 0 8px #33f,0 0 2px #fff;">Options & Controls</h2>
+            <div class="options-panel">
+                    <h2>Options & Controls</h2>
                 <button id="close-options-btn" class="close-btn">✕</button>
-                <div class="section" style="margin-bottom:18px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                        <span style="font-weight:bold;">👨‍✈️ Pilot Name:</span>
-                        <span id="pilot-name" style="font-family:monospace;font-size:1.1em;background:#222a;padding:2px 8px;border-radius:4px;">(Loading...)</span>
-                        <button id="rename-btn" style="margin-left:10px;padding:4px 12px;background:#4af;color:#fff;border:none;border-radius:3px;cursor:pointer;">Rename</button>
+                    <div class="section">
+                        <div class="pilot-row">
+                            <span class="pilot-label">👨‍✈️ Pilot Name:</span>
+                            <span id="pilot-name">(Loading...)</span>
+                            <button id="rename-btn">Rename</button>
+                        </div>
                     </div>
-                </div>
                 <div class="section">
                     <h3>Controls</h3>
                     <ul class="controls-list">

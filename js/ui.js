@@ -70,6 +70,37 @@ export class UI {
                 }
             });
         }
+        
+        // --- Pilot Name and Rename Button Logic ---
+        this.pilotNameSpan = document.getElementById('pilot-name');
+        this.renameBtn = document.getElementById('rename-btn');
+        // Set pilot name on overlay open
+        this.showOptionsOverlay = () => {
+            if (this.optionsOverlay) this.optionsOverlay.classList.remove('hidden');
+            const menu = document.getElementById('menu');
+            if (menu) menu.style.display = 'none';
+            // Update pilot name
+            let name = '(Unknown)';
+            if (window.game && window.game.multiplayer && window.game.multiplayer.playerName) {
+                name = window.game.multiplayer.playerName;
+            }
+            if (this.pilotNameSpan) this.pilotNameSpan.textContent = name;
+        };
+        // Hide overlay and show menu
+        this.hideOptionsOverlay = () => {
+            if (this.optionsOverlay) this.optionsOverlay.classList.add('hidden');
+            const menu = document.getElementById('menu');
+            if (menu) menu.style.display = '';
+        };
+        // Rename button logic
+        if (this.renameBtn) {
+            this.renameBtn.onclick = () => {
+                this.hideOptionsOverlay();
+                if (window.game && window.game.multiplayer && window.game.multiplayer.showChangeNameUI) {
+                    window.game.multiplayer.showChangeNameUI();
+                }
+            };
+        }
     }
     
     // Show or hide gameplay UI elements based on game state
