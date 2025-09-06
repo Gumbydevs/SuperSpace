@@ -2,6 +2,7 @@ export class Projectile {
     constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0, shieldDisruption = false, disruptionDuration = 0) {
     // For seeker missile logic
     this.hasHomed = false; // Only curve once
+    this.homingMinDistance = 60; // Must travel at least 60px before homing
         // Here we set the projectile's starting position
         this.x = x;
         this.y = y;
@@ -64,7 +65,7 @@ export class Projectile {
                 this.trailColor = '#ff8';
                 // Make missile slower
                 this.speed = speed * 0.55;
-                // Recalculate velocity for slower speed
+                // Always launch forward (in the direction of angle)
                 this.velocity = {
                     x: Math.sin(angle) * this.speed,
                     y: -Math.cos(angle) * this.speed
@@ -151,53 +152,56 @@ export class Projectile {
         
         // Implement homing behavior for seeker missiles
         if (this.homing && this.type === 'missile' && window.game && window.game.world) {
-            // Find nearest ship or asteroid (excluding the owner if possible)
-            let nearest = null;
-            let nearestDist = Infinity;
-            // Check for multiplayer players
-            if (window.game.multiplayer && window.game.multiplayer.players) {
-                Object.values(window.game.multiplayer.players).forEach(p => {
-                    if (p.destroyed || p.health <= 0) return;
-                    const dx = p.x - this.x;
-                    const dy = p.y - this.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < nearestDist) {
-                        nearest = p;
-                        nearestDist = dist;
-                    }
-                });
-            }
-            // Also check asteroids as backup targets
-            if (window.game.world.asteroids) {
-                for (const a of window.game.world.asteroids) {
-                    if (!a.active) continue;
-                    const dx = a.x - this.x;
-                    const dy = a.y - this.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < nearestDist) {
-                        nearest = a;
-                        nearestDist = dist;
+            // Only allow homing after traveling a minimum distance and only once
+            if (!this.hasHomed && this.distanceTraveled >= this.homingMinDistance) {
+                // Find nearest ship or asteroid (excluding the owner if possible)
+                let nearest = null;
+                let nearestDist = Infinity;
+                // Check for multiplayer players
+                if (window.game.multiplayer && window.game.multiplayer.players) {
+                    Object.values(window.game.multiplayer.players).forEach(p => {
+                        if (p.destroyed || p.health <= 0) return;
+                        const dx = p.x - this.x;
+                        const dy = p.y - this.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < nearestDist) {
+                            nearest = p;
+                            nearestDist = dist;
+                        }
+                    });
+                }
+                // Also check asteroids as backup targets
+                if (window.game.world.asteroids) {
+                    for (const a of window.game.world.asteroids) {
+                        if (!a.active) continue;
+                        const dx = a.x - this.x;
+                        const dy = a.y - this.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < nearestDist) {
+                            nearest = a;
+                            nearestDist = dist;
+                        }
                     }
                 }
-            }
-            // Only home if within 300px and only curve once
-            const homingRadius = 300;
-            if (nearest && nearestDist <= homingRadius && !this.hasHomed) {
-                // Calculate direction to target
-                const dx = nearest.x - this.x;
-                const dy = nearest.y - this.y;
-                const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
-                // Curve missile once toward the target
-                let angleDiff = angleToTarget - this.angle;
-                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                this.angle += angleDiff; // Snap/curve once
-                // Update velocity based on new angle
-                this.velocity = {
-                    x: Math.sin(this.angle) * this.speed,
-                    y: -Math.cos(this.angle) * this.speed
-                };
-                this.hasHomed = true;
+                // Only home if within 300px and only curve once
+                const homingRadius = 300;
+                if (nearest && nearestDist <= homingRadius) {
+                    // Calculate direction to target
+                    const dx = nearest.x - this.x;
+                    const dy = nearest.y - this.y;
+                    const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
+                    // Curve missile once toward the target
+                    let angleDiff = angleToTarget - this.angle;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    this.angle += angleDiff; // Snap/curve once
+                    // Update velocity based on new angle
+                    this.velocity = {
+                        x: Math.sin(this.angle) * this.speed,
+                        y: -Math.cos(this.angle) * this.speed
+                    };
+                    this.hasHomed = true;
+                }
             }
         }
         
