@@ -1,5 +1,5 @@
 export class Projectile {
-    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0) {
+    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0, shieldDisruption = false, disruptionDuration = 0) {
         // Here we set the projectile's starting position
         this.x = x;
         this.y = y;
@@ -28,6 +28,8 @@ export class Projectile {
         this.explosionDamage = explosionDamage; // Explosion damage for rockets
         this.minDetonationRange = minDetonationRange; // Minimum distance before mortar can explode
         this.maxDetonationRange = maxDetonationRange; // Maximum distance before forced detonation
+        this.shieldDisruption = shieldDisruption; // For quantum disruptor shield disable
+        this.disruptionDuration = disruptionDuration; // How long shields stay disabled
         this.phasing = false; // For quantum disruptor to pass through obstacles
         this.glow = false; // Visual effect for some projectiles
         this.trail = false; // Whether to leave a trail
@@ -248,6 +250,30 @@ export class Projectile {
             entity.takeDamage(splashDamage);
         });
         */
+    }
+    
+    // Method to handle shield disruption effects
+    applyShieldDisruption(target) {
+        if (this.shieldDisruption && target.shield > 0) {
+            // Store original shield value
+            const originalShield = target.shield;
+            // Disable shield temporarily
+            target.shield = 0;
+            target.shieldDisrupted = true;
+            target.disruptionEndTime = Date.now() + (this.disruptionDuration * 1000);
+            
+            // Set up a timer to restore shields
+            setTimeout(() => {
+                if (target.shieldDisrupted && target.disruptionEndTime <= Date.now()) {
+                    target.shield = originalShield;
+                    target.shieldDisrupted = false;
+                    target.disruptionEndTime = null;
+                }
+            }, this.disruptionDuration * 1000);
+            
+            return true; // Shield was disrupted
+        }
+        return false; // No disruption applied
     }
     
     // Method to create explosive area damage when rocket hits

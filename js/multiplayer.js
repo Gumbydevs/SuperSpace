@@ -448,6 +448,13 @@ export class MultiplayerManager {
             }
         });
 
+        // Handle shield disruption events
+        this.socket.on('shieldDisruption', (data) => {
+            if (data.targetId === this.playerId) {
+                this.handleShieldDisruption(data.duration, data.attackerId);
+            }
+        });
+
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
             // Get player names for the kill message
@@ -793,6 +800,17 @@ export class MultiplayerManager {
         this.socket.emit('hit', hitData);
     }
 
+    // Send shield disruption data when player disrupts enemy shields
+    sendShieldDisruption(targetId, duration) {
+        if (!this.connected) return;
+        
+        this.socket.emit('shieldDisruption', {
+            targetId: targetId,
+            duration: duration,
+            attackerId: this.playerId
+        });
+    }
+
     // Send respawn request
     sendRespawn(x, y) {
         if (!this.connected) return;
@@ -1092,6 +1110,36 @@ export class MultiplayerManager {
         // Show damage message
         const attacker = this.players[attackerId]?.name || 'Another player';
         this.showGameMessage(`Hit by ${attacker} (-${damage.toFixed(1)})`, '#f88');
+    }
+
+    // Handle shield disruption (when local player's shields are disrupted)
+    handleShieldDisruption(duration, attackerId) {
+        if (!this.game.player) return;
+        
+        // Store original shield value
+        const originalShield = this.game.player.shield;
+        
+        // Disable shield temporarily
+        this.game.player.shield = 0;
+        this.game.player.shieldDisrupted = true;
+        this.game.player.disruptionEndTime = Date.now() + (duration * 1000);
+        
+        // Set up a timer to restore shields
+        setTimeout(() => {
+            if (this.game.player && this.game.player.shieldDisrupted && 
+                this.game.player.disruptionEndTime <= Date.now()) {
+                this.game.player.shield = originalShield;
+                this.game.player.shieldDisrupted = false;
+                this.game.player.disruptionEndTime = null;
+                
+                // Show shield restoration message
+                this.showGameMessage('Shields restored!', '#4f4');
+            }
+        }, duration * 1000);
+        
+        // Show disruption message
+        const attacker = this.players[attackerId]?.name || 'Another player';
+        this.showGameMessage(`Shields disrupted by ${attacker}!`, '#f84');
     }
 
     // Handle player death (local)

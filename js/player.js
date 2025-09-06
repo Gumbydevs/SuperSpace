@@ -368,6 +368,21 @@ export class Player {
                                 projectile.damage
                             );
                             
+                            // Apply shield disruption if projectile has this ability
+                            if (projectile.shieldDisruption) {
+                                const disruptionApplied = projectile.applyShieldDisruption(remotePlayer);
+                                if (disruptionApplied) {
+                                    // Show shield disruption message
+                                    window.game.multiplayer.showGameMessage(`Shields disrupted on ${remotePlayer.name}!`, '#f84');
+                                    
+                                    // Send shield disruption data to other clients
+                                    window.game.multiplayer.sendShieldDisruption(
+                                        remotePlayer.id,
+                                        projectile.disruptionDuration
+                                    );
+                                }
+                            }
+                            
                             // Show hit message
                             window.game.multiplayer.showGameMessage(`Hit ${remotePlayer.name}!`, '#4f4');
                             
@@ -771,7 +786,7 @@ export class Player {
                 break;
                 
             case 'Quantum Disruptor':
-                // Fire a quantum projectile that can phase through obstacles
+                // Fire a quantum projectile that can phase through obstacles and disrupt shields
                 const quantumProj = new Projectile(
                     this.x, this.y,
                     this.rotation,
@@ -779,7 +794,14 @@ export class Player {
                     weaponStats ? weaponStats.damage : 30, // Very high damage
                     weaponStats ? weaponStats.speed : 900, // Fast speed
                     weaponStats ? weaponStats.range : 800, // Good range
-                    false // Not homing
+                    false, // Not homing
+                    0, // No splash radius
+                    0, // No explosion radius
+                    0, // No explosion damage
+                    0, // No min detonation range
+                    0, // No max detonation range
+                    weaponStats ? weaponStats.shieldDisruption : true, // Shield disruption enabled
+                    weaponStats ? weaponStats.disruptionDuration : 3.0 // Disruption duration
                 );
                 
                 // Set quantum visual properties

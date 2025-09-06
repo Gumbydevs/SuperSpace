@@ -145,7 +145,7 @@ export class ShopSystem {
             {
                 id: 'quantum',
                 name: 'Quantum Disruptor',
-                description: 'Advanced weapon that phases through obstacles.',
+                description: 'Advanced weapon that phases through obstacles and disables enemy shields.',
                 price: 15000,
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
@@ -154,7 +154,9 @@ export class ShopSystem {
                     speed: 900,
                     range: 800,
                     energyCost: 25,
-                    phasing: true
+                    phasing: true,
+                    shieldDisruption: true,
+                    disruptionDuration: 3.0 // 3 seconds of shield disruption
                 }
             },
             {
