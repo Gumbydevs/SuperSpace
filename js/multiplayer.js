@@ -408,8 +408,9 @@ export class MultiplayerManager {
                         rotation: serverAsteroid.rotation || 0,
                         rotationSpeed: serverAsteroid.rotationSpeed || (Math.random() - 0.5) * 2,
                         vertices: this.game.world.generateAsteroidVertices(8 + Math.floor(Math.random() * 4), 0.3),
-                        velocityX: (Math.random() - 0.5) * 20,
-                        velocityY: (Math.random() - 0.5) * 20,
+                        // Stationary asteroids for multiplayer tactical gameplay
+                        velocityX: 0,
+                        velocityY: 0,
                         size: size,
                         scoreValue: scoreValue,
                         type: serverAsteroid.type || 'rock'

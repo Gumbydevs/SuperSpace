@@ -397,6 +397,7 @@ export class World {
     // Method to set up asteroids from server data (for multiplayer synchronization)
     setupServerAsteroidField(serverAsteroids) {
         console.log('Setting up server asteroid field:', serverAsteroids.length, 'asteroids');
+        console.log('Clearing', this.asteroids.length, 'existing local asteroids');
         
         // Convert server asteroids to client format
         this.asteroids = serverAsteroids.map(serverAsteroid => {
@@ -428,16 +429,16 @@ export class World {
                 rotationSpeed: serverAsteroid.rotationSpeed || (Math.random() - 0.5) * 2,
                 // Generate vertices for irregular shape
                 vertices: this.generateAsteroidVertices(8 + Math.floor(Math.random() * 4), 0.3),
-                // Set movement (asteroids can drift slowly)
-                velocityX: (Math.random() - 0.5) * 20,
-                velocityY: (Math.random() - 0.5) * 20,
+                // Stationary asteroids for multiplayer tactical gameplay - FORCED TO ZERO
+                velocityX: 0,
+                velocityY: 0,
                 size: size,
                 scoreValue: scoreValue,
                 type: serverAsteroid.type || 'rock' // Default to rock if no type specified
             };
         });
 
-        console.log('Successfully synchronized', this.asteroids.length, 'asteroids from server');
+        console.log('Successfully synchronized', this.asteroids.length, 'asteroids from server - all stationary');
     }
 
     // Method to update asteroid health from server (for multiplayer synchronization)
@@ -459,7 +460,7 @@ export class World {
             
             if (createExplosion) {
                 // Create explosion particles at asteroid location
-                this.createAsteroidExplosion(asteroid.x, asteroid.y, asteroid.radius);
+                this.createExplosion(asteroid.x, asteroid.y, asteroid.radius, null, 'asteroid');
             }
             
             // Remove asteroid from client array
@@ -507,14 +508,25 @@ export class World {
 
         // Here we update each asteroid's position and check for collisions
         this.asteroids.forEach((asteroid, i) => {
-            // Move asteroid based on its velocity
-            asteroid.x += asteroid.velocityX * deltaTime;
-            asteroid.y += asteroid.velocityY * deltaTime;
-            // Rotate asteroid
+            // Debug: Log any asteroids that have non-zero velocity in multiplayer
+            if (isMultiplayerConnected && (asteroid.velocityX !== 0 || asteroid.velocityY !== 0)) {
+                console.warn(`Asteroid ${asteroid.id} has velocity in multiplayer:`, asteroid.velocityX, asteroid.velocityY);
+                // Force reset to 0
+                asteroid.velocityX = 0;
+                asteroid.velocityY = 0;
+            }
+            
+            // Only move asteroids in single player mode - multiplayer asteroids are stationary for tactical gameplay
+            if (!isMultiplayerConnected) {
+                // Move asteroid based on its velocity
+                asteroid.x += asteroid.velocityX * deltaTime;
+                asteroid.y += asteroid.velocityY * deltaTime;
+                // Keep asteroid within world boundaries
+                this.wrapPosition(asteroid);
+            }
+            
+            // Always rotate asteroids for visual appeal
             asteroid.rotation += asteroid.rotationSpeed * deltaTime;
-
-            // Keep asteroid within world boundaries
-            this.wrapPosition(asteroid);
 
             // Check for collision with player if not in safe zone
             if (!this.isInSafeZone(player)) {
