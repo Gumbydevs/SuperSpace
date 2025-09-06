@@ -491,12 +491,32 @@ class Game {
             // Skip game updates if shop is open
             if (this.shop.shopOpen) return;
             
-            // Here we handle thruster sound based on player input
-            if (this.input.keys && Array.isArray(this.input.keys) && this.input.keys.includes('ArrowUp')) {
+            // Here we handle thruster sound based on player input and afterburner
+            const isThrusting = this.input.keys && Array.isArray(this.input.keys) && this.input.keys.includes('ArrowUp');
+            const isAfterburning = this.player.afterburnerActive;
+            
+            if (isThrusting) {
                 if (!this.thrusterSoundActive) {
                     // Start thruster sound when player starts accelerating
-                    this.soundManager.startThrusterSound({ volume: 0.3 });
+                    const volume = isAfterburning ? 0.6 : 0.3;
+                    const playbackRate = isAfterburning ? 1.8 : 1.0;
+                    this.soundManager.startThrusterSound({ 
+                        volume: volume,
+                        playbackRate: playbackRate 
+                    });
                     this.thrusterSoundActive = true;
+                } else if (isAfterburning) {
+                    // Update thruster sound for afterburner if already playing
+                    this.soundManager.updateThrusterSound({ 
+                        volume: 0.6,
+                        playbackRate: 1.8 
+                    });
+                } else {
+                    // Update thruster sound back to normal if afterburner deactivated
+                    this.soundManager.updateThrusterSound({ 
+                        volume: 0.3,
+                        playbackRate: 1.0 
+                    });
                 }
             } else if (this.thrusterSoundActive) {
                 // Stop thruster sound when player stops accelerating

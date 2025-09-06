@@ -210,6 +210,35 @@ export class SoundManager {
         }
     }
     
+    // Update thruster sound parameters for afterburner effects
+    updateThrusterSound(options = {}) {
+        if (this.thrusterSound && this.audioContext && !this.isMuted) {
+            try {
+                const now = this.audioContext.currentTime;
+                
+                // Update volume if provided
+                if (options.volume !== undefined && this.thrusterSound.outputGain) {
+                    this.thrusterSound.outputGain.gain.setValueAtTime(
+                        this.thrusterSound.outputGain.gain.value, now
+                    );
+                    this.thrusterSound.outputGain.gain.linearRampToValueAtTime(options.volume, now + 0.1);
+                }
+                
+                // Update frequency for afterburner effect
+                if (options.playbackRate !== undefined && this.thrusterSound.oscillator) {
+                    const baseFreq = 85;
+                    const newFreq = baseFreq * options.playbackRate;
+                    this.thrusterSound.oscillator.frequency.setValueAtTime(
+                        this.thrusterSound.oscillator.frequency.value, now
+                    );
+                    this.thrusterSound.oscillator.frequency.linearRampToValueAtTime(newFreq, now + 0.1);
+                }
+            } catch (e) {
+                console.error('Error updating thruster sound:', e);
+            }
+        }
+    }
+    
     stopSound(source) {
         if (source && this.audioContext) {
             try {

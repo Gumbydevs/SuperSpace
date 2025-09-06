@@ -62,6 +62,13 @@ export class Player {
         this.energy = 100;
         this.energyRegen = 5; // Energy points regenerated per second
 
+        // Here we set up the afterburner system
+        this.afterburnerActive = false;
+        this.afterburnerEnergyDrain = 25; // Energy per second when active
+        this.afterburnerSpeedMultiplier = 2.0; // Speed boost when active
+        this.afterburnerFlameMultiplier = 2.5; // Engine flame size multiplier
+        this.afterburnerMinEnergy = 10; // Minimum energy required to activate
+
         // Here we set up the shield system (requires upgrade)
         this.shieldCapacity = 0; // No shields by default until upgraded
         this.shield = 0;
@@ -155,15 +162,52 @@ export class Player {
             this.targetThrustLevel = 0;
         }
         
-        // Gradually transition current thrust level toward target
-        if (this.thrustLevel < this.targetThrustLevel) {
+        // Handle afterburner activation (Shift key or mobile afterburner button)
+        const afterburnerRequested = input.keys.includes('Shift') || input.afterburner;
+        
+        if (afterburnerRequested && this.energy >= this.afterburnerMinEnergy && this.targetThrustLevel > 0) {
+            if (!this.afterburnerActive) {
+                this.afterburnerActive = true;
+                // Play afterburner ignition sound
+                if (soundManager) {
+                    soundManager.play('explosion', {
+                        volume: 0.3,
+                        playbackRate: 1.5,
+                        position: { x: this.x, y: this.y }
+                    });
+                }
+            }
+        } else {
+            this.afterburnerActive = false;
+        }
+        
+        // Apply afterburner effects
+        let currentMaxSpeed = this.maxSpeed;
+        let currentThrustMultiplier = this.targetThrustLevel;
+        
+        if (this.afterburnerActive) {
+            // Drain energy
+            this.energy = Math.max(0, this.energy - (this.afterburnerEnergyDrain * deltaTime));
+            
+            // If energy runs out, deactivate afterburner
+            if (this.energy <= 0) {
+                this.afterburnerActive = false;
+            } else {
+                // Apply speed boost and enhanced thrust visual
+                currentMaxSpeed *= this.afterburnerSpeedMultiplier;
+                currentThrustMultiplier *= this.afterburnerFlameMultiplier;
+            }
+        }
+        
+        // Gradually transition current thrust level toward target (with afterburner multiplier)
+        if (this.thrustLevel < currentThrustMultiplier) {
             this.thrustLevel = Math.min(
-                this.targetThrustLevel, 
+                currentThrustMultiplier, 
                 this.thrustLevel + (this.thrustTransitionSpeed * deltaTime)
             );
-        } else if (this.thrustLevel > this.targetThrustLevel) {
+        } else if (this.thrustLevel > currentThrustMultiplier) {
             this.thrustLevel = Math.max(
-                this.targetThrustLevel, 
+                currentThrustMultiplier, 
                 this.thrustLevel - (this.thrustTransitionSpeed * deltaTime)
             );
         }
@@ -182,10 +226,10 @@ export class Player {
             this.velocity.y *= this.friction;
         }
         
-        // Here we cap velocity to the maximum speed
+        // Here we cap velocity to the maximum speed (with afterburner boost)
         const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
-        if (currentSpeed > this.maxSpeed) {
-            const ratio = this.maxSpeed / currentSpeed;
+        if (currentSpeed > currentMaxSpeed) {
+            const ratio = currentMaxSpeed / currentSpeed;
             this.velocity.x *= ratio;
             this.velocity.y *= ratio;
         }
@@ -376,6 +420,11 @@ export class Player {
         // Here we regenerate energy over time
         if (this.energy < this.maxEnergy) {
             this.energy = Math.min(this.maxEnergy, this.energy + this.energyRegen * deltaTime);
+        }
+        
+        // Update energy bar display in UI
+        if (window.game && window.game.ui) {
+            window.game.ui.updateEnergyBar(this.energy, this.maxEnergy);
         }
         
         // Here we handle shield recharge after not taking damage for a while

@@ -226,9 +226,35 @@ export class UI {
         
         this.styleStatusItem(weaponDisplay, '#ff3');
         
+        // Energy display - for afterburner system
+        const energyDisplay = document.createElement('div');
+        energyDisplay.className = 'status-item';
+        energyDisplay.innerHTML = '<span class="status-label">ENERGY:</span> <span id="energy" class="status-value">100</span>';
+        this.styleStatusItem(energyDisplay, '#f0f');
+        
+        // Energy bar - similar to health bar but purple
+        const energyBar = document.createElement('div');
+        energyBar.style.width = '100%';
+        energyBar.style.height = this.isMobileDevice ? '4px' : '6px';
+        energyBar.style.backgroundColor = '#333';
+        energyBar.style.borderRadius = '3px';
+        energyBar.style.overflow = 'hidden';
+        energyBar.style.marginTop = this.isMobileDevice ? '3px' : '4px';
+        
+        const energyFill = document.createElement('div');
+        energyFill.id = 'energy-fill';
+        energyFill.style.width = '100%';
+        energyFill.style.height = '100%';
+        energyFill.style.backgroundColor = '#f0f';
+        energyFill.style.transition = 'width 0.3s ease';
+        
+        energyBar.appendChild(energyFill);
+        energyDisplay.appendChild(energyBar);
+        
         // Add status items to panel
         statusPanel.appendChild(healthDisplay);
         statusPanel.appendChild(weaponDisplay);
+        statusPanel.appendChild(energyDisplay);
         
         // Add panels to HUD
         hudContainer.appendChild(topInfoPanel);

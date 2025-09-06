@@ -16,13 +16,20 @@ export class InputHandler {
         
         window.addEventListener('keydown', (e) => {
             // Prevent default behaviors for game control keys
-            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
                 e.preventDefault();
             }
             
             // Add key to the array if it's not already there
             if(!this.keys.includes(e.code) && !e.repeat) {
                 this.keys.push(e.code);
+                
+                // Handle shift keys as generic 'Shift' for afterburner
+                if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                    if(!this.keys.includes('Shift')) {
+                        this.keys.push('Shift');
+                    }
+                }
             }
         });
         
@@ -31,6 +38,16 @@ export class InputHandler {
             const index = this.keys.indexOf(e.code);
             if(index > -1) {
                 this.keys.splice(index, 1);
+            }
+            
+            // Handle shift keys - remove generic 'Shift' when both shift keys are released
+            if(e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                if(!this.keys.includes('ShiftLeft') && !this.keys.includes('ShiftRight')) {
+                    const shiftIndex = this.keys.indexOf('Shift');
+                    if(shiftIndex > -1) {
+                        this.keys.splice(shiftIndex, 1);
+                    }
+                }
             }
         });
         
@@ -96,6 +113,13 @@ export class InputHandler {
         weaponButton.innerHTML = '🔄';
         touchUI.appendChild(weaponButton);
         
+        // Create afterburner button
+        const afterburnerButton = document.createElement('div');
+        afterburnerButton.id = 'afterburner-button';
+        afterburnerButton.className = 'touch-button afterburner-button';
+        afterburnerButton.innerHTML = '🚀';
+        touchUI.appendChild(afterburnerButton);
+        
         document.body.appendChild(touchUI);
         
         // Add button touch events
@@ -125,6 +149,23 @@ export class InputHandler {
                         this.keys.splice(index, 1);
                     }
                 }, 100);
+            }
+        });
+        
+        // Add afterburner button events
+        afterburnerButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.keys.includes('Shift')) {
+                this.keys.push('Shift');
+                afterburnerButton.classList.add('active');
+            }
+        });
+        
+        afterburnerButton.addEventListener('touchend', () => {
+            const index = this.keys.indexOf('Shift');
+            if (index > -1) {
+                this.keys.splice(index, 1);
+                afterburnerButton.classList.remove('active');
             }
         });
         
