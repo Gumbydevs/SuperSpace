@@ -190,6 +190,7 @@ export class UI {
     scoreDisplay.className = 'status-item-small';
     scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
     scoreDisplay.style.marginLeft = '5ch'; // Add spacing equivalent to 5 capital characters
+    scoreDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(scoreDisplay, '#fff');
     topInfoPanel.appendChild(scoreDisplay);
 
@@ -197,6 +198,7 @@ export class UI {
     const creditsDisplay = document.createElement('div');
     creditsDisplay.className = 'status-item-small';
     creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
+    creditsDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
     topInfoPanel.appendChild(creditsDisplay);
         
