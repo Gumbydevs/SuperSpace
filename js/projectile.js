@@ -145,10 +145,11 @@ export class Projectile {
             // Find nearest ship or asteroid (excluding the owner if possible)
             let nearest = null;
             let nearestDist = Infinity;
-            const candidates = [];
-            if (window.game.world.players) {
-                for (const p of window.game.world.players) {
-                    if (!p.visible || p.health <= 0) continue;
+            
+            // Check for multiplayer players
+            if (window.game.multiplayer && window.game.multiplayer.players) {
+                Object.values(window.game.multiplayer.players).forEach(p => {
+                    if (p.destroyed || p.health <= 0) return;
                     const dx = p.x - this.x;
                     const dy = p.y - this.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
@@ -156,8 +157,10 @@ export class Projectile {
                         nearest = p;
                         nearestDist = dist;
                     }
-                }
+                });
             }
+            
+            // Also check asteroids as backup targets
             if (window.game.world.asteroids) {
                 for (const a of window.game.world.asteroids) {
                     if (!a.active) continue;
@@ -170,6 +173,7 @@ export class Projectile {
                     }
                 }
             }
+            
             if (nearest) {
                 // Calculate direction to target
                 const dx = nearest.x - this.x;
