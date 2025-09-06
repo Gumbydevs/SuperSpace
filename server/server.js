@@ -154,6 +154,17 @@ io.on('connection', (socket) => {
       player.ship = data.ship;
       player.color = data.color || player.color;
       
+      // Update stats from client (since client calculates scores immediately)
+      if (data.score !== undefined) {
+        player.score = data.score;
+      }
+      if (data.wins !== undefined) {
+        player.wins = data.wins;
+      }
+      if (data.losses !== undefined) {
+        player.losses = data.losses;
+      }
+      
       // Broadcast the updated position to all other players
       socket.broadcast.emit('playerMoved', {
         id: socket.id,

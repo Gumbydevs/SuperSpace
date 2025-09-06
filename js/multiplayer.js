@@ -668,7 +668,10 @@ export class MultiplayerManager {
                 velocity: this.game.player.velocity,
                 health: this.game.player.health,
                 ship: this.game.player.shipId || 'scout',
-                color: this.game.player.color || '#0f0'
+                color: this.game.player.color || '#0f0',
+                score: this.game.player.score || 0,
+                wins: this.game.player.wins || 0,
+                losses: this.game.player.losses || 0
             };
 
             this.socket.emit('playerUpdate', playerData);
@@ -1617,10 +1620,10 @@ export class MultiplayerManager {
         header.style.display = 'flex';
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '4px';
-        header.innerHTML = `<span style="width:16px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
+        header.innerHTML = `<span style="width:30px;text-align:center;">#</span><span style="width:16px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
         listContainer.appendChild(header);
 
-        allPlayers.forEach(player => {
+        allPlayers.forEach((player, index) => {
             const playerItem = document.createElement('div');
             playerItem.style.display = 'flex';
             playerItem.style.alignItems = 'center';
@@ -1629,6 +1632,14 @@ export class MultiplayerManager {
             playerItem.style.padding = '2px';
             playerItem.style.borderRadius = '3px';
             playerItem.style.background = player.isSelf ? 'rgba(0,255,0,0.08)' : '';
+
+            const rankNumber = document.createElement('span');
+            rankNumber.textContent = `${index + 1}.`;
+            rankNumber.style.width = '30px';
+            rankNumber.style.textAlign = 'center';
+            rankNumber.style.color = index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#fff';
+            rankNumber.style.fontWeight = 'bold';
+            rankNumber.style.flexShrink = '0';
 
             const playerColor = document.createElement('span');
             playerColor.style.display = 'inline-block';
@@ -1666,6 +1677,7 @@ export class MultiplayerManager {
             losses.style.textAlign = 'center';
             losses.style.color = '#f44';
 
+            playerItem.appendChild(rankNumber);
             playerItem.appendChild(playerColor);
             playerItem.appendChild(playerName);
             playerItem.appendChild(score);
