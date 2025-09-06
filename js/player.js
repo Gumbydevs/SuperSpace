@@ -937,64 +937,13 @@ export class Player {
                         // Skip rendering if projectile is missing critical properties
                         if (projectile.x === undefined || projectile.y === undefined) return;
                         
-                        // Save context state
-                        ctx.save();
-                        
-                        // Determine projectile color based on type or default
-                        let color = projectile.color || '#f00';
-                        let size = 3;
-                        
-                        switch(projectile.type) {
-                            case 'laser':
-                                color = projectile.color || '#f33';
-                                size = 3;
-                                break;
-                            case 'burst':
-                                color = projectile.color || '#ff3';
-                                size = 2;
-                                break;
-                            case 'missile':
-                                color = projectile.color || '#3af';
-                                size = 4;
-                                break;
-                            case 'plasma':
-                                color = projectile.color || '#f0f';
-                                size = 5;
-                                break;
-                            case 'quantum':
-                                color = projectile.color || '#fff';
-                                size = 3;
-                                break;
+                        // Try to use the projectile's own render method if available
+                        if (projectile.render && typeof projectile.render === 'function') {
+                            projectile.render(ctx);
+                        } else {
+                            // Fallback to enhanced manual rendering
+                            this.renderRemoteProjectile(ctx, projectile);
                         }
-                        
-                        // Draw the projectile
-                        ctx.fillStyle = color;
-                        ctx.beginPath();
-                        ctx.arc(projectile.x, projectile.y, size, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        // Add glow effect for certain projectile types
-                        if (['plasma', 'quantum', 'missile'].includes(projectile.type)) {
-                            const glowSize = size * 2;
-                            const gradient = ctx.createRadialGradient(
-                                projectile.x, projectile.y, size/2,
-                                projectile.x, projectile.y, glowSize
-                            );
-                            gradient.addColorStop(0, color);
-                            gradient.addColorStop(1, 'rgba(0,0,0,0)');
-                            
-                            ctx.fillStyle = gradient;
-                            ctx.beginPath();
-                            ctx.arc(projectile.x, projectile.y, glowSize, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                        
-                        // Restore context state
-                        ctx.restore();
-                        
-                        // Update projectile position for next frame using its velocity
-                        projectile.x += projectile.velocityX * (1/60); // Assume 60fps if no deltaTime
-                        projectile.y += projectile.velocityY * (1/60);
                     });
                 }
             });
@@ -1883,5 +1832,117 @@ export class Player {
                 position: { x: impactX, y: impactY }
             });
         }
+    }
+
+    // Enhanced rendering method for remote projectiles to match local visual quality
+    renderRemoteProjectile(ctx, projectile) {
+        ctx.save();
+        
+        // Render trail particles first (behind projectile)
+        if (projectile.trailParticles && projectile.trailParticles.length > 0) {
+            projectile.trailParticles.forEach(particle => {
+                const alpha = particle.timeLeft / particle.maxTime;
+                const size = particle.size * alpha;
+                
+                ctx.globalAlpha = alpha * 0.7;
+                ctx.fillStyle = projectile.trailColor || projectile.color || '#f00';
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+        
+        // Translate to projectile position and rotate
+        ctx.translate(projectile.x, projectile.y);
+        if (projectile.angle !== undefined) {
+            ctx.rotate(projectile.angle);
+        }
+        
+        // Get projectile properties with fallbacks
+        const width = projectile.width || 3;
+        const height = projectile.height || 12;
+        const color = projectile.color || '#f00';
+        
+        // Render based on projectile type
+        switch(projectile.type) {
+            case 'missile':
+                // Draw triangle-shaped missile with thruster
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(0, -height/2);           // Nose of missile
+                ctx.lineTo(-width/2, height/2);     // Bottom left
+                ctx.lineTo(width/2, height/2);      // Bottom right
+                ctx.closePath();
+                ctx.fill();
+                
+                // Thruster flame behind the missile
+                ctx.fillStyle = '#ff4400';
+                ctx.beginPath();
+                ctx.moveTo(-width/4, height/2);
+                ctx.lineTo(0, height/2 + 8);
+                ctx.lineTo(width/4, height/2);
+                ctx.closePath();
+                ctx.fill();
+                break;
+                
+            case 'plasma':
+                // Glowing plasma ball
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, width + 2);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(0.7, color);
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, width + 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner bright core
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(0, 0, width - 1, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+                
+            case 'quantum':
+                // Pulsing quantum projectile
+                const pulseSize = width + Math.sin(Date.now() * 0.01) * 2;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Outer glow
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, pulseSize + 3, 0, Math.PI * 2);
+                ctx.stroke();
+                break;
+                
+            default:
+                // Standard laser/bullet
+                ctx.fillStyle = color;
+                ctx.fillRect(-width/2, -height/2, width, height);
+                break;
+        }
+        
+        // Add glow effect for glowing projectiles
+        if (projectile.glow || ['plasma', 'quantum', 'missile'].includes(projectile.type)) {
+            const glowSize = width * 2;
+            const glowGradient = ctx.createRadialGradient(0, 0, width/2, 0, 0, glowSize);
+            glowGradient.addColorStop(0, color);
+            glowGradient.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = glowGradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        
+        ctx.restore();
     }
 }

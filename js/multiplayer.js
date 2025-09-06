@@ -885,15 +885,25 @@ export class MultiplayerManager {
         // Update and clean up remote projectiles
         Object.values(this.players).forEach(player => {
             if (player.projectiles && Array.isArray(player.projectiles)) {
-                // Remove projectiles that have traveled too far (estimate a max lifetime)
+                // Update each remote projectile's position and effects
                 player.projectiles = player.projectiles.filter(projectile => {
-                    // Calculate distance from origin
-                    const distX = projectile.x - player.x;
-                    const distY = projectile.y - player.y;
-                    const distanceTraveled = Math.sqrt(distX * distX + distY * distY);
+                    // Update projectile if it has an update method
+                    if (projectile.update) {
+                        return projectile.update(0.016, this.game.world); // 60 FPS approximation
+                    } else {
+                        // Legacy update for basic projectiles
+                        projectile.x += projectile.velocityX * 0.016;
+                        projectile.y += projectile.velocityY * 0.016;
+                        
+                        // Calculate distance from origin for cleanup
+                        const distX = projectile.x - player.x;
+                        const distY = projectile.y - player.y;
+                        const distanceTraveled = Math.sqrt(distX * distX + distY * distY);
 
-                    // Assume a standard max range of 800 units
-                    return distanceTraveled < 800;
+                        // Use projectile's range if available, otherwise default to 800
+                        const maxRange = projectile.range || 800;
+                        return distanceTraveled < maxRange;
+                    }
                 });
             }
         });
@@ -913,7 +923,24 @@ export class MultiplayerManager {
             },
             damage: projectile.damage,
             type: projectile.type || 'laser',
-            color: projectile.color || '#f00'
+            color: projectile.color || '#f00',
+            // Enhanced projectile properties for proper visual synchronization
+            speed: projectile.speed,
+            range: projectile.range,
+            homing: projectile.homing || false,
+            splashRadius: projectile.splashRadius || 0,
+            explosionRadius: projectile.explosionRadius || 0,
+            explosionDamage: projectile.explosionDamage || 0,
+            shieldDisruption: projectile.shieldDisruption || false,
+            disruptionDuration: projectile.disruptionDuration || 0,
+            // Visual properties
+            width: projectile.width,
+            height: projectile.height,
+            glow: projectile.glow || false,
+            trail: projectile.trail || false,
+            trailColor: projectile.trailColor,
+            size: projectile.size,
+            explosive: projectile.explosive || false
         };
         
         this.socket.emit('playerFire', projectileData);
@@ -1181,16 +1208,88 @@ export class MultiplayerManager {
 
     // Handle receiving a projectile from another player
     handleRemoteProjectile(playerId, projectileData) {
-        // Create a visual representation of the remote projectile
+        // Create a proper Projectile instance for remote players with all properties
+        // Import Projectile class to create full instances
         const projectile = {
             x: projectileData.x,
             y: projectileData.y,
+            angle: projectileData.angle,
             velocityX: projectileData.velocity ? projectileData.velocity.x : 0,
             velocityY: projectileData.velocity ? projectileData.velocity.y : 0,
+            velocity: {
+                x: projectileData.velocity ? projectileData.velocity.x : 0,
+                y: projectileData.velocity ? projectileData.velocity.y : 0
+            },
             damage: projectileData.damage,
             type: projectileData.type || 'laser',
             color: projectileData.color || '#f00',
-            remoteId: playerId
+            // Enhanced projectile properties for proper visual rendering
+            speed: projectileData.speed || 300,
+            range: projectileData.range || 800,
+            homing: projectileData.homing || false,
+            splashRadius: projectileData.splashRadius || 0,
+            explosionRadius: projectileData.explosionRadius || 0,
+            explosionDamage: projectileData.explosionDamage || 0,
+            shieldDisruption: projectileData.shieldDisruption || false,
+            disruptionDuration: projectileData.disruptionDuration || 0,
+            // Visual properties
+            width: projectileData.width || 3,
+            height: projectileData.height || 12,
+            glow: projectileData.glow || false,
+            trail: projectileData.trail || false,
+            trailColor: projectileData.trailColor,
+            size: projectileData.size,
+            explosive: projectileData.explosive || false,
+            // Initialize trail particles for visual effects
+            trailParticles: [],
+            distanceTraveled: 0,
+            hasExploded: false,
+            remoteId: playerId,
+            // Add update method for remote projectiles to handle trails and homing
+            update: function(deltaTime, world) {
+                // Update position
+                this.x += this.velocity.x * deltaTime;
+                this.y += this.velocity.y * deltaTime;
+                this.distanceTraveled += this.speed * deltaTime;
+                
+                // Update trail particles if trail is enabled
+                if (this.trail || this.type === 'missile') {
+                    const trailSize = this.type === 'missile' ? 3 : 2;
+                    const lifetime = this.type === 'missile' ? 0.6 : 0.3;
+                    
+                    this.trailParticles.push({
+                        x: this.x,
+                        y: this.y,
+                        timeLeft: lifetime,
+                        maxTime: lifetime,
+                        size: trailSize
+                    });
+                    
+                    // Remove old trail particles
+                    this.trailParticles = this.trailParticles.filter(particle => {
+                        particle.timeLeft -= deltaTime;
+                        return particle.timeLeft > 0;
+                    });
+                }
+                
+                return this.distanceTraveled < this.range;
+            },
+            
+            // Add render method for enhanced visual effects
+            render: function(ctx) {
+                // Call the enhanced remote projectile renderer
+                if (window.game && window.game.player && window.game.player.renderRemoteProjectile) {
+                    window.game.player.renderRemoteProjectile(ctx, this);
+                } else {
+                    // Fallback basic rendering
+                    ctx.save();
+                    ctx.fillStyle = this.color || '#f00';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
         };
         
         // Add to remote player's projectiles if they exist
