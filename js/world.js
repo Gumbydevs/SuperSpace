@@ -580,19 +580,63 @@
                         }
 
                         // Send hit event to server with all calculated values
-                        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+                        const multiplayerAvailable = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+                        console.log('Multiplayer check:', { 
+                            hasGame: !!window.game, 
+                            hasMultiplayer: !!(window.game && window.game.multiplayer),
+                            isConnected: !!(window.game && window.game.multiplayer && window.game.multiplayer.connected)
+                        });
+                        
+                        if (multiplayerAvailable) {
+                            // Create immediate visual feedback
+                            this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
+                            
                             window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, 0, true);
                             
                             // Mark asteroid as pending destruction to prevent multiple hits
                             asteroid.pendingDestruction = true;
                             asteroid.destructionTimeout = setTimeout(() => {
-                                // Fallback: remove asteroid if server doesn't respond within 3 seconds
+                                // Fallback: remove asteroid if server doesn't respond within 1 second (reduced for testing)
                                 const index = this.asteroids.findIndex(a => a.id === asteroid.id);
                                 if (index >= 0 && this.asteroids[index].pendingDestruction) {
-                                    console.warn(`Asteroid ${asteroid.id} timed out - removing locally`);
+                                    console.warn(`⏰ Asteroid ${asteroid.id} timed out - removing locally (no server response)`);
+                                    
+                                    // Award credits and spawn powerups locally as fallback
+                                    const asteroid = this.asteroids[index];
+                                    let creditReward;
+                                    switch (asteroid.size) {
+                                        case 'large':
+                                            creditReward = this.getRandomInt(
+                                                this.asteroidCreditValues.large.min,
+                                                this.asteroidCreditValues.large.max
+                                            );
+                                            break;
+                                        case 'medium':
+                                            creditReward = this.getRandomInt(
+                                                this.asteroidCreditValues.medium.min,
+                                                this.asteroidCreditValues.medium.max
+                                            );
+                                            break;
+                                        default:
+                                            creditReward = this.getRandomInt(
+                                                this.asteroidCreditValues.small.min,
+                                                this.asteroidCreditValues.small.max
+                                            );
+                                    }
+                                    player.addCredits(creditReward);
+                                    
+                                    // Spawn powerups locally
+                                    if (asteroid.size !== 'small') {
+                                        if (Math.random() < 0.3) {
+                                            this.spawnPowerup(asteroid.x, asteroid.y);
+                                        }
+                                    } else if (Math.random() < 0.1) {
+                                        this.spawnPowerup(asteroid.x, asteroid.y);
+                                    }
+                                    
                                     this.asteroids.splice(index, 1);
                                 }
-                            }, 3000);
+                            }, 1000); // Reduced to 1 second for testing
                             
                             console.log(`Asteroid ${asteroid.id} marked for destruction - waiting for server fragments`);
                         } else {

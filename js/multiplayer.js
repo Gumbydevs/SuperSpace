@@ -437,9 +437,12 @@ export class MultiplayerManager {
         
         // Handle asteroid destruction from server
         this.socket.on('asteroidDestroyed', (data) => {
+            console.log('🌟 Received asteroidDestroyed event from server:', data);
             if (this.game.world) {
                 // Use the new fragment handling method
                 this.handleAsteroidDestroyedWithFragments(data);
+            } else {
+                console.warn('No game world available to handle asteroid destruction');
             }
         });
         
@@ -1998,6 +2001,7 @@ export class MultiplayerManager {
     // Handle asteroid destruction with fragments from server
     handleAsteroidDestroyedWithFragments(data) {
         console.log('Handling asteroid destruction with fragments:', data);
+        console.log('Current asteroids count:', this.game.world.asteroids.length);
         
         // Find and remove the original asteroid by ID (if it still exists)
         let asteroidFound = false;
@@ -2048,12 +2052,8 @@ export class MultiplayerManager {
                     }
                 }
                 
-                // Create explosion effect
-                this.game.world.createExplosion(
-                    this.game.world.asteroids[i].x, 
-                    this.game.world.asteroids[i].y, 
-                    this.game.world.asteroids[i].radius
-                );
+                // Don't create explosion here - it was already created on hit
+                // The explosion should happen immediately when projectile hits, not when server responds
                 
                 // Remove the original asteroid
                 this.game.world.asteroids.splice(i, 1);
