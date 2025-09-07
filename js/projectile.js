@@ -396,6 +396,9 @@ export class Projectile {
                 }
             });
         }
+        
+        // Mark projectile as exploded so it gets removed
+        this.hasExploded = true;
     }
     
     render(ctx) {
