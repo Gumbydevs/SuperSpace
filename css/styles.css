@@ -673,6 +673,45 @@ input[type="range"] {
     text-shadow: 0 0 5px #4af;
 }
 
+/* Game UI buttons - Shop and Admin */
+#shop-btn {
+    position: absolute;
+    top: 76px;
+    right: 0px;
+    z-index: 1002;
+    background: rgba(0, 0, 50, 0.7);
+    color: white;
+    border: 1px solid #33f;
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+#shop-btn:hover {
+    background: rgba(0, 0, 70, 0.9);
+}
+
+#admin-btn {
+    position: absolute;
+    top: 114px;
+    right: 0px;
+    z-index: 1002;
+    background: rgba(50, 0, 0, 0.7);
+    color: white;
+    border: 1px solid #f33;
+    border-radius: 5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+#admin-btn:hover {
+    background: rgba(70, 0, 0, 0.9);
+}
+
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
     /* Global mobile adjustments */
@@ -896,38 +935,35 @@ input[type="range"] {
         border: 2px solid #555;
     }
     
-    /* Status panel adjustments for mobile - move to bottom center smaller */
+    /* Status panel adjustments for mobile - move to bottom left and make it larger */
     #status-panel {
         position: fixed !important;
-        bottom: 50px !important; /* Above touch controls */
-        left: 50% !important;
-        transform: translateX(-50%) scale(0.8) !important;
-        transform-origin: center !important;
+        bottom: 160px !important; /* Above touch controls with more space */
+        left: 15px !important;
+        transform: scale(0.9) !important; /* Larger than before */
+        transform-origin: bottom left !important;
         background-color: rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #444 !important;
         border-radius: 8px !important;
         box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
         z-index: 1001 !important;
-        max-width: 200px !important;
-        text-align: center !important;
-        padding: 6px !important;
+        max-width: 240px !important;
+        padding: 8px !important;
     }
     
-    /* Make status panel items smaller and more compact on mobile */
+    /* Make status panel items larger and more readable on mobile */
     #status-panel .status-item {
-        font-size: 11px !important;
-        margin-bottom: 2px !important;
+        font-size: 12px !important;
+        margin-bottom: 3px !important;
     }
-    
+
     #status-panel .status-label {
-        font-size: 10px !important;
-    }
-    
-    #status-panel .status-value {
         font-size: 11px !important;
     }
-    
-    /* Touch controls styling */
+
+    #status-panel .status-value {
+        font-size: 12px !important;
+    }    /* Touch controls styling */
     .touch-ui {
         display: block !important;
         position: fixed;
@@ -1046,18 +1082,26 @@ input[type="range"] {
         box-shadow: 0 0 15px rgba(255, 80, 80, 0.8);
     }
     
-    /* Mobile menu/settings button - positioned at top right, away from combat controls */
+    /* Mobile menu/settings button - styled like shop button and positioned below it */
     #mobile-menu-button {
-        top: 120px; /* Below shop button */
-        right: 10px;
-        width: 45px;
-        height: 45px;
-        background-color: rgba(200, 200, 200, 0.3);
-        border-color: rgba(200, 200, 200, 0.6);
-        font-size: 18px;
+        top: 114px; /* Below shop button - matches admin button positioning */
+        right: 0px; /* Align with shop button */
+        width: auto; /* Auto width like shop button */
+        height: auto; /* Auto height like shop button */
+        background: rgba(0, 0, 50, 0.7); /* Same as shop button */
+        border: 1px solid #33f; /* Same as shop button */
+        border-radius: 5px; /* Same as shop button */
+        color: white;
+        padding: 6px 12px; /* Same as shop button */
+        font-size: 14px; /* Readable font size */
         position: fixed;
-        z-index: 1003; /* Higher than other UI elements */
+        z-index: 1002; /* Same as shop button */
         display: none; /* Hidden on desktop */
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-family: inherit;
     }
     
     /* Show mobile menu button only on touch devices */
@@ -1068,8 +1112,8 @@ input[type="range"] {
     }
     
     #mobile-menu-button:active {
-        background-color: rgba(200, 200, 200, 0.6);
-        box-shadow: 0 0 15px rgba(200, 200, 200, 0.8);
+        background: rgba(0, 0, 70, 0.9); /* Darker on press, similar to shop button */
+        transform: scale(0.98); /* Subtle press effect */
     }
     
     /* Mobile brake/stop button - positioned above joystick */
@@ -1164,11 +1208,10 @@ input[type="range"] {
     }
     
     #mobile-menu-button {
-        width: 45px;
-        height: 45px;
-        top: 15px;
-        right: 15px;
-        font-size: 18px;
+        padding: 5px 10px; /* Slightly smaller padding for small screens */
+        font-size: 14px;
+        top: 114px; /* Keep consistent positioning */
+        right: 0px;
     }
     
     #brake-button {
@@ -1194,9 +1237,10 @@ input[type="range"] {
     
     /* Status panel adjustments for small mobile */
     #status-panel {
-        bottom: 150px;
-        left: 5px;
-        transform: scale(0.85);
+        bottom: 170px !important; /* Higher to avoid touch controls */
+        left: 10px !important;
+        transform: scale(0.85) !important;
+        max-width: 220px !important;
     }
     
     /* Player list even smaller on small mobile */
@@ -1239,7 +1283,9 @@ input[type="range"] {
     }
     
     #status-panel {
-        bottom: 130px;
+        bottom: 140px !important; /* Adjust for tablet landscape */
+        left: 20px !important;
+        transform: scale(0.95) !important; /* Slightly larger on tablet */
     }
 }
 

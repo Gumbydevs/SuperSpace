@@ -176,7 +176,7 @@ export class UI {
         let statusPanelPadding = '10px';
         let minimapMargin = '15px';
         let topPanelPosition = '10px';
-        let statusBottomPosition = '15px'; // Default desktop position
+        let statusBottomPosition = '80px'; // Move status bar down from middle of screen to lower position
         
         // Apply additional scaling for mobile/tablet devices
         if (this.isMobileDevice) {

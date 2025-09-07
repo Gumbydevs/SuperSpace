@@ -159,7 +159,7 @@ export class InputHandler {
         const menuButton = document.createElement('div');
         menuButton.id = 'mobile-menu-button';
         menuButton.className = 'touch-button mobile-menu-button';
-        menuButton.innerHTML = '⚙️';
+        menuButton.innerHTML = '⚙️ Options'; // Match shop button format
         menuButton.style.display = 'none'; // Hidden by default
         document.body.appendChild(menuButton); // Add to body instead of touchUI
         
