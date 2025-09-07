@@ -429,7 +429,8 @@ export class ShopSystem {
         shopContainer.style.borderRadius = '10px';
         shopContainer.style.padding = '20px';
         shopContainer.style.color = 'white';
-        shopContainer.style.fontFamily = 'Arial, sans-serif';
+        shopContainer.style.fontFamily = "'Orbitron', 'Courier New', monospace";
+        shopContainer.style.fontWeight = '500';
         shopContainer.style.zIndex = '200';
         
         // Header
@@ -440,14 +441,22 @@ export class ShopSystem {
         
         const title = document.createElement('h2');
         title.textContent = 'Space Dock Shop';
-        title.style.color = '#33f';
+        title.style.color = '#8cf';
+        title.style.fontFamily = "'Orbitron', sans-serif";
+        title.style.fontWeight = '700';
+        title.style.fontSize = '2.1em';
+        title.style.letterSpacing = '0.08em';
+        title.style.textShadow = '0 0 12px #33f, 0 0 4px #fff';
         title.style.margin = '0';
         
         const credits = document.createElement('div');
         credits.id = 'shop-credits';
         credits.textContent = `Credits: ${this.player.credits || 0}`;
         credits.style.fontSize = '1.2em';
-        credits.style.fontWeight = 'bold';
+        credits.style.fontWeight = '500';
+        credits.style.fontFamily = "'Orbitron', monospace";
+        credits.style.color = '#d6e8ff';
+        credits.style.textShadow = '0 0 2px #33f3';
         
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'X';
@@ -485,6 +494,31 @@ export class ShopSystem {
         content.id = 'shop-content';
         content.style.height = '450px';
         content.style.overflowY = 'auto';
+        
+        // Add custom scrollbar styling
+        const style = document.createElement('style');
+        style.textContent = `
+            #shop-content::-webkit-scrollbar {
+                width: 8px;
+            }
+            #shop-content::-webkit-scrollbar-track {
+                background: #0a1428;
+                border-radius: 4px;
+                border: 1px solid #1a2a4a;
+            }
+            #shop-content::-webkit-scrollbar-thumb {
+                background: linear-gradient(180deg, #33f 0%, #1155ff 50%, #0033cc 100%);
+                border-radius: 4px;
+                border: 1px solid #55f;
+                box-shadow: 0 0 6px #33f6;
+            }
+            #shop-content::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(180deg, #55f 0%, #3377ff 50%, #1155ee 100%);
+                box-shadow: 0 0 10px #55fa;
+            }
+        `;
+        document.head.appendChild(style);
+        
         shopContainer.appendChild(content);
         
         document.body.appendChild(shopContainer);
@@ -495,6 +529,12 @@ export class ShopSystem {
         tab.textContent = name;
         tab.style.padding = '10px 20px';
         tab.style.cursor = 'pointer';
+        tab.style.fontFamily = "'Orbitron', sans-serif";
+        tab.style.fontWeight = '600';
+        tab.style.fontSize = '1.1em';
+        tab.style.letterSpacing = '0.05em';
+        tab.style.color = this.currentTab === tabId ? '#8cf' : '#d6e8ff';
+        tab.style.textShadow = this.currentTab === tabId ? '0 0 6px #33f6' : '0 0 2px #33f3';
         tab.style.borderBottom = this.currentTab === tabId ? '2px solid #33f' : 'none';
         tab.onclick = () => {
             this.currentTab = tabId;
