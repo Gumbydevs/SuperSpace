@@ -1159,6 +1159,46 @@ input[type="range"] {
     button, .touch-button, .touch-joystick, input, select, textarea {
         touch-action: manipulation;
     }
+    
+    /* Shop container mobile adjustments */
+    #shop-container {
+        width: 95% !important;
+        max-width: 500px !important;
+        height: 85vh !important;
+        max-height: 600px !important;
+        padding: 15px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    /* Shop content area mobile adjustments */
+    #shop-content {
+        height: calc(100% - 120px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    /* Shop header mobile adjustments */
+    #shop-container h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Shop tabs mobile adjustments */
+    #shop-container .shop-tabs {
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Shop tab buttons mobile adjustments */
+    #shop-container .shop-tab {
+        font-size: 0.8rem !important;
+        padding: 8px 12px !important;
+        min-width: 80px !important;
+        flex: 1 !important;
+        text-align: center !important;
+    }
 }
 
 /* Small mobile devices (phones in portrait) */
