@@ -308,7 +308,7 @@ export class UI {
         // Weapon display - made more compact
         const weaponDisplay = document.createElement('div');
         weaponDisplay.className = 'status-item';
-        weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Basic Laser</span>';
+        weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Disengaged</span>';
         
         // Weapon icon - made smaller
         const weaponIcon = document.createElement('div');
