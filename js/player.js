@@ -345,7 +345,8 @@ export class Player {
                 'Quantum Disruptor': 'quantum',
                 'Rocket Launcher': 'rocket',
                 'Mining Laser': 'mininglaser',
-                'Space Mines': 'mines'
+                'Space Mines': 'mines',
+                'Railgun': 'railgun'
             };
             this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'disengaged';
             
@@ -364,7 +365,8 @@ export class Player {
                         'quantum': 0.45,
                         'rocket': 0.55,
                         'mininglaser': 0.15,
-                        'mines': 0.8
+                        'mines': 0.8,
+                        'railgun': 0.8
                     };
                     this.fireCooldownTime = fallbackRates[this.currentWeaponId] || 0.12;
                 }
@@ -1059,6 +1061,35 @@ export class Player {
                         soundManager.play('laser', {
                             volume: 0.9,
                             playbackRate: 0.4,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
+                }
+                break;
+                
+            case 'Railgun':
+                // Create a high-velocity penetrating spike projectile
+                projectiles.push(new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'railgun',
+                    weaponStats ? weaponStats.damage : 120, // Very high damage
+                    weaponStats ? weaponStats.speed : 1200, // Very fast
+                    weaponStats ? weaponStats.range : 900   // Long range
+                ));
+                
+                // Play railgun charging and firing sound
+                if (soundManager) {
+                    soundManager.play('railgun', { 
+                        volume: 0.8,
+                        position: { x: this.x, y: this.y }
+                    });
+                    
+                    // If railgun sound doesn't exist, use a fallback sound
+                    if (!soundManager.isSoundLoaded('railgun')) {
+                        soundManager.play('laser', {
+                            volume: 0.8,
+                            playbackRate: 0.6, // Lower pitch for heavier weapon
                             position: { x: this.x, y: this.y }
                         });
                     }
@@ -2424,7 +2455,8 @@ export class Player {
             'Quantum Disruptor': 'quantum',
             'Fusion Mortar': 'rocket',
             'Mining Laser': 'mininglaser',
-            'Space Mines': 'mines'
+            'Space Mines': 'mines',
+            'Railgun': 'railgun'
         };
         
         const weaponId = weaponIdMap[weaponName] || 'disengaged';
@@ -2497,6 +2529,14 @@ export class Player {
         } else if (weaponId === 'mines') {
             // Space Mines - bomb emoji
             weaponIcon.innerHTML = '💣';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
+        } else if (weaponId === 'railgun') {
+            // Railgun - lightning bolt
+            weaponIcon.innerHTML = '⚡';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
+        } else if (weaponId === 'disengaged') {
+            // Disengaged - red X
+            weaponIcon.innerHTML = '❌';
             weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
         } else {
             // Default - basic laser

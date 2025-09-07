@@ -84,6 +84,21 @@ export class ShopSystem {
         // Load weapon ownership from localStorage
         this.availableWeapons = [
             {
+                id: 'disengaged',
+                name: 'Disengaged',
+                description: 'Weapons systems offline. Energy recharges 50% faster when weapons are disengaged.',
+                price: 0, // Always available
+                owned: true, // Always owned
+                stats: {
+                    damage: 0,
+                    cooldown: 0,
+                    speed: 0,
+                    range: 0,
+                    energyCost: 0,
+                    energyRegenBonus: 1.5 // 50% faster energy regen
+                }
+            },
+            {
                 id: 'laser',
                 name: 'Basic Laser',
                 description: 'Standard energy weapon with good balance.',
@@ -113,6 +128,23 @@ export class ShopSystem {
                 }
             },
             {
+                id: 'mininglaser',
+                name: 'Mining Laser',
+                description: 'Continuous beam weapon that excels against asteroids but has reduced damage against ships.',
+                price: 6000,
+                owned: localStorage.getItem('weapon_mininglaser') === 'true',
+                stats: {
+                    damage: 8, // Moderate direct damage
+                    cooldown: 0.05, // Very fast firing for continuous beam effect
+                    speed: 1000, // Fast projectile speed
+                    range: 400,
+                    energyCost: 8,
+                    asteroidDamageMultiplier: 3.0, // 3x damage against asteroids
+                    playerDamageMultiplier: 0.5, // Half damage against players
+                    continuousBeam: true // Special property for beam weapons
+                }
+            },
+            {
                 id: 'missile',
                 name: 'Seeker Missile',
                 description: 'Guided missile with high damage but slow reload.',
@@ -128,6 +160,24 @@ export class ShopSystem {
                 }
             },
             {
+                id: 'mines',
+                name: 'Space Mines',
+                description: 'Deploy proximity mines behind your ship. Mines arm after 2 seconds and explode on contact.',
+                price: 9000,
+                owned: localStorage.getItem('weapon_mines') === 'true',
+                stats: {
+                    damage: 50, // High damage on direct hit
+                    cooldown: 1.5, // Slow deployment rate
+                    speed: 0, // Mines are stationary
+                    range: 0, // Mines don't travel
+                    energyCost: 25,
+                    explosionRadius: 80, // Large blast radius
+                    explosionDamage: 35, // Explosion damage
+                    armingTime: 2.0, // Time before mine becomes active
+                    lifetime: 30.0 // Mine disappears after 30 seconds
+                }
+            },
+            {
                 id: 'plasma',
                 name: 'Plasma Cannon',
                 description: 'Heavy energy weapon with splash damage.',
@@ -140,23 +190,6 @@ export class ShopSystem {
                     range: 500,
                     energyCost: 20,
                     splash: 30 // Splash radius
-                }
-            },
-            {
-                id: 'quantum',
-                name: 'Quantum Disruptor',
-                description: 'Advanced weapon that phases through obstacles and disables enemy shields.',
-                price: 15000,
-                owned: localStorage.getItem('weapon_quantum') === 'true',
-                stats: {
-                    damage: 90, // Even higher
-                    cooldown: 0.55, // Slowest
-                    speed: 900,
-                    range: 800,
-                    energyCost: 25,
-                    phasing: true,
-                    shieldDisruption: true,
-                    disruptionDuration: 3.0 // 3 seconds of shield disruption
                 }
             },
             {
@@ -179,38 +212,36 @@ export class ShopSystem {
                 }
             },
             {
-                id: 'mininglaser',
-                name: 'Mining Laser',
-                description: 'Continuous beam weapon that excels against asteroids but has reduced damage against ships.',
-                price: 6000,
-                owned: localStorage.getItem('weapon_mininglaser') === 'true',
+                id: 'railgun',
+                name: 'Railgun',
+                description: 'Electromagnetic accelerator that fires high-velocity spikes with devastating penetration power.',
+                price: 18000,
+                owned: localStorage.getItem('weapon_railgun') === 'true',
                 stats: {
-                    damage: 8, // Moderate direct damage
-                    cooldown: 0.05, // Very fast firing for continuous beam effect
-                    speed: 1000, // Fast projectile speed
-                    range: 400,
-                    energyCost: 8,
-                    asteroidDamageMultiplier: 3.0, // 3x damage against asteroids
-                    playerDamageMultiplier: 0.5, // Half damage against players
-                    continuousBeam: true // Special property for beam weapons
+                    damage: 120, // Very high damage
+                    cooldown: 0.8, // Slow reload for charge time
+                    speed: 1200, // Very fast projectile
+                    range: 900,
+                    energyCost: 40,
+                    penetrating: true, // Goes through multiple targets
+                    chargeTime: 0.3 // Brief charge-up before firing
                 }
             },
             {
-                id: 'mines',
-                name: 'Space Mines',
-                description: 'Deploy proximity mines behind your ship. Mines arm after 2 seconds and explode on contact.',
-                price: 9000,
-                owned: localStorage.getItem('weapon_mines') === 'true',
+                id: 'quantum',
+                name: 'Quantum Disruptor',
+                description: 'Advanced weapon that phases through obstacles and disables enemy shields.',
+                price: 15000,
+                owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
-                    damage: 50, // High damage on direct hit
-                    cooldown: 1.5, // Slow deployment rate
-                    speed: 0, // Mines are stationary
-                    range: 0, // Mines don't travel
+                    damage: 90, // Even higher
+                    cooldown: 0.55, // Slowest
+                    speed: 900,
+                    range: 800,
                     energyCost: 25,
-                    explosionRadius: 80, // Large blast radius
-                    explosionDamage: 35, // Explosion damage
-                    armingTime: 2.0, // Time before mine becomes active
-                    lifetime: 30.0 // Mine disappears after 30 seconds
+                    phasing: true,
+                    shieldDisruption: true,
+                    disruptionDuration: 3.0 // 3 seconds of shield disruption
                 }
             }
         ];
@@ -878,7 +909,12 @@ export class ShopSystem {
             
             // Simple icon representation based on weapon type
             const iconInner = document.createElement('div');
-            if (weapon.id === 'laser') {
+            if (weapon.id === 'disengaged') {
+                // Disengaged icon - red X to indicate weapons offline
+                iconInner.textContent = '❌';
+                iconInner.style.fontSize = '35px';
+                iconInner.style.textShadow = '0 0 10px #f44';
+            } else if (weapon.id === 'laser') {
                 iconInner.style.width = '8px';
                 iconInner.style.height = '40px';
                 iconInner.style.backgroundColor = '#0ff';
@@ -913,6 +949,11 @@ export class ShopSystem {
                 iconInner.textContent = '💥';
                 iconInner.style.fontSize = '40px';
                 iconInner.style.textShadow = '0 0 10px #ff6600';
+            } else if (weapon.id === 'railgun') {
+                // Railgun icon - lightning bolt with spike
+                iconInner.textContent = '⚡';
+                iconInner.style.fontSize = '35px';
+                iconInner.style.textShadow = '0 0 10px #0ff, 0 0 20px #fff';
             } else if (weapon.id === 'mininglaser') {
                 // Mining laser icon - pickaxe emoji
                 iconInner.textContent = '⛏️';
