@@ -947,7 +947,7 @@ input[type="range"] {
         border: 2px solid #555;
     }
     
-    /* Status panel adjustments for mobile - move to bottom left and make it larger */
+    /* Status panel adjustments for mobile */
     #status-panel {
     position: fixed !important;
     bottom: 10px !important; /* True bottom center, with a small gap from the edge */
@@ -1063,7 +1063,7 @@ input[type="range"] {
     
     /* Afterburner button */
     #afterburner-button {
-        bottom: 125px;
+    bottom: 145px;
         right: 30px;
         width: 60px;
         height: 60px;
