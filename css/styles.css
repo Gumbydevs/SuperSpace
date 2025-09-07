@@ -848,23 +848,55 @@ input[type="range"] {
     #player-list {
         max-width: 200px;
         max-height: 200px;
-        font-size: 10px;
-        padding: 6px;
+        font-size: 12px !important;
+        padding: 8px;
         top: 80px;
         left: 10px;
-        transform: scale(0.8);
+        transform: scale(0.9);
         transform-origin: top left;
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        border: 2px solid #444 !important;
+        border-radius: 6px !important;
     }
     
     #player-list-container {
-        font-size: 9px;
+        font-size: 11px !important;
+    }
+    
+    #player-list .player-item {
+        font-size: 11px !important;
+        line-height: 1.2 !important;
+        margin-bottom: 2px !important;
+        padding: 2px 4px !important;
+        color: #fff !important;
     }
     
     /* Adjust game UI elements to avoid touch control overlap */
-    #score-container, #health-container, #shield-container, 
-    #energy-container, #credits-container {
+    #score-container, #energy-container, #credits-container {
         font-size: 14px;
         padding: 4px 6px;
+    }
+    
+    /* Move health, shield, and weapon info to bottom center on mobile - MOBILE ONLY */
+    #health-container, #shield-container {
+        position: fixed !important;
+        bottom: 50px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        font-size: 12px !important;
+        padding: 3px 5px !important;
+        z-index: 1002 !important;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    #health-container {
+        bottom: 65px !important;
+    }
+    
+    #shield-container {
+        bottom: 50px !important;
     }
     
     /* Minimap adjustments for mobile */
@@ -977,7 +1009,7 @@ input[type="range"] {
     
     /* Afterburner button */
     #afterburner-button {
-        bottom: 100px;
+        bottom: 110px;
         right: 30px;
         width: 60px;
         height: 60px;
