@@ -2355,7 +2355,7 @@ export class MultiplayerManager {
         header.style.display = 'flex';
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '4px';
-        header.innerHTML = `<span style="width:30px;text-align:center;">#</span><span style="width:16px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
+        header.innerHTML = `<span style="width:30px;text-align:center;">#</span><span style="width:16px;"></span><span style="width:20px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
         listContainer.appendChild(header);
 
         allPlayers.forEach((player, index) => {
@@ -2384,6 +2384,20 @@ export class MultiplayerManager {
             playerColor.style.borderRadius = '50%';
             playerColor.style.marginRight = '5px';
             playerColor.style.flexShrink = '0';
+
+            // Profile picture placeholder
+            const profilePicture = document.createElement('span');
+            profilePicture.style.display = 'inline-block';
+            profilePicture.style.width = '14px';
+            profilePicture.style.height = '14px';
+            profilePicture.style.backgroundColor = 'rgba(100, 100, 100, 0.3)';
+            profilePicture.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+            profilePicture.style.borderRadius = '2px';
+            profilePicture.style.marginRight = '5px';
+            profilePicture.style.flexShrink = '0';
+            profilePicture.style.backgroundImage = 'url()'; // Placeholder for future profile picture URL
+            profilePicture.style.backgroundSize = 'cover';
+            profilePicture.style.backgroundPosition = 'center';
 
             const playerName = document.createElement('span');
             playerName.textContent = player.isSelf ? `${player.name} (You)` : player.name;
@@ -2414,6 +2428,7 @@ export class MultiplayerManager {
 
             playerItem.appendChild(rankNumber);
             playerItem.appendChild(playerColor);
+            playerItem.appendChild(profilePicture);
             playerItem.appendChild(playerName);
             playerItem.appendChild(score);
             playerItem.appendChild(wins);
