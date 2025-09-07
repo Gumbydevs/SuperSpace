@@ -259,7 +259,9 @@ export class Player {
         if (this.currentWeaponId && window.shopSystem && window.shopSystem.availableWeapons) {
             weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
         }
+        // Use weapon stats if available, otherwise fall back to the stored fireCooldownTime
         let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
+        
         let energyRatio = this.energy / this.maxEnergy;
         // Fire rate slows dramatically as energy drops
         let cooldownMod = 1;
@@ -312,6 +314,19 @@ export class Player {
                 const weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
                 if (weapon && weapon.stats) {
                     this.fireCooldownTime = weapon.stats.cooldown;
+                } else {
+                    // Fallback fire rates if shop system fails
+                    const fallbackRates = {
+                        'laser': 0.12,
+                        'burst': 0.08,
+                        'missile': 0.38,
+                        'plasma': 0.22,
+                        'quantum': 0.45,
+                        'rocket': 0.55,
+                        'mininglaser': 0.15,
+                        'mines': 0.8
+                    };
+                    this.fireCooldownTime = fallbackRates[this.currentWeaponId] || 0.12;
                 }
             }
             
