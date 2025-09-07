@@ -714,6 +714,13 @@ input[type="range"] {
 
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+    /* Lower shop and settings/options buttons to avoid overlapping online players status */
+    #shop-btn {
+        top: 120px !important;
+    }
+    #mobile-menu-button {
+        top: 160px !important;
+    }
     /* Hide mute and music buttons on mobile/tablet only */
     #mute-btn,
     #music-btn {
