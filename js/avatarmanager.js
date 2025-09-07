@@ -68,7 +68,7 @@ export class AvatarManager {
         const avatarModal = document.getElementById('avatarModal');
         if (avatarModal) {
             this.tempSelection = this.selectedAvatar; // Store current selection as temp
-            avatarModal.style.display = 'flex';
+            avatarModal.classList.remove('hidden');
             this.drawAllAvatars(); // Redraw modal avatars
             this.updateModalSelection();
         }
@@ -77,7 +77,7 @@ export class AvatarManager {
     closeAvatarModal() {
         const avatarModal = document.getElementById('avatarModal');
         if (avatarModal) {
-            avatarModal.style.display = 'none';
+            avatarModal.classList.add('hidden');
             this.tempSelection = null;
             this.clearModalSelection();
         }
