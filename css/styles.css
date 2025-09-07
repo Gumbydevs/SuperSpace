@@ -714,7 +714,7 @@ input[type="range"] {
 
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
-    /* Lower shop and settings/options buttons to avoid overlapping online players status */
+    /* Shop button for Mobile Only */
     #shop-btn {
         top: 90px !important;
     }
