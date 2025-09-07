@@ -438,6 +438,7 @@ export class MultiplayerManager {
         // Handle asteroid destruction from server
         this.socket.on('asteroidDestroyed', (data) => {
             console.log('🌟 Received asteroidDestroyed event from server:', data);
+            console.log('🌟 Server data contains fragments:', data.fragments ? data.fragments.length : 'none');
             if (this.game.world) {
                 // Use the new fragment handling method
                 this.handleAsteroidDestroyedWithFragments(data);

@@ -579,106 +579,54 @@
                             window.game.multiplayer.broadcastStatsUpdate();
                         }
 
-                        // Send hit event to server with all calculated values
+                        // Handle asteroid destruction immediately (like other game elements)
                         const multiplayerAvailable = window.game && window.game.multiplayer && window.game.multiplayer.connected;
-                        console.log('Multiplayer check:', { 
-                            hasGame: !!window.game, 
-                            hasMultiplayer: !!(window.game && window.game.multiplayer),
-                            isConnected: !!(window.game && window.game.multiplayer && window.game.multiplayer.connected)
-                        });
                         
-                        if (multiplayerAvailable) {
-                            // Create immediate visual feedback
-                            this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
+                        // Create explosion immediately
+                        this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
+                        
+                        // Award credits based on asteroid size
+                        let creditReward;
+                        switch (asteroid.size) {
+                            case 'large':
+                                creditReward = this.getRandomInt(
+                                    this.asteroidCreditValues.large.min,
+                                    this.asteroidCreditValues.large.max
+                                );
+                                break;
+                            case 'medium':
+                                creditReward = this.getRandomInt(
+                                    this.asteroidCreditValues.medium.min,
+                                    this.asteroidCreditValues.medium.max
+                                );
+                                break;
+                            default:
+                                creditReward = this.getRandomInt(
+                                    this.asteroidCreditValues.small.min,
+                                    this.asteroidCreditValues.small.max
+                                );
+                        }
+                        player.addCredits(creditReward);
+                        
+                        // Split asteroid if it's not small
+                        if (asteroid.size !== 'small') {
+                            this.splitAsteroid(asteroid, soundManager);
                             
-                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, 0, true);
-                            
-                            // Mark asteroid as pending destruction to prevent multiple hits
-                            asteroid.pendingDestruction = true;
-                            asteroid.destructionTimeout = setTimeout(() => {
-                                // Fallback: remove asteroid if server doesn't respond within 1 second (reduced for testing)
-                                const index = this.asteroids.findIndex(a => a.id === asteroid.id);
-                                if (index >= 0 && this.asteroids[index].pendingDestruction) {
-                                    console.warn(`⏰ Asteroid ${asteroid.id} timed out - removing locally (no server response)`);
-                                    
-                                    // Award credits and spawn powerups locally as fallback
-                                    const timedOutAsteroid = this.asteroids[index];
-                                    let creditReward;
-                                    switch (timedOutAsteroid.size) {
-                                        case 'large':
-                                            creditReward = this.getRandomInt(
-                                                this.asteroidCreditValues.large.min,
-                                                this.asteroidCreditValues.large.max
-                                            );
-                                            break;
-                                        case 'medium':
-                                            creditReward = this.getRandomInt(
-                                                this.asteroidCreditValues.medium.min,
-                                                this.asteroidCreditValues.medium.max
-                                            );
-                                            break;
-                                        default:
-                                            creditReward = this.getRandomInt(
-                                                this.asteroidCreditValues.small.min,
-                                                this.asteroidCreditValues.small.max
-                                            );
-                                    }
-                                    player.addCredits(creditReward);
-                                    
-                                    // Spawn powerups locally
-                                    if (timedOutAsteroid.size !== 'small') {
-                                        if (Math.random() < 0.3) {
-                                            this.spawnPowerup(timedOutAsteroid.x, timedOutAsteroid.y);
-                                        }
-                                    } else if (Math.random() < 0.1) {
-                                        this.spawnPowerup(timedOutAsteroid.x, timedOutAsteroid.y);
-                                    }
-                                    
-                                    this.asteroids.splice(index, 1);
-                                }
-                            }, 1000); // Reduced to 1 second for testing
-                            
-                            console.log(`Asteroid ${asteroid.id} marked for destruction - waiting for server fragments`);
-                        } else {
-                            console.warn('Multiplayer not available - using local destruction');
-                            
-                            // Award credits based on asteroid size
-                            let creditReward;
-                            switch (asteroid.size) {
-                                case 'large':
-                                    creditReward = this.getRandomInt(
-                                        this.asteroidCreditValues.large.min,
-                                        this.asteroidCreditValues.large.max
-                                    );
-                                    break;
-                                case 'medium':
-                                    creditReward = this.getRandomInt(
-                                        this.asteroidCreditValues.medium.min,
-                                        this.asteroidCreditValues.medium.max
-                                    );
-                                    break;
-                                default:
-                                    creditReward = this.getRandomInt(
-                                        this.asteroidCreditValues.small.min,
-                                        this.asteroidCreditValues.small.max
-                                    );
-                            }
-                            player.addCredits(creditReward);
-                            
-                            // Create explosion effect
-                            this.createExplosion(impactX, impactY, asteroid.radius, soundManager);
-                            
-                            // Spawn powerups locally
-                            if (asteroid.size !== 'small') {
-                                if (Math.random() < 0.3) { // 30% chance for large/medium asteroids
-                                    this.spawnPowerup(asteroid.x, asteroid.y);
-                                }
-                            } else if (Math.random() < 0.1) { // 10% chance for small asteroids
+                            // Chance to spawn powerup
+                            if (Math.random() < 0.3) {
                                 this.spawnPowerup(asteroid.x, asteroid.y);
                             }
-                            
-                            // Fallback: immediate removal if no multiplayer
-                            this.asteroids.splice(i, 1);
+                        } else if (Math.random() < 0.1) {
+                            // Small chance for small asteroids to spawn powerup
+                            this.spawnPowerup(asteroid.x, asteroid.y);
+                        }
+                        
+                        // Remove the original asteroid
+                        this.asteroids.splice(asteroidIndex, 1);
+                        
+                        // Send hit to server for sync (but don't wait for response)
+                        if (multiplayerAvailable) {
+                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
                         }
                     }
                 }
