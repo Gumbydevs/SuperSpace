@@ -1481,6 +1481,8 @@ export class MultiplayerManager {
 
     // Handle receiving a projectile from another player
     handleRemoteProjectile(playerId, projectileData) {
+        console.log(`🚀 Received remote projectile from ${playerId}:`, projectileData);
+        
         // Create a proper Projectile instance for remote players with all properties
         // Import Projectile class to create full instances
         const projectile = {
@@ -1660,6 +1662,9 @@ export class MultiplayerManager {
                 this.players[playerId].projectiles = [];
             }
             this.players[playerId].projectiles.push(projectile);
+            console.log(`✅ Added remote projectile to player ${playerId} (${this.players[playerId].name}). Total: ${this.players[playerId].projectiles.length}`);
+        } else {
+            console.warn(`❌ Cannot add remote projectile - player ${playerId} not found or destroyed`);
         }
     }
 

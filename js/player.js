@@ -634,6 +634,9 @@ export class Player {
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
             Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
                 if (remotePlayer.projectiles && Array.isArray(remotePlayer.projectiles)) {
+                    if (remotePlayer.projectiles.length > 0) {
+                        console.log(`🎯 Updating ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`);
+                    }
                     for (let i = remotePlayer.projectiles.length - 1; i >= 0; i--) {
                         const projectile = remotePlayer.projectiles[i];
                         
@@ -644,6 +647,7 @@ export class Player {
                         
                         // Remove projectiles that are out of range or expired
                         if (projectile.distanceTraveled > projectile.range || projectile.hasExploded) {
+                            console.log(`🗑️ Removing expired remote projectile`);
                             remotePlayer.projectiles.splice(i, 1);
                         }
                     }
@@ -1338,6 +1342,9 @@ export class Player {
             Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
                 // Check if the remote player has projectiles
                 if (remotePlayer.projectiles && Array.isArray(remotePlayer.projectiles)) {
+                    if (remotePlayer.projectiles.length > 0) {
+                        console.log(`🎨 Rendering ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`);
+                    }
                     // Render each projectile from this remote player
                     remotePlayer.projectiles.forEach(projectile => {
                         // Skip rendering if projectile is missing critical properties
