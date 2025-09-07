@@ -331,21 +331,24 @@ export class Projectile {
         }
         
         // In a real implementation, this would damage all entities within splash radius
-        // Example logic:
-        /*
-        const entitiesInRange = world.getEntitiesInRadius(this.x, this.y, this.splashRadius);
-        entitiesInRange.forEach(entity => {
-            // Calculate damage falloff based on distance from center
-            const dx = entity.x - this.x;
-            const dy = entity.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const damageFalloff = 1 - (distance / this.splashRadius);
-            
-            // Apply splash damage with falloff
-            const splashDamage = this.damage * damageFalloff;
-            entity.takeDamage(splashDamage);
-        });
-        */
+        // Apply splash damage to players not in safe zone
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            Object.values(window.game.multiplayer.players).forEach(player => {
+                if (player.destroyed || player.health <= 0) return;
+                if (typeof world.isInSafeZone === 'function' && world.isInSafeZone(player)) return;
+                // Calculate distance from splash center to player
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance <= this.splashRadius) {
+                    const damageFalloff = 1 - (distance / this.splashRadius);
+                    const splashDamage = this.damage * damageFalloff;
+                    if (splashDamage > 0 && window.game.multiplayer) {
+                        window.game.multiplayer.sendHit('player', player.id, splashDamage);
+                    }
+                }
+            });
+        }
     }
     
     // Method to handle shield disruption effects
@@ -436,24 +439,19 @@ export class Projectile {
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
             Object.values(window.game.multiplayer.players).forEach(player => {
                 if (player.destroyed || player.health <= 0) return;
-                
+                if (typeof world.isInSafeZone === 'function' && world.isInSafeZone(player)) return;
                 // Calculate distance from explosion center to player
                 const dx = player.x - this.x;
                 const dy = player.y - this.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                
                 // Check if player is within explosion radius
                 if (distance <= this.explosionRadius) {
                     // Calculate damage falloff based on distance from explosion center
                     const damageFalloff = Math.max(0, 1 - (distance / this.explosionRadius));
-                    
                     // Apply explosion damage with falloff
                     const explosionDamage = this.explosionDamage * damageFalloff;
-                    if (explosionDamage > 0) {
-                        // Send damage to remote player through multiplayer system
-                        if (window.game.multiplayer) {
-                            window.game.multiplayer.sendHit('player', player.id, explosionDamage);
-                        }
+                    if (explosionDamage > 0 && window.game.multiplayer) {
+                        window.game.multiplayer.sendHit('player', player.id, explosionDamage);
                     }
                 }
             });
