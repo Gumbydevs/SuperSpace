@@ -899,7 +899,7 @@ export class Player {
                     this.x, this.y,
                     this.rotation,
                     'missile',
-                    weaponStats ? weaponStats.damage : 8, // Reduced fallback damage to match shop stats
+                    weaponStats ? weaponStats.damage : 13, // Updated fallback damage to match shop stats proportion
                     weaponStats ? weaponStats.speed : 300, // Slower speed for better homing visualization
                     weaponStats ? weaponStats.range : 1000, // Longer range
                     true  // Homing capability

@@ -119,7 +119,7 @@ export class ShopSystem {
                 price: 5000,
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
-                    damage: 18, // Reduced from 35 to balance homing capability further
+                    damage: 26, // Split the difference between original 35 and nerfed 18
                     cooldown: 0.38, // Slower
                     speed: 400, // Reduced from 500 for easier dodging
                     range: 1000,
