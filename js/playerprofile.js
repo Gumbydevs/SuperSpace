@@ -426,4 +426,9 @@ export class PlayerProfile {
             this.openProfile();
         }
     }
+    
+    // Alias for openProfile to match UI expectations
+    showProfile() {
+        this.openProfile();
+    }
 }

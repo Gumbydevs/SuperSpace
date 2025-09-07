@@ -411,6 +411,86 @@ export class AchievementSystem {
             .filter(a => a.unlocked)
             .reduce((total, a) => total + a.points, 0);
     }
+    
+    // Show achievements panel
+    showAchievements() {
+        // Create modal backdrop
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center;
+            align-items: center; z-index: 1000;
+        `;
+        
+        // Create achievements panel
+        const panel = document.createElement('div');
+        panel.style.cssText = `
+            background: #1a1a2e; border: 2px solid #4a4aff; border-radius: 10px;
+            width: 500px; max-width: 90%; max-height: 80%; overflow-y: auto;
+            padding: 20px; color: white; font-family: Arial, sans-serif;
+        `;
+        
+        const achievements = this.getAchievements();
+        const unlockedCount = this.getUnlockedCount();
+        const totalPoints = this.getAchievementPoints();
+        
+        panel.innerHTML = `
+            <h2 style="text-align: center; color: #4aff4a; margin-top: 0;">
+                🏆 Achievements (${unlockedCount}/${achievements.length})
+            </h2>
+            <div style="text-align: center; margin-bottom: 20px; color: #aaa;">
+                Total Points: ${totalPoints}
+            </div>
+            <div style="display: grid; gap: 10px;">
+                ${achievements.map(achievement => `
+                    <div style="
+                        background: ${achievement.unlocked ? 'rgba(74, 255, 74, 0.1)' : 'rgba(128, 128, 128, 0.1)'};
+                        border: 1px solid ${achievement.unlocked ? '#4aff4a' : '#666'};
+                        border-radius: 5px; padding: 12px; display: flex; align-items: center;
+                        opacity: ${achievement.unlocked ? '1' : '0.6'};
+                    ">
+                        <div style="font-size: 24px; margin-right: 12px;">${achievement.icon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: ${achievement.unlocked ? '#4aff4a' : '#aaa'};">
+                                ${achievement.name}
+                            </div>
+                            <div style="font-size: 0.9em; color: #bbb; margin-top: 2px;">
+                                ${achievement.description}
+                            </div>
+                            <div style="font-size: 0.8em; color: #888; margin-top: 4px;">
+                                ${achievement.points} points • ${achievement.category}
+                            </div>
+                        </div>
+                        ${achievement.unlocked ? '<div style="color: #4aff4a; font-size: 20px;">✓</div>' : ''}
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                display: block; margin: 20px auto 0; padding: 8px 20px;
+                background: #4a4aff; border: none; border-radius: 5px;
+                color: white; font-weight: bold; cursor: pointer;
+            ">Close</button>
+        `;
+        
+        backdrop.appendChild(panel);
+        document.body.appendChild(backdrop);
+        
+        // Close on backdrop click
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) {
+                backdrop.remove();
+            }
+        });
+        
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                backdrop.remove();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
 }
 
 // Add CSS animation for notifications
