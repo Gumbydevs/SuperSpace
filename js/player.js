@@ -2043,6 +2043,12 @@ export class Player {
     
     // Add method to handle collisions with other players
     handlePlayerCollision(otherPlayer, soundManager) {
+        // Check if otherPlayer is valid
+        if (!otherPlayer || typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') {
+            console.warn('handlePlayerCollision called with invalid otherPlayer:', otherPlayer);
+            return;
+        }
+        
         if (this.collisionCooldown <= 0) {
             // Calculate collision vector between players
             const dx = this.x - otherPlayer.x;

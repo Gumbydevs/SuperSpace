@@ -707,8 +707,11 @@
         if (otherPlayers) {
             // Fix: Use Object.values to convert the players object into an array that we can iterate
             Object.values(otherPlayers).forEach(otherPlayer => {
-                // Skip collision with self or players in safe zone
-                if (otherPlayer.id === window.game.multiplayer.socket.id || 
+                // Skip collision with self, invalid players, or players in safe zone
+                if (!otherPlayer || 
+                    typeof otherPlayer.x === 'undefined' || 
+                    typeof otherPlayer.y === 'undefined' ||
+                    otherPlayer.id === window.game.multiplayer.socket.id || 
                     this.isInSafeZone(player) || 
                     this.isInSafeZone(otherPlayer)) {
                     return;

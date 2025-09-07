@@ -558,11 +558,14 @@ export class MultiplayerManager {
 
         // Handle new player joining
         this.socket.on('playerJoined', (playerData) => {
-            this.addRemotePlayer(playerData);
-            this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
-            
-            // Update the player count display
-            this.updatePlayerCount();
+            // Don't add ourselves as a remote player
+            if (playerData.id !== this.playerId) {
+                this.addRemotePlayer(playerData);
+                this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
+                
+                // Update the player count display
+                this.updatePlayerCount();
+            }
         });
 
         // Handle player movement updates
@@ -707,7 +710,10 @@ export class MultiplayerManager {
 
         // Handle player respawn
         this.socket.on('playerRespawned', (data) => {
-            this.handleRemotePlayerRespawn(data.id, data.x, data.y);
+            // Don't process respawn events for our own player - we handle that locally
+            if (data.id !== this.playerId) {
+                this.handleRemotePlayerRespawn(data.id, data.x, data.y);
+            }
         });
 
         // Handle player name changes
@@ -1207,6 +1213,12 @@ export class MultiplayerManager {
 
     // Add a visual remote player
     addRemotePlayer(playerData) {
+        // Safety check: Don't add ourselves as a remote player
+        if (playerData.id === this.playerId) {
+            console.warn('Attempted to add local player as remote player, ignoring');
+            return;
+        }
+        
         const player = {
             id: playerData.id,
             x: playerData.x || 0,
@@ -1247,6 +1259,11 @@ export class MultiplayerManager {
 
     // Update a remote player's data
     updateRemotePlayer(playerData) {
+        // Don't process remote player updates for our own player
+        if (playerData.id === this.playerId) {
+            return;
+        }
+        
         let player = this.players[playerData.id];
         
         if (!player) {
@@ -2066,6 +2083,26 @@ export class MultiplayerManager {
 
     // Handle remote player respawn
     handleRemotePlayerRespawn(playerId, x, y) {
+        // Safety check: Don't process respawn for our own player
+        if (playerId === this.playerId) {
+            console.warn('Ignoring remote respawn event for local player');
+            return;
+        }
+        
+        // Prevent duplicate processing by checking if player was already processed recently
+        const now = Date.now();
+        if (!this.respawnProcessingCache) {
+            this.respawnProcessingCache = new Map();
+        }
+        
+        const lastProcessed = this.respawnProcessingCache.get(playerId);
+        if (lastProcessed && (now - lastProcessed) < 1000) { // Prevent duplicate within 1 second
+            console.log('Preventing duplicate respawn processing for player:', playerId);
+            return;
+        }
+        
+        this.respawnProcessingCache.set(playerId, now);
+        
         // Check if this is a player we already know about
         if (this.players[playerId]) {
             // Player exists in our list, update them
@@ -2410,37 +2447,43 @@ export class MultiplayerManager {
         // Clear existing list
         listContainer.innerHTML = '';
         
-        // Gather all players (including self) and sort by score descending
-        const allPlayers = [
-            {
-                id: this.playerId,
-                name: this.playerName,
-                color: '#0f0',
-                score: this.game.player?.score || 0,
-                wins: this.game.player?.wins || 0,
-                losses: this.game.player?.losses || 0,
-                avatar: localStorage.getItem('selectedAvatar') || 'han',
-                isSelf: true
-            },
-            ...Object.values(this.players).filter(p => !p.destroyed).map(p => ({
-                id: p.id,
-                name: p.name,
-                color: p.color || '#f00',
-                score: p.score || 0,
-                wins: p.wins || 0,
-                losses: p.losses || 0,
-                avatar: p.avatar || 'han',
-                isSelf: false
-            }))
-        ];
+        // Start with remote players data
+        const remotePlayers = Object.values(this.players).filter(p => !p.destroyed).map(p => ({
+            id: p.id,
+            name: p.name,
+            color: p.color || '#f00',
+            score: p.score || 0,
+            wins: p.wins || 0,
+            losses: p.losses || 0,
+            avatar: p.avatar || 'han',
+            isSelf: false
+        }));
+        
+        // Add self (local player) with current stats - but avoid duplicates
+        const selfData = {
+            id: this.playerId,
+            name: this.playerName,
+            color: '#0f0',
+            score: this.game.player?.score || 0,
+            wins: this.game.player?.wins || 0,
+            losses: this.game.player?.losses || 0,
+            avatar: localStorage.getItem('selectedAvatar') || 'han',
+            isSelf: true
+        };
+        
+        // Remove any remote player entry that matches our ID (prevent duplicates)
+        const filteredRemotePlayers = remotePlayers.filter(p => p.id !== this.playerId);
+        
+        // Combine all players
+        const allPlayers = [selfData, ...filteredRemotePlayers];
         
         // Debug: Log player data before sorting
-        console.log('PLAYER LIST UPDATE - Before sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses })));
+        console.log('PLAYER LIST UPDATE - Before sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses, id: p.id })));
         
         allPlayers.sort((a, b) => b.score - a.score);
         
         // Debug: Log player data after sorting
-        console.log('PLAYER LIST UPDATE - After sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses })));
+        console.log('PLAYER LIST UPDATE - After sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses, id: p.id })));
 
         // Header row
         const header = document.createElement('div');
