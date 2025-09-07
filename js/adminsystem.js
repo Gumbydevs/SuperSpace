@@ -246,6 +246,7 @@ export class AdminSystem {
         
         const actions = [
             { text: 'Reset All Player Stats', action: () => this.resetAllPlayerStats(), color: '#f44' },
+            { text: 'Nuclear Reset (Everything)', action: () => this.nuclearReset(), color: '#800' },
             { text: 'Clear All Achievements', action: () => this.clearAllAchievements(), color: '#f84' },
             { text: 'Export Player Data', action: () => this.exportPlayerData(), color: '#48f' }
         ];
@@ -588,11 +589,114 @@ export class AdminSystem {
     
     // Admin action methods
     resetAllPlayerStats() {
-        if (confirm('Are you sure you want to reset ALL player statistics? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to reset ALL player progression? This will reset:\n- Credits\n- Weapons\n- Upgrades\n- Ship purchases\n- Statistics\n- Achievements\n\nThis will NOT reset:\n- Player name\n- Avatar\n\nThis action cannot be undone.')) {
+            console.log('Starting comprehensive player reset...');
+            
+            // Reset localStorage items (keep name and avatar)
+            const playerName = localStorage.getItem('playerName');
+            const selectedAvatar = localStorage.getItem('selectedAvatar');
+            
+            // Clear all progression data
             localStorage.removeItem('playerStats');
             localStorage.removeItem('achievements');
             localStorage.removeItem('playerCredits');
-            alert('All player statistics have been reset.');
+            
+            // Clear all weapon purchases
+            const weaponKeys = Object.keys(localStorage).filter(key => key.startsWith('weapon_'));
+            weaponKeys.forEach(key => localStorage.removeItem(key));
+            
+            // Clear all ship purchases
+            const shipKeys = Object.keys(localStorage).filter(key => key.startsWith('ship_'));
+            shipKeys.forEach(key => localStorage.removeItem(key));
+            
+            // Clear all upgrades
+            const upgradeKeys = Object.keys(localStorage).filter(key => key.startsWith('upgrade_'));
+            upgradeKeys.forEach(key => localStorage.removeItem(key));
+            
+            // Restore name and avatar
+            if (playerName) localStorage.setItem('playerName', playerName);
+            if (selectedAvatar) localStorage.setItem('selectedAvatar', selectedAvatar);
+            
+            // Reset the live game objects if available
+            if (window.game) {
+                // Reset player credits
+                if (window.game.player) {
+                    window.game.player.credits = 0;
+                    window.game.player.weapons = ['Laser']; // Reset to default weapon
+                    window.game.player.currentWeapon = 'Laser';
+                    
+                    // Reset player stats but keep basic properties
+                    window.game.player.score = 0;
+                    window.game.player.wins = 0;
+                    window.game.player.losses = 0;
+                    
+                    // Reset ship to default
+                    window.game.player.shipType = 'default';
+                    
+                    // Reset upgrades to level 0
+                    window.game.player.maxSpeed = 3; // Default speed
+                    window.game.player.acceleration = 0.2; // Default acceleration
+                    window.game.player.maxHealth = 100; // Default health
+                    window.game.player.health = 100;
+                    window.game.player.maxEnergy = 100; // Default energy
+                    window.game.player.energy = 100;
+                    window.game.player.energyRegen = 1; // Default regen
+                    window.game.player.shieldCapacity = 0; // No shield by default
+                    window.game.player.shield = 0;
+                    window.game.player.damageReduction = 0; // No armor by default
+                    window.game.player.cargoCapacity = 10; // Default cargo
+                }
+                
+                // Reset achievements system
+                if (window.game.achievements) {
+                    window.game.achievements.loadProgress();
+                }
+                
+                // Reset player profile
+                if (window.game.playerProfile) {
+                    window.game.playerProfile.loadStats();
+                }
+                
+                // Reset shop system
+                if (window.game.shop) {
+                    window.game.shop.loadPurchases();
+                    window.game.shop.updateShopContent();
+                }
+            }
+            
+            alert('All player progression has been reset! Player name and avatar were preserved.');
+            console.log('Player reset completed');
+            
+            // Ask if they want to reload the page to ensure everything is refreshed
+            if (confirm('Reset complete! Would you like to reload the page to ensure all changes take effect?')) {
+                window.location.reload();
+            }
+        }
+    }
+    
+    nuclearReset() {
+        if (confirm('⚠️ NUCLEAR RESET ⚠️\n\nThis will completely wipe ALL player data including:\n- Credits, weapons, upgrades, ships\n- Statistics and achievements\n- Player NAME and AVATAR\n\nEverything will be reset to first-time play state.\n\nThis action cannot be undone!\n\nAre you absolutely sure?')) {
+            if (confirm('Last chance! This will delete EVERYTHING. Continue?')) {
+                console.log('Starting nuclear reset...');
+                
+                // Clear ALL localStorage data related to the game
+                const gameKeys = Object.keys(localStorage).filter(key => 
+                    key.startsWith('player') || 
+                    key.startsWith('weapon_') || 
+                    key.startsWith('ship_') || 
+                    key.startsWith('upgrade_') || 
+                    key === 'achievements' || 
+                    key === 'selectedAvatar'
+                );
+                
+                gameKeys.forEach(key => {
+                    console.log('Removing:', key);
+                    localStorage.removeItem(key);
+                });
+                
+                alert('Nuclear reset complete! All player data has been wiped. The page will now reload.');
+                window.location.reload();
+            }
         }
     }
     
