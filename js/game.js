@@ -334,13 +334,7 @@ class Game {
                 return;
             }
             
-            // Temporary single key admin access for testing (F12 key)
-            if (e.code === 'F12') {
-                console.log('F12 pressed - opening admin panel');
-                e.preventDefault();
-                this.toggleAdmin();
-                return;
-            }
+            // Admin panel access removed from F12 - use secret key sequence instead (F+T+G)
             
             // Shop hotkey (B key)
             if (e.code === 'KeyB' && this.gameState === 'playing') {

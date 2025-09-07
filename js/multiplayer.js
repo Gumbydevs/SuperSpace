@@ -972,7 +972,18 @@ export class MultiplayerManager {
             trail: projectile.trail || false,
             trailColor: projectile.trailColor,
             size: projectile.size,
-            explosive: projectile.explosive || false
+            explosive: projectile.explosive || false,
+            // Mine-specific properties
+            isArmed: projectile.isArmed || false,
+            armingTimer: projectile.armingTimer || 0,
+            armingTime: projectile.armingTime || 0,
+            lifetime: projectile.lifetime || 0,
+            lifetimeTimer: projectile.lifetimeTimer || 0,
+            // Seeker missile properties
+            hasHomed: projectile.hasHomed || false,
+            homingStarted: projectile.homingStarted || false,
+            homingMinDistance: projectile.homingMinDistance || 200,
+            distanceTraveled: projectile.distanceTraveled || 0
         };
         
         this.socket.emit('playerFire', projectileData);
@@ -1313,13 +1324,47 @@ export class MultiplayerManager {
             trailColor: projectileData.trailColor,
             size: projectileData.size,
             explosive: projectileData.explosive || false,
+            // Mine-specific properties
+            isArmed: projectileData.isArmed || false,
+            armingTimer: projectileData.armingTimer || 0,
+            armingTime: projectileData.armingTime || 0,
+            lifetime: projectileData.lifetime || 0,
+            lifetimeTimer: projectileData.lifetimeTimer || 0,
+            // Seeker missile properties
+            hasHomed: projectileData.hasHomed || false,
+            homingStarted: projectileData.homingStarted || false,
+            homingMinDistance: projectileData.homingMinDistance || 200,
+            distanceTraveled: projectileData.distanceTraveled || 0,
             // Initialize trail particles for visual effects
             trailParticles: [],
-            distanceTraveled: 0,
             hasExploded: false,
             remoteId: playerId,
             // Add update method for remote projectiles to handle trails and homing
             update: function(deltaTime, world) {
+                // Handle mine arming for remote mines
+                if (this.type === 'mine') {
+                    // Handle arming timer
+                    if (!this.isArmed && this.armingTime > 0) {
+                        this.armingTimer -= deltaTime;
+                        if (this.armingTimer <= 0) {
+                            this.isArmed = true;
+                            // Change color when armed to show it's dangerous
+                            this.color = '#f00'; // Red when armed (dangerous)
+                        }
+                    }
+                    
+                    // Handle lifetime
+                    this.lifetimeTimer -= deltaTime;
+                    if (this.lifetimeTimer <= 0) {
+                        // Mine expires - mark for removal
+                        this.distanceTraveled = this.range + 1; // Force removal
+                        return;
+                    }
+                    
+                    // Mines don't move after deployment
+                    return;
+                }
+                
                 // Implement homing behavior for seeker missiles
                 if (this.homing && this.type === 'missile' && world) {
                     // Find nearest target (players or asteroids)

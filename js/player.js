@@ -448,9 +448,8 @@ export class Player {
                                 // This hit will kill the player - announce it on all screens
                                 // We use setTimeout to make sure the server has time to process the hit first
                                 setTimeout(() => {
-                                    // The kill will be announced through the multiplayer system's handleRemotePlayerDeath
-                                    // which will then use the killAnnouncer
-                                }, 50);
+                                    window.game.killAnnouncer.announceKill(this.name || 'Unknown', remotePlayer.name);
+                                }, 500);
                             }
                             
                             hit = true;
