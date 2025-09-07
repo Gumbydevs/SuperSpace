@@ -549,21 +549,20 @@ export class PlayerProfile {
             return; // User cancelled
         }
 
-        // Second confirmation with typing requirement
-        const confirmText = "DELETE MY PROGRESS";
-        const userInput = prompt(
+        // Second confirmation dialog
+        const secondConfirm = confirm(
             "⚠️ FINAL CONFIRMATION ⚠️\n\n" +
-            "To confirm you want to delete ALL your progress,\n" +
-            "type the following text exactly (case sensitive):\n\n" +
-            "DELETE MY PROGRESS\n\n" +
-            "Type here:"
+            "This is your FINAL chance to cancel!\n\n" +
+            "ALL your progress will be permanently deleted:\n" +
+            "• Statistics, achievements, ships, weapons\n" +
+            "• Credits, scores, and settings\n\n" +
+            "Click OK to DELETE EVERYTHING\n" +
+            "Click Cancel to keep your progress\n\n" +
+            "Are you 100% certain you want to proceed?"
         );
 
-        if (userInput !== confirmText) {
-            if (userInput !== null) { // null means user cancelled
-                alert("Reset cancelled - text did not match exactly.");
-            }
-            return;
+        if (!secondConfirm) {
+            return; // User cancelled on final confirmation
         }
 
         // Perform the complete reset
