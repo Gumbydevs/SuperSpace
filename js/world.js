@@ -622,7 +622,7 @@
                         }
                         
                         // Remove the original asteroid
-                        this.asteroids.splice(asteroidIndex, 1);
+                        this.asteroids.splice(i, 1);
                         
                         // Send hit to server for sync (but don't wait for response)
                         if (multiplayerAvailable) {
