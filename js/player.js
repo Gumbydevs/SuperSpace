@@ -333,6 +333,7 @@ export class Player {
             // Update currentWeaponId to match the switched weapon
             // Map weapon display names to shop system IDs
             const weaponNameToId = {
+                'Disengaged': 'disengaged',
                 'Basic Laser': 'laser',
                 'Burst Cannon': 'burst', 
                 'Seeker Missile': 'missile',
@@ -342,7 +343,7 @@ export class Player {
                 'Mining Laser': 'mininglaser',
                 'Space Mines': 'mines'
             };
-            this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'laser';
+            this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'disengaged';
             
             // Update fire rate to match the new weapon
             if (window.shopSystem && window.shopSystem.availableWeapons) {
@@ -2396,13 +2397,15 @@ export class Player {
         
         // Handle disengaged state
         if (weaponName === 'Disengaged') {
-            weaponIcon.innerHTML = '⚪';
-            weaponIcon.style.fontSize = this.isMobileDevice ? '14px' : '16px';
+            weaponIcon.innerHTML = '❌';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
+            weaponIcon.style.textShadow = '0 0 3px #f00';
             return;
         }
         
         // Map weapon names to IDs
         const weaponIdMap = {
+            'Disengaged': 'disengaged',
             'Basic Laser': 'laser',
             'Burst Cannon': 'burst',
             'Seeker Missile': 'missile',
@@ -2413,7 +2416,7 @@ export class Player {
             'Space Mines': 'mines'
         };
         
-        const weaponId = weaponIdMap[weaponName] || 'laser';
+        const weaponId = weaponIdMap[weaponName] || 'disengaged';
         
         // Create weapon icon exactly like shop
         if (weaponId === 'laser') {
