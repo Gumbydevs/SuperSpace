@@ -893,7 +893,13 @@ export class MultiplayerManager {
                 color: this.game.player.color || '#0f0',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
-                losses: this.game.player.losses || 0
+                losses: this.game.player.losses || 0,
+                miningBeam: this.game.player.miningBeam ? {
+                    active: this.game.player.miningBeam.active,
+                    targetX: this.game.player.miningBeam.targetX,
+                    targetY: this.game.player.miningBeam.targetY,
+                    intensity: this.game.player.miningBeam.intensity
+                } : null
             };
 
             // Debug: Log when sending significant stat changes
@@ -1309,6 +1315,22 @@ export class MultiplayerManager {
             // If player has Unknown name but we have a cached name, restore it
             else if (player.name === 'Unknown' && this.playerNameCache[playerData.id]) {
                 player.name = this.playerNameCache[playerData.id];
+            }
+            
+            // Update mining beam state
+            if (playerData.miningBeam) {
+                if (!player.miningBeam) {
+                    player.miningBeam = {
+                        active: false,
+                        targetX: 0,
+                        targetY: 0,
+                        intensity: 0
+                    };
+                }
+                player.miningBeam.active = playerData.miningBeam.active;
+                player.miningBeam.targetX = playerData.miningBeam.targetX;
+                player.miningBeam.targetY = playerData.miningBeam.targetY;
+                player.miningBeam.intensity = playerData.miningBeam.intensity;
             }
         }
     }
@@ -2890,6 +2912,52 @@ export class MultiplayerManager {
                     ctx.arc(0, 0, 30, 0, Math.PI * 2);
                     ctx.fill();
                 }
+                
+                ctx.restore();
+            }
+            
+            // Render remote player's mining beam
+            if (player.miningBeam && player.miningBeam.active) {
+                ctx.save();
+                
+                // Beam core
+                ctx.strokeStyle = `rgba(255, 100, 0, ${0.8 + player.miningBeam.intensity * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.miningBeam.targetX, player.miningBeam.targetY);
+                ctx.stroke();
+                
+                // Beam glow
+                ctx.strokeStyle = `rgba(255, 150, 50, ${0.3 + player.miningBeam.intensity * 0.2})`;
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.miningBeam.targetX, player.miningBeam.targetY);
+                ctx.stroke();
+                
+                // Outer glow
+                ctx.strokeStyle = `rgba(255, 200, 100, ${0.1 + player.miningBeam.intensity * 0.1})`;
+                ctx.lineWidth = 15;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.lineTo(player.miningBeam.targetX, player.miningBeam.targetY);
+                ctx.stroke();
+                
+                // Impact point glow
+                const glowSize = 15 + player.miningBeam.intensity * 10;
+                const gradient = ctx.createRadialGradient(
+                    player.miningBeam.targetX, player.miningBeam.targetY, 0,
+                    player.miningBeam.targetX, player.miningBeam.targetY, glowSize
+                );
+                gradient.addColorStop(0, `rgba(255, 100, 0, ${0.8 + player.miningBeam.intensity * 0.2})`);
+                gradient.addColorStop(0.5, `rgba(255, 150, 50, ${0.4 + player.miningBeam.intensity * 0.1})`);
+                gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(player.miningBeam.targetX, player.miningBeam.targetY, glowSize, 0, Math.PI * 2);
+                ctx.fill();
                 
                 ctx.restore();
             }
