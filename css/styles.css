@@ -950,7 +950,7 @@ input[type="range"] {
     /* Status panel adjustments for mobile - move to bottom left and make it larger */
     #status-panel {
     position: fixed !important;
-    bottom: 160px !important; /* Above touch controls with more space */
+    bottom: 10px !important; /* True bottom center, with a small gap from the edge */
     left: 50% !important;
     transform: translateX(-50%) scale(0.9) !important; /* Centered and larger */
     transform-origin: bottom center !important;
