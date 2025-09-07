@@ -257,6 +257,10 @@
             const hasAgreed = localStorage.getItem('superspace-disclaimer-agreed') || 
                             sessionStorage.getItem('superspace-disclaimer-temp-agreed');
 
+            console.log('localStorage value:', localStorage.getItem('superspace-disclaimer-agreed'));
+            console.log('sessionStorage value:', sessionStorage.getItem('superspace-disclaimer-temp-agreed'));
+            console.log('hasAgreed:', hasAgreed);
+
             if (!hasAgreed) {
                 disclaimerPopup.style.display = 'flex';
             }
@@ -265,12 +269,17 @@
                 // Hide the disclaimer
                 disclaimerPopup.style.display = 'none';
 
+                // Debug: log checkbox state
+                console.log('Checkbox checked:', dontShowCheckbox.checked);
+
                 // Always save agreement, but mark as permanent only if checkbox is checked
                 if (dontShowCheckbox.checked) {
                     localStorage.setItem('superspace-disclaimer-agreed', 'true');
+                    console.log('Saved to localStorage:', localStorage.getItem('superspace-disclaimer-agreed'));
                 } else {
                     // Save temporary agreement for this session only
                     sessionStorage.setItem('superspace-disclaimer-temp-agreed', 'true');
+                    console.log('Saved to sessionStorage:', sessionStorage.getItem('superspace-disclaimer-temp-agreed'));
                 }
             });
         });
