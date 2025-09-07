@@ -48,7 +48,7 @@ export class Player {
         this.losses = 0;  // Player losses count
 
     // Here we set up the weapon systems
-    this.weapons = ['Basic Laser', 'Burst Cannon', 'Seeker Missile'];
+    this.weapons = ['Disengaged', 'Basic Laser', 'Burst Cannon', 'Seeker Missile'];
     this.currentWeapon = this.weapons[0];
     this.weaponIndex = 0;
     this.projectiles = []; // Active projectiles fired by player
@@ -856,6 +856,10 @@ export class Player {
         
         // Here we handle different weapon types based on the current weapon
         switch (this.currentWeapon) {
+            case 'Disengaged':
+                // No weapons active - don't fire anything
+                return;
+                
             case 'Basic Laser':
                 // Here we create a single straight laser projectile
                 projectiles.push(new Projectile(
@@ -2381,11 +2385,17 @@ export class Player {
     updateWeaponIcon(weaponIcon, weaponName) {
         // Clear existing content
         weaponIcon.innerHTML = '';
-        weaponIcon.style.display = 'flex';
-        weaponIcon.style.justifyContent = 'center';
-        weaponIcon.style.alignItems = 'center';
-        weaponIcon.style.width = '40px';
-        weaponIcon.style.height = '40px';
+        weaponIcon.style.display = 'inline-block';  // Keep inline to prevent line break
+        weaponIcon.style.verticalAlign = 'middle';
+        weaponIcon.style.width = 'auto';
+        weaponIcon.style.height = 'auto';
+        
+        // Handle disengaged state
+        if (weaponName === 'Disengaged') {
+            weaponIcon.innerHTML = '⚪';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '14px' : '16px';
+            return;
+        }
         
         // Map weapon names to IDs
         const weaponIdMap = {
@@ -2406,76 +2416,79 @@ export class Player {
             // Basic Laser - cyan line
             const iconInner = document.createElement('div');
             iconInner.style.width = '4px';
-            iconInner.style.height = '20px';
+            iconInner.style.height = '16px';
             iconInner.style.backgroundColor = '#0ff';
             iconInner.style.borderRadius = '2px';
-            iconInner.style.boxShadow = '0 0 8px #0ff';
+            iconInner.style.boxShadow = '0 0 4px #0ff';
+            iconInner.style.display = 'inline-block';
             weaponIcon.appendChild(iconInner);
         } else if (weaponId === 'burst') {
             // Burst Cannon - three yellow bullets
             const container = document.createElement('div');
-            container.style.display = 'flex';
-            container.style.gap = '2px';
+            container.style.display = 'inline-flex';
+            container.style.gap = '1px';
+            container.style.alignItems = 'center';
             for (let i = 0; i < 3; i++) {
                 const bullet = document.createElement('div');
-                bullet.style.width = '3px';
-                bullet.style.height = '10px';
+                bullet.style.width = '2px';
+                bullet.style.height = '8px';
                 bullet.style.backgroundColor = '#ff0';
-                bullet.style.borderRadius = '1.5px';
-                bullet.style.boxShadow = '0 0 4px #ff0';
+                bullet.style.borderRadius = '1px';
+                bullet.style.boxShadow = '0 0 2px #ff0';
                 container.appendChild(bullet);
             }
             weaponIcon.appendChild(container);
         } else if (weaponId === 'missile') {
             // Seeker Missile - red rocket
             const iconInner = document.createElement('div');
-            iconInner.style.width = '8px';
-            iconInner.style.height = '20px';
+            iconInner.style.width = '6px';
+            iconInner.style.height = '16px';
             iconInner.style.backgroundColor = '#f00';
-            iconInner.style.borderRadius = '2px';
-            iconInner.style.boxShadow = '0 0 8px #f00';
+            iconInner.style.borderRadius = '3px';
+            iconInner.style.boxShadow = '0 0 4px #f00';
+            iconInner.style.display = 'inline-block';
             weaponIcon.appendChild(iconInner);
         } else if (weaponId === 'plasma') {
             // Plasma Cannon - purple orb
             const iconInner = document.createElement('div');
-            iconInner.style.width = '15px';
-            iconInner.style.height = '15px';
+            iconInner.style.width = '12px';
+            iconInner.style.height = '12px';
             iconInner.style.backgroundImage = 'radial-gradient(#f0f, #70f)';
             iconInner.style.borderRadius = '50%';
-            iconInner.style.boxShadow = '0 0 10px #f0f';
+            iconInner.style.boxShadow = '0 0 6px #f0f';
+            iconInner.style.display = 'inline-block';
             weaponIcon.appendChild(iconInner);
         } else if (weaponId === 'quantum') {
             // Quantum Disruptor - white energy ball
             const iconInner = document.createElement('div');
-            iconInner.style.width = '15px';
-            iconInner.style.height = '15px';
+            iconInner.style.width = '12px';
+            iconInner.style.height = '12px';
             iconInner.style.backgroundColor = '#fff';
             iconInner.style.borderRadius = '50%';
-            iconInner.style.boxShadow = '0 0 8px #fff, 0 0 12px #0ff';
+            iconInner.style.boxShadow = '0 0 4px #fff, 0 0 8px #0ff';
+            iconInner.style.display = 'inline-block';
             weaponIcon.appendChild(iconInner);
         } else if (weaponId === 'rocket') {
             // Fusion Mortar - explosion emoji
             weaponIcon.innerHTML = '💥';
-            weaponIcon.style.fontSize = '20px';
-            weaponIcon.style.textShadow = '0 0 5px #ff6600';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '14px' : '16px';
         } else if (weaponId === 'mininglaser') {
             // Mining Laser - pickaxe emoji
             weaponIcon.innerHTML = '⛏️';
-            weaponIcon.style.fontSize = '18px';
-            weaponIcon.style.textShadow = '0 0 5px #ff3';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
         } else if (weaponId === 'mines') {
             // Space Mines - bomb emoji
             weaponIcon.innerHTML = '💣';
-            weaponIcon.style.fontSize = '18px';
-            weaponIcon.style.textShadow = '0 0 5px #f44';
+            weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
         } else {
             // Default - basic laser
             const iconInner = document.createElement('div');
             iconInner.style.width = '4px';
-            iconInner.style.height = '20px';
+            iconInner.style.height = '16px';
             iconInner.style.backgroundColor = '#0ff';
             iconInner.style.borderRadius = '2px';
-            iconInner.style.boxShadow = '0 0 8px #0ff';
+            iconInner.style.boxShadow = '0 0 4px #0ff';
+            iconInner.style.display = 'inline-block';
             weaponIcon.appendChild(iconInner);
         }
     }
