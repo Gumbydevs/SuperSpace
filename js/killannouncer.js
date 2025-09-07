@@ -64,7 +64,7 @@ export class KillAnnouncer {
     }
     
     // Announce a player kill
-    announceKill(killerName, victimName, weaponType = 'destroyed') {
+    announceKill(killerName, victimName, weaponType = 'destroyed', killerAvatar = null) {
         // Create the announcement text
         let announcement = `${killerName} ${weaponType} ${victimName}`;
         
@@ -74,8 +74,8 @@ export class KillAnnouncer {
         // Reset victim's streak
         this.resetPlayerStreak(victimName);
         
-        // Create and show the announcement
-        this.showAnnouncement(announcement, '#ff3333');
+        // Create and show the announcement with avatar
+        this.showAnnouncement(announcement, '#ff3333', 1.0, killerAvatar);
     }
     
     // Track kill streaks for a player
@@ -132,35 +132,56 @@ export class KillAnnouncer {
     }
     
     // Show an announcement with dissolving effect
-    showAnnouncement(text, color = '#ffffff', scaleFactor = 1.0) {
+    showAnnouncement(text, color = '#ffffff', scaleFactor = 1.0, killerAvatar = null) {
         const container = document.getElementById('kill-announcements');
         if (!container) return;
         
-        // Create announcement element
-        const announcement = document.createElement('div');
-        announcement.textContent = text;
-        announcement.style.color = color;
-        announcement.style.fontFamily = '"Russo One", "Impact", sans-serif';
-        announcement.style.fontSize = `${32 * scaleFactor}px`;
-        announcement.style.fontWeight = 'bold';
-        announcement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
-        announcement.style.textAlign = 'center';
-        announcement.style.opacity = '0';
-        announcement.style.transform = 'scale(0.5)';
-        announcement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        announcement.style.margin = '5px 0';
-        announcement.style.whiteSpace = 'nowrap';
-        announcement.style.position = 'relative';
+        // Create announcement container div
+        const announcementContainer = document.createElement('div');
+        announcementContainer.style.display = 'flex';
+        announcementContainer.style.alignItems = 'center';
+        announcementContainer.style.justifyContent = 'center';
+        announcementContainer.style.margin = '5px 0';
+        announcementContainer.style.opacity = '0';
+        announcementContainer.style.transform = 'scale(0.5)';
+        announcementContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        
+        // Create avatar element if killerAvatar is provided
+        if (killerAvatar && window.ui && window.ui.avatarManager) {
+            const avatarImg = document.createElement('img');
+            const avatarDataUrl = window.ui.avatarManager.generateSmallAvatar(killerAvatar);
+            avatarImg.src = avatarDataUrl;
+            avatarImg.style.width = '24px';
+            avatarImg.style.height = '24px';
+            avatarImg.style.marginRight = '8px';
+            avatarImg.style.imageRendering = 'pixelated'; // Keep pixelated look
+            avatarImg.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+            avatarImg.style.borderRadius = '2px';
+            announcementContainer.appendChild(avatarImg);
+        }
+        
+        // Create text element
+        const textElement = document.createElement('div');
+        textElement.textContent = text;
+        textElement.style.color = color;
+        textElement.style.fontFamily = '"Russo One", "Impact", sans-serif';
+        textElement.style.fontSize = `${32 * scaleFactor}px`;
+        textElement.style.fontWeight = 'bold';
+        textElement.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.7)';
+        textElement.style.textAlign = 'center';
+        textElement.style.whiteSpace = 'nowrap';
+        
+        announcementContainer.appendChild(textElement);
         
         // Store creation time for animation
-        announcement.dataset.createdAt = Date.now().toString();
+        announcementContainer.dataset.createdAt = Date.now().toString();
         
         // Add to container
-        container.appendChild(announcement);
+        container.appendChild(announcementContainer);
         
         // Track this announcement
         const announcementObj = {
-            element: announcement,
+            element: announcementContainer,
             createdAt: Date.now(),
             duration: 3000, // Show for 3 seconds
             dissolving: false
@@ -170,8 +191,8 @@ export class KillAnnouncer {
         
         // Trigger entrance animation in the next frame
         requestAnimationFrame(() => {
-            announcement.style.opacity = '1';
-            announcement.style.transform = 'scale(1)';
+            announcementContainer.style.opacity = '1';
+            announcementContainer.style.transform = 'scale(1)';
         });
         
         // Start animation update loop if not already running

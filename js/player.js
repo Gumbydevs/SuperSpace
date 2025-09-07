@@ -580,7 +580,8 @@ export class Player {
                                 // This hit will kill the player - announce it on all screens
                                 // We use setTimeout to make sure the server has time to process the hit first
                                 setTimeout(() => {
-                                    window.game.killAnnouncer.announceKill(this.name || 'Unknown', remotePlayer.name);
+                                    const localPlayerAvatar = localStorage.getItem('selectedAvatar') || 'han';
+                                    window.game.killAnnouncer.announceKill(this.name || 'Unknown', remotePlayer.name, 'destroyed', localPlayerAvatar);
                                 }, 500);
                             }
                             

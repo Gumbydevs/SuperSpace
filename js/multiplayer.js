@@ -359,6 +359,7 @@ export class MultiplayerManager {
                 this.players[playerData.id].name = playerData.name || this.players[playerData.id].name;
                 this.players[playerData.id].ship = playerData.ship || this.players[playerData.id].ship;
                 this.players[playerData.id].color = playerData.color || this.players[playerData.id].color;
+                this.players[playerData.id].avatar = playerData.avatar || this.players[playerData.id].avatar;
                 
                 // Update the player list to show the correct name
                 this.updatePlayerList();
@@ -643,17 +644,27 @@ export class MultiplayerManager {
             // Ensure kill announcer is ready before announcing kills
             this.ensureKillAnnouncerReady();
 
+            // Get killer avatar information
+            let killerAvatar = null;
+            if (data.attackerId === this.playerId) {
+                // Local player is the killer - get their avatar
+                killerAvatar = localStorage.getItem('selectedAvatar') || 'han';
+            } else if (this.players[data.attackerId]) {
+                // Remote player is the killer - get their avatar from player data
+                killerAvatar = this.players[data.attackerId].avatar || 'han';
+            }
+
             // Announce the kill with the kill announcer system for all players
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
                 // If you're the killer
-                this.killAnnouncer.announceKill('You', victimName);
+                this.killAnnouncer.announceKill('You', victimName, 'destroyed', killerAvatar);
             } else if (data.playerId === this.playerId) {
                 // If you're the victim - you see who killed you
-                this.killAnnouncer.announceKill(killerName, 'you');
+                this.killAnnouncer.announceKill(killerName, 'you', 'destroyed', killerAvatar);
             } else {
                 // If you're a spectator - you see who killed whom
-                this.killAnnouncer.announceKill(killerName, victimName);
+                this.killAnnouncer.announceKill(killerName, victimName, 'destroyed', killerAvatar);
             }
             
             // Now handle the actual player death events
@@ -1210,6 +1221,7 @@ export class MultiplayerManager {
             score: playerData.score || 0,
             wins: playerData.wins || 0,
             losses: playerData.losses || 0,
+            avatar: playerData.avatar || 'han', // Add avatar information
             projectiles: [],
             destroyed: false, // Add destroyed flag
             // Initialize electric shock effect
