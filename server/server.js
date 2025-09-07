@@ -185,7 +185,13 @@ io.on('connection', (socket) => {
       credits: 0,
       color: playerData.color || getRandomColor(),
       avatar: playerData.avatar || 'han',
-      projectiles: []
+      projectiles: [],
+      miningBeam: {
+        active: false,
+        targetX: 0,
+        targetY: 0,
+        intensity: 0
+      }
     };
     
     // Send the current game state to the new player
@@ -241,6 +247,16 @@ io.on('connection', (socket) => {
         }
       }
       
+      // Update mining beam state
+      if (data.miningBeam) {
+        player.miningBeam = {
+          active: data.miningBeam.active,
+          targetX: data.miningBeam.targetX,
+          targetY: data.miningBeam.targetY,
+          intensity: data.miningBeam.intensity
+        };
+      }
+      
       // Broadcast the updated position to all other players
       socket.broadcast.emit('playerMoved', {
         id: socket.id,
@@ -256,7 +272,8 @@ io.on('connection', (socket) => {
         color: player.color,
         score: player.score,
         wins: player.wins,
-        losses: player.losses
+        losses: player.losses,
+        miningBeam: player.miningBeam
       });
     }
   });
