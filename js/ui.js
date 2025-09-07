@@ -181,22 +181,22 @@ export class UI {
         // Apply additional scaling for mobile/tablet devices
         if (this.isMobileDevice) {
             topPanelScale = 0.75;
-            statusPanelScale = 0.75;
+            statusPanelScale = 0.8;
             minimapSize = 90;
             statusPanelPadding = '8px';
             minimapMargin = '10px'; 
-            topPanelPosition = '75px'; // Move down to avoid mobile menu button
-            statusBottomPosition = '150px'; // Move up to avoid touch controls
+            topPanelPosition = '60px'; // Move down to avoid mobile menu button
+            statusBottomPosition = '160px'; // Move up to avoid touch controls
             
             // Further adjustments for small mobile screens
             if (this.isSmallMobile) {
                 topPanelScale = 0.7;
-                statusPanelScale = 0.7;
+                statusPanelScale = 0.75;
                 minimapSize = 80;
                 statusPanelPadding = '6px';
                 minimapMargin = '8px';
-                topPanelPosition = '70px'; // Move down to avoid mobile menu button
-                statusBottomPosition = '140px'; // Even higher for small screens
+                topPanelPosition = '55px'; // Move down to avoid mobile menu button
+                statusBottomPosition = '150px'; // Even higher for small screens
             }
         }
         

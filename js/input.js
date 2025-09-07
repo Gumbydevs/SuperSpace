@@ -148,6 +148,13 @@ export class InputHandler {
         afterburnerButton.innerHTML = '🚀';
         touchUI.appendChild(afterburnerButton);
         
+        // Create brake/stop button (mobile equivalent of down arrow)
+        const brakeButton = document.createElement('div');
+        brakeButton.id = 'brake-button';
+        brakeButton.className = 'touch-button brake-button';
+        brakeButton.innerHTML = '🛑';
+        touchUI.appendChild(brakeButton);
+        
         // Create mobile menu/pause button - only on mobile devices
         const menuButton = document.createElement('div');
         menuButton.id = 'mobile-menu-button';
@@ -211,6 +218,23 @@ export class InputHandler {
             // Directly call the showOptionsOverlay function if available
             if (window.game && window.game.ui && window.game.ui.showOptionsOverlay) {
                 window.game.ui.showOptionsOverlay();
+            }
+        });
+        
+        // Add brake button events
+        brakeButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.keys.includes('ArrowDown')) {
+                this.keys.push('ArrowDown');
+                brakeButton.classList.add('active');
+            }
+        });
+        
+        brakeButton.addEventListener('touchend', () => {
+            const index = this.keys.indexOf('ArrowDown');
+            if (index > -1) {
+                this.keys.splice(index, 1);
+                brakeButton.classList.remove('active');
             }
         });
         
@@ -323,6 +347,22 @@ export class InputHandler {
                 box-shadow: 0 0 15px rgba(255, 200, 100, 0.8);
             }
             
+            #brake-button {
+                bottom: 140px;
+                left: 20px;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(255, 80, 80, 0.3);
+                border-color: rgba(255, 80, 80, 0.6);
+                font-size: 18px;
+            }
+            
+            #brake-button:active,
+            #brake-button.active {
+                background-color: rgba(255, 80, 80, 0.6);
+                box-shadow: 0 0 15px rgba(255, 80, 80, 0.8);
+            }
+            
             #mobile-menu-button {
                 bottom: 100px;
                 right: 100px;
@@ -342,12 +382,32 @@ export class InputHandler {
                 box-shadow: 0 0 15px rgba(200, 200, 200, 0.8);
             }
             
+            #brake-button {
+                bottom: 130px;
+                left: 20px;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(255, 50, 50, 0.3);
+                border-color: rgba(255, 50, 50, 0.6);
+                font-size: 18px;
+            }
+            
+            #brake-button:active,
+            #brake-button.active {
+                background-color: rgba(255, 50, 50, 0.6);
+                box-shadow: 0 0 15px rgba(255, 50, 50, 0.8);
+            }
+            
             @media (hover: none) and (pointer: coarse) {
                 .touch-ui {
                     display: block !important;
                 }
                 
                 #mobile-menu-button {
+                    display: flex !important;
+                }
+                
+                #brake-button {
                     display: flex !important;
                 }
             }
@@ -401,6 +461,22 @@ export class InputHandler {
                     right: 15px;
                     font-size: 18px;
                 }
+                
+                #brake-button {
+                    width: 45px;
+                    height: 45px;
+                    bottom: 120px;
+                    left: 15px;
+                    font-size: 16px;
+                }
+                
+                #brake-button {
+                    width: 40px;
+                    height: 40px;
+                    bottom: 110px;
+                    left: 15px;
+                    font-size: 16px;
+                }
             }
         `;
         
@@ -413,7 +489,8 @@ export class InputHandler {
             fireButton: fireButton,
             weaponButton: weaponButton,
             afterburnerButton: afterburnerButton,
-            menuButton: menuButton
+            menuButton: menuButton,
+            brakeButton: brakeButton
         };
     }
     
