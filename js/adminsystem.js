@@ -540,13 +540,6 @@ export class AdminSystem {
             `;
             table.appendChild(row);
         });
-    // Kick a player by socket ID
-    kickPlayer(playerId) {
-        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.socket) return;
-        if (!confirm('Are you sure you want to kick this player?')) return;
-        window.game.multiplayer.socket.emit('adminKickPlayer', { targetId: playerId });
-    }
-        
         return table;
     }
 
