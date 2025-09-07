@@ -1048,7 +1048,7 @@ input[type="range"] {
     
     /* Mobile menu/settings button - positioned at top right, away from combat controls */
     #mobile-menu-button {
-        top: 10px;
+        top: 120px; /* Below shop button */
         right: 10px;
         width: 45px;
         height: 45px;
@@ -1058,12 +1058,6 @@ input[type="range"] {
         position: fixed;
         z-index: 1003; /* Higher than other UI elements */
         display: none; /* Hidden on desktop */
-    }
-    
-    /* Position mobile gear button below shop button on mobile/tablet only */
-    #mobile-menu-button {
-        top: 122px !important; /* Below shop button */
-        right: 10px !important;
     }
     
     /* Show mobile menu button only on touch devices */
@@ -1164,7 +1158,7 @@ input[type="range"] {
     #afterburner-button {
         width: 50px;
         height: 50px;
-        bottom: 110px;
+        bottom: 130px;
         right: 20px;
         font-size: 18px;
     }
