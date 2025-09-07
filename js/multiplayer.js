@@ -437,8 +437,8 @@ export class MultiplayerManager {
         
         // Handle asteroid destruction from server
         this.socket.on('asteroidDestroyed', (data) => {
-            console.log('🌟 Received asteroidDestroyed event from server:', data);
-            console.log('🌟 Server data contains fragments:', data.fragments ? data.fragments.length : 'none');
+            // console.log('🌟 Received asteroidDestroyed event from server:', data);
+            // console.log('🌟 Server data contains fragments:', data.fragments ? data.fragments.length : 'none');
             if (this.game.world) {
                 // Use the new fragment handling method
                 this.handleAsteroidDestroyedWithFragments(data);
@@ -449,14 +449,14 @@ export class MultiplayerManager {
 
         // Handle asteroid destruction from other players
         this.socket.on('playerAsteroidDestroyed', (data) => {
-            console.log('💥 Received playerAsteroidDestroyed event:', data);
-            console.log('💥 My socket ID:', this.socket.id, 'Event from:', data.playerId);
+            // console.log('💥 Received playerAsteroidDestroyed event:', data);
+            // console.log('💥 My socket ID:', this.socket.id, 'Event from:', data.playerId);
             if (this.game.world && data.playerId !== this.socket.id) {
-                console.log('💥 Processing asteroid destruction from other player');
+                // console.log('💥 Processing asteroid destruction from other player');
                 // Another player destroyed an asteroid - show the effects
                 this.handleOtherPlayerAsteroidDestruction(data);
             } else {
-                console.log('💥 Ignoring own asteroid destruction or no game world');
+                // console.log('💥 Ignoring own asteroid destruction or no game world');
             }
         });
 
@@ -667,13 +667,14 @@ export class MultiplayerManager {
                 'You' : 
                 (this.players[data.playerId]?.name || data.playerName || 'A player');
                 
-            // Show appropriate message based on perspective
+            // Show kill announcement for all asteroid deaths
+            this.ensureKillAnnouncerReady();
             if (data.playerId === this.playerId) {
-                // This should not happen as local asteroid deaths are handled locally
-                console.log('Received own asteroid death from server (unexpected)');
+                // Own death
+                this.killAnnouncer.announceKill('An asteroid', 'you');
             } else {
-                // Show message for other players
-                this.showGameMessage(`${victimName} was destroyed by an asteroid`, '#fa0');
+                // Other player death
+                this.killAnnouncer.announceKill('An asteroid', victimName);
                 
                 // Handle remote player death (no killer)
                 this.handleRemotePlayerDeath(data.playerId, 'asteroid');
@@ -1022,7 +1023,7 @@ export class MultiplayerManager {
             explosion: explosionData
         };
         
-        console.log('Sending asteroid destruction to server:', destructionData);
+        // console.log('Sending asteroid destruction to server:', destructionData);
         this.socket.emit('asteroidDestroyed', destructionData);
     }
 
@@ -1606,22 +1607,12 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
-        // Track losses locally 
-        if (this.game.player) {
-            this.game.player.losses += 1;
-            this.updatePlayerList(); // Update UI immediately
-            
-            // Broadcast stats update immediately
-            this.broadcastStatsUpdate();
-        }
+        // Don't increment losses locally - server handles all loss counting
+        // This prevents double loss counts
         
-        // Send death event to server for asteroid deaths only - don't double-announce
+        // Send death event to server for asteroid deaths
         if (attackerId === 'asteroid') {
-            // Handle asteroid death locally with kill announcer
-            this.ensureKillAnnouncerReady();
-            this.killAnnouncer.announceKill('An asteroid', 'you');
-            
-            // Still emit to server for stats tracking, but server shouldn't re-broadcast the announcement
+            // Server will handle the announcement broadcast to all players
             this.socket.emit('playerDestroyedByAsteroid', {
                 playerId: this.playerId
             });
@@ -2067,14 +2058,14 @@ export class MultiplayerManager {
 
     // Handle asteroid destruction with fragments from server
     handleAsteroidDestroyedWithFragments(data) {
-        console.log('Handling asteroid destruction with fragments:', data);
-        console.log('Current asteroids count:', this.game.world.asteroids.length);
+        // console.log('Handling asteroid destruction with fragments:', data);
+        // console.log('Current asteroids count:', this.game.world.asteroids.length);
         
         // Find and remove the original asteroid by ID (if it still exists)
         let asteroidFound = false;
         for (let i = 0; i < this.game.world.asteroids.length; i++) {
             if (this.game.world.asteroids[i].id === data.asteroidId) {
-                console.log(`Found asteroid ${data.asteroidId} to destroy at index ${i}`);
+                // console.log(`Found asteroid ${data.asteroidId} to destroy at index ${i}`);
                 asteroidFound = true;
                 
                 const asteroid = this.game.world.asteroids[i];
@@ -2124,13 +2115,13 @@ export class MultiplayerManager {
                 
                 // Remove the original asteroid
                 this.game.world.asteroids.splice(i, 1);
-                console.log(`Removed original asteroid ${data.asteroidId}`);
+                // console.log(`Removed original asteroid ${data.asteroidId}`);
                 break;
             }
         }
         
         if (!asteroidFound) {
-            console.log(`Asteroid ${data.asteroidId} already removed locally - creating explosion at server position`);
+            // console.log(`Asteroid ${data.asteroidId} already removed locally - creating explosion at server position`);
             // Create explosion at the position provided by server
             this.game.world.createExplosion(data.position.x, data.position.y, 50);
         }
@@ -2166,24 +2157,24 @@ export class MultiplayerManager {
                 });
                 console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
             });
-            console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
+            // console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
         } else {
-            console.log('No fragments in server response');
+            // console.log('No fragments in server response');
         }
     }
 
     // Handle other player's asteroid destruction
     handleOtherPlayerAsteroidDestruction(data) {
-        console.log('🔥 Handling other player asteroid destruction:', data);
-        console.log('🔥 Current asteroids before:', this.game.world.asteroids.length);
+        // console.log('🔥 Handling other player asteroid destruction:', data);
+        // console.log('🔥 Current asteroids before:', this.game.world.asteroids.length);
         
         // Find and remove the asteroid
         const asteroidIndex = this.game.world.asteroids.findIndex(a => a.id === data.asteroidId);
         if (asteroidIndex >= 0) {
             this.game.world.asteroids.splice(asteroidIndex, 1);
-            console.log(`🔥 Removed asteroid ${data.asteroidId} destroyed by other player`);
+            // console.log(`🔥 Removed asteroid ${data.asteroidId} destroyed by other player`);
         } else {
-            console.log(`🔥 Asteroid ${data.asteroidId} not found in local asteroids array`);
+            // console.log(`🔥 Asteroid ${data.asteroidId} not found in local asteroids array`);
         }
         
         // Create explosion effect
@@ -2206,17 +2197,17 @@ export class MultiplayerManager {
         
         // Add powerups
         if (data.powerups && data.powerups.length > 0) {
-            console.log(`🔥 Adding ${data.powerups.length} powerups:`, data.powerups);
+            // console.log(`🔥 Adding ${data.powerups.length} powerups:`, data.powerups);
             data.powerups.forEach((powerup, index) => {
-                console.log(`🔥 Spawning powerup ${index}:`, powerup);
+                // console.log(`🔥 Spawning powerup ${index}:`, powerup);
                 this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
             });
-            console.log(`🔥 Added ${data.powerups.length} powerups from other player`);
+            // console.log(`🔥 Added ${data.powerups.length} powerups from other player`);
         } else {
-            console.log('🔥 No powerups to add');
+            // console.log('🔥 No powerups to add');
         }
         
-        console.log('🔥 Current asteroids after:', this.game.world.asteroids.length);
+        // console.log('🔥 Current asteroids after:', this.game.world.asteroids.length);
     }
 
     // Connection indicator UI
