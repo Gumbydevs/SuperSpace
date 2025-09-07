@@ -279,14 +279,12 @@ export class Player {
                     this.miningBeam.active = true;
                     this.miningBeam.intensity = 0;
                     this.miningBeam.lastDamageTime = 0;
+                    // Note: Sound will be handled in the beam update since continuous looping isn't fully supported
                 }
             } else {
                 if (this.miningBeam.active) {
                     this.miningBeam.active = false;
-                    // Stop mining laser sound
-                    if (soundManager) {
-                        soundManager.stop('laser');
-                    }
+                    // No need to stop sound since we're not using continuous loop
                 }
             }
         }
@@ -1060,16 +1058,7 @@ export class Player {
                     this.miningBeam.active = true;
                     this.miningBeam.intensity = 0;
                     this.miningBeam.lastDamageTime = 0;
-                    
-                    // Play continuous mining laser sound
-                    if (soundManager) {
-                        soundManager.play('laser', { 
-                            volume: 0.2,
-                            playbackRate: 0.8,
-                            loop: true,
-                            position: { x: this.x, y: this.y }
-                        });
-                    }
+                    this.miningBeam.lastSoundTime = 0;
                 }
                 // Don't create projectiles for beam weapons
                 break;
@@ -2263,6 +2252,19 @@ export class Player {
             const now = Date.now() / 1000;
             if (now - this.miningBeam.lastDamageTime >= 0.1) { // 10 times per second
                 this.miningBeam.lastDamageTime = now;
+                
+                // Play mining laser sound periodically
+                if (!this.miningBeam.lastSoundTime) this.miningBeam.lastSoundTime = 0;
+                if (now - this.miningBeam.lastSoundTime >= 0.3) { // Sound every 0.3 seconds
+                    this.miningBeam.lastSoundTime = now;
+                    if (soundManager) {
+                        soundManager.play('laser', { 
+                            volume: 0.2,
+                            playbackRate: 0.8,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
+                }
                 
                 if (hitTarget.type === 'asteroid') {
                     // Enhanced damage to asteroids
