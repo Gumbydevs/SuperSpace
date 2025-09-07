@@ -389,6 +389,99 @@ export class Player {
             }
         }
 
+        // Handle direct weapon selection with number keys (0-9)
+        if (soundManager && this.weaponSwitchCooldown <= 0) {
+            // Define weapon mapping for number keys in the requested order
+            const numberKeyWeapons = {
+                'Digit0': 'Disengaged',        // 0 - Disengaged
+                'Digit1': 'Basic Laser',       // 1 - Basic Laser  
+                'Digit2': 'Burst Cannon',      // 2 - Burst Cannon
+                'Digit3': 'Mining Laser',      // 3 - Mining Laser
+                'Digit4': 'Seeker Missile',    // 4 - Seeker Missile
+                'Digit5': 'Space Mines',       // 5 - Space Mines
+                'Digit6': 'Plasma Cannon',     // 6 - Plasma Cannon
+                'Digit7': 'Fusion Mortar',     // 7 - Fusion Mortar
+                'Digit8': 'Railgun',           // 8 - Railgun
+                'Digit9': 'Quantum Disruptor' // 9 - Quantum Disruptor
+            };
+
+            let selectedWeapon = null;
+            
+            // Check which number key was pressed
+            for (const [key, weaponName] of Object.entries(numberKeyWeapons)) {
+                if (input.keys.includes(key)) {
+                    selectedWeapon = weaponName;
+                    break;
+                }
+            }
+
+            if (selectedWeapon && this.weapons.includes(selectedWeapon)) {
+                const previousWeapon = this.currentWeapon;
+                
+                // Find the weapon index in the player's weapons array
+                const newIndex = this.weapons.indexOf(selectedWeapon);
+                if (newIndex >= 0) {
+                    this.weaponIndex = newIndex;
+                    this.currentWeapon = this.weapons[this.weaponIndex];
+                    
+                    // Update weapon ID - use same mapping as above
+                    const weaponNameToId = {
+                        'Disengaged': 'disengaged',
+                        'Basic Laser': 'laser',
+                        'Burst Cannon': 'burst', 
+                        'Seeker Missile': 'missile',
+                        'Plasma Cannon': 'plasma',
+                        'Quantum Disruptor': 'quantum',
+                        'Fusion Mortar': 'rocket',
+                        'Mining Laser': 'mininglaser',
+                        'Space Mines': 'mines',
+                        'Railgun': 'railgun'
+                    };
+                    this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'disengaged';
+                    
+                    // Update fire rate
+                    if (window.shopSystem && window.shopSystem.availableWeapons) {
+                        const weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
+                        if (weapon && weapon.stats) {
+                            this.fireCooldownTime = weapon.stats.cooldown;
+                        } else {
+                            const fallbackRates = {
+                                'laser': 0.12,
+                                'burst': 0.08,
+                                'missile': 0.38,
+                                'plasma': 0.22,
+                                'quantum': 0.45,
+                                'rocket': 0.55,
+                                'mininglaser': 0.15,
+                                'mines': 0.8,
+                                'railgun': 0.8
+                            };
+                            this.fireCooldownTime = fallbackRates[this.currentWeaponId] || 0.12;
+                        }
+                    }
+                    
+                    this.weaponSwitchCooldown = 0.3; // 300ms cooldown
+                    
+                    // Only play sound and update UI if weapon actually changed
+                    if (previousWeapon !== this.currentWeapon) {
+                        soundManager.play('weaponswitch', { volume: 0.3, playbackRate: 1.0 });
+                        
+                        // Update weapon display in UI
+                        const weaponElement = document.getElementById('weapons');
+                        if (weaponElement) {
+                            weaponElement.textContent = this.currentWeapon;
+                        }
+                        
+                        // Update weapon icon
+                        const weaponIcon = document.getElementById('weapon-icon');
+                        if (weaponIcon) {
+                            this.updateWeaponIcon(weaponIcon, this.currentWeapon);
+                        }
+                    }
+                }
+            }
+        }
+
         // Check for projectile collisions with remote players
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
             for (let i = this.projectiles.length - 1; i >= 0; i--) {
