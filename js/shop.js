@@ -482,11 +482,13 @@ export class ShopSystem {
         const shipTab = this.createTab('Ships', 'ships');
         const weaponTab = this.createTab('Weapons', 'weapons');
         const upgradeTab = this.createTab('Upgrades', 'upgrades');
+        const skillsTab = this.createTab('Skills', 'skills');
         const appearanceTab = this.createTab('Appearance', 'appearance');
         
         tabs.appendChild(shipTab);
         tabs.appendChild(weaponTab);
         tabs.appendChild(upgradeTab);
+        tabs.appendChild(skillsTab);
         tabs.appendChild(appearanceTab);
         shopContainer.appendChild(tabs);
         
@@ -566,6 +568,9 @@ export class ShopSystem {
                 break;
             case 'upgrades':
                 this.renderUpgradesTab(content);
+                break;
+            case 'skills':
+                this.renderSkillsTab(content);
                 break;
             case 'appearance':
                 this.renderAppearanceTab(content);
@@ -927,6 +932,8 @@ export class ShopSystem {
     }
     
     renderWeaponsTab(container) {
+        console.log('Rendering weapons tab, available weapons:', this.availableWeapons.length);
+        
         // Count owned purchasable weapons (excluding free ones)
         const ownedCount = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
         this.availableWeapons.forEach(weapon => {
@@ -1089,6 +1096,81 @@ export class ShopSystem {
             };
 
             container.appendChild(weaponCard);
+        });
+    }
+    
+    renderSkillsTab(container) {
+        if (!window.game || !window.game.skillSystem) {
+            container.innerHTML = '<p>Skill system not available</p>';
+            return;
+        }
+        
+        const skillSystem = window.game.skillSystem;
+        
+        // Header info
+        const infoDiv = document.createElement('div');
+        infoDiv.style.marginBottom = '20px';
+        infoDiv.style.padding = '15px';
+        infoDiv.style.backgroundColor = 'rgba(0, 30, 60, 0.5)';
+        infoDiv.style.borderRadius = '5px';
+        infoDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>XP: ${skillSystem.xp}</span>
+                <span>Skill Points: ${skillSystem.skillPoints}</span>
+            </div>
+            <div style="font-size: 0.9em; color: #aaa;">
+                Points allocated this run: ${skillSystem.getAllocatedPoints()}/${skillSystem.MAX_POINTS_PER_RUN}
+            </div>
+        `;
+        container.appendChild(infoDiv);
+        
+        // Render each skill
+        skillSystem.skills.forEach(skill => {
+            const skillCard = document.createElement('div');
+            skillCard.style.display = 'flex';
+            skillCard.style.margin = '10px 0';
+            skillCard.style.padding = '15px';
+            skillCard.style.backgroundColor = 'rgba(0, 30, 60, 0.3)';
+            skillCard.style.borderRadius = '5px';
+            skillCard.style.border = '1px solid #33f';
+            
+            const info = document.createElement('div');
+            info.style.flex = '1';
+            info.innerHTML = `
+                <h4 style="margin: 0 0 5px 0; color: #8cf;">${skill.name} (${skill.points}/${skill.maxPoints})</h4>
+                <p style="margin: 0; font-size: 0.9em; color: #ccc;">${skill.description}</p>
+            `;
+            
+            const button = document.createElement('button');
+            button.textContent = '+1';
+            button.style.marginLeft = '15px';
+            button.style.padding = '8px 12px';
+            button.style.backgroundColor = '#33f';
+            button.style.border = 'none';
+            button.style.borderRadius = '4px';
+            button.style.color = 'white';
+            button.style.cursor = 'pointer';
+            
+            // Check if can allocate
+            const canAllocate = skillSystem.skillPoints > 0 && 
+                               skill.points < skill.maxPoints &&
+                               skillSystem.getAllocatedPoints() < skillSystem.MAX_POINTS_PER_RUN;
+            
+            if (!canAllocate) {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+            }
+            
+            button.onclick = () => {
+                if (skillSystem.allocate(skill.id)) {
+                    this.updateShopContent();
+                }
+            };
+            
+            skillCard.appendChild(info);
+            skillCard.appendChild(button);
+            container.appendChild(skillCard);
         });
     }
     
