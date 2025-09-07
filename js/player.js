@@ -298,10 +298,13 @@ export class Player {
         if (energyRatio < 0.8) {
             cooldownMod = 1 + (1 - energyRatio) * 6; // Up to 7x slower at 0 energy
         }
-        if (this.energy <= 0) {
+        
+        // Check if player has enough energy to fire the weapon
+        let weaponEnergyCost = weapon && weapon.stats ? weapon.stats.energyCost : 0;
+        if (this.energy <= 0 || (weaponEnergyCost > 0 && this.energy < weaponEnergyCost)) {
             canFire = false;
             if (this.fireCooldown <= 0) {
-                this.fireCooldown = baseCooldown * 7; // Big lockout at 0 energy
+                this.fireCooldown = baseCooldown * 7; // Big lockout when insufficient energy
             }
         }
         // Don't fire when weapons are disengaged
