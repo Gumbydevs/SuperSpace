@@ -2449,22 +2449,27 @@ export class Player {
                     }
                     
                 } else if (hitTarget.type === 'player') {
-                    // Reduced damage to players
-                    const playerDamage = beamDamage * (weaponStats?.playerDamageMultiplier || 0.5);
-                    
-                    // Send player hit to server
-                    if (window.game && window.game.multiplayer) {
-                        window.game.multiplayer.sendHit('player', hitTarget.object.id, playerDamage);
-                    }
-                    
-                    // Show hit effect
-                    if (window.game.world) {
-                        window.game.world.createProjectileHitEffect(
-                            this.miningBeam.targetX,
-                            this.miningBeam.targetY,
-                            8,
-                            soundManager
-                        );
+                    // Check if target player is in safe zone - no damage if they are
+                    if (window.game.world && window.game.world.isInSafeZone(hitTarget.object)) {
+                        // Skip damage for players in safe zone - no effects either
+                    } else {
+                        // Reduced damage to players
+                        const playerDamage = beamDamage * (weaponStats?.playerDamageMultiplier || 0.5);
+                        
+                        // Send player hit to server
+                        if (window.game && window.game.multiplayer) {
+                            window.game.multiplayer.sendHit('player', hitTarget.object.id, playerDamage);
+                        }
+                        
+                        // Show hit effect
+                        if (window.game.world) {
+                            window.game.world.createProjectileHitEffect(
+                                this.miningBeam.targetX,
+                                this.miningBeam.targetY,
+                                8,
+                                soundManager
+                            );
+                        }
                     }
                 }
             }

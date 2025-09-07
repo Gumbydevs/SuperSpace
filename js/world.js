@@ -1465,8 +1465,8 @@
         // Render multi-layered parallax starfield
         this.renderStarLayers(ctx, player, visibleArea);
         
-        // Only draw safe zone when actually playing the game
-        if (this.safeZone.active && gameState === 'playing') {
+        // Only draw safe zone when actually playing the game or when dying (so players can still see it)
+        if (this.safeZone.active && (gameState === 'playing' || gameState === 'dying')) {
             // Create checkered pattern with yellow/black safety stripes
             const stripeWidth = 40;
             const stripeCount = Math.ceil(this.safeZone.size / stripeWidth);
@@ -1657,8 +1657,8 @@
             ctx.restore();
         });
 
-        // Only draw powerups when in playing mode
-        if (gameState === 'playing') {
+        // Only draw powerups when in playing or dying mode
+        if (gameState === 'playing' || gameState === 'dying') {
             // Here we draw powerups
             this.powerups.forEach(powerup => {
                 // Calculate pulse effect
