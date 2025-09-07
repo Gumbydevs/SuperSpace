@@ -267,10 +267,7 @@ export class PlayerProfile {
             { label: 'Games Played', value: this.stats.gamesPlayed },
             { label: 'Total Play Time', value: this.formatTime(this.stats.totalPlayTime) },
             { label: 'Highest Score', value: this.stats.highestScore.toLocaleString() },
-            { label: 'Total Wins', value: this.stats.totalWins },
-            { label: 'Total Losses', value: this.stats.totalLosses },
             { label: 'Win Rate', value: this.getWinRate() + '%' },
-            { label: 'K/D Ratio', value: this.getKDRatio() },
             { label: 'Longest Survival', value: this.formatTime(this.stats.longestSurvival) }
         ]));
         
@@ -281,6 +278,9 @@ export class PlayerProfile {
             { label: 'Average Accuracy', value: this.stats.averageAccuracy.toFixed(1) + '%' },
             { label: 'Player Kills', value: this.stats.totalKills },
             { label: 'Total Deaths', value: this.stats.totalDeaths },
+            { label: 'K/D Ratio', value: this.getKDRatio() },
+            { label: 'Total Wins', value: this.stats.totalWins },
+            { label: 'Total Losses', value: this.stats.totalLosses },
             { label: 'Favorite Weapon', value: this.stats.favoriteWeapon },
             { label: 'Asteroids Destroyed', value: this.stats.asteroidsDestroyed.toLocaleString() },
             { label: 'Nemesis', value: this.stats.nemesis ? `${this.stats.nemesis} (${this.stats.nemesisKills} kills)` : 'None' }

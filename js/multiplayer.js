@@ -1695,22 +1695,15 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
-        // Don't increment losses locally - server handles all loss counting
-        // This prevents double loss counts
-        
-        // Send death event to server 
+        // Send death event to server only for asteroid deaths
+        // Player vs player deaths are already handled by the server when health hits 0
         if (attackerId === 'asteroid') {
             // Server will handle the announcement broadcast to all players
             this.socket.emit('playerDestroyedByAsteroid', {
                 playerId: this.playerId
             });
-        } else if (attackerId && attackerId !== this.playerId) {
-            // Player vs player death - notify server for point/stat tracking
-            this.socket.emit('playerDestroyed', {
-                playerId: this.playerId,
-                attackerId: attackerId
-            });
         }
+        // Note: No need to emit 'playerDestroyed' for player kills - server handles this automatically
         
         // Store current credits value
         const currentCredits = this.game.player.credits;

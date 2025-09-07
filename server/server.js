@@ -455,6 +455,10 @@ io.on('connection', (socket) => {
         
         // Check if player is destroyed
         if (player.health <= 0) {
+          // Increment losses for the player who died
+          player.losses += 1;
+          console.log(`Player ${player.name} was destroyed by player ${gameState.players[socket.id]?.name}! Losses: ${player.losses}`);
+          
           io.emit('playerDestroyed', {
             playerId: data.targetId,
             attackerId: socket.id
