@@ -24,6 +24,15 @@ class Game {
         this.input = new InputHandler();  // Handles keyboard and mouse input
         this.ui = new UI();  // Manages UI elements on screen
         window.ui = this.ui;  // Make UI accessible globally for avatar manager
+        
+        // Initialize weapon icon to match starting weapon (Disengaged)
+        setTimeout(() => {
+            const weaponIcon = document.getElementById('weapon-icon');
+            if (weaponIcon && this.player.updateWeaponIcon) {
+                this.player.updateWeaponIcon(weaponIcon, this.player.currentWeapon);
+            }
+        }, 100); // Small delay to ensure DOM is ready
+        
         this.soundManager = new SoundManager();  // Handles all game audio
         this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
         this.achievements = new AchievementSystem(this.player);  // Achievement tracking system
@@ -1138,6 +1147,14 @@ class Game {
         // Reset player and world to initial state
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);
         this.world = new World();
+        
+        // Update weapon icon to match starting weapon (Disengaged)  
+        setTimeout(() => {
+            const weaponIcon = document.getElementById('weapon-icon');
+            if (weaponIcon && this.player.updateWeaponIcon) {
+                this.player.updateWeaponIcon(weaponIcon, this.player.currentWeapon);
+            }
+        }, 100);
         
         // Reset shop with new player reference
         this.shop = new ShopSystem(this.player);
