@@ -1,5 +1,5 @@
 export class Projectile {
-    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0, shieldDisruption = false, disruptionDuration = 0) {
+    constructor(x, y, angle, type, damage, speed, range, homing = false, splashRadius = 0, explosionRadius = 0, explosionDamage = 0, minDetonationRange = 0, maxDetonationRange = 0, shieldDisruption = false, disruptionDuration = 0, armingTime = 0, lifetime = 0, asteroidDamageMultiplier = 1.0, playerDamageMultiplier = 1.0) {
     // For seeker missile logic
     this.hasHomed = false; // Only curve once
     this.homingMinDistance = 200; // Must travel at least 200px before homing (increased for more travel time)
@@ -42,6 +42,12 @@ export class Projectile {
         this.trailParticles = []; // Stores trail particle data
         this.explosive = false; // Whether projectile explodes on impact
         this.hasExploded = false; // Track if projectile has already exploded
+        
+        // New properties for mines and special weapons
+        this.armingTime = armingTime; // Time before mine becomes active
+        this.lifetime = lifetime; // How long projectile/mine stays active
+        this.asteroidDamageMultiplier = asteroidDamageMultiplier; // Damage multiplier against asteroids
+        this.playerDamageMultiplier = playerDamageMultiplier; // Damage multiplier against players
         
         // Here we define visual properties based on projectile type
         switch (type) {
@@ -99,6 +105,29 @@ export class Projectile {
                 this.minDetonationRange = minDetonationRange || 0;
                 this.maxDetonationRange = maxDetonationRange || 0;
                 break;
+            case 'mininglaser':
+                // Mining laser beam - thin and bright
+                this.width = 2;
+                this.height = 15;
+                this.color = '#ff3';  // Bright yellow-white
+                this.glow = true;
+                this.trail = false; // Clean beam appearance
+                break;
+            case 'mine':
+                // Space mine - circular and dangerous looking
+                this.width = 12;
+                this.height = 12;
+                this.color = '#f44';  // Red danger color
+                this.glow = true;
+                this.trail = false;
+                this.isArmed = false; // Mines start unarmed
+                this.armingTimer = armingTime || 2.0;
+                this.lifetime = lifetime || 30.0;
+                this.lifetimeTimer = this.lifetime;
+                // Override speed and velocity for mines (they should be stationary after deployment)
+                this.speed = 0;
+                this.velocity = { x: 0, y: 0 };
+                break;
             default:
                 // Default fallback appearance
                 this.width = 3;
@@ -114,6 +143,30 @@ export class Projectile {
     }
     
     update(deltaTime) {
+        // Special handling for mines
+        if (this.type === 'mine') {
+            // Handle arming timer
+            if (!this.isArmed && this.armingTime > 0) {
+                this.armingTimer -= deltaTime;
+                if (this.armingTimer <= 0) {
+                    this.isArmed = true;
+                    // Change color when armed to show it's dangerous
+                    this.color = '#ff0'; // Yellow when armed
+                }
+            }
+            
+            // Handle lifetime
+            this.lifetimeTimer -= deltaTime;
+            if (this.lifetimeTimer <= 0) {
+                // Mine expires - mark for removal
+                this.distanceTraveled = this.range + 1; // Force removal
+                return;
+            }
+            
+            // Mines don't move after deployment (already set in constructor)
+            return;
+        }
+        
         // Here we move the projectile based on its velocity
         this.x += this.velocity.x * deltaTime;
         this.y += this.velocity.y * deltaTime;

@@ -301,7 +301,9 @@ export class Player {
                 'Seeker Missile': 'missile',
                 'Plasma Cannon': 'plasma',
                 'Quantum Disruptor': 'quantum',
-                'Rocket Launcher': 'rocket'
+                'Rocket Launcher': 'rocket',
+                'Mining Laser': 'mininglaser',
+                'Space Mines': 'mines'
             };
             this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'laser';
             
@@ -334,6 +336,21 @@ export class Player {
                             break;
                         case 'Seeker Missile':
                             weaponIcon.innerHTML = '🚀';
+                            break;
+                        case 'Plasma Cannon':
+                            weaponIcon.innerHTML = '🔆';
+                            break;
+                        case 'Quantum Disruptor':
+                            weaponIcon.innerHTML = '⚡';
+                            break;
+                        case 'Fusion Mortar':
+                            weaponIcon.innerHTML = '💥';
+                            break;
+                        case 'Mining Laser':
+                            weaponIcon.innerHTML = '⛏️';
+                            break;
+                        case 'Space Mines':
+                            weaponIcon.innerHTML = '💣';
                             break;
                         default:
                             weaponIcon.innerHTML = '🔫';
@@ -903,6 +920,74 @@ export class Player {
                             position: { x: this.x, y: this.y }
                         });
                     }
+                }
+                break;
+                
+            case 'Mining Laser':
+                // Fire a mining laser beam - high rate of fire, excellent against asteroids
+                const miningProj = new Projectile(
+                    this.x, this.y,
+                    this.rotation,
+                    'mininglaser',
+                    weaponStats ? weaponStats.damage : 8, // Moderate base damage
+                    weaponStats ? weaponStats.speed : 1000, // Fast projectile
+                    weaponStats ? weaponStats.range : 400, // Medium range
+                    false, // Not homing
+                    0, // No splash
+                    0, // No explosion
+                    0, // No explosion damage
+                    0, 0, // No detonation ranges
+                    false, 0, // No shield disruption
+                    0, 0, // No arming/lifetime for regular projectiles
+                    weaponStats ? weaponStats.asteroidDamageMultiplier : 3.0, // 3x damage vs asteroids
+                    weaponStats ? weaponStats.playerDamageMultiplier : 0.5 // Half damage vs players
+                );
+                
+                projectiles.push(miningProj);
+                
+                // Play mining laser sound (use laser sound with different pitch)
+                if (soundManager) {
+                    soundManager.play('laser', { 
+                        volume: 0.3,
+                        playbackRate: 1.2,
+                        position: { x: this.x, y: this.y }
+                    });
+                }
+                break;
+                
+            case 'Space Mines':
+                // Deploy a space mine behind the ship
+                const mineX = this.x - Math.sin(this.rotation) * 25; // Deploy behind ship
+                const mineY = this.y + Math.cos(this.rotation) * 25;
+                
+                const mine = new Projectile(
+                    mineX, mineY,
+                    this.rotation,
+                    'mine',
+                    weaponStats ? weaponStats.damage : 50, // High direct damage
+                    0, // Mines don't move
+                    0, // No range (lifetime handles removal)
+                    false, // Not homing
+                    0, // No splash (uses explosion)
+                    weaponStats ? weaponStats.explosionRadius : 80, // Large blast radius
+                    weaponStats ? weaponStats.explosionDamage : 35, // High explosion damage
+                    0, 0, // No detonation ranges
+                    false, 0, // No shield disruption
+                    weaponStats ? weaponStats.armingTime : 2.0, // 2 second arming time
+                    weaponStats ? weaponStats.lifetime : 30.0 // 30 second lifetime
+                );
+                
+                // Set mine owner for collision avoidance
+                mine.ownerId = this.id || 'player';
+                projectiles.push(mine);
+                
+                // Play mine deployment sound
+                if (soundManager) {
+                    soundManager.play('powerup', { 
+                        volume: 0.6,
+                        playbackRate: 0.7,
+                        position: { x: this.x, y: this.y }
+                    });
                 }
                 break;
                 

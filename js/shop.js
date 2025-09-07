@@ -177,6 +177,41 @@ export class ShopSystem {
                     minDetonationRange: 200, // Minimum distance before it can explode
                     maxDetonationRange: 500  // Maximum distance before forced detonation
                 }
+            },
+            {
+                id: 'mininglaser',
+                name: 'Mining Laser',
+                description: 'Continuous beam weapon that excels against asteroids but has reduced damage against ships.',
+                price: 6000,
+                owned: localStorage.getItem('weapon_mininglaser') === 'true',
+                stats: {
+                    damage: 8, // Moderate direct damage
+                    cooldown: 0.05, // Very fast firing for continuous beam effect
+                    speed: 1000, // Fast projectile speed
+                    range: 400,
+                    energyCost: 8,
+                    asteroidDamageMultiplier: 3.0, // 3x damage against asteroids
+                    playerDamageMultiplier: 0.5, // Half damage against players
+                    continuousBeam: true // Special property for beam weapons
+                }
+            },
+            {
+                id: 'mines',
+                name: 'Space Mines',
+                description: 'Deploy proximity mines behind your ship. Mines arm after 2 seconds and explode on contact.',
+                price: 9000,
+                owned: localStorage.getItem('weapon_mines') === 'true',
+                stats: {
+                    damage: 50, // High damage on direct hit
+                    cooldown: 1.5, // Slow deployment rate
+                    speed: 0, // Mines are stationary
+                    range: 0, // Mines don't travel
+                    energyCost: 25,
+                    explosionRadius: 80, // Large blast radius
+                    explosionDamage: 35, // Explosion damage
+                    armingTime: 2.0, // Time before mine becomes active
+                    lifetime: 30.0 // Mine disappears after 30 seconds
+                }
             }
         ];
         
@@ -865,6 +900,16 @@ export class ShopSystem {
                 iconInner.textContent = '💥';
                 iconInner.style.fontSize = '40px';
                 iconInner.style.textShadow = '0 0 10px #ff6600';
+            } else if (weapon.id === 'mininglaser') {
+                // Mining laser icon - pickaxe emoji
+                iconInner.textContent = '⛏️';
+                iconInner.style.fontSize = '35px';
+                iconInner.style.textShadow = '0 0 10px #ff3';
+            } else if (weapon.id === 'mines') {
+                // Space mines icon - bomb emoji
+                iconInner.textContent = '💣';
+                iconInner.style.fontSize = '35px';
+                iconInner.style.textShadow = '0 0 10px #f44';
             }
             
             icon.appendChild(iconInner);
@@ -1665,6 +1710,15 @@ export class ShopSystem {
                     break;
                 case 'Quantum Disruptor':
                     weaponIcon.innerHTML = '⚡';
+                    break;
+                case 'Fusion Mortar':
+                    weaponIcon.innerHTML = '💥';
+                    break;
+                case 'Mining Laser':
+                    weaponIcon.innerHTML = '⛏️';
+                    break;
+                case 'Space Mines':
+                    weaponIcon.innerHTML = '💣';
                     break;
                 default:
                     weaponIcon.innerHTML = '🔫';
