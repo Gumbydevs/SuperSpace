@@ -2585,6 +2585,32 @@ export class MultiplayerManager {
 
     // Show game message (chat, kills, etc.)
     showGameMessage(message, color = '#fff', duration = 5000) {
+        // Prevent duplicate messages - initialize cache if not exists
+        if (!this.messageCache) {
+            this.messageCache = new Map();
+        }
+        
+        // Create a unique key for this message
+        const messageKey = `${message}_${color}`;
+        const now = Date.now();
+        
+        // Check if this exact message was shown recently (within 2 seconds)
+        const lastShown = this.messageCache.get(messageKey);
+        if (lastShown && (now - lastShown) < 2000) {
+            console.log('Preventing duplicate message:', message);
+            return; // Skip showing duplicate message
+        }
+        
+        // Update cache with current time
+        this.messageCache.set(messageKey, now);
+        
+        // Clean up old cache entries (older than 10 seconds)
+        for (const [key, time] of this.messageCache.entries()) {
+            if (now - time > 10000) {
+                this.messageCache.delete(key);
+            }
+        }
+        
         // Create messages container if it doesn't exist
         let messagesContainer = document.getElementById('game-messages');
         if (!messagesContainer) {
