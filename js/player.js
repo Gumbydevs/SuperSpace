@@ -307,11 +307,20 @@ export class Player {
                 this.fireCooldown = baseCooldown * 7; // Big lockout when insufficient energy
             }
         }
+        
+        // Debug: Log fusion mortar attempts
+        if (this.currentWeapon === 'Fusion Mortar' && input.keys.includes('Space')) {
+            console.log(`Fusion Mortar attempt: canFire=${canFire}, energy=${this.energy}/${this.maxEnergy}, energyCost=${weaponEnergyCost}, cooldown=${this.fireCooldown}, weaponId=${this.currentWeaponId}`);
+        }
         // Don't fire when weapons are disengaged
         if (this.currentWeapon === 'Disengaged') {
             canFire = false;
         }
         if (canFire) {
+            // Debug: Log fusion mortar fires
+            if (this.currentWeapon === 'Fusion Mortar') {
+                console.log(`FUSION MORTAR FIRED: energy before=${this.energy}, cooldown set to=${baseCooldown * cooldownMod}`);
+            }
             this.fire(soundManager);
             this.fireCooldown = baseCooldown * cooldownMod;
         }
@@ -347,6 +356,7 @@ export class Player {
                 'Plasma Cannon': 'plasma',
                 'Quantum Disruptor': 'quantum',
                 'Rocket Launcher': 'rocket',
+                'Fusion Mortar': 'rocket',  // Both names map to same ID
                 'Mining Laser': 'mininglaser',
                 'Space Mines': 'mines',
                 'Railgun': 'railgun'
@@ -1290,7 +1300,12 @@ export class Player {
         
         // Consume energy if energy system is active
         if (this.maxEnergy > 0 && weaponStats && weaponStats.energyCost) {
+            const energyBefore = this.energy;
             this.energy = Math.max(0, this.energy - weaponStats.energyCost);
+            // Debug: Log fusion mortar energy consumption
+            if (this.currentWeapon === 'Fusion Mortar') {
+                console.log(`FUSION MORTAR energy consumed: ${energyBefore} -> ${this.energy} (cost: ${weaponStats.energyCost})`);
+            }
         }
     }
 
