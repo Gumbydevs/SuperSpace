@@ -137,14 +137,16 @@
                 <button id="close-options-btn" class="close-btn">✕</button>
                     <div class="section">
                         <div class="pilot-profile">
-                            <canvas id="profileAvatarCanvas" class="profile-avatar-canvas" width="64" height="64"></canvas>
-                            <div class="pilot-details">
-                                <div class="pilot-row">
+                            <div class="pilot-info">
+                                <div class="pilot-name-row">
                                     <span class="pilot-label">👨‍✈️ Pilot Name:</span>
                                     <span id="pilot-name">(Loading...)</span>
-                                    <button id="rename-btn">Rename</button>
                                 </div>
-                                <button id="changePilotBtn" class="change-pilot-btn">Change Pilot Avatar</button>
+                                <canvas id="profileAvatarCanvas" class="profile-avatar-canvas" width="64" height="64"></canvas>
+                                <div class="pilot-buttons">
+                                    <button id="changePilotBtn" class="change-pilot-btn">Change Avatar</button>
+                                    <button id="rename-btn" class="rename-btn">Change Name</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -196,7 +198,7 @@
             </div>
             
             <!-- Avatar Selection Modal -->
-            <div id="avatarModal" class="avatar-modal" style="display: none;">
+            <div id="avatarModal" class="avatar-modal hidden">
                 <div class="avatar-modal-content">
                     <h3>Select Pilot Avatar</h3>
                     <div class="avatar-selection">

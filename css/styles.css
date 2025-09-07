@@ -196,15 +196,6 @@ input[type="range"] {
     color: #fff;
 }
 
-.pilot-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-.pilot-label {
-    font-weight: bold;
-}
 #pilot-name {
     font-family: monospace;
     font-size: 1.1em;
@@ -298,12 +289,30 @@ input[type="range"] {
 /* Pilot Profile Styles */
 .pilot-profile {
     display: flex;
-    align-items: center;
-    gap: 15px;
+    justify-content: center;
     padding: 15px;
     background: rgba(20, 30, 50, 0.8);
     border-radius: 8px;
     border: 2px solid rgba(68, 175, 255, 0.3);
+}
+
+.pilot-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.pilot-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.pilot-label {
+    color: #4af;
+    font-weight: bold;
 }
 
 .profile-avatar-canvas {
@@ -314,15 +323,28 @@ input[type="range"] {
     image-rendering: crisp-edges;
 }
 
-.pilot-details {
-    flex: 1;
+.pilot-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
 }
 
-.pilot-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+.rename-btn {
+    padding: 8px 16px;
+    background-color: #33f;
+    border: 2px solid #4af;
+    border-radius: 5px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Orbitron', monospace;
+}
+
+.rename-btn:hover {
+    background-color: #55f;
+    border-color: #6cf;
+    box-shadow: 0 0 15px rgba(68, 175, 255, 0.5);
 }
 
 .change-pilot-btn {
