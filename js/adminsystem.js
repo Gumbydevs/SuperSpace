@@ -52,7 +52,7 @@ export class AdminSystem {
             cursor: pointer;
             font-size: 12px;
             z-index: 1600;
-            font-family: Arial, sans-serif;
+            font-family: 'Orbitron', 'Arial', sans-serif;
         `;
         
         adminButton.onclick = () => this.toggleAdminPanel();
@@ -85,7 +85,7 @@ export class AdminSystem {
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
-            font-family: Arial, sans-serif;
+            font-family: 'Orbitron', 'Arial', sans-serif;
         `;
         
         console.log('Created admin overlay element');

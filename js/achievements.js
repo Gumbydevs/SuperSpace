@@ -301,7 +301,7 @@ export class AchievementSystem {
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 display: flex;
                 align-items: center;
-                font-family: Arial, sans-serif;
+                font-family: 'Orbitron', 'Arial', sans-serif;
                 font-size: 14px;
                 max-width: 300px;
                 animation: slideIn 0.3s ease-out;
@@ -427,7 +427,7 @@ export class AchievementSystem {
         panel.style.cssText = `
             background: #1a1a2e; border: 2px solid #4a4aff; border-radius: 10px;
             width: 500px; max-width: 90%; max-height: 80%; overflow-y: auto;
-            padding: 20px; color: white; font-family: Arial, sans-serif;
+            padding: 20px; color: white; font-family: 'Orbitron', 'Arial', sans-serif;
         `;
         
         const achievements = this.getAchievements();

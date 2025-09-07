@@ -843,7 +843,7 @@ export class UI {
             
             // Draw text
             ctx.fillStyle = '#f33';
-            ctx.font = 'bold 14px Arial';
+            ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText(`FIRE BOOST: ${seconds}s`, x, y);
         }

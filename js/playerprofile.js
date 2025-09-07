@@ -170,7 +170,7 @@ export class PlayerProfile {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: Arial, sans-serif;
+            font-family: 'Orbitron', 'Arial', sans-serif;
         `;
         
         const profileWindow = document.createElement('div');

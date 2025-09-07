@@ -1533,7 +1533,7 @@
             
             // Draw "SAFE ZONE" text
             ctx.globalAlpha = 1.0;
-            ctx.font = 'bold 20px Arial';
+            ctx.font = 'bold 20px Orbitron, Arial, sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -1546,7 +1546,7 @@
             ctx.save();
             ctx.globalAlpha = 0.4;
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px Arial';
+            ctx.font = 'bold 24px Orbitron, Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
@@ -1710,7 +1710,7 @@
                 ctx.fill();
 
                 // Here we draw the label text
-                ctx.font = '11px Arial';
+                ctx.font = '11px Orbitron, Arial, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'white';

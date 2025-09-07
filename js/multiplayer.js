@@ -2683,7 +2683,7 @@ export class MultiplayerManager {
             const uiX = player.x;
             
             // Draw player name FIRST (at the top)
-            ctx.font = '14px Arial';
+            ctx.font = '14px Orbitron, Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
