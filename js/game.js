@@ -292,8 +292,11 @@ class Game {
     
     // Here we toggle the admin interface on/off
     toggleAdmin() {
-        console.log('toggleAdmin called, adminSystem exists:', !!this.adminSystem);
+        console.log('toggleAdmin called');
+        console.log('adminSystem exists:', !!this.adminSystem);
+        console.log('adminSystem type:', typeof this.adminSystem);
         if (this.adminSystem) {
+            console.log('adminSystem methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.adminSystem)));
             console.log('Calling adminSystem.toggleAdminPanel()');
             this.adminSystem.toggleAdminPanel();
         } else {
@@ -323,11 +326,19 @@ class Game {
             keysPressed.add(e.code);
             console.log('Key pressed:', e.code, 'Current keys:', Array.from(keysPressed));
             
-            // Check for admin combination F+T+G
+            // Check for admin combination F+T+G (must be pressed together)
             if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
                 console.log('Admin key combination detected! F+T+G pressed');
                 this.toggleAdmin();
                 keysPressed.clear(); // Clear to prevent repeated triggers
+                return;
+            }
+            
+            // Temporary single key admin access for testing (F12 key)
+            if (e.code === 'F12') {
+                console.log('F12 pressed - opening admin panel');
+                e.preventDefault();
+                this.toggleAdmin();
                 return;
             }
             

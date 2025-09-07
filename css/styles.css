@@ -371,30 +371,27 @@ input[type="range"] {
 
 .profile-buttons {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     justify-content: center;
-    margin-top: 6px;
-    flex-wrap: wrap;
+    margin-top: 4px;
 }
 
 .profile-btn {
-    padding: 4px 10px;
+    padding: 2px 8px;
     background-color: #336;
     border: 1px solid #44a;
-    border-radius: 4px;
+    border-radius: 3px;
     color: #fff;
-    font-weight: bold;
+    font-weight: normal;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-family: 'Orbitron', monospace;
-    font-size: 0.75em;
-    margin: 1px;
+    font-size: 0.7em;
 }
 
 .profile-btn:hover {
     background-color: #44a;
     border-color: #66c;
-    box-shadow: 0 0 8px rgba(68, 170, 255, 0.3);
 }
 
 /* Avatar Modal Styles */
