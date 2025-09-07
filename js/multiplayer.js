@@ -2561,7 +2561,6 @@ export class MultiplayerManager {
         playerList.style.zIndex = '100';
         playerList.style.minWidth = '180px';
         playerList.style.maxHeight = '300px';
-        playerList.style.overflowY = 'auto';
         
         // Create a single container for everything
         const contentContainer = document.createElement('div');
