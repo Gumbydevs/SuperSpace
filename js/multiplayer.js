@@ -281,10 +281,10 @@ export class MultiplayerManager {
     setupSocketEvents() {
         // Listen for real-time player stats updates
         this.socket.on('playerStatsUpdate', (data) => {
-            console.log('Received playerStatsUpdate:', data);
+            // console.log('Received playerStatsUpdate:', data);
             if (data.id === this.playerId) {
                 // Update local player stats
-                console.log('Updating LOCAL player stats:', data);
+                // console.log('Updating LOCAL player stats:', data);
                 if (this.game.player) {
                     this.game.player.wins = data.wins;
                     this.game.player.losses = data.losses;
@@ -293,21 +293,21 @@ export class MultiplayerManager {
                 }
                 this.updatePlayerList();
             } else if (this.players[data.id]) {
-                console.log('Updating REMOTE player stats:', data);
+                // console.log('Updating REMOTE player stats:', data);
                 this.players[data.id].score = data.score;
                 this.players[data.id].wins = data.wins;
                 this.players[data.id].losses = data.losses;
                 this.updatePlayerList();
             } else {
-                console.log('Received stats update for unknown player:', data.id);
+                // console.log('Received stats update for unknown player:', data.id);
             }
         });
         
         // Listen for real-time player health updates
         this.socket.on('playerHealthUpdate', (data) => {
-            console.log('Received playerHealthUpdate:', data);
+            // console.log('Received playerHealthUpdate:', data);
             if (data.id !== this.playerId && this.players[data.id]) {
-                console.log(`Updating player ${this.players[data.id].name} health from ${this.players[data.id].health} to ${data.health}`);
+                // console.log(`Updating player ${this.players[data.id].name} health from ${this.players[data.id].health} to ${data.health}`);
                 this.players[data.id].health = data.health;
             }
         });
@@ -1615,12 +1615,19 @@ export class MultiplayerManager {
             this.broadcastStatsUpdate();
         }
         
-        // Send death event to server
+        // Send death event to server for asteroid deaths only - don't double-announce
         if (attackerId === 'asteroid') {
+            // Handle asteroid death locally with kill announcer
+            this.ensureKillAnnouncerReady();
+            this.killAnnouncer.announceKill('An asteroid', 'you');
+            
+            // Still emit to server for stats tracking, but server shouldn't re-broadcast the announcement
             this.socket.emit('playerDestroyedByAsteroid', {
                 playerId: this.playerId
             });
         }
+        // Note: Player vs player deaths are handled via server's 'playerDestroyed' event
+        // so we don't need to emit anything here to avoid double announcements
         
         // Store current credits value
         const currentCredits = this.game.player.credits;
