@@ -2464,11 +2464,77 @@ export class Player {
                     // Create mining fragments at impact point
                     this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY, deltaTime);
                     
-                    // Calculate score points for asteroid destruction
+                    // Check if asteroid is destroyed and handle it properly
                     let points = 0;
                     if (hitTarget.object.health <= 0) {
-                        // Asteroid is now destroyed, award points
+                        // Award score points immediately
                         points = hitTarget.object.scoreValue || 0;
+                        this.score += points;
+                        
+                        // Create explosion effect
+                        if (window.game.world) {
+                            window.game.world.createExplosion(
+                                this.miningBeam.targetX,
+                                this.miningBeam.targetY,
+                                hitTarget.object.radius,
+                                soundManager
+                            );
+                        }
+                        
+                        // Award credits based on asteroid size
+                        let creditReward = 10; // Default
+                        if (window.game.world && window.game.world.asteroidCreditValues) {
+                            switch (hitTarget.object.size) {
+                                case 'large':
+                                    creditReward = window.game.world.getRandomInt(
+                                        window.game.world.asteroidCreditValues.large.min,
+                                        window.game.world.asteroidCreditValues.large.max
+                                    );
+                                    break;
+                                case 'medium':
+                                    creditReward = window.game.world.getRandomInt(
+                                        window.game.world.asteroidCreditValues.medium.min,
+                                        window.game.world.asteroidCreditValues.medium.max
+                                    );
+                                    break;
+                                default:
+                                    creditReward = window.game.world.getRandomInt(
+                                        window.game.world.asteroidCreditValues.small.min,
+                                        window.game.world.asteroidCreditValues.small.max
+                                    );
+                            }
+                        }
+                        this.addCredits(creditReward);
+                        
+                        // Split asteroid if it's not small (create fragments)
+                        if (hitTarget.object.size !== 'small' && window.game.world) {
+                            window.game.world.splitAsteroid(hitTarget.object, soundManager);
+                        }
+                        
+                        // Track achievements
+                        if (window.game && window.game.achievements) {
+                            if (typeof window.game.achievements.onAsteroidDestroyed === 'function') {
+                                window.game.achievements.onAsteroidDestroyed();
+                            }
+                        }
+                        
+                        // Track player profile
+                        if (window.game && window.game.playerProfile) {
+                            if (typeof window.game.playerProfile.onCreditsEarned === 'function') {
+                                window.game.playerProfile.onCreditsEarned(creditReward);
+                            }
+                            if (typeof window.game.playerProfile.onAsteroidDestroyed === 'function') {
+                                window.game.playerProfile.onAsteroidDestroyed();
+                            }
+                        }
+                        
+                        // Remove the destroyed asteroid from the world
+                        if (window.game.world) {
+                            const asteroidIndex = window.game.world.asteroids.indexOf(hitTarget.object);
+                            if (asteroidIndex !== -1) {
+                                window.game.world.asteroids.splice(asteroidIndex, 1);
+                            }
+                        }
                     }
                     
                     // Send asteroid hit to server with score points for multiplayer sync

@@ -1300,6 +1300,17 @@
                     player.weaponIndex = player.weapons.length - 1;
                     player.currentWeapon = player.weapons[player.weaponIndex];
                     
+                    // Update weapon display in UI
+                    const weaponElement = document.getElementById('weapons');
+                    if (weaponElement) {
+                        weaponElement.textContent = player.currentWeapon;
+                    }
+                    // Update weapon icon
+                    const weaponIcon = document.getElementById('weapon-icon');
+                    if (weaponIcon && player.updateWeaponIcon) {
+                        player.updateWeaponIcon(weaponIcon, player.currentWeapon);
+                    }
+                    
                     // Show pickup message
                     if (window.game && window.game.multiplayer) {
                         window.game.multiplayer.showGameMessage('New Weapon: Burst Cannon!', '#f00');
@@ -1308,6 +1319,17 @@
                     player.weapons.push('Seeker Missile');
                     player.weaponIndex = player.weapons.length - 1;
                     player.currentWeapon = player.weapons[player.weaponIndex];
+                    
+                    // Update weapon display in UI
+                    const weaponElement = document.getElementById('weapons');
+                    if (weaponElement) {
+                        weaponElement.textContent = player.currentWeapon;
+                    }
+                    // Update weapon icon
+                    const weaponIcon = document.getElementById('weapon-icon');
+                    if (weaponIcon && player.updateWeaponIcon) {
+                        player.updateWeaponIcon(weaponIcon, player.currentWeapon);
+                    }
                     
                     // Show pickup message
                     if (window.game && window.game.multiplayer) {
