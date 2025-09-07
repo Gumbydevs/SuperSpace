@@ -63,9 +63,10 @@ export class ChallengeSystem {
     showChallengeComplete(challenge, type) {
         // Create a temporary notification
         const notification = document.createElement('div');
-        notification.style.position = 'fixed';
-        notification.style.top = '20px';
-        notification.style.right = '20px';
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.left = '50%';
+    notification.style.transform = 'translateX(-50%)';
         notification.style.backgroundColor = 'rgba(0, 60, 30, 0.9)';
         notification.style.color = '#3f3';
         notification.style.padding = '15px';

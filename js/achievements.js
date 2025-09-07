@@ -274,11 +274,12 @@ export class AchievementSystem {
     createNotificationUI() {
         const container = document.createElement('div');
         container.id = 'achievement-notifications';
-        container.style.position = 'fixed';
-        container.style.top = '20px';
-        container.style.right = '20px';
-        container.style.zIndex = '2000';
-        container.style.pointerEvents = 'none';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.zIndex = '2000';
+    container.style.pointerEvents = 'none';
         
         document.body.appendChild(container);
     }
@@ -305,7 +306,6 @@ export class AchievementSystem {
                 font-size: 14px;
                 max-width: 300px;
                 animation: slideIn 0.3s ease-out;
-                transform: translateX(${index * 5}px);
             `;
             
             const icon = document.createElement('span');
