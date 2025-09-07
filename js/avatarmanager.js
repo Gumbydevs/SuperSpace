@@ -6,6 +6,7 @@ export class AvatarManager {
         this.selectedAvatar = localStorage.getItem('selectedAvatar') || 'han';
         this.avatarOptions = ['han', 'ripley', 'robot', 'alien'];
         this.initialized = false;
+        this.tempSelection = null; // For modal selection
         
         // Try to initialize immediately, but also provide a manual init method
         this.tryInitialize();
@@ -15,7 +16,9 @@ export class AvatarManager {
         const avatarOptions = document.querySelectorAll('.avatar-option');
         if (avatarOptions.length > 0) {
             this.setupAvatarSelection();
+            this.setupModalControls();
             this.drawAllAvatars();
+            this.drawProfileAvatar();
             this.initialized = true;
         }
     }
@@ -27,35 +30,77 @@ export class AvatarManager {
         }
     }
 
-    setupAvatarSelection() {
-        const avatarOptions = document.querySelectorAll('.avatar-option');
-        
-        avatarOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                const avatarType = option.dataset.avatar;
-                this.selectAvatar(avatarType);
+    setupModalControls() {
+        const changePilotBtn = document.getElementById('changePilotBtn');
+        const avatarModal = document.getElementById('avatarModal');
+        const authenticateBtn = document.getElementById('authenticateBtn');
+        const cancelBtn = document.getElementById('cancelAvatarBtn');
+
+        if (changePilotBtn) {
+            changePilotBtn.addEventListener('click', () => {
+                this.openAvatarModal();
             });
-        });
+        }
 
-        // Set initial selection
-        this.updateSelection();
-    }
+        if (authenticateBtn) {
+            authenticateBtn.addEventListener('click', () => {
+                this.authenticateSelection();
+            });
+        }
 
-    selectAvatar(avatarType) {
-        this.selectedAvatar = avatarType;
-        localStorage.setItem('selectedAvatar', avatarType);
-        this.updateSelection();
-        
-        // Trigger callback if provided
-        if (this.onAvatarChange) {
-            this.onAvatarChange(avatarType);
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeAvatarModal();
+            });
+        }
+
+        // Close modal on outside click
+        if (avatarModal) {
+            avatarModal.addEventListener('click', (e) => {
+                if (e.target === avatarModal) {
+                    this.closeAvatarModal();
+                }
+            });
         }
     }
 
-    updateSelection() {
-        const avatarOptions = document.querySelectorAll('.avatar-option');
+    openAvatarModal() {
+        const avatarModal = document.getElementById('avatarModal');
+        if (avatarModal) {
+            this.tempSelection = this.selectedAvatar; // Store current selection as temp
+            avatarModal.style.display = 'flex';
+            this.drawAllAvatars(); // Redraw modal avatars
+            this.updateModalSelection();
+        }
+    }
+
+    closeAvatarModal() {
+        const avatarModal = document.getElementById('avatarModal');
+        if (avatarModal) {
+            avatarModal.style.display = 'none';
+            this.tempSelection = null;
+            this.clearModalSelection();
+        }
+    }
+
+    authenticateSelection() {
+        if (this.tempSelection) {
+            this.selectedAvatar = this.tempSelection;
+            localStorage.setItem('selectedAvatar', this.selectedAvatar);
+            this.drawProfileAvatar();
+            
+            // Trigger callback if provided
+            if (this.onAvatarChange) {
+                this.onAvatarChange(this.selectedAvatar);
+            }
+        }
+        this.closeAvatarModal();
+    }
+
+    updateModalSelection() {
+        const avatarOptions = document.querySelectorAll('#avatarModal .avatar-option');
         avatarOptions.forEach(option => {
-            if (option.dataset.avatar === this.selectedAvatar) {
+            if (option.dataset.avatar === this.tempSelection) {
                 option.classList.add('selected');
             } else {
                 option.classList.remove('selected');
@@ -63,22 +108,54 @@ export class AvatarManager {
         });
     }
 
-    drawAllAvatars() {
-        const avatarCanvases = document.querySelectorAll('.avatar-canvas');
-        avatarCanvases.forEach(canvas => {
-            const avatarType = canvas.parentElement.dataset.avatar;
-            this.drawAvatar(canvas, avatarType);
+    clearModalSelection() {
+        const avatarOptions = document.querySelectorAll('#avatarModal .avatar-option');
+        avatarOptions.forEach(option => {
+            option.classList.remove('selected');
         });
     }
 
-    drawAvatar(canvas, avatarType) {
+    setupAvatarSelection() {
+        // Handle modal avatar selection
+        const modalAvatarOptions = document.querySelectorAll('#avatarModal .avatar-option');
+        
+        modalAvatarOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const avatarType = option.dataset.avatar;
+                if (avatarType && !option.classList.contains('disabled')) {
+                    this.tempSelection = avatarType;
+                    this.updateModalSelection();
+                }
+            });
+        });
+    }
+
+    drawProfileAvatar() {
+        const profileCanvas = document.getElementById('profileAvatarCanvas');
+        if (profileCanvas) {
+            this.drawAvatar(profileCanvas, this.selectedAvatar, 64);
+        }
+    }
+
+    drawAllAvatars() {
+        // Draw modal avatars
+        const modalAvatarCanvases = document.querySelectorAll('#avatarModal .avatar-canvas');
+        modalAvatarCanvases.forEach(canvas => {
+            const avatarType = canvas.parentElement.dataset.avatar;
+            if (avatarType) {
+                this.drawAvatar(canvas, avatarType);
+            }
+        });
+    }
+
+    drawAvatar(canvas, avatarType, customSize = null) {
         const ctx = canvas.getContext('2d');
-        const size = 24; // Back to 24x24 but in compact containers
+        const size = customSize || canvas.width; // Use custom size or canvas size
         
         // Clear canvas
-        ctx.clearRect(0, 0, size, size);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Set smooth rendering
+        // Set crisp pixel rendering
         ctx.imageSmoothingEnabled = false;
         
         switch (avatarType) {

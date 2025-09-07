@@ -295,7 +295,125 @@ input[type="range"] {
     color: #666;
 }
 
-/* Coming Soon Placeholders */
+/* Pilot Profile Styles */
+.pilot-profile {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(20, 30, 50, 0.8);
+    border-radius: 8px;
+    border: 2px solid rgba(68, 175, 255, 0.3);
+}
+
+.profile-avatar-canvas {
+    border: 2px solid rgba(68, 175, 255, 0.6);
+    border-radius: 8px;
+    background: rgba(0, 20, 40, 0.8);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.pilot-details {
+    flex: 1;
+}
+
+.pilot-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.change-pilot-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.change-pilot-btn:hover {
+    background: linear-gradient(135deg, #357abd, #2a5a8a);
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+}
+
+/* Avatar Modal Styles */
+.avatar-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.avatar-modal.hidden {
+    display: none;
+}
+
+.avatar-modal-content {
+    background: linear-gradient(135deg, rgba(20, 30, 50, 0.95), rgba(10, 20, 40, 0.95));
+    border: 2px solid rgba(68, 175, 255, 0.6);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 0 30px rgba(68, 175, 255, 0.3);
+}
+
+.avatar-modal-content h3 {
+    color: #4af;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.avatar-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.authenticate-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #00ff41, #00cc33);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.authenticate-btn:hover {
+    background: linear-gradient(135deg, #00cc33, #009926);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.cancel-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #ff4444, #cc3333);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: linear-gradient(135deg, #cc3333, #992626);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
 .avatar-placeholder {
     display: flex;
     flex-direction: column;

@@ -136,63 +136,15 @@
                     <h2>Options & Controls</h2>
                 <button id="close-options-btn" class="close-btn">✕</button>
                     <div class="section">
-                        <div class="pilot-row">
-                            <span class="pilot-label">👨‍✈️ Pilot Name:</span>
-                            <span id="pilot-name">(Loading...)</span>
-                            <button id="rename-btn">Rename</button>
-                        </div>
-                    </div>
-                    <div class="section">
-                        <h3>Select Pilot Avatar</h3>
-                        <div class="avatar-selection">
-                            <div class="avatar-option" data-avatar="han">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Ace</span>
-                            </div>
-                            <div class="avatar-option" data-avatar="ripley">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Riley</span>
-                            </div>
-                            <div class="avatar-option" data-avatar="robot">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Marvin</span>
-                            </div>
-                            <div class="avatar-option" data-avatar="alien">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Gorf</span>
-                            </div>
-                            <!-- Coming Soon placeholders -->
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
-                            </div>
-                            <div class="avatar-option disabled">
-                                <canvas class="avatar-canvas" width="24" height="24"></canvas>
-                                <span class="avatar-name">Soon</span>
+                        <div class="pilot-profile">
+                            <canvas id="profileAvatarCanvas" class="profile-avatar-canvas" width="64" height="64"></canvas>
+                            <div class="pilot-details">
+                                <div class="pilot-row">
+                                    <span class="pilot-label">👨‍✈️ Pilot Name:</span>
+                                    <span id="pilot-name">(Loading...)</span>
+                                    <button id="rename-btn">Rename</button>
+                                </div>
+                                <button id="changePilotBtn" class="change-pilot-btn">Change Pilot Avatar</button>
                             </div>
                         </div>
                     </div>
@@ -239,6 +191,51 @@
                         <div class="brand-links">
                             <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener" class="brand-link">💬 Join Discord</a>
                         </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Avatar Selection Modal -->
+            <div id="avatarModal" class="avatar-modal" style="display: none;">
+                <div class="avatar-modal-content">
+                    <h3>Select Pilot Avatar</h3>
+                    <div class="avatar-selection">
+                        <div class="avatar-option" data-avatar="han">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Ace</span>
+                        </div>
+                        <div class="avatar-option" data-avatar="ripley">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Riley</span>
+                        </div>
+                        <div class="avatar-option" data-avatar="robot">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Marvin</span>
+                        </div>
+                        <div class="avatar-option" data-avatar="alien">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Gorf</span>
+                        </div>
+                        <div class="avatar-option disabled">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Soon</span>
+                        </div>
+                        <div class="avatar-option disabled">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Soon</span>
+                        </div>
+                        <div class="avatar-option disabled">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Soon</span>
+                        </div>
+                        <div class="avatar-option disabled">
+                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                            <span class="avatar-name">Soon</span>
+                        </div>
+                    </div>
+                    <div class="avatar-modal-actions">
+                        <button id="authenticateBtn" class="authenticate-btn">Authenticate</button>
+                        <button id="cancelAvatarBtn" class="cancel-btn">Cancel</button>
                     </div>
                 </div>
             </div>
