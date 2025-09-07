@@ -719,7 +719,7 @@ input[type="range"] {
         top: 80px !important;
     }
     #mobile-menu-button {
-        top: 100px !important;
+        top: 20px !important;
     }
     /* Hide mute and music buttons on mobile/tablet only */
     #mute-btn,
