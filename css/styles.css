@@ -3,7 +3,8 @@ body {
     padding: 0;
     background-color: #000;
     color: #fff;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    font-weight: 400;
     overflow: hidden;
     overscroll-behavior-y: contain;
 }
@@ -254,12 +255,14 @@ input[type="range"] {
 }
 
 #pilot-name {
-    font-family: monospace;
+    font-family: 'Orbitron', monospace;
+    font-weight: 500;
     font-size: 1.1em;
     background: #222a;
     padding: 2px 8px;
     border-radius: 4px;
     color: #fff;
+    text-shadow: 0 0 2px #33f3;
 }
 #rename-btn {
     margin-left: 10px;

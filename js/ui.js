@@ -392,7 +392,8 @@ export class UI {
             serverInfo.style.fontSize = this.isMobileDevice ? 
                 (this.isSmallMobile ? '0.75em' : '0.8em') : '0.85em';
             serverInfo.style.color = 'white';
-            serverInfo.style.fontFamily = 'Arial, sans-serif';
+            serverInfo.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+            serverInfo.style.fontWeight = '500';
             
             // Add to top right panel
             topRightPanel.appendChild(serverInfo);
@@ -434,7 +435,8 @@ export class UI {
         element.style.borderRadius = '4px';
         element.style.border = '1px solid #555';
         element.style.color = 'white';
-        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        element.style.fontWeight = '500';
         element.style.fontSize = fontSize;
         
         const label = element.querySelector('.status-label');
@@ -459,7 +461,8 @@ export class UI {
         element.style.borderRadius = '3px';
         element.style.border = '1px solid #555';
         element.style.color = 'white';
-        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        element.style.fontWeight = '500';
         element.style.fontSize = fontSize;
         
         const label = element.querySelector('.status-label');

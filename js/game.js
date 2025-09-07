@@ -1096,9 +1096,9 @@ class Game {
         text.style.top = '50%';
         text.style.left = '50%';
         text.style.transform = 'translate(-50%, -50%) scale(0.1)';
-        text.style.fontFamily = 'Arial, sans-serif';
+        text.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        text.style.fontWeight = '700';
         text.style.fontSize = '100px';
-        text.style.fontWeight = 'bold';
         text.style.color = '#fff';
         text.style.textShadow = '0 0 20px #ff0, 0 0 40px #f80, 0 0 60px #f00';
         text.style.opacity = '0';

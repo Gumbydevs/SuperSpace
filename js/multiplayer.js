@@ -2346,9 +2346,9 @@ export class MultiplayerManager {
         indicator.style.left = '20px';
         indicator.style.padding = '5px 10px';
         indicator.style.borderRadius = '5px';
-        indicator.style.fontFamily = 'Arial, sans-serif';
+        indicator.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        indicator.style.fontWeight = '600';
         indicator.style.fontSize = '14px';
-        indicator.style.fontWeight = 'bold';
         indicator.style.zIndex = '100';
         
         document.body.appendChild(indicator);
@@ -2392,7 +2392,8 @@ export class MultiplayerManager {
         playerList.style.color = 'white';
         playerList.style.borderRadius = '5px';
         playerList.style.border = '1px solid #555';
-        playerList.style.fontFamily = 'Arial, sans-serif';
+        playerList.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        playerList.style.fontWeight = '500';
         playerList.style.fontSize = '14px';
         playerList.style.zIndex = '100';
         playerList.style.minWidth = '200px';
@@ -2638,7 +2639,8 @@ export class MultiplayerManager {
         messageElement.style.padding = '5px 10px';
         messageElement.style.margin = '5px 0';
         messageElement.style.textAlign = 'center';
-        messageElement.style.fontFamily = 'Arial, sans-serif';
+        messageElement.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        messageElement.style.fontWeight = '500';
         messageElement.style.fontSize = '16px';
         messageElement.style.opacity = '1';
         messageElement.style.transition = 'opacity 0.5s ease';
