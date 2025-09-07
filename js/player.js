@@ -2200,8 +2200,8 @@ export class Player {
         // Update beam intensity for pulsing effect
         this.miningBeam.intensity = (Math.sin(Date.now() * 0.01) + 1) * 0.5;
         
-        // Consume energy continuously
-        const energyPerSecond = energyCost * 10; // Energy per second
+        // Consume energy continuously but slowly for sustained mining
+        const energyPerSecond = energyCost * 0.5; // Much slower energy consumption for continuous use
         this.energy -= energyPerSecond * deltaTime;
         
         if (this.energy <= 0) {
