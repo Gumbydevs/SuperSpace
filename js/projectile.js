@@ -117,7 +117,7 @@ export class Projectile {
                 // Space mine - circular and dangerous looking
                 this.width = 12;
                 this.height = 12;
-                this.color = '#f44';  // Red danger color
+                this.color = '#ff0';  // Yellow when disarmed (safe)
                 this.glow = true;
                 this.trail = false;
                 this.isArmed = false; // Mines start unarmed
@@ -151,7 +151,7 @@ export class Projectile {
                 if (this.armingTimer <= 0) {
                     this.isArmed = true;
                     // Change color when armed to show it's dangerous
-                    this.color = '#ff0'; // Yellow when armed
+                    this.color = '#f00'; // Red when armed (dangerous)
                 }
             }
             

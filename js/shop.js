@@ -342,6 +342,19 @@ export class ShopSystem {
             this.player.acceleration = ship.stats.acceleration;
             this.player.rotationSpeed = ship.stats.handling;
             this.player.armor = ship.stats.armor || 1.0;
+            
+            // Re-apply armor upgrade bonuses on top of base ship stats
+            const armorUpgrade = this.availableUpgrades.find(u => u.id === 'armor');
+            if (armorUpgrade && armorUpgrade.level > 0) {
+                const effects = armorUpgrade.getEffect(armorUpgrade.level);
+                this.player.maxHealth += effects.maxHealth;
+                this.player.damageReduction = effects.damageReduction;
+            }
+            
+            // Ensure health matches maxHealth for new games/fresh spawns
+            if (this.player.health < this.player.maxHealth) {
+                this.player.health = this.player.maxHealth;
+            }
         }
         
         // Load currently equipped weapon

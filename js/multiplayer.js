@@ -826,6 +826,9 @@ export class MultiplayerManager {
     joinGame() {
         if (!this.connected) return;
         
+        // Ensure player has full health before joining
+        this.game.player.health = this.game.player.maxHealth;
+        
         const playerData = {
             x: this.game.player.x,
             y: this.game.player.y,

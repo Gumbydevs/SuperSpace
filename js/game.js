@@ -347,9 +347,12 @@ class Game {
                 this.toggleShop();
             }
             
-            // Profile hotkey (P key) - show profile directly
+            // Profile hotkey (P key) - show profile directly (only if not typing)
             if (e.code === 'KeyP') {
-                if (this.playerProfile) {
+                const activeElement = document.activeElement;
+                const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+                
+                if (!isTyping && this.playerProfile) {
                     this.playerProfile.showProfile();
                 }
             }
@@ -449,6 +452,9 @@ class Game {
         
         // Show gameplay UI elements
         this.ui.setGameplayUIVisibility(true);
+        
+        // Ensure player starts with full health based on their upgrades
+        this.player.health = this.player.maxHealth;
         
         // Initialize the health bar with the player's current health
         this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
@@ -1128,6 +1134,9 @@ class Game {
         
         // Reset shop with new player reference
         this.shop = new ShopSystem(this.player);
+        
+        // Ensure player starts with full health after restart
+        this.player.health = this.player.maxHealth;
         
         // Show shop button again
         document.getElementById('shop-btn').style.display = 'block';

@@ -482,6 +482,9 @@ export class Player {
             }
         }
 
+        // Check for mine proximity explosions in multiplayer
+        this.checkMineCollisions();
+
         // Here we reduce cooldown timers
         if (this.fireCooldown > 0) {
             this.fireCooldown -= deltaTime;
@@ -503,6 +506,103 @@ export class Player {
             if (now - this.lastDamageTime >= this.shieldRechargeDelay) {
                 this.shield = Math.min(this.shieldCapacity, 
                     this.shield + this.shieldRechargeRate * deltaTime);
+            }
+        }
+    }
+
+    // Check for mine proximity explosions in multiplayer games
+    checkMineCollisions() {
+        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.players) {
+            return; // Only check in multiplayer
+        }
+
+        const mineProximityRadius = 30; // Mine explosion radius
+        const mineProximityRadiusSq = mineProximityRadius * mineProximityRadius;
+
+        // Check all of our deployed mines for proximity to any player
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.projectiles[i];
+            
+            // Only check armed mines
+            if (projectile.type !== 'mine' || !projectile.isArmed) {
+                continue;
+            }
+
+            let mineTriggered = false;
+
+            // Check against local player (ourselves)
+            const dxLocal = projectile.x - this.x;
+            const dyLocal = projectile.y - this.y;
+            const distSqLocal = dxLocal * dxLocal + dyLocal * dyLocal;
+            
+            if (distSqLocal < mineProximityRadiusSq && !window.game.world.isInSafeZone(this)) {
+                // Local player triggered our own mine (friendly fire)
+                this.takeDamage(projectile.damage);
+                
+                // Create explosion effect
+                if (window.game.world) {
+                    window.game.world.createProjectileHitEffect(
+                        projectile.x,
+                        projectile.y,
+                        25, // Large explosion for mine
+                        window.game.soundManager
+                    );
+                }
+                
+                window.game.multiplayer.showGameMessage('Your own mine exploded!', '#f84');
+                mineTriggered = true;
+            }
+
+            // Check against all remote players
+            if (!mineTriggered) {
+                Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                    if (remotePlayer.destroyed || mineTriggered) return;
+                    
+                    const dx = projectile.x - remotePlayer.x;
+                    const dy = projectile.y - remotePlayer.y;
+                    const distSq = dx * dx + dy * dy;
+                    
+                    if (distSq < mineProximityRadiusSq && !window.game.world.isInSafeZone(remotePlayer)) {
+                        // Remote player triggered our mine
+                        if (window.game.world) {
+                            window.game.world.createProjectileHitEffect(
+                                projectile.x,
+                                projectile.y,
+                                25, // Large explosion for mine
+                                window.game.soundManager
+                            );
+                        }
+                        
+                        // Send hit info to server
+                        window.game.multiplayer.sendHit('player', remotePlayer.id, projectile.damage);
+                        
+                        // Also broadcast the hit effect to all clients
+                        window.game.multiplayer.sendProjectileHit(
+                            remotePlayer.id,
+                            projectile.x,
+                            projectile.y, 
+                            projectile.damage
+                        );
+                        
+                        // Show message
+                        window.game.multiplayer.showGameMessage(`Mine destroyed ${remotePlayer.name}!`, '#4f4');
+                        
+                        // Track hit for achievements and player profile
+                        if (window.game.playerProfile) {
+                            window.game.playerProfile.onHit('Space Mines');
+                        }
+                        
+                        // Record hit time for shield impact flash
+                        remotePlayer.lastDamageTime = Date.now() / 1000;
+                        
+                        mineTriggered = true;
+                    }
+                });
+            }
+
+            // Remove the mine if it was triggered
+            if (mineTriggered) {
+                this.projectiles.splice(i, 1);
             }
         }
     }
