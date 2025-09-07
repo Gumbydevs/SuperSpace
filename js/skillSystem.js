@@ -1,4 +1,4 @@
-// Manages player skills, XP, and skill point allocation
+// Manages player skills, score-based skill points, and skill point allocation
 import { SKILLS, getInitialSkills } from './data/skills.js';
 
 export class SkillSystem {
@@ -6,18 +6,19 @@ export class SkillSystem {
         this.player = player;
         this.skills = getInitialSkills();
         this.skillPoints = 0;  // Available points to spend
-        this.xp = 0;           // Earned XP
+        this.lastScoreCheck = 0; // Last score when we calculated skill points
         this.MAX_POINTS_PER_RUN = 5;  // Limit per run
     }
 
-    // Add experience and convert to skill points
-    addXP(amount) {
-        this.xp += amount;
-        // Example: 100 XP = 1 skill point
-        const newPoints = Math.floor(this.xp / 100) - (this.skillPoints + this.getAllocatedPoints());
-        if (newPoints > 0) {
-            this.skillPoints += newPoints;
-        }
+    // Check if player earned new skill points based on score
+    updateSkillPoints() {
+        // Award 1 skill point per 1000 score points
+        const earnedPoints = Math.floor(this.player.score / 1000);
+        const currentAllocated = this.getAllocatedPoints();
+        
+        // Only give points up to the max per run
+        this.skillPoints = Math.min(earnedPoints - currentAllocated, this.MAX_POINTS_PER_RUN - currentAllocated);
+        if (this.skillPoints < 0) this.skillPoints = 0;
     }
 
     // Allocate a point to a skill if possible
@@ -59,7 +60,7 @@ export class SkillSystem {
     reset() {
         this.skills.forEach(s => s.points = 0);
         this.skillPoints = 0;
-        this.xp = 0;
+        this.lastScoreCheck = 0;
     }
 
     getAllocatedPoints() {

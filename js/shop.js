@@ -932,8 +932,6 @@ export class ShopSystem {
     }
     
     renderWeaponsTab(container) {
-        console.log('Rendering weapons tab, available weapons:', this.availableWeapons.length);
-        
         // Count owned purchasable weapons (excluding free ones)
         const ownedCount = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
         this.availableWeapons.forEach(weapon => {
@@ -1049,6 +1047,9 @@ export class ShopSystem {
             info.appendChild(description);
             info.appendChild(stats);
             
+            weaponCard.appendChild(icon);
+            weaponCard.appendChild(info);
+            
             // Action section
             const action = document.createElement('div');
             action.style.width = '120px';
@@ -1077,6 +1078,8 @@ export class ShopSystem {
             }
             
             action.appendChild(button);
+            
+            weaponCard.appendChild(action);
             
             button.onclick = () => {
                 if (!weapon.owned) {
@@ -1115,11 +1118,14 @@ export class ShopSystem {
         infoDiv.style.borderRadius = '5px';
         infoDiv.innerHTML = `
             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span>XP: ${skillSystem.xp}</span>
+                <span>Score: ${this.player.score}</span>
                 <span>Skill Points: ${skillSystem.skillPoints}</span>
             </div>
             <div style="font-size: 0.9em; color: #aaa;">
                 Points allocated this run: ${skillSystem.getAllocatedPoints()}/${skillSystem.MAX_POINTS_PER_RUN}
+            </div>
+            <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
+                Earn 1 skill point per 1000 score points
             </div>
         `;
         container.appendChild(infoDiv);

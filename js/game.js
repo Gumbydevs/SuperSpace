@@ -630,9 +630,9 @@ class Game {
             this.world.updateParticles(deltaTime);
         }
         
-        // Award small XP based on performance, e.g. time alive
+        // Update skill points based on current score
         if (this.gameState === 'playing') {
-            this.skillSystem.addXP(deltaTime * 5); // 5 XP per second
+            this.skillSystem.updateSkillPoints();
             this.challengeSystem.check('daily');
             this.challengeSystem.check('weekly');
         }
