@@ -743,10 +743,6 @@ export class SoundManager {
             const boomFreq = 80;
             data[i] += Math.sin(i * boomFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
             
-            // Add high-frequency rail acceleration sound
-            const railFreq = 2000 - t * 1000;
-            data[i] += Math.sin(i * railFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.2;
-            
             // Add mechanical rattle for recoil
             if (t < 0.2) {
                 const rattle = Math.sin(i * (300 + Math.random() * 200) / this.audioContext.sampleRate * Math.PI * 2) * 0.2;
