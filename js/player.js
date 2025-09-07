@@ -390,6 +390,12 @@ export class Player {
         }
 
         // Handle direct weapon selection with number keys (0-9)
+        // Debug logging to see what's happening
+        const hasNumberKeyPressed = input.keys.some(key => key.startsWith('Digit'));
+        if (hasNumberKeyPressed) {
+            console.log(`Number key detected, cooldown: ${this.weaponSwitchCooldown}, soundManager: ${!!soundManager}`);
+        }
+        
         if (soundManager && this.weaponSwitchCooldown <= 0) {
             // Define weapon mapping for number keys in the requested order
             const numberKeyWeapons = {
@@ -411,6 +417,9 @@ export class Player {
             for (const [key, weaponName] of Object.entries(numberKeyWeapons)) {
                 if (input.keys.includes(key)) {
                     selectedWeapon = weaponName;
+                    console.log(`Number key pressed: ${key} -> ${weaponName}`);
+                    console.log(`Available weapons:`, this.weapons);
+                    console.log(`Weapon owned?`, this.weapons.includes(selectedWeapon));
                     break;
                 }
             }
