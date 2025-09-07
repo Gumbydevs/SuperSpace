@@ -1558,56 +1558,46 @@ export class MultiplayerManager {
                 
                 // Implement homing behavior for seeker missiles
                 if (this.homing && this.type === 'missile' && world) {
-                    // Find nearest target (players or asteroids)
-                    let nearest = null;
-                    let nearestDist = Infinity;
-                    
-                    // Check for multiplayer players first
-                    if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
-                        Object.values(window.game.multiplayer.players).forEach(p => {
-                            if (p.destroyed || p.health <= 0) return;
-                            const dx = p.x - this.x;
-                            const dy = p.y - this.y;
-                            const dist = Math.sqrt(dx*dx + dy*dy);
-                            if (dist < nearestDist && dist > 50) { // Avoid self-targeting at close range
-                                nearest = p;
-                                nearestDist = dist;
-                            }
-                        });
-                    }
-                    
-                    // Also check local player as potential target
-                    if (window.game && window.game.player) {
-                        const dx = window.game.player.x - this.x;
-                        const dy = window.game.player.y - this.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < nearestDist && dist > 50) {
-                            nearest = window.game.player;
-                            nearestDist = dist;
+                    // Only allow homing after traveling minimum distance (like original projectile logic)
+                    if (!this.hasHomed && this.distanceTraveled >= (this.homingMinDistance || 200)) {
+                        // For remote projectiles, target the local player specifically
+                        let target = null;
+                        let targetDist = Infinity;
+                        
+                        // Target the local player (since this missile was sent to us)
+                        if (window.game && window.game.player && window.game.player.health > 0) {
+                            const dx = window.game.player.x - this.x;
+                            const dy = window.game.player.y - this.y;
+                            targetDist = Math.sqrt(dx*dx + dy*dy);
+                            target = window.game.player;
                         }
-                    }
-                    
-                    // Apply homing behavior if target found
-                    if (nearest) {
-                        // Calculate direction to target
-                        const dx = nearest.x - this.x;
-                        const dy = nearest.y - this.y;
-                        const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
                         
-                        // Gradually adjust missile angle towards target
-                        const turnSpeed = 5.0 * deltaTime; // Smooth turning for visual appeal
-                        let angleDiff = angleToTarget - this.angle;
-                        
-                        // Normalize angle difference to between -PI and PI
-                        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                        
-                        // Apply steering with smooth turning
-                        this.angle += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), turnSpeed);
-                        
-                        // Update velocity based on new angle
-                        this.velocity.x = Math.sin(this.angle) * this.speed;
-                        this.velocity.y = -Math.cos(this.angle) * this.speed;
+                        // Only home if within homing radius (300px, like original logic)
+                        const homingRadius = 300;
+                        if (target && targetDist <= homingRadius) {
+                            // Calculate direction to target
+                            const dx = target.x - this.x;
+                            const dy = target.y - this.y;
+                            const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
+                            
+                            // Gradual turning instead of instant snap (matching original logic)
+                            let angleDiff = angleToTarget - this.angle;
+                            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                            
+                            // Turn gradually - only turn 15% of the way each frame (like original)
+                            const turnAmount = angleDiff * 0.15 * deltaTime * 60; // Smooth gradual turn
+                            this.angle += turnAmount;
+                            
+                            // Update velocity based on new angle
+                            this.velocity.x = Math.sin(this.angle) * this.speed;
+                            this.velocity.y = -Math.cos(this.angle) * this.speed;
+                            
+                            // Mark as homed after turning significantly (about 80% of the way)
+                            if (Math.abs(angleDiff) < 0.3) { // When close to target angle
+                                this.hasHomed = true;
+                            }
+                        }
                     }
                 }
                 
