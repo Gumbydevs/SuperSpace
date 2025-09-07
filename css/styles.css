@@ -714,6 +714,11 @@ input[type="range"] {
 
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+    /* Hide mute and music buttons on mobile/tablet only */
+    #mute-btn,
+    #music-btn {
+        display: none !important;
+    }
     /* Global mobile adjustments */
     body {
         -webkit-text-size-adjust: 100%;
