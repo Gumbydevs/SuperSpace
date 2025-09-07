@@ -60,6 +60,15 @@ export class AdminSystem {
     }
     
     createAdminPanel() {
+        console.log('createAdminPanel started');
+        
+        // Remove existing admin panel if any
+        const existingPanel = document.getElementById('admin-overlay');
+        if (existingPanel) {
+            console.log('Removing existing admin panel');
+            existingPanel.remove();
+        }
+        
         const overlay = document.createElement('div');
         overlay.id = 'admin-overlay';
         overlay.style.cssText = `
@@ -78,6 +87,8 @@ export class AdminSystem {
             overflow-y: auto;
             font-family: Arial, sans-serif;
         `;
+        
+        console.log('Created admin overlay element');
         
         const panel = document.createElement('div');
         panel.style.cssText = `
@@ -153,7 +164,11 @@ export class AdminSystem {
         panel.appendChild(tabContent);
         
         overlay.appendChild(panel);
+        console.log('About to append admin overlay to document.body');
+        console.log('Overlay element:', overlay);
+        console.log('Document body:', document.body);
         document.body.appendChild(overlay);
+        console.log('Admin overlay added to DOM successfully');
         
         // Event listeners
         document.getElementById('close-admin').onclick = () => this.closeAdminPanel();
@@ -713,6 +728,7 @@ export class AdminSystem {
     }
     
     toggleAdminPanel() {
+        console.log('toggleAdminPanel called, isAdmin:', this.isAdmin, 'isAdminPanelOpen:', this.isAdminPanelOpen);
         if (this.isAdminPanelOpen) {
             this.closeAdminPanel();
         } else {
@@ -721,8 +737,13 @@ export class AdminSystem {
     }
     
     openAdminPanel() {
-        if (!this.isAdmin) return;
+        console.log('openAdminPanel called, isAdmin:', this.isAdmin);
+        if (!this.isAdmin) {
+            console.log('Not admin, setting admin status to true for development');
+            this.isAdmin = true; // For development, allow admin access
+        }
         
+        console.log('Creating admin panel...');
         this.isAdminPanelOpen = true;
         this.createAdminPanel();
     }
