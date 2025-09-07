@@ -2393,10 +2393,10 @@ export class MultiplayerManager {
         playerList.style.borderRadius = '5px';
         playerList.style.border = '1px solid #555';
         playerList.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
-        playerList.style.fontWeight = '500';
-        playerList.style.fontSize = '14px';
+        playerList.style.fontWeight = '400';
+        playerList.style.fontSize = '12px';
         playerList.style.zIndex = '100';
-        playerList.style.minWidth = '200px';
+        playerList.style.minWidth = '180px';
         playerList.style.maxHeight = '300px';
         playerList.style.overflowY = 'auto';
         
@@ -2406,7 +2406,8 @@ export class MultiplayerManager {
         // PLAYERS ONLINE title With live player count displayed in bracke
         const titleText = document.createElement('div');
         titleText.textContent = '🌐 ACTIVE PILOTS';
-        titleText.style.fontWeight = 'bold';
+        titleText.style.fontWeight = '500';
+        titleText.style.fontSize = '13px';
         titleText.style.marginBottom = '5px'; // Reduced margin to be closer to divider
         contentContainer.appendChild(titleText);
         
@@ -2498,18 +2499,19 @@ export class MultiplayerManager {
             const playerItem = document.createElement('div');
             playerItem.style.display = 'flex';
             playerItem.style.alignItems = 'center';
-            playerItem.style.marginBottom = '3px';
+            playerItem.style.marginBottom = '2px';
             playerItem.style.position = 'relative';
-            playerItem.style.padding = '2px';
+            playerItem.style.padding = '1px';
             playerItem.style.borderRadius = '3px';
             playerItem.style.background = player.isSelf ? 'rgba(0,255,0,0.08)' : '';
 
             const rankNumber = document.createElement('span');
             rankNumber.textContent = `${index + 1}.`;
-            rankNumber.style.width = '30px';
+            rankNumber.style.width = '25px';
             rankNumber.style.textAlign = 'center';
             rankNumber.style.color = index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#fff';
-            rankNumber.style.fontWeight = 'bold';
+            rankNumber.style.fontWeight = '500';
+            rankNumber.style.fontSize = '11px';
             rankNumber.style.flexShrink = '0';
 
             const playerColor = document.createElement('span');
@@ -2549,24 +2551,28 @@ export class MultiplayerManager {
             playerName.style.overflow = 'hidden';
             playerName.style.textOverflow = 'ellipsis';
             playerName.style.whiteSpace = 'nowrap';
+            playerName.style.fontSize = '11px';
 
             const score = document.createElement('span');
             score.textContent = player.score;
-            score.style.width = '60px';
+            score.style.width = '45px';
             score.style.textAlign = 'center';
             score.style.color = '#3af';
+            score.style.fontSize = '11px';
 
             const wins = document.createElement('span');
             wins.textContent = player.wins;
-            wins.style.width = '50px';
+            wins.style.width = '35px';
             wins.style.textAlign = 'center';
             wins.style.color = '#4f4';
+            wins.style.fontSize = '11px';
 
             const losses = document.createElement('span');
             losses.textContent = player.losses;
-            losses.style.width = '60px';
+            losses.style.width = '40px';
             losses.style.textAlign = 'center';
             losses.style.color = '#f44';
+            losses.style.fontSize = '11px';
 
             playerItem.appendChild(rankNumber);
             playerItem.appendChild(playerColor);
