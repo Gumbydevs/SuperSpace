@@ -70,8 +70,8 @@ export class Projectile {
                 this.color = '#f00';  // Red color
                 this.trail = true;
                 this.trailColor = '#ff8';
-                // Make missile slower
-                this.speed = speed * 0.55;
+                // Make missile much slower for easier dodging
+                this.speed = speed * 0.45; // Reduced from 0.55 to make them slower
                 // Always launch forward (in the direction of angle)
                 this.velocity = {
                     x: Math.sin(angle) * this.speed,
