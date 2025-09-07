@@ -1,6 +1,7 @@
 export class ShopSystem {
     constructor(player) {
         this.player = player;
+        this.MAX_LOADOUT = 3; // Maximum purchasable weapons per run
         this.shopOpen = false;
         this.currentTab = 'ships'; // 'ships', 'weapons', 'upgrades'
         
@@ -926,6 +927,8 @@ export class ShopSystem {
     }
     
     renderWeaponsTab(container) {
+        // Count owned purchasable weapons (excluding free ones)
+        const ownedCount = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
         this.availableWeapons.forEach(weapon => {
             const weaponCard = document.createElement('div');
             weaponCard.className = 'shop-item';
@@ -1053,10 +1056,8 @@ export class ShopSystem {
                 button.onclick = () => this.selectWeapon(weapon.id);
                 button.style.backgroundColor = '#3f3';
             } else {
-                button.textContent = `Buy: ${weapon.price}`;
-                button.disabled = (this.player.credits || 0) < weapon.price;
-                button.onclick = () => this.buyWeapon(weapon.id);
-                button.style.backgroundColor = '#33f';
+                button.textContent = `Buy (${weapon.price})`;
+                button.disabled = false;
             }
             
             button.style.padding = '8px 16px';
@@ -1070,20 +1071,23 @@ export class ShopSystem {
             
             action.appendChild(button);
             
-            // If this is the current weapon, show indicator
-            if (weapon.id === this.player.currentWeaponId) {
-                const selected = document.createElement('div');
-                selected.textContent = 'SELECTED';
-                selected.style.marginTop = '10px';
-                selected.style.color = '#3f3';
-                selected.style.fontWeight = 'bold';
-                action.appendChild(selected);
-            }
-            
-            weaponCard.appendChild(icon);
-            weaponCard.appendChild(info);
-            weaponCard.appendChild(action);
-            
+            button.onclick = () => {
+                if (!weapon.owned) {
+                   // Prevent buying beyond loadout limit
+                   const currentOwned = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
+                   if (currentOwned >= this.MAX_LOADOUT) return;
+                    if (this.player.credits >= weapon.price) {
+                        this.player.credits -= weapon.price;
+                        weapon.owned = true;
+                        localStorage.setItem(`weapon_${weapon.id}`, 'true');
+                        this.updateShopContent();
+                    }
+                } else {
+                    // Select weapon for Game session
+                    this.player.currentWeaponId = weapon.id;
+                }
+            };
+
             container.appendChild(weaponCard);
         });
     }

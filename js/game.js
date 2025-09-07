@@ -10,6 +10,8 @@ import { MultiplayerManager } from './multiplayer.js';
 import { AchievementSystem } from './achievements.js';
 import { PlayerProfile } from './playerprofile.js';
 import { AdminSystem } from './adminsystem.js';
+import { SkillSystem } from './skillSystem.js';
+import { ChallengeSystem } from './challenges.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -38,6 +40,8 @@ class Game {
         this.achievements = new AchievementSystem(this.player);  // Achievement tracking system
         this.playerProfile = new PlayerProfile(this.player);  // Player statistics and profile
         this.adminSystem = new AdminSystem();  // Admin tools and management
+        this.skillSystem = new SkillSystem(this.player);
+        this.challengeSystem = new ChallengeSystem(this.player);
         this.lastTime = 0;  // Used for calculating delta time between frames
         this.gameState = 'menu';  // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
@@ -625,6 +629,13 @@ class Game {
             // Update world particles for ship destruction effect
             this.world.updateParticles(deltaTime);
         }
+        
+        // Award small XP based on performance, e.g. time alive
+        if (this.gameState === 'playing') {
+            this.skillSystem.addXP(deltaTime * 5); // 5 XP per second
+            this.challengeSystem.check('daily');
+            this.challengeSystem.check('weekly');
+        }
     }
 
     // Here we draw all game elements to the canvas
@@ -1174,6 +1185,10 @@ class Game {
         
         // Reinitialize health bar with new player's health
         this.ui.updateHealthBar(this.player.health, this.player.maxHealth);
+        
+        // Reset skill and challenge systems for new session
+        this.skillSystem.reset();
+        this.challengeSystem.completed = { daily: [], weekly: [] };
     }
 
     // Here we implement the main game loop using requestAnimationFrame
