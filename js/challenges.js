@@ -1,12 +1,14 @@
 // Defines daily and weekly challenges
 export const CHALLENGES = {
     daily: [
-        { id: 'survive_5', description: 'Survive for 5 minutes', reward: 100 },
-        { id: 'destroy_50_asteroids', description: 'Destroy 50 asteroids', reward: 150 }
+        { id: 'survive_5', description: 'Survive for 5 minutes', reward: 200 },
+        { id: 'destroy_50_asteroids', description: 'Destroy 50 asteroids', reward: 150 },
+        { id: 'earn_500_credits', description: 'Earn 500 credits in one session', reward: 100 }
     ],
     weekly: [
-        { id: 'score_10000', description: 'Score 10,000 points', reward: 500 },
-        { id: 'kill_100_enemies', description: 'Kill 100 enemy ships', reward: 500 }
+        { id: 'score_10000', description: 'Score 10,000 points in one game', reward: 500 },
+        { id: 'kill_10_enemies', description: 'Kill 10 enemy ships', reward: 400 },
+        { id: 'play_10_games', description: 'Play 10 games this week', reward: 300 }
     ]
 };
 
@@ -36,17 +38,55 @@ export class ChallengeSystem {
                 case 'destroy_50_asteroids':
                     done = this.profile.stats.asteroidsDestroyed >= 50;
                     break;
+                case 'earn_500_credits':
+                    done = this.profile.stats.totalCreditsEarned >= 500;
+                    break;
                 case 'score_10000':
                     done = this.player.score >= 10000;
                     break;
-                case 'kill_100_enemies':
-                    done = this.profile.stats.totalKills >= 100;
+                case 'kill_10_enemies':
+                    done = this.profile.stats.totalKills >= 10;
+                    break;
+                case 'play_10_games':
+                    done = this.profile.stats.gamesPlayed >= 10;
                     break;
             }
-            if (done) {
+            if (done && !this.completed[challengeType].includes(ch.id)) {
                 this.completed[challengeType].push(ch.id);
                 this.player.credits += ch.reward;
+                // Show notification
+                this.showChallengeComplete(ch, challengeType);
             }
         });
+    }
+
+    showChallengeComplete(challenge, type) {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = 'rgba(0, 60, 30, 0.9)';
+        notification.style.color = '#3f3';
+        notification.style.padding = '15px';
+        notification.style.borderRadius = '5px';
+        notification.style.border = '2px solid #3f3';
+        notification.style.zIndex = '1000';
+        notification.style.fontFamily = "'Orbitron', monospace";
+        notification.style.fontSize = '14px';
+        notification.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
+            <div>${challenge.description}</div>
+            <div style="color: #fc3; margin-top: 5px;">+${challenge.reward} Credits</div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remove notification after 4 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 4000);
     }
 }

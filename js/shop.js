@@ -483,12 +483,14 @@ export class ShopSystem {
         const weaponTab = this.createTab('Weapons', 'weapons');
         const upgradeTab = this.createTab('Upgrades', 'upgrades');
         const skillsTab = this.createTab('Skills', 'skills');
+        const challengesTab = this.createTab('Challenges', 'challenges');
         const appearanceTab = this.createTab('Appearance', 'appearance');
         
         tabs.appendChild(shipTab);
         tabs.appendChild(weaponTab);
         tabs.appendChild(upgradeTab);
         tabs.appendChild(skillsTab);
+        tabs.appendChild(challengesTab);
         tabs.appendChild(appearanceTab);
         shopContainer.appendChild(tabs);
         
@@ -571,6 +573,9 @@ export class ShopSystem {
                 break;
             case 'skills':
                 this.renderSkillsTab(content);
+                break;
+            case 'challenges':
+                this.renderChallengesTab(content);
                 break;
             case 'appearance':
                 this.renderAppearanceTab(content);
@@ -1325,6 +1330,142 @@ export class ShopSystem {
             
             container.appendChild(upgradeCard);
         });
+    }
+    
+    renderChallengesTab(container) {
+        if (!window.game || !window.game.challengeSystem) {
+            container.innerHTML = '<p>Challenge system not available</p>';
+            return;
+        }
+        
+        const challengeSystem = window.game.challengeSystem;
+        
+        // Daily Challenges Section
+        const dailySection = document.createElement('div');
+        dailySection.style.marginBottom = '30px';
+        
+        const dailyHeader = document.createElement('h3');
+        dailyHeader.textContent = 'Daily Challenges';
+        dailyHeader.style.color = '#8cf';
+        dailyHeader.style.marginBottom = '15px';
+        dailyHeader.style.borderBottom = '2px solid #33f';
+        dailyHeader.style.paddingBottom = '5px';
+        
+        dailySection.appendChild(dailyHeader);
+        
+        // Import and display daily challenges
+        import('./challenges.js').then(({ CHALLENGES }) => {
+            CHALLENGES.daily.forEach(challenge => {
+                const challengeCard = this.createChallengeCard(challenge, 'daily', challengeSystem);
+                dailySection.appendChild(challengeCard);
+            });
+        });
+        
+        // Weekly Challenges Section  
+        const weeklySection = document.createElement('div');
+        
+        const weeklyHeader = document.createElement('h3');
+        weeklyHeader.textContent = 'Weekly Challenges';
+        weeklyHeader.style.color = '#8cf';
+        weeklyHeader.style.marginBottom = '15px';
+        weeklyHeader.style.borderBottom = '2px solid #33f';
+        weeklyHeader.style.paddingBottom = '5px';
+        
+        weeklySection.appendChild(weeklyHeader);
+        
+        import('./challenges.js').then(({ CHALLENGES }) => {
+            CHALLENGES.weekly.forEach(challenge => {
+                const challengeCard = this.createChallengeCard(challenge, 'weekly', challengeSystem);
+                weeklySection.appendChild(challengeCard);
+            });
+        });
+        
+        container.appendChild(dailySection);
+        container.appendChild(weeklySection);
+    }
+    
+    createChallengeCard(challenge, type, challengeSystem) {
+        const isCompleted = challengeSystem.completed[type].includes(challenge.id);
+        
+        const challengeCard = document.createElement('div');
+        challengeCard.style.display = 'flex';
+        challengeCard.style.margin = '10px 0';
+        challengeCard.style.padding = '15px';
+        challengeCard.style.backgroundColor = isCompleted ? 'rgba(0, 60, 30, 0.5)' : 'rgba(0, 30, 60, 0.3)';
+        challengeCard.style.borderRadius = '5px';
+        challengeCard.style.border = isCompleted ? '1px solid #3f3' : '1px solid #33f';
+        
+        // Status icon
+        const statusIcon = document.createElement('div');
+        statusIcon.style.width = '40px';
+        statusIcon.style.height = '40px';
+        statusIcon.style.display = 'flex';
+        statusIcon.style.justifyContent = 'center';
+        statusIcon.style.alignItems = 'center';
+        statusIcon.style.marginRight = '15px';
+        statusIcon.style.fontSize = '24px';
+        
+        if (isCompleted) {
+            statusIcon.textContent = '✅';
+            statusIcon.style.color = '#3f3';
+        } else {
+            statusIcon.textContent = '⏳';
+            statusIcon.style.color = '#ff3';
+        }
+        
+        // Info section
+        const info = document.createElement('div');
+        info.style.flex = '1';
+        
+        const description = document.createElement('div');
+        description.textContent = challenge.description;
+        description.style.fontSize = '1em';
+        description.style.color = isCompleted ? '#cfc' : '#ccc';
+        description.style.marginBottom = '5px';
+        
+        const reward = document.createElement('div');
+        reward.textContent = `Reward: ${challenge.reward} credits`;
+        reward.style.fontSize = '0.9em';
+        reward.style.color = '#fc3';
+        
+        // Progress section (you could add progress tracking here)
+        const progress = document.createElement('div');
+        progress.style.fontSize = '0.8em';
+        progress.style.color = '#aaa';
+        progress.style.marginTop = '5px';
+        
+        // Add some basic progress indicators based on challenge type
+        if (!isCompleted) {
+            switch (challenge.id) {
+                case 'survive_5':
+                    const currentSurvival = this.player.playerProfile?.stats?.longestSurvival || 0;
+                    progress.textContent = `Best survival: ${Math.floor(currentSurvival)} / 300 seconds`;
+                    break;
+                case 'destroy_50_asteroids':
+                    const currentAsteroids = this.player.playerProfile?.stats?.asteroidsDestroyed || 0;
+                    progress.textContent = `Asteroids destroyed: ${currentAsteroids} / 50`;
+                    break;
+                case 'score_10000':
+                    progress.textContent = `Current score: ${this.player.score} / 10,000`;
+                    break;
+                case 'kill_100_enemies':
+                    const currentKills = this.player.playerProfile?.stats?.totalKills || 0;
+                    progress.textContent = `Enemy kills: ${currentKills} / 100`;
+                    break;
+            }
+        } else {
+            progress.textContent = 'Completed!';
+            progress.style.color = '#3f3';
+        }
+        
+        info.appendChild(description);
+        info.appendChild(reward);
+        info.appendChild(progress);
+        
+        challengeCard.appendChild(statusIcon);
+        challengeCard.appendChild(info);
+        
+        return challengeCard;
     }
     
     renderAppearanceTab(container) {
