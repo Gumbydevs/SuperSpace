@@ -844,6 +844,22 @@ input[type="range"] {
         top: 70px !important;
     }
     
+    /* Player list mobile adjustments - make it much smaller - MOBILE ONLY */
+    #player-list {
+        max-width: 200px !important;
+        max-height: 200px !important;
+        font-size: 10px !important;
+        padding: 6px !important;
+        top: 80px !important;
+        left: 10px !important;
+        transform: scale(0.8);
+        transform-origin: top left;
+    }
+    
+    #player-list-container {
+        font-size: 9px !important;
+    }
+    
     /* Adjust game UI elements to avoid touch control overlap */
     #score-container, #health-container, #shield-container, 
     #energy-container, #credits-container {
