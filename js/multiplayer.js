@@ -334,7 +334,8 @@ export class MultiplayerManager {
                 color: this.game.player.color || '#0f0',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
-                losses: this.game.player.losses || 0
+                losses: this.game.player.losses || 0,
+                avatar: localStorage.getItem('selectedAvatar') || 'han'
             });
             
             // Show connection indicator
@@ -837,7 +838,8 @@ export class MultiplayerManager {
             color: this.getRandomPlayerColor(),
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
-            losses: this.game.player.losses || 0
+            losses: this.game.player.losses || 0,
+            avatar: localStorage.getItem('selectedAvatar') || 'han'
         };
         
         this.socket.emit('playerJoin', playerData);
@@ -2329,6 +2331,7 @@ export class MultiplayerManager {
                 score: this.game.player?.score || 0,
                 wins: this.game.player?.wins || 0,
                 losses: this.game.player?.losses || 0,
+                avatar: localStorage.getItem('selectedAvatar') || 'han',
                 isSelf: true
             },
             ...Object.values(this.players).filter(p => !p.destroyed).map(p => ({
@@ -2338,6 +2341,7 @@ export class MultiplayerManager {
                 score: p.score || 0,
                 wins: p.wins || 0,
                 losses: p.losses || 0,
+                avatar: p.avatar || 'han',
                 isSelf: false
             }))
         ];
@@ -2395,9 +2399,15 @@ export class MultiplayerManager {
             profilePicture.style.borderRadius = '2px';
             profilePicture.style.marginRight = '5px';
             profilePicture.style.flexShrink = '0';
-            profilePicture.style.backgroundImage = 'url()'; // Placeholder for future profile picture URL
             profilePicture.style.backgroundSize = 'cover';
             profilePicture.style.backgroundPosition = 'center';
+            
+            // Generate small avatar for this player
+            if (window.ui && window.ui.avatarManager) {
+                const avatarDataUrl = window.ui.avatarManager.generateSmallAvatar(player.avatar);
+                profilePicture.style.backgroundImage = `url(${avatarDataUrl})`;
+                profilePicture.style.backgroundColor = 'transparent';
+            }
 
             const playerName = document.createElement('span');
             playerName.textContent = player.isSelf ? `${player.name} (You)` : player.name;

@@ -20,6 +20,7 @@ class Game {
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);  // Creates player ship at center
         this.input = new InputHandler();  // Handles keyboard and mouse input
         this.ui = new UI();  // Manages UI elements on screen
+        window.ui = this.ui;  // Make UI accessible globally for avatar manager
         this.soundManager = new SoundManager();  // Handles all game audio
         this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
         this.lastTime = 0;  // Used for calculating delta time between frames

@@ -184,6 +184,7 @@ io.on('connection', (socket) => {
       losses: playerData.losses || 0,
       credits: 0,
       color: playerData.color || getRandomColor(),
+      avatar: playerData.avatar || 'han',
       projectiles: []
     };
     

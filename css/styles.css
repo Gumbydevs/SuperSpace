@@ -228,6 +228,95 @@ input[type="range"] {
     background: #33f;
 }
 
+/* Avatar Selection Styles */
+.avatar-selection {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.avatar-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    background: rgba(34, 34, 34, 0.6);
+    border: 2px solid rgba(68, 68, 68, 0.8);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.avatar-option:hover {
+    background: rgba(51, 51, 255, 0.15);
+    border-color: #33f;
+    box-shadow: 0 0 12px rgba(51, 51, 255, 0.4);
+}
+
+.avatar-option.selected {
+    background: rgba(51, 51, 255, 0.25);
+    border-color: #4af;
+    box-shadow: 0 0 16px rgba(68, 175, 255, 0.6);
+}
+
+.avatar-canvas {
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-name {
+    font-size: 0.75em;
+    color: #eaf2ff;
+    text-align: center;
+    font-weight: bold;
+}
+
+.avatar-option.selected .avatar-name {
+    color: #4af;
+}
+
+/* Coming Soon Placeholders */
+.avatar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    background: rgba(34, 34, 34, 0.3);
+    border: 2px solid rgba(68, 68, 68, 0.4);
+    border-radius: 6px;
+    opacity: 0.5;
+}
+
+.avatar-canvas-placeholder {
+    width: 48px;
+    height: 48px;
+    background: rgba(100, 100, 100, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    position: relative;
+}
+
+.avatar-canvas-placeholder::before {
+    content: "?";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.avatar-placeholder .avatar-name {
+    font-size: 0.7em;
+    color: rgba(234, 242, 255, 0.4);
+    text-align: center;
+    font-style: italic;
+}
+
 /* Branding styles for main menu */
 #branding {
     position: absolute;

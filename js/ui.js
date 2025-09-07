@@ -1,3 +1,5 @@
+import { AvatarManager } from './avatarmanager.js';
+
 export class UI {
     constructor() {
         this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
@@ -5,6 +7,9 @@ export class UI {
         this.createHudElements();
         // Initially hide gameplay UI elements since we start at menu
         this.setGameplayUIVisibility(false);
+        
+        // Initialize Avatar Manager
+        this.avatarManager = new AvatarManager();
         
         // Add window resize listener to adjust UI when device orientation changes
         window.addEventListener('resize', () => {
@@ -756,7 +761,15 @@ export class UI {
     }
     
     showOptionsOverlay() {
-        if (this.optionsOverlay) this.optionsOverlay.classList.remove('hidden');
+        if (this.optionsOverlay) {
+            this.optionsOverlay.classList.remove('hidden');
+            // Initialize avatar manager after showing overlay
+            if (this.avatarManager) {
+                setTimeout(() => {
+                    this.avatarManager.initialize();
+                }, 50);
+            }
+        }
     }
     hideOptionsOverlay() {
         if (this.optionsOverlay) this.optionsOverlay.classList.add('hidden');
