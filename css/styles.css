@@ -839,25 +839,9 @@ input[type="range"] {
         padding: 80px 10px 140px 10px; /* More padding at top for menu button, bottom for touch controls */
     }
     
-    /* Move top info panel down to avoid mobile menu button */
+    /* Move top info panel down to avoid mobile menu button - MOBILE ONLY */
     #top-info-panel {
         top: 70px !important;
-    }
-    
-    /* Player list mobile adjustments - make it much smaller */
-    #player-list {
-        max-width: 200px !important;
-        max-height: 200px !important;
-        font-size: 10px !important;
-        padding: 6px !important;
-        top: 80px !important;
-        left: 10px !important;
-        transform: scale(0.8);
-        transform-origin: top left;
-    }
-    
-    #player-list-container {
-        font-size: 9px !important;
     }
     
     /* Adjust game UI elements to avoid touch control overlap */
