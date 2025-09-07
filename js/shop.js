@@ -365,7 +365,7 @@ export class ShopSystem {
             this.player.currentWeaponId = currentWeaponId;
             
             // Add all owned weapons to player's weapons array
-            this.player.weapons = [];
+            this.player.weapons = ['Disengaged']; // Always start with Disengaged mode
             this.availableWeapons.forEach(w => {
                 if (w.owned) {
                     this.player.weapons.push(w.name);
@@ -1676,6 +1676,11 @@ export class ShopSystem {
         const weaponName = weapon.name;
         if (!this.player.weapons.includes(weaponName)) {
             this.player.weapons.push(weaponName);
+        }
+        
+        // Ensure Disengaged is always first in the array
+        if (!this.player.weapons.includes('Disengaged')) {
+            this.player.weapons.unshift('Disengaged');
         }
         
         // Select the newly purchased weapon
