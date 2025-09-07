@@ -175,196 +175,204 @@ export class AvatarManager {
     }
 
     drawAce(ctx, size) {
-        // Cool guy pilot - Ace (24x24)
+        // Cool guy pilot - Ace (scalable)
+        const scale = size / 24; // Base size is 24, scale accordingly
+        
         ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(0, 0, size, size);
         
         // Face
         ctx.fillStyle = '#f4c2a1';
-        ctx.fillRect(7, 6, 10, 12);
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 12*scale);
         
         // Brown hair
         ctx.fillStyle = '#4a3425';
-        ctx.fillRect(6, 4, 12, 4);
-        ctx.fillRect(5, 5, 2, 3);
-        ctx.fillRect(17, 5, 2, 3);
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 4*scale);
+        ctx.fillRect(5*scale, 5*scale, 2*scale, 3*scale);
+        ctx.fillRect(17*scale, 5*scale, 2*scale, 3*scale);
         
         // Eyes
         ctx.fillStyle = '#4a90e2';
-        ctx.fillRect(8, 8, 1, 1);
-        ctx.fillRect(14, 8, 1, 1);
+        ctx.fillRect(8*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Nose
         ctx.fillStyle = '#e6a478';
-        ctx.fillRect(11, 10, 1, 1);
+        ctx.fillRect(11*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Mouth
         ctx.fillStyle = '#8b4513';
-        ctx.fillRect(10, 12, 3, 1);
+        ctx.fillRect(10*scale, 12*scale, 3*scale, Math.max(1, 1*scale));
         
         // Jacket
         ctx.fillStyle = '#8b4513';
-        ctx.fillRect(4, 17, 16, 7);
+        ctx.fillRect(4*scale, 17*scale, 16*scale, 7*scale);
         ctx.fillStyle = '#654321';
-        ctx.fillRect(6, 19, 12, 5);
+        ctx.fillRect(6*scale, 19*scale, 12*scale, 5*scale);
     }
 
     drawRiley(ctx, size) {
-        // Tough female commander - Riley (24x24)
+        // Tough female commander - Riley (scalable)
+        const scale = size / 24;
+        
         ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(0, 0, size, size);
         
         // Face (feminine)
         ctx.fillStyle = '#f2c2a1';
-        ctx.fillRect(7, 6, 10, 12);
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 12*scale);
         
         // Blonde hair (shoulder length)
         ctx.fillStyle = '#d4af37';
-        ctx.fillRect(6, 4, 12, 5);
-        ctx.fillRect(5, 5, 2, 4);
-        ctx.fillRect(17, 5, 2, 4);
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 5*scale);
+        ctx.fillRect(5*scale, 5*scale, 2*scale, 4*scale);
+        ctx.fillRect(17*scale, 5*scale, 2*scale, 4*scale);
         // Highlights
         ctx.fillStyle = '#f0d858';
-        ctx.fillRect(8, 4, 1, 3);
-        ctx.fillRect(12, 4, 1, 3);
-        ctx.fillRect(15, 4, 1, 3);
+        ctx.fillRect(8*scale, 4*scale, Math.max(1, 1*scale), 3*scale);
+        ctx.fillRect(12*scale, 4*scale, Math.max(1, 1*scale), 3*scale);
+        ctx.fillRect(15*scale, 4*scale, Math.max(1, 1*scale), 3*scale);
         
         // Eyes (larger, feminine)
         ctx.fillStyle = '#2d5016';
-        ctx.fillRect(8, 8, 1, 1);
-        ctx.fillRect(14, 8, 1, 1);
+        ctx.fillRect(8*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Eyebrows (arched)
         ctx.fillStyle = '#b8941f';
-        ctx.fillRect(8, 7, 2, 1);
-        ctx.fillRect(14, 7, 2, 1);
+        ctx.fillRect(8*scale, 7*scale, 2*scale, Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 7*scale, 2*scale, Math.max(1, 1*scale));
         
         // Nose (smaller)
         ctx.fillStyle = '#e6a478';
-        ctx.fillRect(11, 10, 1, 1);
+        ctx.fillRect(11*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Mouth
         ctx.fillStyle = '#8b4513';
-        ctx.fillRect(10, 12, 3, 1);
+        ctx.fillRect(10*scale, 12*scale, 3*scale, Math.max(1, 1*scale));
         
         // Military uniform
         ctx.fillStyle = '#4a5d23';
-        ctx.fillRect(4, 17, 16, 7);
+        ctx.fillRect(4*scale, 17*scale, 16*scale, 7*scale);
         ctx.fillStyle = '#3a4d1a';
-        ctx.fillRect(6, 19, 12, 5);
+        ctx.fillRect(6*scale, 19*scale, 12*scale, 5*scale);
         
         // Rank insignia
         ctx.fillStyle = '#ffd700';
-        ctx.fillRect(7, 20, 1, 1);
-        ctx.fillRect(9, 20, 1, 1);
-        ctx.fillRect(15, 20, 1, 1);
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(9*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
     }
 
     drawMarvin(ctx, size) {
-        // AI Unit - Marvin (24x24)
+        // AI Unit - Marvin (scalable)
+        const scale = size / 24;
+        
         ctx.fillStyle = '#0f0f23';
         ctx.fillRect(0, 0, size, size);
         
         // Head (metallic)
         ctx.fillStyle = '#c0c0c0';
-        ctx.fillRect(6, 4, 12, 14);
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 14*scale);
         ctx.fillStyle = '#a0a0a0';
-        ctx.fillRect(7, 5, 10, 12);
+        ctx.fillRect(7*scale, 5*scale, 10*scale, 12*scale);
         
         // Visor
         ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(8, 6, 8, 6);
+        ctx.fillRect(8*scale, 6*scale, 8*scale, 6*scale);
         
         // Eyes (glowing red)
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(9, 7, 2, 2);
-        ctx.fillRect(13, 7, 2, 2);
+        ctx.fillRect(9*scale, 7*scale, 2*scale, 2*scale);
+        ctx.fillRect(13*scale, 7*scale, 2*scale, 2*scale);
         
         // Mouth grille
         ctx.fillStyle = '#666';
-        ctx.fillRect(9, 11, 6, 2);
+        ctx.fillRect(9*scale, 11*scale, 6*scale, 2*scale);
         ctx.fillStyle = '#333';
-        ctx.fillRect(10, 11, 1, 1);
-        ctx.fillRect(12, 11, 1, 1);
-        ctx.fillRect(14, 11, 1, 1);
+        ctx.fillRect(10*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(12*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Antenna
         ctx.fillStyle = '#888';
-        ctx.fillRect(11, 2, 2, 3);
+        ctx.fillRect(11*scale, 2*scale, 2*scale, 3*scale);
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(11, 2, 2, 1);
+        ctx.fillRect(11*scale, 2*scale, 2*scale, Math.max(1, 1*scale));
         
         // Body
         ctx.fillStyle = '#808080';
-        ctx.fillRect(5, 17, 14, 7);
+        ctx.fillRect(5*scale, 17*scale, 14*scale, 7*scale);
         ctx.fillStyle = '#696969';
-        ctx.fillRect(6, 18, 12, 6);
+        ctx.fillRect(6*scale, 18*scale, 12*scale, 6*scale);
         
         // Control lights
         ctx.fillStyle = '#00ff00';
-        ctx.fillRect(7, 20, 1, 1);
-        ctx.fillRect(9, 20, 1, 1);
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(9*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         ctx.fillStyle = '#ffff00';
-        ctx.fillRect(11, 20, 1, 1);
+        ctx.fillRect(11*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         ctx.fillStyle = '#ff0000';
-        ctx.fillRect(13, 20, 1, 1);
-        ctx.fillRect(15, 20, 1, 1);
+        ctx.fillRect(13*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
     }
 
     drawGorf(ctx, size) {
-        // Green alien pilot - Gorf (24x24)
+        // Green alien pilot - Gorf (scalable)
+        const scale = size / 24;
+        
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, size, size);
         
         // Head (large alien)
         ctx.fillStyle = '#4a7c59';
-        ctx.fillRect(6, 2, 12, 16);
+        ctx.fillRect(6*scale, 2*scale, 12*scale, 16*scale);
         ctx.fillStyle = '#5a8c69';
-        ctx.fillRect(7, 3, 10, 14);
+        ctx.fillRect(7*scale, 3*scale, 10*scale, 14*scale);
         
         // Large alien eyes
         ctx.fillStyle = '#000';
-        ctx.fillRect(8, 6, 3, 4);
-        ctx.fillRect(13, 6, 3, 4);
+        ctx.fillRect(8*scale, 6*scale, 3*scale, 4*scale);
+        ctx.fillRect(13*scale, 6*scale, 3*scale, 4*scale);
         ctx.fillStyle = '#2d5d3d';
-        ctx.fillRect(8, 6, 2, 3);
-        ctx.fillRect(13, 6, 2, 3);
+        ctx.fillRect(8*scale, 6*scale, 2*scale, 3*scale);
+        ctx.fillRect(13*scale, 6*scale, 2*scale, 3*scale);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(8, 6, 1, 1);
-        ctx.fillRect(13, 6, 1, 1);
+        ctx.fillRect(8*scale, 6*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(13*scale, 6*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Nose slits
         ctx.fillStyle = '#3a6c49';
-        ctx.fillRect(11, 10, 1, 1);
-        ctx.fillRect(12, 10, 1, 1);
+        ctx.fillRect(11*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(12*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Small mouth
         ctx.fillStyle = '#2d5d3d';
-        ctx.fillRect(10, 13, 3, 1);
+        ctx.fillRect(10*scale, 13*scale, 3*scale, Math.max(1, 1*scale));
         
         // Elongated skull
         ctx.fillStyle = '#4a7c59';
-        ctx.fillRect(7, 1, 10, 3);
-        ctx.fillRect(8, 0, 8, 2);
+        ctx.fillRect(7*scale, 1*scale, 10*scale, 3*scale);
+        ctx.fillRect(8*scale, 0*scale, 8*scale, 2*scale);
         
         // Alien uniform
         ctx.fillStyle = '#2d4a3a';
-        ctx.fillRect(5, 17, 14, 7);
+        ctx.fillRect(5*scale, 17*scale, 14*scale, 7*scale);
         ctx.fillStyle = '#3a5a4a';
-        ctx.fillRect(6, 18, 12, 6);
+        ctx.fillRect(6*scale, 18*scale, 12*scale, 6*scale);
         
         // Tech details
         ctx.fillStyle = '#4a7c59';
-        ctx.fillRect(7, 20, 1, 1);
-        ctx.fillRect(9, 20, 1, 1);
-        ctx.fillRect(11, 20, 1, 1);
-        ctx.fillRect(13, 20, 1, 1);
-        ctx.fillRect(15, 20, 1, 1);
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(9*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(11*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(13*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
         // Neck ridges
         ctx.fillStyle = '#3a6c49';
-        ctx.fillRect(9, 15, 6, 1);
-        ctx.fillRect(10, 16, 4, 1);
+        ctx.fillRect(9*scale, 15*scale, 6*scale, Math.max(1, 1*scale));
+        ctx.fillRect(10*scale, 16*scale, 4*scale, Math.max(1, 1*scale));
     }
 
     getSelectedAvatar() {

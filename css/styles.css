@@ -327,18 +327,20 @@ input[type="range"] {
 
 .change-pilot-btn {
     padding: 8px 16px;
-    background: linear-gradient(135deg, #4a90e2, #357abd);
-    border: none;
+    background-color: #33f;
+    border: 2px solid #4af;
     border-radius: 5px;
-    color: white;
+    color: #fff;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-family: 'Orbitron', monospace;
 }
 
 .change-pilot-btn:hover {
-    background: linear-gradient(135deg, #357abd, #2a5a8a);
-    box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+    background-color: #55f;
+    border-color: #6cf;
+    box-shadow: 0 0 15px rgba(68, 175, 255, 0.5);
 }
 
 /* Avatar Modal Styles */
@@ -385,7 +387,7 @@ input[type="range"] {
 
 .authenticate-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #00ff41, #00cc33);
+    background-color: #33f;
     border: none;
     border-radius: 5px;
     color: white;
@@ -395,13 +397,13 @@ input[type="range"] {
 }
 
 .authenticate-btn:hover {
-    background: linear-gradient(135deg, #00cc33, #009926);
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    background-color: #55f;
+    box-shadow: 0 0 10px rgba(68, 175, 255, 0.5);
 }
 
 .cancel-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #ff4444, #cc3333);
+    background-color: #666;
     border: none;
     border-radius: 5px;
     color: white;
@@ -411,8 +413,8 @@ input[type="range"] {
 }
 
 .cancel-btn:hover {
-    background: linear-gradient(135deg, #cc3333, #992626);
-    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    background-color: #888;
+    box-shadow: 0 0 10px rgba(136, 136, 136, 0.5);
 }
 .avatar-placeholder {
     display: flex;
