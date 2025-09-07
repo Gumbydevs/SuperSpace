@@ -841,23 +841,23 @@ input[type="range"] {
     
     /* Move top info panel down to avoid mobile menu button - MOBILE ONLY */
     #top-info-panel {
-        top: 70px !important;
+        top: 70px;
     }
     
     /* Player list mobile adjustments - make it much smaller - MOBILE ONLY */
     #player-list {
-        max-width: 200px !important;
-        max-height: 200px !important;
-        font-size: 10px !important;
-        padding: 6px !important;
-        top: 80px !important;
-        left: 10px !important;
+        max-width: 200px;
+        max-height: 200px;
+        font-size: 10px;
+        padding: 6px;
+        top: 80px;
+        left: 10px;
         transform: scale(0.8);
         transform-origin: top left;
     }
     
     #player-list-container {
-        font-size: 9px !important;
+        font-size: 9px;
     }
     
     /* Adjust game UI elements to avoid touch control overlap */
@@ -869,24 +869,24 @@ input[type="range"] {
     
     /* Minimap adjustments for mobile */
     #minimap-container {
-        width: 90px !important;
-        height: 90px !important;
-        bottom: 150px !important; /* Move up to avoid touch controls */
+        width: 90px;
+        height: 90px;
+        bottom: 150px; /* Move up to avoid touch controls */
         right: 10px;
-        border: 2px solid #555 !important;
+        border: 2px solid #555;
     }
     
     /* Status panel adjustments for mobile */
     #status-panel {
-        bottom: 160px !important; /* Move up to avoid touch controls */
+        bottom: 160px; /* Move up to avoid touch controls */
         left: 10px;
-        transform: scale(0.9) !important;
+        transform: scale(0.9);
         transform-origin: bottom left;
-        background-color: rgba(0, 0, 0, 0.8) !important;
-        border: 2px solid #444 !important;
-        box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
-        z-index: 1001 !important;
-        max-width: 200px !important;
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 2px solid #444;
+        box-shadow: 0 0 10px rgba(0, 100, 255, 0.6);
+        z-index: 1001;
+        max-width: 200px;
     }
     
     /* Touch controls styling */
@@ -1180,23 +1180,22 @@ input[type="range"] {
     
     /* Status panel adjustments for small mobile */
     #status-panel {
-        bottom: 150px !important;
+        bottom: 150px;
         left: 5px;
-        transform: scale(0.85) !important;
+        transform: scale(0.85);
     }
     
     /* Player list even smaller on small mobile */
     #player-list {
-        max-width: 160px !important;
-        max-height: 150px !important;
-        font-size: 8px !important;
-        padding: 4px !important;
-        transform: scale(0.7) !important;
-        top: 65px !important;
+        max-width: 160px;
+        max-height: 150px;
+        font-size: 8px;
+        padding: 4px;
+        transform: scale(0.7);
     }
     
     #player-list-container {
-        font-size: 7px !important;
+        font-size: 7px;
     }
 }
 
