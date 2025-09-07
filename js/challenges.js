@@ -23,6 +23,8 @@ export class ChallengeSystem {
     }
 
     check(challengeType) {
+        // Ensure profile stats are available
+        if (!this.profile || !this.profile.stats) return;
         const list = CHALLENGES[challengeType];
         list.forEach(ch => {
             if (this.completed[challengeType].includes(ch.id)) return;
