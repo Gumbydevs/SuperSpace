@@ -512,9 +512,13 @@ export class Player {
             this.fireCooldown -= deltaTime;
         }
 
-        // Here we regenerate energy over time
+        // Here we regenerate energy over time - faster when weapons disengaged
         if (this.energy < this.maxEnergy) {
-            this.energy = Math.min(this.maxEnergy, this.energy + this.energyRegen * deltaTime);
+            let energyRegenRate = this.energyRegen;
+            if (this.currentWeapon === 'Disengaged') {
+                energyRegenRate = this.energyRegen * 1.5; // 50% faster energy regen when disengaged
+            }
+            this.energy = Math.min(this.maxEnergy, this.energy + energyRegenRate * deltaTime);
         }
         
         // Update energy bar display in UI
