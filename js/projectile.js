@@ -128,6 +128,15 @@ export class Projectile {
                 this.speed = 0;
                 this.velocity = { x: 0, y: 0 };
                 break;
+            case 'railgun':
+                // High-velocity electromagnetic spike - long and thin
+                this.width = 3;
+                this.height = 30; // 3x longer than default (was 10)
+                this.color = '#aff'; // Light blue-white color
+                this.glow = true;
+                this.trail = true;
+                this.trailColor = '#6df';
+                break;
             default:
                 // Default fallback appearance
                 this.width = 3;
@@ -590,6 +599,35 @@ export class Projectile {
                     ctx.fillStyle = '#ff6600';
                     ctx.beginPath();
                     ctx.arc(this.width/4, this.height/2 + 2, this.width/6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+                
+            case 'railgun':
+                // Draw a long, thin electromagnetic spike
+                ctx.fillStyle = this.color;
+                
+                // Main spike body - longer and thinner
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                
+                // Add bright glow effect
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                
+                // Add a brighter core
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-this.width/4, -this.height/2, this.width/2, this.height);
+                
+                // Add electrical sparks along the spike
+                const sparkCount = 3;
+                for (let i = 0; i < sparkCount; i++) {
+                    const sparkY = (i - 1) * (this.height / 3);
+                    const sparkSize = 1 + Math.random() * 2;
+                    
+                    ctx.fillStyle = `rgba(175, 255, 255, ${0.7 + Math.random() * 0.3})`;
+                    ctx.beginPath();
+                    ctx.arc(Math.random() * 4 - 2, sparkY, sparkSize, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 break;

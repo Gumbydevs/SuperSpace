@@ -220,7 +220,7 @@ export class ShopSystem {
                 stats: {
                     damage: 120, // Very high damage
                     cooldown: 0.8, // Slow reload for charge time
-                    speed: 1200, // Very fast projectile
+                    speed: 2000, // Much faster projectile (was 1200)
                     range: 900,
                     energyCost: 40,
                     penetrating: true, // Goes through multiple targets
