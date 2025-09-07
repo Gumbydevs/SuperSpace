@@ -1007,6 +1007,30 @@ export class MultiplayerManager {
                 player.projectiles = player.projectiles.filter(projectile => {
                     // Update projectile if it has an update method
                     if (projectile.update) {
+                        // Check collision with local player (only if not destroyed and not the owner)
+                        if (
+                            this.game.player &&
+                            !this.game.player.destroyed &&
+                            player.id !== this.playerId &&
+                            !projectile.hasExploded
+                        ) {
+                            // Simple circle collision (can be improved)
+                            const dx = this.game.player.x - projectile.x;
+                            const dy = this.game.player.y - projectile.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const hitRadius = (this.game.player.radius || 18) + (projectile.size || 6);
+                            if (dist < hitRadius) {
+                                // Register hit: send to server
+                                this.sendProjectileHit(
+                                    this.playerId,
+                                    projectile.x,
+                                    projectile.y,
+                                    projectile.damage
+                                );
+                                projectile.hasExploded = true;
+                                return false; // Remove projectile
+                            }
+                        }
                         return projectile.update(0.016, this.game.world); // 60 FPS approximation
                     } else {
                         // Legacy update for basic projectiles

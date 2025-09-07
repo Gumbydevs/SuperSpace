@@ -315,6 +315,89 @@ io.on('connection', (socket) => {
       type: data.type || 'rocket'
     });
   });
+
+  // Handle direct projectile hits on players
+  socket.on('projectileHit', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    console.log(`Projectile hit from ${socket.id} on target ${data.targetId} for ${data.damage} damage`);
+    
+    // Validate the target exists
+    if (!gameState.players[data.targetId]) {
+      console.log(`Invalid target ${data.targetId} for projectile hit`);
+      return;
+    }
+    
+    const targetPlayer = gameState.players[data.targetId];
+    const attackerPlayer = gameState.players[socket.id];
+    
+    // Apply damage logic (same as the hit handler but for players)
+    const oldHealth = targetPlayer.health;
+    const oldShield = targetPlayer.shield;
+    let remainingDamage = data.damage;
+    
+    // Apply damage to shields first
+    if (targetPlayer.shield > 0) {
+      if (remainingDamage <= targetPlayer.shield) {
+        targetPlayer.shield -= remainingDamage;
+        remainingDamage = 0;
+      } else {
+        remainingDamage -= targetPlayer.shield;
+        targetPlayer.shield = 0;
+      }
+    }
+    
+    // Apply remaining damage to health
+    if (remainingDamage > 0) {
+      targetPlayer.health -= remainingDamage;
+      if (targetPlayer.health < 0) {
+        targetPlayer.health = 0;
+      }
+    }
+    
+    console.log(`Player ${targetPlayer.name} hit by ${attackerPlayer?.name || 'unknown'} for ${data.damage} damage. Shield: ${oldShield} -> ${targetPlayer.shield}, Health: ${oldHealth} -> ${targetPlayer.health}`);
+    
+    // Broadcast health update to all clients immediately
+    io.emit('playerHealthUpdate', {
+      id: data.targetId,
+      health: targetPlayer.health,
+      shield: targetPlayer.shield
+    });
+    
+    // Broadcast the hit effect to all clients including the target
+    io.emit('projectileHit', {
+      targetId: data.targetId,
+      position: data.position,
+      damage: data.damage,
+      attackerId: socket.id
+    });
+    
+    // Check if player was destroyed
+    if (targetPlayer.health <= 0) {
+      targetPlayer.losses += 1;
+      console.log(`Player ${targetPlayer.name} was destroyed by ${attackerPlayer?.name || 'unknown'}!`);
+      
+      // Award points to attacker
+      if (attackerPlayer) {
+        attackerPlayer.score += 500;
+        attackerPlayer.credits += 250;
+        
+        // Broadcast attacker stats update
+        io.emit('playerUpdate', {
+          id: socket.id,
+          score: attackerPlayer.score,
+          credits: attackerPlayer.credits
+        });
+      }
+      
+      // Broadcast player destroyed event
+      io.emit('playerDestroyed', {
+        playerId: data.targetId,
+        attackerId: socket.id
+      });
+    }
+  });
   
   // Player hit something (asteroid, enemy, etc.)
   socket.on('hit', (data) => {
