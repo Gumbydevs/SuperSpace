@@ -231,7 +231,7 @@ export class ShopSystem {
                 id: 'quantum',
                 name: 'Quantum Disruptor',
                 description: 'Advanced weapon that phases through obstacles and disables enemy shields.',
-                price: 15000,
+                price: 22000,
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
                     damage: 90, // Even higher
