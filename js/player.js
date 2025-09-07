@@ -336,6 +336,12 @@ export class Player {
                 this.weaponIndex = (this.weaponIndex + 1) % this.weapons.length;
             }
             this.currentWeapon = this.weapons[this.weaponIndex];
+            // If switching away from Mining Laser, deactivate it
+            if (previousWeapon === 'Mining Laser' && this.currentWeapon !== 'Mining Laser') {
+                if (this.miningBeam && this.miningBeam.active) {
+                    this.miningBeam.active = false;
+                }
+            }
             
             // Update currentWeaponId to match the switched weapon
             // Map weapon display names to shop system IDs
