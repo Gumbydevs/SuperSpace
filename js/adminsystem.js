@@ -523,27 +523,38 @@ export class AdminSystem {
         players.forEach(player => {
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
-            
             const nameStyle = player.isLocal ? 'color: #4f4; font-weight: bold;' : 'color: #fff;';
-            
+            let actionsHtml = '';
+            if (player.isLocal) {
+                actionsHtml = '<button onclick="window.admin.resetPlayerStats(\'' + player.id + '\')" style="background: #f44; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Reset</button>';
+            } else {
+                actionsHtml = `<button onclick=\"window.admin.kickPlayer('${player.id}')\" style=\"background: #f44; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;\">Kick</button>`;
+            }
             row.innerHTML = `
                 <td style="padding: 8px; ${nameStyle}">${player.name} ${player.isLocal ? '(You)' : ''}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.score.toLocaleString()}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.wins}/${player.losses}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.ship}</td>
                 <td style="padding: 8px; text-align: center; color: ${player.health > 50 ? '#4f4' : '#f44'};">${player.health}</td>
-                <td style="padding: 8px; text-align: center;">
-                    ${player.isLocal ? 
-                        '<button onclick="window.admin.resetPlayerStats(\'' + player.id + '\')" style="background: #f44; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Reset</button>' :
-                        '<span style="color: #888;">N/A</span>'
-                    }
-                </td>
+                <td style="padding: 8px; text-align: center;">${actionsHtml}</td>
             `;
-            
             table.appendChild(row);
         });
+    // Kick a player by socket ID
+    kickPlayer(playerId) {
+        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.socket) return;
+        if (!confirm('Are you sure you want to kick this player?')) return;
+        window.game.multiplayer.socket.emit('adminKickPlayer', { targetId: playerId });
+    }
         
         return table;
+    }
+
+    // Kick a player by socket ID
+    kickPlayer(playerId) {
+        if (!window.game || !window.game.multiplayer || !window.game.multiplayer.socket) return;
+        if (!confirm('Are you sure you want to kick this player?')) return;
+        window.game.multiplayer.socket.emit('adminKickPlayer', { targetId: playerId });
     }
     
     getServerStatus() {

@@ -144,6 +144,16 @@ setInterval(() => {
 
 // Connection handling
 io.on('connection', (socket) => {
+  // Admin: Kick a player by socket ID
+  socket.on('adminKickPlayer', (data) => {
+    if (!data || !data.targetId) return;
+    const targetSocket = io.sockets.sockets.get(data.targetId);
+    if (targetSocket) {
+      targetSocket.emit('kickedByAdmin');
+      targetSocket.disconnect(true);
+      console.log(`Admin kicked player: ${data.targetId}`);
+    }
+  });
   console.log(`Player connected: ${socket.id}`);
   console.log(`Connection origin: ${socket.request.headers.origin}`);
   console.log(`Connection referer: ${socket.request.headers.referer}`);

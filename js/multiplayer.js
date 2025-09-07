@@ -37,6 +37,15 @@ export class MultiplayerManager {
         
         // Preload the font for kill announcements
         this.killAnnouncer.preloadFont();
+
+        // Listen for admin kick event
+        if (this.socket) {
+            this.socket.on('kickedByAdmin', () => {
+                alert('You have been kicked by an admin.');
+                if (this.socket) this.socket.disconnect();
+                window.location.reload();
+            });
+        }
     }
 
     connect(serverUrl = 'http://localhost:3000') {
