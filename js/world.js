@@ -634,10 +634,11 @@
                             
                             // Chance to spawn powerup
                             if (Math.random() < 0.3) {
+                                const powerupCountBefore = this.powerups.length;
                                 this.spawnPowerup(asteroid.x, asteroid.y);
-                                // Find the newly spawned powerup
-                                const newPowerup = this.powerups[this.powerups.length - 1];
-                                if (newPowerup) {
+                                // Get the newly spawned powerup (it was added to the end)
+                                if (this.powerups.length > powerupCountBefore) {
+                                    const newPowerup = this.powerups[this.powerups.length - 1];
                                     powerupsCreated.push({
                                         x: newPowerup.x,
                                         y: newPowerup.y,
@@ -647,9 +648,11 @@
                             }
                         } else if (Math.random() < 0.1) {
                             // Small chance for small asteroids to spawn powerup
+                            const powerupCountBefore = this.powerups.length;
                             this.spawnPowerup(asteroid.x, asteroid.y);
-                            const newPowerup = this.powerups[this.powerups.length - 1];
-                            if (newPowerup) {
+                            // Get the newly spawned powerup (it was added to the end)
+                            if (this.powerups.length > powerupCountBefore) {
+                                const newPowerup = this.powerups[this.powerups.length - 1];
                                 powerupsCreated.push({
                                     x: newPowerup.x,
                                     y: newPowerup.y,
@@ -1140,21 +1143,27 @@
         }
     }
 
-    spawnPowerup(x, y) {
-        // Here we define possible powerup types and their spawn probability
-        const types = ['health', 'shield', 'energy', 'weapon', 'credits'];
-        const weights = [0.3, 0.2, 0.2, 0.2, 0.1]; // Health has highest chance
-
-        // Here we use weighted random selection
-        let sum = 0;
-        const r = Math.random();
+    spawnPowerup(x, y, type = null) {
         let selectedType;
+        
+        if (type) {
+            // Use the provided type (for multiplayer sync)
+            selectedType = type;
+        } else {
+            // Generate random type (original behavior)
+            const types = ['health', 'shield', 'energy', 'weapon', 'credits'];
+            const weights = [0.3, 0.2, 0.2, 0.2, 0.1]; // Health has highest chance
 
-        for (let i = 0; i < types.length; i++) {
-            sum += weights[i];
-            if (r <= sum) {
-                selectedType = types[i];
-                break;
+            // Here we use weighted random selection
+            let sum = 0;
+            const r = Math.random();
+
+            for (let i = 0; i < types.length; i++) {
+                sum += weights[i];
+                if (r <= sum) {
+                    selectedType = types[i];
+                    break;
+                }
             }
         }
 
