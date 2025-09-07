@@ -309,6 +309,10 @@ export class MultiplayerManager {
             if (data.id !== this.playerId && this.players[data.id]) {
                 // console.log(`Updating player ${this.players[data.id].name} health from ${this.players[data.id].health} to ${data.health}`);
                 this.players[data.id].health = data.health;
+                // Also update shield if provided
+                if (data.shield !== undefined) {
+                    this.players[data.id].shield = data.shield;
+                }
             }
         });
 
@@ -1660,15 +1664,19 @@ export class MultiplayerManager {
         // Don't increment losses locally - server handles all loss counting
         // This prevents double loss counts
         
-        // Send death event to server for asteroid deaths
+        // Send death event to server 
         if (attackerId === 'asteroid') {
             // Server will handle the announcement broadcast to all players
             this.socket.emit('playerDestroyedByAsteroid', {
                 playerId: this.playerId
             });
+        } else if (attackerId && attackerId !== this.playerId) {
+            // Player vs player death - notify server for point/stat tracking
+            this.socket.emit('playerDestroyed', {
+                playerId: this.playerId,
+                attackerId: attackerId
+            });
         }
-        // Note: Player vs player deaths are handled via server's 'playerDestroyed' event
-        // so we don't need to emit anything here to avoid double announcements
         
         // Store current credits value
         const currentCredits = this.game.player.credits;

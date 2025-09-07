@@ -418,23 +418,43 @@ io.on('connection', (socket) => {
         attackerId: socket.id
       });
       
-      // Update target player health
+      // Update target player health and shields (same logic as client takeDamage)
       if (gameState.players[data.targetId]) {
-        const oldHealth = gameState.players[data.targetId].health;
-        gameState.players[data.targetId].health -= data.damage;
-        const newHealth = gameState.players[data.targetId].health;
+        const player = gameState.players[data.targetId];
+        const oldHealth = player.health;
+        const oldShield = player.shield;
+        let remainingDamage = data.damage;
         
-        console.log(`Player ${gameState.players[data.targetId].name} took ${data.damage} damage. Health: ${oldHealth} -> ${newHealth}`);
+        // Apply damage to shields first (same as client logic)
+        if (player.shield > 0) {
+          if (remainingDamage <= player.shield) {
+            // Shield absorbs all damage
+            player.shield -= remainingDamage;
+            remainingDamage = 0;
+          } else {
+            // Shield depleted, remaining damage goes to health
+            remainingDamage -= player.shield;
+            player.shield = 0;
+          }
+        }
         
-        // Broadcast updated health to all clients
-        console.log(`Broadcasting health update for player ${data.targetId}: health = ${newHealth}`);
+        // Apply remaining damage to health
+        if (remainingDamage > 0) {
+          player.health -= remainingDamage;
+        }
+        
+        console.log(`Player ${player.name} took ${data.damage} damage. Shield: ${oldShield} -> ${player.shield}, Health: ${oldHealth} -> ${player.health}`);
+        
+        // Broadcast updated health and shield to all clients
+        console.log(`Broadcasting health/shield update for player ${data.targetId}: health = ${player.health}, shield = ${player.shield}`);
         io.emit('playerHealthUpdate', {
           id: data.targetId,
-          health: gameState.players[data.targetId].health
+          health: player.health,
+          shield: player.shield
         });
         
         // Check if player is destroyed
-        if (gameState.players[data.targetId].health <= 0) {
+        if (player.health <= 0) {
           io.emit('playerDestroyed', {
             playerId: data.targetId,
             attackerId: socket.id
@@ -444,30 +464,14 @@ io.on('connection', (socket) => {
           if (gameState.players[socket.id]) {
             gameState.players[socket.id].score += 500; // Points for defeating a player
             gameState.players[socket.id].credits += 250; // Credits for defeating a player
-            gameState.players[socket.id].wins += 1; // Increment wins for attacker
-            console.log(`Player ${gameState.players[socket.id].name} got a win! Wins: ${gameState.players[socket.id].wins}`);
-            // Broadcast updated stats to all clients
-            console.log(`Broadcasting attacker stats update for ${socket.id}`);
-            io.emit('playerStatsUpdate', {
+            
+            console.log(`Player ${socket.id} destroyed player ${data.targetId}. Awarded 500 points and 250 credits.`);
+            
+            // Broadcast updated attacker stats
+            io.emit('playerUpdate', {
               id: socket.id,
               score: gameState.players[socket.id].score,
-              wins: gameState.players[socket.id].wins,
-              losses: gameState.players[socket.id].losses
-            });
-            console.log(`Player ${gameState.players[socket.id].name} destroyed ${gameState.players[data.targetId].name}`);
-          }
-          
-          // Increment losses for the destroyed player
-          if (gameState.players[data.targetId]) {
-            gameState.players[data.targetId].losses += 1;
-            console.log(`Player ${gameState.players[data.targetId].name} got a loss! Losses: ${gameState.players[data.targetId].losses}`);
-            // Broadcast updated stats to all clients
-            console.log(`Broadcasting victim stats update for ${data.targetId}`);
-            io.emit('playerStatsUpdate', {
-              id: data.targetId,
-              score: gameState.players[data.targetId].score,
-              wins: gameState.players[data.targetId].wins,
-              losses: gameState.players[data.targetId].losses
+              credits: gameState.players[socket.id].credits
             });
           }
         }
