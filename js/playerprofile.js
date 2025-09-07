@@ -277,6 +277,45 @@ export class PlayerProfile {
             `;
             profileWindow.appendChild(achievementSection);
         }
+
+        // Reset Progress Section
+        const resetSection = document.createElement('div');
+        resetSection.style.cssText = `
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 100, 100, 0.1);
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            border-radius: 8px;
+        `;
+        resetSection.innerHTML = '<h3 style="color: #ff6b6b; margin: 0 0 15px 0;">⚠️ Danger Zone</h3>';
+        
+        const resetButton = document.createElement('button');
+        resetButton.textContent = '🗑️ Reset All Progress';
+        resetButton.id = 'reset-progress-btn';
+        resetButton.style.cssText = `
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-bottom: 10px;
+        `;
+        
+        const resetWarning = document.createElement('div');
+        resetWarning.style.cssText = `
+            font-size: 12px;
+            color: #ffab91;
+            line-height: 1.4;
+        `;
+        resetWarning.textContent = 'This will permanently delete ALL your progress including stats, purchases, achievements, and settings. This cannot be undone!';
+        
+        resetSection.appendChild(resetButton);
+        resetSection.appendChild(resetWarning);
+        profileWindow.appendChild(resetSection);
         
         overlay.appendChild(profileWindow);
         document.body.appendChild(overlay);
@@ -286,6 +325,9 @@ export class PlayerProfile {
         overlay.onclick = (e) => {
             if (e.target === overlay) this.closeProfile();
         };
+        
+        // Reset progress button with double confirmation
+        document.getElementById('reset-progress-btn').onclick = () => this.handleResetProgress();
         
         // ESC key to close
         const escapeHandler = (e) => {
@@ -430,5 +472,118 @@ export class PlayerProfile {
     // Alias for openProfile to match UI expectations
     showProfile() {
         this.openProfile();
+    }
+
+    handleResetProgress() {
+        // First confirmation
+        const firstConfirm = confirm(
+            "⚠️ WARNING: Reset All Progress ⚠️\n\n" +
+            "This will permanently delete:\n" +
+            "• All statistics and achievements\n" +
+            "• All purchased ships and weapons\n" +
+            "• All upgrade progress\n" +
+            "• Player profile data\n" +
+            "• Credits and score\n" +
+            "• All game settings\n\n" +
+            "This action CANNOT be undone!\n\n" +
+            "Are you absolutely sure you want to continue?"
+        );
+
+        if (!firstConfirm) {
+            return; // User cancelled
+        }
+
+        // Second confirmation with typing requirement
+        const confirmText = "DELETE MY PROGRESS";
+        const userInput = prompt(
+            "⚠️ FINAL CONFIRMATION ⚠️\n\n" +
+            "To confirm you want to delete ALL your progress,\n" +
+            "type the following text exactly (case sensitive):\n\n" +
+            "DELETE MY PROGRESS\n\n" +
+            "Type here:"
+        );
+
+        if (userInput !== confirmText) {
+            if (userInput !== null) { // null means user cancelled
+                alert("Reset cancelled - text did not match exactly.");
+            }
+            return;
+        }
+
+        // Perform the complete reset
+        this.performCompleteReset();
+    }
+
+    performCompleteReset() {
+        try {
+            // Get all localStorage keys that might be related to the game
+            const gameKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                // Include all keys that might be related to SuperSpace
+                if (key && (
+                    key.startsWith('player') ||
+                    key.startsWith('weapon_') ||
+                    key.startsWith('ship_') ||
+                    key.startsWith('upgrade_') ||
+                    key.includes('Credits') ||
+                    key.includes('Ship') ||
+                    key.includes('Weapon') ||
+                    key.includes('achievement') ||
+                    key.includes('disclaimer') ||
+                    key === 'currentShip' ||
+                    key === 'currentWeapon' ||
+                    key === 'playerStats'
+                )) {
+                    gameKeys.push(key);
+                }
+            }
+
+            // Remove all identified game-related localStorage items
+            gameKeys.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`Removed localStorage key: ${key}`);
+            });
+
+            // Reset the player profile stats
+            this.stats = {
+                totalPlayTime: 0,
+                totalDistance: 0,
+                totalShots: 0,
+                totalHits: 0,
+                gamesPlayed: 0,
+                highestScore: 0,
+                longestSurvival: 0,
+                favoriteWeapon: 'Basic Laser',
+                weaponStats: {},
+                sessionStartTime: Date.now(),
+                totalCreditsEarned: 0,
+                totalCreditsSpent: 0,
+                asteroidsDestroyed: 0,
+                averageAccuracy: 0
+            };
+
+            // Save the reset stats
+            this.saveStats();
+
+            // Show success message and reload
+            alert(
+                "✅ Progress Reset Complete!\n\n" +
+                "All game data has been permanently deleted.\n" +
+                "The page will now reload to apply changes."
+            );
+
+            // Reload the page to ensure all systems reset properly
+            window.location.reload();
+
+        } catch (error) {
+            console.error('Error during progress reset:', error);
+            alert(
+                "❌ Reset Error\n\n" +
+                "An error occurred while resetting progress.\n" +
+                "Some data may not have been deleted.\n" +
+                "Please try refreshing the page manually."
+            );
+        }
     }
 }
