@@ -627,11 +627,13 @@ export class MultiplayerManager {
             }
         });
 
-        // Handle player hits (damage)
+        // Handle player hits (damage) - TEMPORARILY DISABLED to prevent double damage
         this.socket.on('playerHit', (data) => {
-            if (data.targetId === this.playerId) {
-                this.handleDamage(data.damage, data.attackerId);
-            }
+            // DISABLED: Double damage issue - local collision already handles damage
+            console.log('🚫 IGNORED playerHit event to prevent double damage:', data);
+            // if (data.targetId === this.playerId) {
+            //     this.handleDamage(data.damage, data.attackerId);
+            // }
         });
 
         // Handle shield disruption events

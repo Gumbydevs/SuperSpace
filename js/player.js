@@ -695,9 +695,15 @@ export class Player {
                             // Check if local player is in safe zone
                             if (!window.game.world || !window.game.world.isInSafeZone(this)) {
                                 console.log(`💥 Remote projectile hit local player! Damage: ${projectile.damage}, Type: ${projectile.type}`);
+                                console.log(`🧨 Projectile explosion properties:`, {
+                                    explosionRadius: projectile.explosionRadius,
+                                    explosionDamage: projectile.explosionDamage,
+                                    explosive: projectile.explosive
+                                });
                                 
                                 // Create explosion effect for seeker missiles and other explosive projectiles
                                 if (projectile.type === 'missile' || projectile.explosionRadius > 0) {
+                                    console.log(`💥 Creating explosion for ${projectile.type} with radius ${projectile.explosionRadius || 25}`);
                                     if (window.game.world) {
                                         // Create visual explosion
                                         window.game.world.createExplosion(
@@ -707,6 +713,9 @@ export class Player {
                                             window.game.soundManager,
                                             'missile' // Explosion type
                                         );
+                                        console.log(`✅ Explosion created at (${projectile.x}, ${projectile.y})`);
+                                    } else {
+                                        console.error(`❌ No game.world available for explosion!`);
                                     }
                                     
                                     // Apply explosion damage if the projectile has it
