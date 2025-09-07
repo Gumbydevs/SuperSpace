@@ -218,7 +218,7 @@ export class ShopSystem {
                 price: 18000,
                 owned: localStorage.getItem('weapon_railgun') === 'true',
                 stats: {
-                    damage: 120, // Very high damage
+                    damage: 80, // Reduced from 120 - still high but more balanced
                     cooldown: 0.8, // Slow reload for charge time
                     speed: 2000, // Much faster projectile (was 1200)
                     range: 900,

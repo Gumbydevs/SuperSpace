@@ -1180,8 +1180,8 @@ export class Player {
                     this.x, this.y,
                     this.rotation,
                     'railgun',
-                    weaponStats ? weaponStats.damage : 120, // Very high damage
-                    weaponStats ? weaponStats.speed : 1200, // Very fast
+                    weaponStats ? weaponStats.damage : 80, // Reduced from 120
+                    weaponStats ? weaponStats.speed : 2000, // Updated to match shop stats
                     weaponStats ? weaponStats.range : 900   // Long range
                 ));
                 

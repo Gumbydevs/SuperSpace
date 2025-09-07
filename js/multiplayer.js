@@ -25,6 +25,9 @@ export class MultiplayerManager {
         // Add a cache to store player names even after they're removed
         this.playerNameCache = {};
         
+        // Track players currently in respawn process to avoid "left game" messages
+        this.respawningPlayers = new Set();
+        
         // Show offline status immediately
         this.addConnectionIndicator();
         this.createPlayerListUI();
@@ -733,6 +736,13 @@ export class MultiplayerManager {
             }
         });        // Handle player disconnection
         this.socket.on('playerLeft', (playerId) => {
+            // Check if this player is in respawn process - if so, don't show "left game" message
+            if (this.respawningPlayers.has(playerId)) {
+                console.log(`Player ${playerId} left during respawn - not showing disconnect message`);
+                this.respawningPlayers.delete(playerId); // Clean up tracking
+                return;
+            }
+            
             const playerName = this.players[playerId]?.name || 'A player';
             this.removeRemotePlayer(playerId);
             this.showGameMessage(`${playerName} left the game`, '#aaa');
@@ -1761,6 +1771,14 @@ export class MultiplayerManager {
 
     // Handle player death (local)
     handleDeath(attackerId) {
+        // Mark local player as respawning to prevent "left game" messages during respawn
+        this.respawningPlayers.add(this.playerId);
+        
+        // Remove from respawning set after respawn completes (slightly longer than respawn delay)
+        setTimeout(() => {
+            this.respawningPlayers.delete(this.playerId);
+        }, 5000);
+        
         // Send death event to server only for asteroid deaths
         // Player vs player deaths are already handled by the server when health hits 0
         if (attackerId === 'asteroid') {
@@ -1855,6 +1873,14 @@ export class MultiplayerManager {
         // Get player data before removing them
         const deadPlayer = this.players[playerId];
         if (!deadPlayer) return;
+        
+        // Mark player as respawning to prevent "left game" messages during respawn
+        this.respawningPlayers.add(playerId);
+        
+        // Clear respawning flag after reasonable respawn time (5 seconds)
+        setTimeout(() => {
+            this.respawningPlayers.delete(playerId);
+        }, 5000);
         
         // Mark the player as destroyed so they can't be targeted or rendered
         deadPlayer.destroyed = true;
