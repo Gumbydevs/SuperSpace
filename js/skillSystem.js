@@ -45,6 +45,12 @@ export class SkillSystem {
             case 'energyRegen':
                 this.player.energyRegen += 1;
                 break;
+            case 'fireRate':
+                this.player.fireRateBonus = (this.player.fireRateBonus || 0) + 0.1;
+                break;
+            case 'thrusterPower':
+                this.player.acceleration += this.player.acceleration * 0.15;
+                break;
         }
         return true;
     }
