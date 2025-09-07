@@ -253,8 +253,9 @@
             const agreeBtn = document.getElementById('disclaimer-agree-btn');
             const dontShowCheckbox = document.getElementById('dont-show-again');
 
-            // Check if user has already agreed
-            const hasAgreed = localStorage.getItem('superspace-disclaimer-agreed');
+            // Check if user has already agreed (permanently or for this session)
+            const hasAgreed = localStorage.getItem('superspace-disclaimer-agreed') || 
+                            sessionStorage.getItem('superspace-disclaimer-temp-agreed');
 
             if (!hasAgreed) {
                 disclaimerPopup.style.display = 'flex';
@@ -264,9 +265,12 @@
                 // Hide the disclaimer
                 disclaimerPopup.style.display = 'none';
 
-                // Save preference if checkbox is checked
+                // Always save agreement, but mark as permanent only if checkbox is checked
                 if (dontShowCheckbox.checked) {
                     localStorage.setItem('superspace-disclaimer-agreed', 'true');
+                } else {
+                    // Save temporary agreement for this session only
+                    sessionStorage.setItem('superspace-disclaimer-temp-agreed', 'true');
                 }
             });
         });
