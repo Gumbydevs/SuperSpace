@@ -743,16 +743,6 @@ export class Player {
                                     this.takeDamage(projectile.damage, remotePlayer.id);
                                 }
                                 
-                                // Notify server of the hit
-                                if (window.game.multiplayer) {
-                                    window.game.multiplayer.sendProjectileHit(
-                                        this.playerId || window.game.multiplayer.playerId,
-                                        projectile.x,
-                                        projectile.y,
-                                        projectile.damage
-                                    );
-                                }
-                                
                                 // Apply shield disruption if projectile has this ability
                                 if (projectile.shieldDisruption && window.game.multiplayer) {
                                     window.game.multiplayer.sendShieldDisruption(
