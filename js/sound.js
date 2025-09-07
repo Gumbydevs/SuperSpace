@@ -58,6 +58,7 @@ export class SoundManager {
         this.generatePlasmaSound();
         this.generateRailgunSound();
         this.generatePulseSound();
+        this.generateWeaponSwitchSound();
         console.log('All sounds generated successfully');
     }
     
@@ -1420,6 +1421,47 @@ export class SoundManager {
 
             midSource.start(hitStart);
         }
+    }
+
+    // Generate a weapon switch sound - mechanical click and loading sound
+    generateWeaponSwitchSound() {
+        const sampleRate = this.audioContext.sampleRate;
+        const duration = 0.25; // 250ms duration
+        const length = sampleRate * duration;
+        const buffer = this.audioContext.createBuffer(1, length, sampleRate);
+        const channelData = buffer.getChannelData(0);
+        
+        // Create a mechanical weapon switch sound with two components:
+        // 1. Sharp mechanical click (first 50ms)
+        // 2. Subtle mechanical loading/chambering sound (remaining time)
+        
+        for (let i = 0; i < length; i++) {
+            const t = i / sampleRate;
+            let amplitude = 0;
+            
+            if (t < 0.05) {
+                // Sharp mechanical click - high frequency burst with quick decay
+                const clickFreq = 800 + Math.random() * 400; // 800-1200 Hz random
+                const noise = (Math.random() - 0.5) * 0.3; // Mechanical noise
+                const envelope = Math.exp(-t * 80); // Very fast decay
+                amplitude = (Math.sin(2 * Math.PI * clickFreq * t) * 0.4 + noise) * envelope;
+            } else if (t < 0.15) {
+                // Mechanical loading sound - lower frequency with some resonance
+                const loadFreq = 200 + Math.sin(t * 30) * 50; // 150-250 Hz modulated
+                const noise = (Math.random() - 0.5) * 0.1; // Subtle mechanical noise
+                const envelope = Math.exp(-(t - 0.05) * 15); // Moderate decay
+                amplitude = (Math.sin(2 * Math.PI * loadFreq * t) * 0.2 + noise) * envelope;
+            } else {
+                // Gentle tail-off with very subtle mechanical resonance
+                const tailFreq = 100;
+                const envelope = Math.exp(-(t - 0.15) * 8); // Slow decay
+                amplitude = Math.sin(2 * Math.PI * tailFreq * t) * 0.05 * envelope;
+            }
+            
+            channelData[i] = amplitude;
+        }
+        
+        this.sounds['weaponswitch'] = buffer;
     }
 
     // Use this method to ensure audio context is resumed after user interaction

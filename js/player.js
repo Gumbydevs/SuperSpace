@@ -373,7 +373,7 @@ export class Player {
             this.weaponSwitchCooldown = 0.3; // 300ms cooldown
             // Only play sound if weapon actually changed
             if (previousWeapon !== this.currentWeapon) {
-                soundManager.play('powerup', { volume: 0.4, playbackRate: 1.5 });
+                soundManager.play('weaponswitch', { volume: 0.3, playbackRate: 1.0 });
                 // Update weapon display in UI
                 const weaponElement = document.getElementById('weapons');
                 if (weaponElement) {
