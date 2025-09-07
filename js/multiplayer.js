@@ -1688,11 +1688,11 @@ export class MultiplayerManager {
         }
         this.showGameMessage(deathMessage, '#f44', 3000);
         
-        // Track achievements and player profile for death
-        if (this.game.achievements) {
+        // Track achievements and player profile for death (with safety checks)
+        if (this.game.achievements && typeof this.game.achievements.onDeath === 'function') {
             this.game.achievements.onDeath();
         }
-        if (this.game.playerProfile) {
+        if (this.game.playerProfile && typeof this.game.playerProfile.onDeath === 'function') {
             this.game.playerProfile.onDeath();
         }
         
@@ -1752,13 +1752,17 @@ export class MultiplayerManager {
                     this.game.player.wins += 1;  // Track wins locally too
                     this.updatePlayerList(); // Update UI immediately
                     
-                    // Track achievements and player profile
-                    if (this.game.achievements) {
+                    // Track achievements and player profile (with safety checks)
+                    if (this.game.achievements && typeof this.game.achievements.onPlayerKill === 'function') {
                         this.game.achievements.onPlayerKill(playerId);
+                    }
+                    if (this.game.achievements && typeof this.game.achievements.onWin === 'function') {
                         this.game.achievements.onWin();
                     }
-                    if (this.game.playerProfile) {
+                    if (this.game.playerProfile && typeof this.game.playerProfile.onKill === 'function') {
                         this.game.playerProfile.onKill(this.game.player.currentWeapon, true);
+                    }
+                    if (this.game.playerProfile && typeof this.game.playerProfile.onCreditsEarned === 'function') {
                         this.game.playerProfile.onCreditsEarned(250);
                     }
                     

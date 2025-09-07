@@ -598,7 +598,7 @@ class Game {
             // Check for player death
             if (this.player.health <= 0) {
                 // In multiplayer, death is handled by the multiplayer system
-                if (this.multiplayer && this.multiplayer.connected) {
+                if (this.multiplayer && (this.multiplayer.connected || this.multiplayer.socket)) {
                     // Let multiplayer handle death - it has its own respawn logic
                     if (!this.player.deathTriggered) {
                         this.player.die(); // This will trigger multiplayer.handleDeath
