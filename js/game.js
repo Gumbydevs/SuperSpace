@@ -292,8 +292,12 @@ class Game {
     
     // Here we toggle the admin interface on/off
     toggleAdmin() {
+        console.log('toggleAdmin called, adminSystem exists:', !!this.adminSystem);
         if (this.adminSystem) {
+            console.log('Calling adminSystem.toggleAdminPanel()');
             this.adminSystem.toggleAdminPanel();
+        } else {
+            console.error('AdminSystem not initialized!');
         }
     }
     
@@ -320,6 +324,7 @@ class Game {
             
             // Check for admin combination F+T+G
             if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
+                console.log('Admin key combination detected! F+T+G pressed');
                 this.toggleAdmin();
                 keysPressed.clear(); // Clear to prevent repeated triggers
                 return;
@@ -461,222 +466,6 @@ class Game {
                     });
                 });
         }
-    }
-
-    // Create and show the options menu
-    showOptions() {
-        // Create modal backdrop
-        const backdrop = document.createElement('div');
-        backdrop.style.position = 'fixed';
-        backdrop.style.top = '0';
-        backdrop.style.left = '0';
-        backdrop.style.width = '100%';
-        backdrop.style.height = '100%';
-        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        backdrop.style.display = 'flex';
-        backdrop.style.justifyContent = 'center';
-        backdrop.style.alignItems = 'center';
-        backdrop.style.zIndex = '1000';
-        
-        // Create options dialog
-        const dialog = document.createElement('div');
-        dialog.style.backgroundColor = '#222';
-        dialog.style.color = 'white';
-        dialog.style.borderRadius = '10px';
-        dialog.style.padding = '20px';
-        dialog.style.width = '400px';
-        dialog.style.maxWidth = '90%';
-        dialog.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.5)';
-        dialog.style.border = '2px solid #444';
-        dialog.style.maxHeight = '80vh';
-        dialog.style.overflowY = 'auto';
-        
-        // Create title
-        const title = document.createElement('h2');
-        title.textContent = '⚙️ Options';
-        title.style.margin = '0 0 20px 0';
-        title.style.textAlign = 'center';
-        title.style.color = '#4af';
-        title.style.textShadow = '0 0 5px rgba(64, 170, 255, 0.7)';
-        dialog.appendChild(title);
-        
-        // Create options list
-        const optionsList = document.createElement('div');
-        optionsList.style.marginBottom = '20px';
-        
-        // Add sound option
-        const soundOption = document.createElement('div');
-        soundOption.style.display = 'flex';
-        soundOption.style.justifyContent = 'space-between';
-        soundOption.style.alignItems = 'center';
-        soundOption.style.marginBottom = '10px';
-        soundOption.style.padding = '8px';
-        soundOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-        soundOption.style.borderRadius = '5px';
-        
-        const soundLabel = document.createElement('div');
-        soundLabel.textContent = '🔊 Sound';
-        soundLabel.style.fontWeight = 'bold';
-        
-        const soundToggle = document.createElement('div');
-        
-        const soundButton = document.createElement('button');
-        soundButton.textContent = this.soundManager.muted ? 'OFF' : 'ON';
-        soundButton.style.padding = '5px 10px';
-        soundButton.style.backgroundColor = this.soundManager.muted ? '#555' : '#4af';
-        soundButton.style.color = 'white';
-        soundButton.style.border = 'none';
-        soundButton.style.borderRadius = '3px';
-        soundButton.style.cursor = 'pointer';
-        soundButton.onclick = () => {
-            const isMuted = this.soundManager.toggleMute();
-            soundButton.textContent = isMuted ? 'OFF' : 'ON';
-            soundButton.style.backgroundColor = isMuted ? '#555' : '#4af';
-            
-            // Update mute button outside options
-            const muteBtn = document.getElementById('mute-btn');
-            if (muteBtn) {
-                muteBtn.textContent = isMuted ? '🔇' : '🔊';
-            }
-        };
-        
-        soundToggle.appendChild(soundButton);
-        soundOption.appendChild(soundLabel);
-        soundOption.appendChild(soundToggle);
-        optionsList.appendChild(soundOption);
-        
-        // Add rename pilot option
-        const renameOption = document.createElement('div');
-        renameOption.style.display = 'flex';
-        renameOption.style.justifyContent = 'space-between';
-        renameOption.style.alignItems = 'center';
-        renameOption.style.marginBottom = '10px';
-        renameOption.style.padding = '8px';
-        renameOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-        renameOption.style.borderRadius = '5px';
-        
-        const renameLabel = document.createElement('div');
-        renameLabel.textContent = '👨‍✈️ Pilot Name';
-        renameLabel.style.fontWeight = 'bold';
-        
-        const renameButton = document.createElement('button');
-        renameButton.textContent = 'Rename';
-        renameButton.style.padding = '5px 10px';
-        renameButton.style.backgroundColor = '#4af';
-        renameButton.style.color = 'white';
-        renameButton.style.border = 'none';
-        renameButton.style.borderRadius = '3px';
-        renameButton.style.cursor = 'pointer';
-        renameButton.onclick = () => {
-            // Close options dialog first
-            document.body.removeChild(backdrop);
-            
-            // Show rename dialog
-            if (this.multiplayer) {
-                this.multiplayer.showChangeNameUI();
-            }
-        };
-        
-        renameOption.appendChild(renameLabel);
-        renameOption.appendChild(renameButton);
-        optionsList.appendChild(renameOption);
-        
-        // Add current pilot name display
-        const currentNameInfo = document.createElement('div');
-        currentNameInfo.style.fontSize = '14px';
-        currentNameInfo.style.color = '#aaa';
-        currentNameInfo.style.marginTop = '-5px';
-        currentNameInfo.style.marginBottom = '10px';
-        currentNameInfo.style.marginLeft = '8px';
-        currentNameInfo.textContent = `Current name: ${this.multiplayer ? this.multiplayer.playerName : 'Unknown'}`;
-        optionsList.appendChild(currentNameInfo);
-        
-        // Add profile option
-        const profileOption = document.createElement('div');
-        profileOption.style.display = 'flex';
-        profileOption.style.justifyContent = 'space-between';
-        profileOption.style.alignItems = 'center';
-        profileOption.style.marginBottom = '10px';
-        profileOption.style.padding = '8px';
-        profileOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-        profileOption.style.borderRadius = '5px';
-        
-        const profileLabel = document.createElement('div');
-        profileLabel.textContent = '📊 Player Profile';
-        profileLabel.style.fontWeight = 'bold';
-        
-        const profileButton = document.createElement('button');
-        profileButton.textContent = 'View Stats';
-        profileButton.style.padding = '5px 10px';
-        profileButton.style.backgroundColor = '#4af';
-        profileButton.style.color = 'white';
-        profileButton.style.border = 'none';
-        profileButton.style.borderRadius = '3px';
-        profileButton.style.cursor = 'pointer';
-        profileButton.onclick = () => {
-            // Close options dialog first
-            document.body.removeChild(backdrop);
-            
-            // Show profile
-            if (this.playerProfile) {
-                this.playerProfile.showProfile();
-            }
-        };
-        
-        profileOption.appendChild(profileLabel);
-        profileOption.appendChild(profileButton);
-        optionsList.appendChild(profileOption);
-        
-        // Add game info option
-        const gameInfoOption = document.createElement('div');
-        gameInfoOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
-        gameInfoOption.style.borderRadius = '5px';
-        gameInfoOption.style.padding = '8px';
-        gameInfoOption.style.marginTop = '20px';
-        
-        const gameInfoTitle = document.createElement('div');
-        gameInfoTitle.textContent = 'ℹ️ Game Info';
-        gameInfoTitle.style.fontWeight = 'bold';
-        gameInfoTitle.style.marginBottom = '8px';
-        
-        const gameInfoText = document.createElement('div');
-        gameInfoText.style.fontSize = '13px';
-        gameInfoText.style.color = '#bbb';
-        gameInfoText.style.lineHeight = '1.4';
-        gameInfoText.innerHTML = 'Ship customization is available in the Shop under the Appearance tab.<br><br>Press B or click the Shop button to open the shop.';
-        
-        gameInfoOption.appendChild(gameInfoTitle);
-        gameInfoOption.appendChild(gameInfoText);
-        optionsList.appendChild(gameInfoOption);
-        
-        // Close button
-        const closeButton = document.createElement('button');
-        closeButton.textContent = 'Close';
-        closeButton.style.display = 'block';
-        closeButton.style.margin = '0 auto';
-        closeButton.style.padding = '8px 20px';
-        closeButton.style.backgroundColor = '#555';
-        closeButton.style.color = 'white';
-        closeButton.style.border = 'none';
-        closeButton.style.borderRadius = '5px';
-        closeButton.style.cursor = 'pointer';
-        closeButton.onclick = () => {
-            document.body.removeChild(backdrop);
-        };
-        
-        dialog.appendChild(optionsList);
-        dialog.appendChild(closeButton);
-        backdrop.appendChild(dialog);
-        document.body.appendChild(backdrop);
-        
-        // Add keyboard shortcut to close dialog with Escape key
-        const escapeHandler = (e) => {
-            if (e.key === 'Escape' && document.body.contains(backdrop)) {
-                document.body.removeChild(backdrop);
-                window.removeEventListener('keydown', escapeHandler);
-            }
-        };
-        window.addEventListener('keydown', escapeHandler);
     }
 
     // Here we update all game components each frame using delta time

@@ -106,6 +106,34 @@ export class UI {
                 }
             };
         }
+        
+        // Profile buttons logic
+        const viewProfileBtn = document.getElementById('view-profile-btn');
+        const viewAchievementsBtn = document.getElementById('view-achievements-btn');
+        
+        if (viewProfileBtn) {
+            viewProfileBtn.onclick = () => {
+                console.log('Profile button clicked');
+                this.hideOptionsOverlay();
+                if (window.game && window.game.playerProfile) {
+                    window.game.playerProfile.showProfile();
+                } else {
+                    console.error('PlayerProfile system not available');
+                }
+            };
+        }
+        
+        if (viewAchievementsBtn) {
+            viewAchievementsBtn.onclick = () => {
+                console.log('Achievements button clicked');
+                this.hideOptionsOverlay();
+                if (window.game && window.game.achievements) {
+                    window.game.achievements.showAchievements();
+                } else {
+                    console.error('Achievements system not available');
+                }
+            };
+        }
     }
     
     // Show or hide gameplay UI elements based on game state

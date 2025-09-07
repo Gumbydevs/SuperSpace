@@ -369,6 +369,34 @@ input[type="range"] {
     box-shadow: 0 0 10px rgba(68, 175, 255, 0.4);
 }
 
+.profile-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.profile-btn {
+    padding: 6px 14px;
+    background-color: #3a3;
+    border: 1px solid #4f4;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85em;
+    margin: 2px;
+}
+
+.profile-btn:hover {
+    background-color: #5c5;
+    border-color: #6f6;
+    box-shadow: 0 0 10px rgba(76, 255, 76, 0.4);
+}
+
 /* Avatar Modal Styles */
 .avatar-modal {
     position: fixed;
