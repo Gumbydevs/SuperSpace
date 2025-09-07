@@ -708,22 +708,22 @@ export class SoundManager {
         for (let i = 0; i < buffer.length * 0.3; i++) {
             const t = i / (buffer.length * 0.3);
             
-            // Rising frequency for the charge-up
-            const chargeFreq = 200 + t * t * 1000;
+            // Keep charging frequency low and deep - no high pitch sweep
+            const chargeFreq = 120 + t * 80; // Only goes from 120Hz to 200Hz
             
             // Amplitude ramps up for charge effect
             const amp = t * 0.4;
             
-            // Add electrical charging tone
+            // Add electrical charging tone - deeper and more powerful
             data[i] = Math.sin(i * chargeFreq / this.audioContext.sampleRate * Math.PI * 2) * amp;
             
-            // Add electrical hum
-            const humFreq = 50 + t * 40;
+            // Add electrical hum - keep it low
+            const humFreq = 50 + t * 20; // Only 50-70Hz range
             data[i] += Math.sin(i * humFreq / this.audioContext.sampleRate * Math.PI * 2) * amp * 0.5;
             
-            // Add some electrical crackling noise
+            // Add some electrical crackling noise - but make it deeper
             if (Math.random() < t * 0.4) {
-                data[i] += (Math.random() * 2 - 1) * 0.2 * amp;
+                data[i] += (Math.random() * 2 - 1) * 0.3 * amp; // Slightly louder noise for character
             }
         }
         
