@@ -650,7 +650,17 @@ export class MultiplayerManager {
             }
                 
             // Ensure kill announcer is ready before announcing kills
-            this.ensureKillAnnouncerReady();
+            const killAnnouncerReady = this.ensureKillAnnouncerReady();
+
+            // Debug: Log kill event details
+            console.log('🔥 KILL EVENT:', {
+                attackerId: data.attackerId,
+                playerId: data.playerId,
+                killerName,
+                victimName,
+                hasKillAnnouncer: !!this.killAnnouncer,
+                killAnnouncerReady
+            });
 
             // Get killer avatar information
             let killerAvatar = null;
@@ -666,13 +676,31 @@ export class MultiplayerManager {
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
                 // If you're the killer
-                this.killAnnouncer.announceKill('You', victimName, 'destroyed', killerAvatar);
+                if (killAnnouncerReady) {
+                    this.killAnnouncer.announceKill('You', victimName, 'destroyed', killerAvatar);
+                } else {
+                    console.error('❌ KillAnnouncer not ready for kill announcement!');
+                    // Fallback: show a game message
+                    this.showGameMessage(`You destroyed ${victimName}!`, '#ff4444');
+                }
             } else if (data.playerId === this.playerId) {
                 // If you're the victim - you see who killed you
-                this.killAnnouncer.announceKill(killerName, 'you', 'destroyed', killerAvatar);
+                if (killAnnouncerReady) {
+                    this.killAnnouncer.announceKill(killerName, 'you', 'destroyed', killerAvatar);
+                } else {
+                    console.error('❌ KillAnnouncer not ready for death announcement!');
+                    // Fallback: show a game message
+                    this.showGameMessage(`${killerName} destroyed you!`, '#ff4444');
+                }
             } else {
                 // If you're a spectator - you see who killed whom
-                this.killAnnouncer.announceKill(killerName, victimName, 'destroyed', killerAvatar);
+                if (killAnnouncerReady) {
+                    this.killAnnouncer.announceKill(killerName, victimName, 'destroyed', killerAvatar);
+                } else {
+                    console.error('❌ KillAnnouncer not ready for spectator announcement!');
+                    // Fallback: show a game message
+                    this.showGameMessage(`${killerName} destroyed ${victimName}!`, '#ffaa00');
+                }
             }
             
             // Now handle the actual player death events
@@ -811,12 +839,28 @@ export class MultiplayerManager {
 
     // Ensure kill announcer is properly setup before announcing kills
     ensureKillAnnouncerReady() {
+        // Check if the kill announcer object exists
+        if (!this.killAnnouncer) {
+            console.warn('⚠️ KillAnnouncer not initialized, recreating...');
+            this.killAnnouncer = new KillAnnouncer();
+        }
+        
         // Check if the kill announcements container exists
         if (!document.getElementById('kill-announcements')) {
             console.log('Kill announcements container missing, recreating it');
             // If container is missing, recreate it
-            this.killAnnouncer.createAnnouncementContainer();
+            if (this.killAnnouncer && this.killAnnouncer.createAnnouncementContainer) {
+                this.killAnnouncer.createAnnouncementContainer();
+            }
         }
+        
+        // Verify the announceKill method exists
+        if (!this.killAnnouncer || typeof this.killAnnouncer.announceKill !== 'function') {
+            console.error('❌ KillAnnouncer.announceKill method not available!');
+            return false;
+        }
+        
+        return true;
     }
 
     // Send periodic pings to keep the connection active
@@ -1777,6 +1821,8 @@ export class MultiplayerManager {
             
             this.game.player.x = spawnX;
             this.game.player.y = spawnY;
+            this.game.player.rotation = 0; // Reset rotation to face up
+            this.game.player.velocity = { x: 0, y: 0 }; // Stop all momentum
             this.game.player.health = this.game.player.maxHealth;
             this.game.player.visible = true;
             this.game.player.deathTriggered = false;
