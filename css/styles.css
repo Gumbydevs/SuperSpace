@@ -1117,52 +1117,28 @@ input[type="range"] {
         font-size: 18px;
     }
     
-        #afterburner-button {
-            width: 50px;
-            height: 50px;
-            bottom: 80px;
-            right: 20px;
-            font-size: 18px;
-        }
-        
-        #mobile-menu-button {
-            width: 45px;
-            height: 45px;
-            top: 15px;
-            right: 15px;
-            font-size: 18px;
-        }
-        
-        #brake-button {
-            width: 45px;
-            height: 45px;
-            bottom: 120px;
-            left: 15px;
-            font-size: 16px;
-        }
-        
-        #brake-button {
-            width: 40px;
-            height: 40px;
-            bottom: 110px;
-            left: 15px;
-            font-size: 16px;
-        }
-        
-        /* Player list even smaller on small mobile */
-        #player-list {
-            max-width: 160px !important;
-            max-height: 150px !important;
-            font-size: 8px !important;
-            padding: 4px !important;
-            transform: scale(0.7) !important;
-        }
-        
-        #player-list-container {
-            font-size: 7px !important;
-        }
+    #afterburner-button {
+        width: 50px;
+        height: 50px;
+        bottom: 80px;
+        right: 20px;
+        font-size: 18px;
     }
-}
+    
+    #mobile-menu-button {
+        width: 45px;
+        height: 45px;
+        top: 15px;
+        right: 15px;
+        font-size: 18px;
+    }
+    
+    #brake-button {
+        width: 40px;
+        height: 40px;
+        bottom: 110px;
+        left: 15px;
+        font-size: 16px;
     }
     
     /* Adjust HUD for smaller screens */
@@ -1172,9 +1148,9 @@ input[type="range"] {
     
     /* Minimap adjustments for small mobile */
     #minimap-container {
-        width: 75px !important;
-        height: 75px !important;
-        bottom: 140px !important;
+        width: 75px;
+        height: 75px;
+        bottom: 140px;
         right: 5px;
     }
     
