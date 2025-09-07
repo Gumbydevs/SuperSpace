@@ -94,6 +94,17 @@ export class Player {
         this.damageAttributionTimeout = null;
         this.deathTriggered = false;
 
+        // Mining laser beam system
+        this.miningBeam = {
+            active: false,
+            targetX: 0,
+            targetY: 0,
+            intensity: 0, // 0-1 for visual pulsing
+            lastDamageTime: 0,
+            hitTarget: null, // What the beam is currently hitting
+            fragments: [] // Mining fragments created
+        };
+
         // Engine flame animation variables
         this.thrustLevel = 0; // Current visual size of engine flame (0-1)
         this.targetThrustLevel = 0; // Target size based on throttle input
@@ -255,10 +266,31 @@ export class Player {
         // Here we handle weapon firing
         // Dramatic energy-based fire rate penalty
         let canFire = input.keys.includes('Space') && this.fireCooldown <= 0;
+        let isFiring = input.keys.includes('Space');
         let weapon = null;
         if (this.currentWeaponId && window.shopSystem && window.shopSystem.availableWeapons) {
             weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
         }
+        
+        // Handle mining laser beam activation/deactivation
+        if (this.currentWeapon === 'Mining Laser') {
+            if (isFiring && this.energy > 0) {
+                if (!this.miningBeam.active) {
+                    this.miningBeam.active = true;
+                    this.miningBeam.intensity = 0;
+                    this.miningBeam.lastDamageTime = 0;
+                }
+            } else {
+                if (this.miningBeam.active) {
+                    this.miningBeam.active = false;
+                    // Stop mining laser sound
+                    if (soundManager) {
+                        soundManager.stop('laser');
+                    }
+                }
+            }
+        }
+        
         // Use weapon stats if available, otherwise fall back to the stored fireCooldownTime
         let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
         
@@ -277,6 +309,11 @@ export class Player {
         if (canFire) {
             this.fire(soundManager);
             this.fireCooldown = baseCooldown * cooldownMod;
+        }
+
+        // Update mining laser beam if active
+        if (this.miningBeam.active) {
+            this.updateMiningBeam(deltaTime, soundManager);
         }
 
         // Weapon switch cooldown logic
@@ -1045,35 +1082,23 @@ export class Player {
                 break;
                 
             case 'Mining Laser':
-                // Fire a mining laser beam - high rate of fire, excellent against asteroids
-                const miningProj = new Projectile(
-                    this.x, this.y,
-                    this.rotation,
-                    'mininglaser',
-                    weaponStats ? weaponStats.damage : 8, // Moderate base damage
-                    weaponStats ? weaponStats.speed : 1000, // Fast projectile
-                    weaponStats ? weaponStats.range : 400, // Medium range
-                    false, // Not homing
-                    0, // No splash
-                    0, // No explosion
-                    0, // No explosion damage
-                    0, 0, // No detonation ranges
-                    false, 0, // No shield disruption
-                    0, 0, // No arming/lifetime for regular projectiles
-                    weaponStats ? weaponStats.asteroidDamageMultiplier : 3.0, // 3x damage vs asteroids
-                    weaponStats ? weaponStats.playerDamageMultiplier : 0.5 // Half damage vs players
-                );
-                
-                projectiles.push(miningProj);
-                
-                // Play mining laser sound (use laser sound with different pitch)
-                if (soundManager) {
-                    soundManager.play('laser', { 
-                        volume: 0.3,
-                        playbackRate: 1.2,
-                        position: { x: this.x, y: this.y }
-                    });
+                // Activate continuous mining beam instead of firing projectiles
+                if (!this.miningBeam.active) {
+                    this.miningBeam.active = true;
+                    this.miningBeam.intensity = 0;
+                    this.miningBeam.lastDamageTime = 0;
+                    
+                    // Play continuous mining laser sound
+                    if (soundManager) {
+                        soundManager.play('laser', { 
+                            volume: 0.2,
+                            playbackRate: 0.8,
+                            loop: true,
+                            position: { x: this.x, y: this.y }
+                        });
+                    }
                 }
+                // Don't create projectiles for beam weapons
                 break;
                 
             case 'Space Mines':
@@ -1185,6 +1210,9 @@ export class Player {
                 }
             });
         }
+        
+        // Render mining beam (before ship so it appears behind)
+        this.renderMiningBeam(ctx);
         
         // Here we draw the player's ship
         if (this.visible) {
@@ -2179,6 +2207,256 @@ export class Player {
             ctx.fill();
             ctx.globalCompositeOperation = 'source-over';
         }
+        
+        ctx.restore();
+    }
+
+    updateMiningBeam(deltaTime, soundManager) {
+        // Get weapon stats
+        let weaponStats = null;
+        if (window.shopSystem && window.shopSystem.availableWeapons) {
+            weaponStats = window.shopSystem.availableWeapons.find(w => w.id === 'mininglaser')?.stats;
+        }
+
+        const beamRange = weaponStats ? weaponStats.range : 400;
+        const beamDamage = weaponStats ? weaponStats.damage : 8;
+        const energyCost = weaponStats ? weaponStats.energyCost : 8;
+        
+        // Update beam intensity for pulsing effect
+        this.miningBeam.intensity = (Math.sin(Date.now() * 0.01) + 1) * 0.5;
+        
+        // Consume energy continuously
+        const energyPerSecond = energyCost * 10; // Energy per second
+        this.energy -= energyPerSecond * deltaTime;
+        
+        if (this.energy <= 0) {
+            this.energy = 0;
+            this.miningBeam.active = false;
+            return;
+        }
+        
+        // Calculate beam end point
+        const beamEndX = this.x + Math.sin(this.rotation) * beamRange;
+        const beamEndY = this.y - Math.cos(this.rotation) * beamRange;
+        
+        // Find what the beam hits (asteroids first, then players)
+        let hitTarget = null;
+        let hitDistance = beamRange;
+        
+        // Check asteroids
+        if (window.game && window.game.world && window.game.world.asteroids) {
+            for (const asteroid of window.game.world.asteroids) {
+                const hit = this.checkBeamCollision(
+                    this.x, this.y, beamEndX, beamEndY,
+                    asteroid.x, asteroid.y, asteroid.radius
+                );
+                
+                if (hit && hit.distance < hitDistance) {
+                    hitTarget = { type: 'asteroid', object: asteroid };
+                    hitDistance = hit.distance;
+                    this.miningBeam.targetX = hit.x;
+                    this.miningBeam.targetY = hit.y;
+                }
+            }
+        }
+        
+        // Check remote players (lower priority than asteroids)
+        if (!hitTarget && window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            for (const remotePlayer of Object.values(window.game.multiplayer.players)) {
+                if (remotePlayer.destroyed) continue;
+                
+                const hit = this.checkBeamCollision(
+                    this.x, this.y, beamEndX, beamEndY,
+                    remotePlayer.x, remotePlayer.y, 20
+                );
+                
+                if (hit && hit.distance < hitDistance) {
+                    hitTarget = { type: 'player', object: remotePlayer };
+                    hitDistance = hit.distance;
+                    this.miningBeam.targetX = hit.x;
+                    this.miningBeam.targetY = hit.y;
+                }
+            }
+        }
+        
+        // If no hit, beam goes to maximum range
+        if (!hitTarget) {
+            this.miningBeam.targetX = beamEndX;
+            this.miningBeam.targetY = beamEndY;
+        }
+        
+        // Apply damage if hitting something
+        if (hitTarget) {
+            const now = Date.now() / 1000;
+            if (now - this.miningBeam.lastDamageTime >= 0.1) { // 10 times per second
+                this.miningBeam.lastDamageTime = now;
+                
+                if (hitTarget.type === 'asteroid') {
+                    // Enhanced damage to asteroids
+                    const asteroidDamage = beamDamage * (weaponStats?.asteroidDamageMultiplier || 3.0);
+                    
+                    // Create mining fragments
+                    this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY);
+                    
+                    // Send asteroid hit to server
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.sendHit('asteroid', hitTarget.object.id, asteroidDamage);
+                    }
+                    
+                } else if (hitTarget.type === 'player') {
+                    // Reduced damage to players
+                    const playerDamage = beamDamage * (weaponStats?.playerDamageMultiplier || 0.5);
+                    
+                    // Send player hit to server
+                    if (window.game && window.game.multiplayer) {
+                        window.game.multiplayer.sendHit('player', hitTarget.object.id, playerDamage);
+                    }
+                    
+                    // Show hit effect
+                    if (window.game.world) {
+                        window.game.world.createProjectileHitEffect(
+                            this.miningBeam.targetX,
+                            this.miningBeam.targetY,
+                            8,
+                            soundManager
+                        );
+                    }
+                }
+            }
+        }
+        
+        this.miningBeam.hitTarget = hitTarget;
+    }
+
+    checkBeamCollision(startX, startY, endX, endY, targetX, targetY, targetRadius) {
+        // Vector from start to end
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const beamLength = Math.sqrt(dx * dx + dy * dy);
+        
+        if (beamLength === 0) return null;
+        
+        // Unit vector along beam
+        const unitX = dx / beamLength;
+        const unitY = dy / beamLength;
+        
+        // Vector from start to target
+        const toTargetX = targetX - startX;
+        const toTargetY = targetY - startY;
+        
+        // Project target onto beam line
+        const projection = toTargetX * unitX + toTargetY * unitY;
+        
+        // Clamp projection to beam length
+        const clampedProjection = Math.max(0, Math.min(beamLength, projection));
+        
+        // Closest point on beam to target
+        const closestX = startX + unitX * clampedProjection;
+        const closestY = startY + unitY * clampedProjection;
+        
+        // Distance from target to closest point
+        const distanceToBeam = Math.sqrt(
+            (targetX - closestX) * (targetX - closestX) + 
+            (targetY - closestY) * (targetY - closestY)
+        );
+        
+        // Check if target is within collision radius
+        if (distanceToBeam <= targetRadius) {
+            return {
+                x: closestX,
+                y: closestY,
+                distance: clampedProjection
+            };
+        }
+        
+        return null;
+    }
+
+    createMiningFragments(asteroid, hitX, hitY) {
+        // Create small fragments that fly away from the mining point
+        const fragmentCount = Math.random() * 3 + 2; // 2-5 fragments
+        
+        for (let i = 0; i < fragmentCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 100 + 50;
+            const size = Math.random() * 3 + 1;
+            
+            const fragment = {
+                x: hitX,
+                y: hitY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: size,
+                life: 1.0,
+                decay: Math.random() * 2 + 1
+            };
+            
+            this.miningBeam.fragments.push(fragment);
+        }
+        
+        // Update existing fragments
+        this.miningBeam.fragments = this.miningBeam.fragments.filter(fragment => {
+            fragment.x += fragment.vx * 0.016;
+            fragment.y += fragment.vy * 0.016;
+            fragment.life -= fragment.decay * 0.016;
+            return fragment.life > 0;
+        });
+    }
+
+    renderMiningBeam(ctx) {
+        if (!this.miningBeam.active) return;
+        
+        ctx.save();
+        
+        // Beam core
+        ctx.strokeStyle = `rgba(255, 100, 0, ${0.8 + this.miningBeam.intensity * 0.2})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.miningBeam.targetX, this.miningBeam.targetY);
+        ctx.stroke();
+        
+        // Beam glow
+        ctx.strokeStyle = `rgba(255, 150, 50, ${0.3 + this.miningBeam.intensity * 0.2})`;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.miningBeam.targetX, this.miningBeam.targetY);
+        ctx.stroke();
+        
+        // Outer glow
+        ctx.strokeStyle = `rgba(255, 200, 100, ${0.1 + this.miningBeam.intensity * 0.1})`;
+        ctx.lineWidth = 15;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.miningBeam.targetX, this.miningBeam.targetY);
+        ctx.stroke();
+        
+        // Impact point glow
+        if (this.miningBeam.hitTarget) {
+            const glowSize = 15 + this.miningBeam.intensity * 10;
+            const gradient = ctx.createRadialGradient(
+                this.miningBeam.targetX, this.miningBeam.targetY, 0,
+                this.miningBeam.targetX, this.miningBeam.targetY, glowSize
+            );
+            gradient.addColorStop(0, `rgba(255, 100, 0, ${0.8 + this.miningBeam.intensity * 0.2})`);
+            gradient.addColorStop(0.5, `rgba(255, 150, 50, ${0.4 + this.miningBeam.intensity * 0.1})`);
+            gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(this.miningBeam.targetX, this.miningBeam.targetY, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Render mining fragments
+        this.miningBeam.fragments.forEach(fragment => {
+            const alpha = fragment.life;
+            ctx.fillStyle = `rgba(200, 150, 100, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(fragment.x, fragment.y, fragment.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
         
         ctx.restore();
     }
