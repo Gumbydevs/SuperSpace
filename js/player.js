@@ -279,11 +279,13 @@ export class Player {
                     this.miningBeam.active = true;
                     this.miningBeam.intensity = 0;
                     this.miningBeam.lastDamageTime = 0;
+                    this.miningBeam.fragments = []; // Clear old fragments when activating
                     // Note: Sound will be handled in the beam update since continuous looping isn't fully supported
                 }
             } else {
                 if (this.miningBeam.active) {
                     this.miningBeam.active = false;
+                    this.miningBeam.fragments = []; // Clear fragments when deactivating
                     // No need to stop sound since we're not using continuous loop
                 }
             }
@@ -340,6 +342,7 @@ export class Player {
             if (previousWeapon === 'Mining Laser' && this.currentWeapon !== 'Mining Laser') {
                 if (this.miningBeam && this.miningBeam.active) {
                     this.miningBeam.active = false;
+                    this.miningBeam.fragments = []; // Clear fragments when switching weapons
                 }
             }
             
@@ -1216,6 +1219,7 @@ export class Player {
                     this.miningBeam.intensity = 0;
                     this.miningBeam.lastDamageTime = 0;
                     this.miningBeam.lastSoundTime = 0;
+                    this.miningBeam.fragments = []; // Clear old fragments when activating
                 }
                 // Don't create projectiles for beam weapons
                 break;
@@ -2473,6 +2477,18 @@ export class Player {
                     }
                 }
             }
+        }
+        
+        // Check if target changed - if so, clear old fragments
+        const previousTarget = this.miningBeam.hitTarget;
+        if (previousTarget && hitTarget) {
+            // Compare target objects to see if we switched targets
+            if (previousTarget.object !== hitTarget.object) {
+                this.miningBeam.fragments = []; // Clear fragments when switching targets
+            }
+        } else if (previousTarget !== hitTarget) {
+            // Target went from something to nothing or nothing to something
+            this.miningBeam.fragments = []; // Clear fragments when target changes
         }
         
         this.miningBeam.hitTarget = hitTarget;
