@@ -630,6 +630,27 @@ export class Player {
         // Check for mine proximity explosions in multiplayer
         this.checkMineCollisions();
 
+        // Update remote player projectiles in multiplayer
+        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+            Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                if (remotePlayer.projectiles && Array.isArray(remotePlayer.projectiles)) {
+                    for (let i = remotePlayer.projectiles.length - 1; i >= 0; i--) {
+                        const projectile = remotePlayer.projectiles[i];
+                        
+                        // Update projectile if it has an update method
+                        if (projectile.update && typeof projectile.update === 'function') {
+                            projectile.update(deltaTime, window.game.world);
+                        }
+                        
+                        // Remove projectiles that are out of range or expired
+                        if (projectile.distanceTraveled > projectile.range || projectile.hasExploded) {
+                            remotePlayer.projectiles.splice(i, 1);
+                        }
+                    }
+                }
+            });
+        }
+
         // Here we reduce cooldown timers
         if (this.fireCooldown > 0) {
             this.fireCooldown -= deltaTime;
