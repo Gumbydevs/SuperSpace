@@ -1580,21 +1580,21 @@ export class MultiplayerManager {
                             const dy = target.y - this.y;
                             const angleToTarget = Math.atan2(dy, dx) + Math.PI/2;
                             
-                            // Gradual turning instead of instant snap (matching original logic)
+                            // Gradual turning instead of instant snap (but more aggressive than original)
                             let angleDiff = angleToTarget - this.angle;
                             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
                             while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
                             
-                            // Turn gradually - only turn 15% of the way each frame (like original)
-                            const turnAmount = angleDiff * 0.15 * deltaTime * 60; // Smooth gradual turn
+                            // Turn more aggressively - increase from 15% to 25% of the way each frame
+                            const turnAmount = angleDiff * 0.25 * deltaTime * 60; // More aggressive turn
                             this.angle += turnAmount;
                             
                             // Update velocity based on new angle
                             this.velocity.x = Math.sin(this.angle) * this.speed;
                             this.velocity.y = -Math.cos(this.angle) * this.speed;
                             
-                            // Mark as homed after turning significantly (about 80% of the way)
-                            if (Math.abs(angleDiff) < 0.3) { // When close to target angle
+                            // Mark as homed after turning significantly (more lenient threshold)
+                            if (Math.abs(angleDiff) < 0.5) { // When reasonably close to target angle (was 0.3)
                                 this.hasHomed = true;
                             }
                         }

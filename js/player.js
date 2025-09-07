@@ -645,6 +645,69 @@ export class Player {
                             projectile.update(deltaTime, window.game.world);
                         }
                         
+                        // Check collision with local player
+                        const dx = projectile.x - this.x;
+                        const dy = projectile.y - this.y;
+                        const distSq = dx * dx + dy * dy;
+                        
+                        // Adjust collision radius if local player has shield
+                        const collisionRadius = this.shield > 0 ? 25 : 15;
+                        const collisionRadiusSq = collisionRadius * collisionRadius;
+                        
+                        // Check if remote projectile hit local player
+                        if (distSq < collisionRadiusSq) {
+                            // Check if local player is in safe zone
+                            if (!window.game.world || !window.game.world.isInSafeZone(this)) {
+                                console.log(`💥 Remote projectile hit local player! Damage: ${projectile.damage}`);
+                                
+                                // Create hit effect immediately
+                                if (window.game.world) {
+                                    if (this.shield > 0) {
+                                        // Shield hit effect - blue energy ripple
+                                        this.createShieldHitEffect(
+                                            projectile.x,
+                                            projectile.y,
+                                            this.x,
+                                            this.y
+                                        );
+                                    } else {
+                                        // Normal hit effect
+                                        window.game.world.createProjectileHitEffect(
+                                            projectile.x,
+                                            projectile.y,
+                                            12 + projectile.damage * 0.3,
+                                            window.game.soundManager
+                                        );
+                                    }
+                                }
+                                
+                                // Apply damage immediately to local player
+                                this.takeDamage(projectile.damage, remotePlayer.id);
+                                
+                                // Notify server of the hit
+                                if (window.game.multiplayer) {
+                                    window.game.multiplayer.sendProjectileHit(
+                                        this.playerId || window.game.multiplayer.playerId,
+                                        projectile.x,
+                                        projectile.y,
+                                        projectile.damage
+                                    );
+                                }
+                                
+                                // Apply shield disruption if projectile has this ability
+                                if (projectile.shieldDisruption && window.game.multiplayer) {
+                                    window.game.multiplayer.sendShieldDisruption(
+                                        this.playerId || window.game.multiplayer.playerId,
+                                        projectile.disruptionDuration || 3000
+                                    );
+                                }
+                                
+                                // Remove projectile after hit
+                                remotePlayer.projectiles.splice(i, 1);
+                                continue;
+                            }
+                        }
+                        
                         // Remove projectiles that are out of range or expired
                         if (projectile.distanceTraveled > projectile.range || projectile.hasExploded) {
                             console.log(`🗑️ Removing expired remote projectile`);
