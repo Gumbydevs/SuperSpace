@@ -2280,11 +2280,11 @@ export class Player {
                 }
                 
                 if (hitTarget.type === 'asteroid') {
-                    // Enhanced damage to asteroids
-                    const asteroidDamage = beamDamage * (weaponStats?.asteroidDamageMultiplier || 3.0);
+                    // Reduced damage for slower, more realistic mining
+                    const asteroidDamage = beamDamage * (weaponStats?.asteroidDamageMultiplier || 1.5); // Reduced from 3.0 to 1.5
                     
-                    // Create mining fragments
-                    this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY);
+                    // Create mining fragments at impact point
+                    this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY, deltaTime);
                     
                     // Send asteroid hit to server
                     if (window.game && window.game.multiplayer) {
@@ -2360,7 +2360,7 @@ export class Player {
         return null;
     }
 
-    createMiningFragments(asteroid, hitX, hitY) {
+    createMiningFragments(asteroid, hitX, hitY, deltaTime) {
         // Create small fragments that fly away from the mining point
         const fragmentCount = Math.random() * 3 + 2; // 2-5 fragments
         
@@ -2382,11 +2382,11 @@ export class Player {
             this.miningBeam.fragments.push(fragment);
         }
         
-        // Update existing fragments
+        // Update existing fragments using proper deltaTime
         this.miningBeam.fragments = this.miningBeam.fragments.filter(fragment => {
-            fragment.x += fragment.vx * 0.016;
-            fragment.y += fragment.vy * 0.016;
-            fragment.life -= fragment.decay * 0.016;
+            fragment.x += fragment.vx * deltaTime;
+            fragment.y += fragment.vy * deltaTime;
+            fragment.life -= fragment.decay * deltaTime;
             return fragment.life > 0;
         });
     }

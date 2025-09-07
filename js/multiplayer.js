@@ -2153,7 +2153,7 @@ export class MultiplayerManager {
                     clearTimeout(asteroid.destructionTimeout);
                 }
                 
-                // Award credits locally (since we destroyed it)
+                // Award credits and score locally (since we destroyed it)
                 if (data.destroyedBy === this.socket.id && this.game.player) {
                     // Calculate credit reward based on asteroid size
                     let creditReward;
@@ -2177,6 +2177,11 @@ export class MultiplayerManager {
                             );
                     }
                     this.game.player.addCredits(creditReward);
+                    
+                    // Award score points for asteroid destruction
+                    if (asteroid.scoreValue) {
+                        this.game.player.score += asteroid.scoreValue;
+                    }
                     
                     // Spawn powerups locally
                     if (asteroid.size !== 'small') {
