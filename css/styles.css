@@ -937,18 +937,18 @@ input[type="range"] {
     
     /* Status panel adjustments for mobile - move to bottom left and make it larger */
     #status-panel {
-        position: fixed !important;
-        bottom: 160px !important; /* Above touch controls with more space */
-        left: 15px !important;
-        transform: scale(0.9) !important; /* Larger than before */
-        transform-origin: bottom left !important;
-        background-color: rgba(0, 0, 0, 0.8) !important;
-        border: 2px solid #444 !important;
-        border-radius: 8px !important;
-        box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
-        z-index: 1001 !important;
-        max-width: 240px !important;
-        padding: 8px !important;
+    position: fixed !important;
+    bottom: 160px !important; /* Above touch controls with more space */
+    left: 50% !important;
+    transform: translateX(-50%) scale(0.9) !important; /* Centered and larger */
+    transform-origin: bottom center !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border: 2px solid #444 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
+    z-index: 1001 !important;
+    max-width: 240px !important;
+    padding: 8px !important;
     }
     
     /* Make status panel items larger and more readable on mobile */
