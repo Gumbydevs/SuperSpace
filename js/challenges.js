@@ -12,8 +12,13 @@ export const CHALLENGES = {
 
 // Simple challenge manager for tracking progress
 export class ChallengeSystem {
-    constructor(player) {
+    /**
+     * @param {object} player - Player instance (for current score and credits)
+     * @param {object} profile - PlayerProfile instance (for persistent stats)
+     */
+    constructor(player, profile) {
         this.player = player;
+        this.profile = profile;
         this.completed = { daily: [], weekly: [] };
     }
 
@@ -24,16 +29,16 @@ export class ChallengeSystem {
             let done = false;
             switch (ch.id) {
                 case 'survive_5':
-                    done = this.player.profile.stats.longestSurvival >= 300;
+                    done = this.profile.stats.longestSurvival >= 300;
                     break;
                 case 'destroy_50_asteroids':
-                    done = this.player.profile.stats.asteroidsDestroyed >= 50;
+                    done = this.profile.stats.asteroidsDestroyed >= 50;
                     break;
                 case 'score_10000':
                     done = this.player.score >= 10000;
                     break;
                 case 'kill_100_enemies':
-                    done = this.player.profile.stats.totalKills >= 100;
+                    done = this.profile.stats.totalKills >= 100;
                     break;
             }
             if (done) {

@@ -41,7 +41,7 @@ class Game {
         this.playerProfile = new PlayerProfile(this.player);  // Player statistics and profile
         this.adminSystem = new AdminSystem();  // Admin tools and management
         this.skillSystem = new SkillSystem(this.player);
-        this.challengeSystem = new ChallengeSystem(this.player);
+        this.challengeSystem = new ChallengeSystem(this.player, this.playerProfile);
         this.lastTime = 0;  // Used for calculating delta time between frames
         this.gameState = 'menu';  // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
