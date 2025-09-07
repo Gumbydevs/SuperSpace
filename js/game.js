@@ -61,6 +61,7 @@ class Game {
         this.createMusicButton();
         this.createShopButton();
         this.createProfileButton();
+        this.createAdminButton();
         
         // Set up keyboard shortcuts
         this.setupHotkeys();
@@ -290,6 +291,33 @@ class Game {
         document.body.appendChild(profileBtn);
     }
     
+    // Here we create an admin button for game management
+    createAdminButton() {
+        const adminBtn = document.createElement('button');
+        adminBtn.textContent = '⚙️ Admin';
+        adminBtn.id = 'admin-btn';
+        adminBtn.style.position = 'absolute';
+        adminBtn.style.top = '152px'; // Position below profile button
+        adminBtn.style.right = '0px';
+        adminBtn.style.zIndex = '1002';
+        adminBtn.style.background = 'rgba(50, 0, 0, 0.7)';
+        adminBtn.style.color = 'white';
+        adminBtn.style.border = '1px solid #f33';
+        adminBtn.style.borderRadius = '5px';
+        adminBtn.style.padding = '6px 12px';
+        adminBtn.style.cursor = 'pointer';
+        adminBtn.style.display = 'none';  // Initially hidden until game starts
+        adminBtn.onclick = () => this.toggleAdmin();
+        document.body.appendChild(adminBtn);
+    }
+    
+    // Here we toggle the admin interface on/off
+    toggleAdmin() {
+        if (this.adminSystem) {
+            this.adminSystem.toggleAdmin();
+        }
+    }
+    
     // Here we toggle the profile interface on/off
     toggleProfile() {
         if (this.playerProfile) {
@@ -311,7 +339,20 @@ class Game {
         let keySequence = [];
         const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY']; // "MONEY" cheat code
         
+        // Track currently pressed keys for admin combination
+        let keysPressed = new Set();
+        
         window.addEventListener('keydown', e => {
+            // Track pressed keys for admin combination
+            keysPressed.add(e.code);
+            
+            // Check for admin combination F+T+G
+            if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
+                this.toggleAdmin();
+                keysPressed.clear(); // Clear to prevent repeated triggers
+                return;
+            }
+            
             // Shop hotkey (B key)
             if (e.code === 'KeyB' && this.gameState === 'playing') {
                 this.toggleShop();
@@ -368,6 +409,11 @@ class Game {
                     keySequence = [];
                 }
             }
+        });
+        
+        // Track key releases for admin combination
+        window.addEventListener('keyup', e => {
+            keysPressed.delete(e.code);
         });
         
         // Helper function to compare arrays
