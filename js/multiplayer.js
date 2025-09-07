@@ -1640,6 +1640,14 @@ export class MultiplayerManager {
         }
         this.showGameMessage(deathMessage, '#f44', 3000);
         
+        // Track achievements and player profile for death
+        if (this.game.achievements) {
+            this.game.achievements.onDeath();
+        }
+        if (this.game.playerProfile) {
+            this.game.playerProfile.onDeath();
+        }
+        
         // Respawn after delay
         setTimeout(() => {
             if (!this.game) return; // Safety check
@@ -1685,25 +1693,33 @@ export class MultiplayerManager {
             ? 'You' 
             : (this.players[attackerId]?.name || 'Another player');
         
-        // Show kill message
-        if (attackerId === this.playerId) {
-            this.showGameMessage(`You destroyed ${deadPlayerName}! (+500 pts, +250 credits)`, '#4f4');
-            
-            // Award credits and points immediately for responsive gameplay
-            if (this.game.player) {
-                this.game.player.score += 500;  // Restore immediate score update
-                this.game.player.addCredits(250);
-                this.game.player.wins += 1;  // Track wins locally too
-                this.updatePlayerList(); // Update UI immediately
+            // Show kill message
+            if (attackerId === this.playerId) {
+                this.showGameMessage(`You destroyed ${deadPlayerName}! (+500 pts, +250 credits)`, '#4f4');
                 
-                // Broadcast stats update immediately
-                this.broadcastStatsUpdate();
-            }
-        } else {
-            this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
-        }
-        
-        // Create ship destruction effect for remote player
+                // Award credits and points immediately for responsive gameplay
+                if (this.game.player) {
+                    this.game.player.score += 500;  // Restore immediate score update
+                    this.game.player.addCredits(250);
+                    this.game.player.wins += 1;  // Track wins locally too
+                    this.updatePlayerList(); // Update UI immediately
+                    
+                    // Track achievements and player profile
+                    if (this.game.achievements) {
+                        this.game.achievements.onPlayerKill(playerId);
+                        this.game.achievements.onWin();
+                    }
+                    if (this.game.playerProfile) {
+                        this.game.playerProfile.onKill(this.game.player.currentWeapon, true);
+                        this.game.playerProfile.onCreditsEarned(250);
+                    }
+                    
+                    // Broadcast stats update immediately
+                    this.broadcastStatsUpdate();
+                }
+            } else {
+                this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
+            }        // Create ship destruction effect for remote player
         if (this.game.world && deadPlayer) {
             // Use the createRemoteShipDestructionEffect with player's data
             this.createRemoteShipDestructionEffect(deadPlayer);

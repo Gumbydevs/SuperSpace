@@ -7,6 +7,9 @@ import { UI } from './ui.js';
 import { SoundManager } from './sound.js';
 import { ShopSystem } from './shop.js';
 import { MultiplayerManager } from './multiplayer.js';
+import { AchievementSystem } from './achievements.js';
+import { PlayerProfile } from './playerprofile.js';
+import { AdminSystem } from './adminsystem.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -23,9 +26,15 @@ class Game {
         window.ui = this.ui;  // Make UI accessible globally for avatar manager
         this.soundManager = new SoundManager();  // Handles all game audio
         this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
+        this.achievements = new AchievementSystem(this.player);  // Achievement tracking system
+        this.playerProfile = new PlayerProfile(this.player);  // Player statistics and profile
+        this.adminSystem = new AdminSystem();  // Admin tools and management
         this.lastTime = 0;  // Used for calculating delta time between frames
         this.gameState = 'menu';  // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
+        
+        // Make systems globally accessible
+        window.admin = this.adminSystem;
         
         // Initialize multiplayer system (but don't connect yet)
         this.multiplayer = new MultiplayerManager(this);
@@ -51,6 +60,7 @@ class Game {
         this.createMuteButton();
         this.createMusicButton();
         this.createShopButton();
+        this.createProfileButton();
         
         // Set up keyboard shortcuts
         this.setupHotkeys();
@@ -260,6 +270,33 @@ class Game {
         document.body.appendChild(shopBtn);
     }
     
+    // Here we create a profile button to access player statistics
+    createProfileButton() {
+        const profileBtn = document.createElement('button');
+        profileBtn.textContent = '👤 Profile';
+        profileBtn.id = 'profile-btn';
+        profileBtn.style.position = 'absolute';
+        profileBtn.style.top = '114px'; // Position below shop button
+        profileBtn.style.right = '0px';
+        profileBtn.style.zIndex = '1002';
+        profileBtn.style.background = 'rgba(0, 50, 0, 0.7)';
+        profileBtn.style.color = 'white';
+        profileBtn.style.border = '1px solid #3f3';
+        profileBtn.style.borderRadius = '5px';
+        profileBtn.style.padding = '6px 12px';
+        profileBtn.style.cursor = 'pointer';
+        profileBtn.style.display = 'none';  // Initially hidden until game starts
+        profileBtn.onclick = () => this.toggleProfile();
+        document.body.appendChild(profileBtn);
+    }
+    
+    // Here we toggle the profile interface on/off
+    toggleProfile() {
+        if (this.playerProfile) {
+            this.playerProfile.toggleProfile();
+        }
+    }
+    
     // Here we toggle the shop interface on/off
     toggleShop() {
         // Only allow shop access when playing
@@ -278,6 +315,11 @@ class Game {
             // Shop hotkey (B key)
             if (e.code === 'KeyB' && this.gameState === 'playing') {
                 this.toggleShop();
+            }
+            
+            // Profile hotkey (P key)
+            if (e.code === 'KeyP') {
+                this.toggleProfile();
             }
             
             // Cheat code system
@@ -367,6 +409,9 @@ class Game {
         
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
+        
+        // Show profile button when game starts
+        document.getElementById('profile-btn').style.display = 'block';
         
         // Show gameplay UI elements
         this.ui.setGameplayUIVisibility(true);
@@ -631,6 +676,31 @@ class Game {
             // Update multiplayer status and send player position to server
             if (this.multiplayer && this.multiplayer.connected) {
                 this.multiplayer.update(deltaTime);
+            }
+            
+            // Update achievements and player profile with current data
+            if (this.achievements) {
+                // Track survival time
+                const currentTime = Date.now();
+                const survivalTime = (currentTime - this.gameStartTime) / 1000;
+                this.achievements.onSurvivalTime(survivalTime);
+                
+                // Track credits
+                this.achievements.onCreditsChanged(this.player.credits || 0);
+            }
+            
+            if (this.playerProfile) {
+                // Update playtime
+                this.playerProfile.updatePlaytime(deltaTime);
+            }
+            
+            // Update player profile statistics
+            if (this.playerProfile) {
+                // Track distance traveled (approximate based on velocity)
+                if (this.player.velocity && (this.player.velocity.x !== 0 || this.player.velocity.y !== 0)) {
+                    const distance = Math.sqrt(this.player.velocity.x ** 2 + this.player.velocity.y ** 2) * deltaTime;
+                    this.playerProfile.onDistanceTraveled(distance);
+                }
             }
             
             // Here we update UI elements with current game state

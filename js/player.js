@@ -433,6 +433,13 @@ export class Player {
                             // Show hit message
                             window.game.multiplayer.showGameMessage(`Hit ${remotePlayer.name}!`, '#4f4');
                             
+                            // Track hit for achievements and player profile
+                            if (window.game) {
+                                if (window.game.playerProfile) {
+                                    window.game.playerProfile.onHit(this.currentWeapon);
+                                }
+                            }
+                            
                             // Record hit time for shield impact flash
                             remotePlayer.lastDamageTime = Date.now() / 1000;
                             
@@ -1019,6 +1026,16 @@ export class Player {
         
         // Add the new projectiles to the player's active projectiles array
         this.projectiles.push(...projectiles);
+        
+        // Track shot fired for achievements and player profile
+        if (window.game) {
+            if (window.game.achievements) {
+                // Track shots for accuracy calculation (handled in profile)
+            }
+            if (window.game.playerProfile) {
+                window.game.playerProfile.onShot(this.currentWeapon);
+            }
+        }
         
         // Consume energy if energy system is active
         if (this.maxEnergy > 0 && weaponStats && weaponStats.energyCost) {

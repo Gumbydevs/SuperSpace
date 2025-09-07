@@ -624,6 +624,15 @@
                         }
                         player.addCredits(creditReward);
                         
+                        // Track achievements and player profile
+                        if (window.game && window.game.achievements) {
+                            window.game.achievements.onAsteroidDestroyed();
+                        }
+                        if (window.game && window.game.playerProfile) {
+                            window.game.playerProfile.onCreditsEarned(creditReward);
+                            window.game.playerProfile.onAsteroidDestroyed();
+                        }
+                        
                         // Track fragments and powerups for multiplayer sync
                         const fragmentsCreated = [];
                         const powerupsCreated = [];

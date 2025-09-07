@@ -1590,6 +1590,14 @@ export class ShopSystem {
         // Apply the ship
         this.selectShip(shipId);
         
+        // Track achievements
+        if (window.game && window.game.achievements) {
+            window.game.achievements.onShopPurchase('ship', ship.price);
+        }
+        if (window.game && window.game.playerProfile) {
+            window.game.playerProfile.onShopPurchase('ship', ship.price);
+        }
+        
         // Update shop display
         this.updateShopContent();
     }
@@ -1659,6 +1667,14 @@ export class ShopSystem {
         
         // Select the newly purchased weapon
         this.selectWeapon(weaponId);
+        
+        // Track achievements
+        if (window.game && window.game.achievements) {
+            window.game.achievements.onShopPurchase('weapon', weapon.price);
+        }
+        if (window.game && window.game.playerProfile) {
+            window.game.playerProfile.onShopPurchase('weapon', weapon.price);
+        }
         
         // Update shop display
         this.updateShopContent();
@@ -1752,6 +1768,14 @@ export class ShopSystem {
                 price_paid: price,
                 remaining_credits: this.player.credits
             });
+        }
+        
+        // Track achievements
+        if (window.game && window.game.achievements) {
+            window.game.achievements.onShopPurchase('upgrade', price);
+        }
+        if (window.game && window.game.playerProfile) {
+            window.game.playerProfile.onShopPurchase('upgrade', price);
         }
         
         // Save upgrade level to localStorage
