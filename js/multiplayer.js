@@ -1644,8 +1644,8 @@ export class MultiplayerManager {
         setTimeout(() => {
             if (!this.game) return; // Safety check
             
-            const spawnX = (Math.random() - 0.5) * 1000;
-            const spawnY = (Math.random() - 0.5) * 1000;
+            const spawnX = (Math.random() - 0.5) * 400; // -200 to +200 (safely inside safe zone)
+            const spawnY = (Math.random() - 0.5) * 400; // -200 to +200 (safely inside safe zone)
             
             this.game.player.x = spawnX;
             this.game.player.y = spawnY;

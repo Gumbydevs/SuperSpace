@@ -573,6 +573,8 @@
                         projectile.createSplashEffect(this, soundManager);
                     } else if (projectile.type === 'rocket' && projectile.explosive) {
                         projectile.createExplosion(this, soundManager);
+                        // Mark as exploded so it gets removed properly
+                        projectile.hasExploded = true;
                     }
 
                     // Remove the projectile
