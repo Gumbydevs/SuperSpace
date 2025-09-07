@@ -232,45 +232,47 @@ input[type="range"] {
 .avatar-selection {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-top: 12px;
+    gap: 4px;
+    margin-top: 8px;
 }
 
 .avatar-option {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px;
+    padding: 4px;
     background: rgba(34, 34, 34, 0.6);
     border: 2px solid rgba(68, 68, 68, 0.8);
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
+    min-height: 32px;
 }
 
 .avatar-option:hover {
     background: rgba(51, 51, 255, 0.15);
     border-color: #33f;
-    box-shadow: 0 0 12px rgba(51, 51, 255, 0.4);
+    box-shadow: 0 0 8px rgba(51, 51, 255, 0.4);
 }
 
 .avatar-option.selected {
     background: rgba(51, 51, 255, 0.25);
     border-color: #4af;
-    box-shadow: 0 0 16px rgba(68, 175, 255, 0.6);
+    box-shadow: 0 0 10px rgba(68, 175, 255, 0.6);
 }
 
 .avatar-canvas {
-    border-radius: 4px;
-    margin-bottom: 6px;
+    border-radius: 2px;
+    margin-bottom: 2px;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .avatar-name {
-    font-size: 0.75em;
+    font-size: 9px;
     color: #eaf2ff;
     text-align: center;
     font-weight: bold;
+    line-height: 1;
 }
 
 .avatar-option.selected .avatar-name {
