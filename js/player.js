@@ -2437,17 +2437,20 @@ export class Player {
                     // Reduced damage for slower, more realistic mining
                     const asteroidDamage = beamDamage * (weaponStats?.asteroidDamageMultiplier || 1.5); // Reduced from 3.0 to 1.5
                     
+                    // Apply damage locally first (like regular projectiles do)
+                    hitTarget.object.health -= asteroidDamage;
+                    
                     // Create mining fragments at impact point
                     this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY, deltaTime);
                     
                     // Calculate score points for asteroid destruction
                     let points = 0;
-                    if (hitTarget.object.health - asteroidDamage <= 0) {
-                        // Asteroid will be destroyed, award points
+                    if (hitTarget.object.health <= 0) {
+                        // Asteroid is now destroyed, award points
                         points = hitTarget.object.scoreValue || 0;
                     }
                     
-                    // Send asteroid hit to server with score points
+                    // Send asteroid hit to server with score points for multiplayer sync
                     if (window.game && window.game.multiplayer) {
                         window.game.multiplayer.sendHit('asteroid', hitTarget.object.id, asteroidDamage, points);
                     }
