@@ -313,11 +313,12 @@ export class UI {
         // Weapon icon - made smaller
         const weaponIcon = document.createElement('div');
         weaponIcon.id = 'weapon-icon';
-        weaponIcon.innerHTML = '🔫';
-        weaponIcon.style.fontSize = this.isMobileDevice ? '14px' : '16px';
+        weaponIcon.innerHTML = '❌'; // Default to disengaged icon
+        weaponIcon.style.fontSize = this.isMobileDevice ? '12px' : '14px';
         weaponIcon.style.marginLeft = this.isMobileDevice ? '6px' : '8px';
         weaponIcon.style.display = 'inline-block';
         weaponIcon.style.verticalAlign = 'middle';
+        weaponIcon.style.textShadow = '0 0 3px #f00';
         
         const weaponText = weaponDisplay.querySelector('#weapons');
         if (weaponText) {

@@ -304,6 +304,10 @@ export class Player {
                 this.fireCooldown = baseCooldown * 7; // Big lockout at 0 energy
             }
         }
+        // Don't fire when weapons are disengaged
+        if (this.currentWeapon === 'Disengaged') {
+            canFire = false;
+        }
         if (canFire) {
             this.fire(soundManager);
             this.fireCooldown = baseCooldown * cooldownMod;
