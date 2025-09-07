@@ -2674,13 +2674,7 @@ export class MultiplayerManager {
         // Combine all players
         const allPlayers = [selfData, ...filteredRemotePlayers];
         
-        // Debug: Log player data before sorting
-        console.log('PLAYER LIST UPDATE - Before sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses, id: p.id })));
-        
         allPlayers.sort((a, b) => b.score - a.score);
-        
-        // Debug: Log player data after sorting
-        console.log('PLAYER LIST UPDATE - After sort:', allPlayers.map(p => ({ name: p.name, score: p.score, wins: p.wins, losses: p.losses, id: p.id })));
 
         // Header row
         const header = document.createElement('div');
