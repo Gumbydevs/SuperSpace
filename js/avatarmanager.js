@@ -4,7 +4,7 @@
 export class AvatarManager {
     constructor() {
         this.selectedAvatar = localStorage.getItem('selectedAvatar') || 'han';
-        this.avatarOptions = ['han', 'ripley', 'robot', 'alien'];
+        this.avatarOptions = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
         this.initialized = false;
         this.tempSelection = null; // For modal selection
         
@@ -170,6 +170,12 @@ export class AvatarManager {
                 break;
             case 'alien':
                 this.drawGorf(ctx, size);
+                break;
+            case 'longjohn':
+                this.drawLongJohn(ctx, size);
+                break;
+            case 'missy':
+                this.drawMissy(ctx, size);
                 break;
         }
     }
@@ -375,6 +381,130 @@ export class AvatarManager {
         ctx.fillRect(10*scale, 16*scale, 4*scale, Math.max(1, 1*scale));
     }
 
+    drawLongJohn(ctx, size) {
+        // Pirate captain - Long John (scalable)
+        const scale = size / 24;
+        
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Face (weathered)
+        ctx.fillStyle = '#d4a574';
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 12*scale);
+        
+        // Dark hair with bandana
+        ctx.fillStyle = '#2d1f1a';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 4*scale);
+        ctx.fillRect(5*scale, 5*scale, 2*scale, 3*scale);
+        ctx.fillRect(17*scale, 5*scale, 2*scale, 3*scale);
+        
+        // Red bandana
+        ctx.fillStyle = '#cc4444';
+        ctx.fillRect(7*scale, 3*scale, 10*scale, 2*scale);
+        ctx.fillStyle = '#aa3333';
+        ctx.fillRect(8*scale, 2*scale, 8*scale, Math.max(1, 1*scale));
+        
+        // Eyes (one with eyepatch)
+        ctx.fillStyle = '#4a90e2';
+        ctx.fillRect(8*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        // Eyepatch
+        ctx.fillStyle = '#000';
+        ctx.fillRect(13*scale, 7*scale, 3*scale, 3*scale);
+        
+        // Scar
+        ctx.fillStyle = '#b8945f';
+        ctx.fillRect(15*scale, 9*scale, Math.max(1, 1*scale), 3*scale);
+        
+        // Beard (gray)
+        ctx.fillStyle = '#666666';
+        ctx.fillRect(8*scale, 12*scale, 8*scale, 4*scale);
+        ctx.fillStyle = '#555555';
+        ctx.fillRect(9*scale, 13*scale, 6*scale, 3*scale);
+        
+        // Nose
+        ctx.fillStyle = '#c49564';
+        ctx.fillRect(11*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Pirate coat (dark blue)
+        ctx.fillStyle = '#1a2d5a';
+        ctx.fillRect(4*scale, 17*scale, 16*scale, 7*scale);
+        ctx.fillStyle = '#243a6a';
+        ctx.fillRect(6*scale, 19*scale, 12*scale, 5*scale);
+        
+        // Gold buttons
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(7*scale, 22*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // White collar
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(8*scale, 17*scale, 8*scale, Math.max(1, 1*scale));
+    }
+
+    drawMissy(ctx, size) {
+        // Female pilot - Missy (scalable with pink elements)
+        const scale = size / 24;
+        
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Face (smooth, feminine)
+        ctx.fillStyle = '#f5c4a6';
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 12*scale);
+        
+        // Pink hair with highlights
+        ctx.fillStyle = '#d65a9f';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 5*scale);
+        ctx.fillRect(5*scale, 5*scale, 2*scale, 4*scale);
+        ctx.fillRect(17*scale, 5*scale, 2*scale, 4*scale);
+        // Pink highlights
+        ctx.fillStyle = '#ff69b4';
+        ctx.fillRect(8*scale, 4*scale, Math.max(1, 1*scale), 3*scale);
+        ctx.fillRect(11*scale, 4*scale, 2*scale, 3*scale);
+        ctx.fillRect(15*scale, 4*scale, Math.max(1, 1*scale), 3*scale);
+        
+        // Eyes (larger, feminine with makeup)
+        ctx.fillStyle = '#2a7c4a';
+        ctx.fillRect(8*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 8*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Pink eyeshadow
+        ctx.fillStyle = '#ffb3d9';
+        ctx.fillRect(7*scale, 7*scale, 3*scale, Math.max(1, 1*scale));
+        ctx.fillRect(13*scale, 7*scale, 3*scale, Math.max(1, 1*scale));
+        
+        // Eyebrows (shaped)
+        ctx.fillStyle = '#b8447a';
+        ctx.fillRect(8*scale, 7*scale, 2*scale, Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 7*scale, 2*scale, Math.max(1, 1*scale));
+        
+        // Nose (delicate)
+        ctx.fillStyle = '#e6a478';
+        ctx.fillRect(11*scale, 10*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Pink lipstick
+        ctx.fillStyle = '#ff69b4';
+        ctx.fillRect(10*scale, 12*scale, 3*scale, Math.max(1, 1*scale));
+        
+        // Pink flight suit
+        ctx.fillStyle = '#cc4499';
+        ctx.fillRect(4*scale, 17*scale, 16*scale, 7*scale);
+        ctx.fillStyle = '#dd5aaa';
+        ctx.fillRect(6*scale, 19*scale, 12*scale, 5*scale);
+        
+        // Silver details
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(9*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(11*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(13*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Pink collar accent
+        ctx.fillStyle = '#ff8fc7';
+        ctx.fillRect(8*scale, 17*scale, 8*scale, Math.max(1, 1*scale));
+    }
+
     getSelectedAvatar() {
         return this.selectedAvatar;
     }
@@ -435,6 +565,42 @@ export class AvatarManager {
                 ctx.fillRect(5, 4, 1, 1);
                 ctx.fillRect(10, 4, 1, 1);
                 ctx.fillStyle = '#2d4a3a';
+                ctx.fillRect(2, 12, 12, 4);
+                break;
+            case 'longjohn': // Long John (Pirate)
+                ctx.fillStyle = '#d4a574';
+                ctx.fillRect(4, 4, 8, 8);
+                ctx.fillStyle = '#2d1f1a';
+                ctx.fillRect(3, 2, 10, 4);
+                ctx.fillStyle = '#cc4444'; // Red bandana
+                ctx.fillRect(4, 2, 8, 1);
+                ctx.fillStyle = '#4a90e2';
+                ctx.fillRect(5, 6, 1, 1);
+                ctx.fillStyle = '#000'; // Eyepatch
+                ctx.fillRect(9, 5, 2, 2);
+                ctx.fillStyle = '#666666'; // Beard
+                ctx.fillRect(5, 9, 6, 3);
+                ctx.fillStyle = '#1a2d5a'; // Pirate coat
+                ctx.fillRect(2, 12, 12, 4);
+                break;
+            case 'missy': // Missy (Female with pink)
+                ctx.fillStyle = '#f5c4a6';
+                ctx.fillRect(4, 4, 8, 8);
+                ctx.fillStyle = '#d65a9f'; // Pink hair
+                ctx.fillRect(3, 2, 10, 4);
+                ctx.fillStyle = '#ff69b4'; // Pink highlights
+                ctx.fillRect(5, 2, 1, 2);
+                ctx.fillRect(8, 2, 2, 2);
+                ctx.fillRect(11, 2, 1, 2);
+                ctx.fillStyle = '#2a7c4a';
+                ctx.fillRect(5, 6, 1, 1);
+                ctx.fillRect(10, 6, 1, 1);
+                ctx.fillStyle = '#ffb3d9'; // Pink eyeshadow
+                ctx.fillRect(4, 5, 2, 1);
+                ctx.fillRect(9, 5, 2, 1);
+                ctx.fillStyle = '#ff69b4'; // Pink lips
+                ctx.fillRect(6, 9, 3, 1);
+                ctx.fillStyle = '#cc4499'; // Pink flight suit
                 ctx.fillRect(2, 12, 12, 4);
                 break;
         }
