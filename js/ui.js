@@ -169,30 +169,33 @@ export class UI {
         hudContainer.style.pointerEvents = 'none'; 
         hudContainer.style.zIndex = '1000'; 
         
-        // Determine appropriate scaling based on device size
+        // Determine appropriate scaling and positioning based on device size
         let topPanelScale = 0.85; // Default desktop scale
         let statusPanelScale = 0.85; // Default desktop scale
         let minimapSize = 120; // Default desktop size
         let statusPanelPadding = '10px';
         let minimapMargin = '15px';
         let topPanelPosition = '10px';
+        let statusBottomPosition = '15px'; // Default desktop position
         
         // Apply additional scaling for mobile/tablet devices
         if (this.isMobileDevice) {
-            topPanelScale = 0.7;
-            statusPanelScale = 0.7;
-            minimapSize = 100;
-            statusPanelPadding = '8px';
+            topPanelScale = 0.65;
+            statusPanelScale = 0.65;
+            minimapSize = 80;
+            statusPanelPadding = '6px';
             minimapMargin = '10px'; 
             topPanelPosition = '5px';
+            statusBottomPosition = '150px'; // Move up to avoid touch controls
             
             // Further adjustments for small mobile screens
             if (this.isSmallMobile) {
-                topPanelScale = 0.6;
-                statusPanelScale = 0.6;
-                minimapSize = 80;
-                statusPanelPadding = '6px';
-                minimapMargin = '8px';
+                topPanelScale = 0.55;
+                statusPanelScale = 0.55;
+                minimapSize = 60;
+                statusPanelPadding = '4px';
+                minimapMargin = '5px';
+                statusBottomPosition = '130px'; // Even higher for small screens
             }
         }
         
@@ -235,11 +238,11 @@ export class UI {
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
     topInfoPanel.appendChild(creditsDisplay);
         
-        // Bottom right - Minimap - SCALED DOWN
+        // Bottom right - Minimap - positioned to avoid touch controls on mobile
         const minimapContainer = document.createElement('div');
         minimapContainer.id = 'minimap-container';
         minimapContainer.style.position = 'absolute';
-        minimapContainer.style.bottom = minimapMargin;
+        minimapContainer.style.bottom = this.isMobileDevice ? statusBottomPosition : minimapMargin;
         minimapContainer.style.right = minimapMargin;
         minimapContainer.style.width = `${minimapSize}px`;
         minimapContainer.style.height = `${minimapSize}px`;
@@ -260,11 +263,11 @@ export class UI {
         topInfoPanel.appendChild(scoreDisplay);
         topInfoPanel.appendChild(creditsDisplay);
         
-        // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - SCALED DOWN
+        // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
         const statusPanel = document.createElement('div');
         statusPanel.id = 'status-panel';
         statusPanel.style.position = 'absolute';
-        statusPanel.style.bottom = minimapMargin;
+        statusPanel.style.bottom = this.isMobileDevice ? statusBottomPosition : minimapMargin;
         statusPanel.style.left = minimapMargin;
         statusPanel.style.display = 'flex';
         statusPanel.style.flexDirection = 'column';

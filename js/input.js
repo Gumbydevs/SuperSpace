@@ -148,6 +148,13 @@ export class InputHandler {
         afterburnerButton.innerHTML = '🚀';
         touchUI.appendChild(afterburnerButton);
         
+        // Create mobile menu/pause button
+        const menuButton = document.createElement('div');
+        menuButton.id = 'mobile-menu-button';
+        menuButton.className = 'touch-button mobile-menu-button';
+        menuButton.innerHTML = '⚙️';
+        touchUI.appendChild(menuButton);
+        
         document.body.appendChild(touchUI);
         
         // Add button touch events
@@ -197,7 +204,23 @@ export class InputHandler {
             }
         });
         
-        // Add CSS for touch controls
+        // Add mobile menu button events
+        menuButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            // Simulate Escape key press to open options menu
+            if (!this.keys.includes('Escape')) {
+                this.keys.push('Escape');
+                // Remove it after a short delay to simulate a keypress
+                setTimeout(() => {
+                    const index = this.keys.indexOf('Escape');
+                    if (index > -1) {
+                        this.keys.splice(index, 1);
+                    }
+                }, 100);
+            }
+        });
+        
+        // Add CSS for touch controls - updated for better mobile experience
         const style = document.createElement('style');
         style.textContent = `
             .touch-ui {
@@ -205,62 +228,176 @@ export class InputHandler {
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                height: 100%;
+                height: 140px;
                 pointer-events: none;
-                z-index: 1000;
+                z-index: 1001;
                 display: none; /* Hide by default, show only on touch devices */
+                background: linear-gradient(to top, rgba(0,0,0,0.2), transparent);
             }
             
             .touch-joystick {
                 position: absolute;
-                bottom: 20%;
-                left: 15%;
-                width: 120px;
-                height: 120px;
-                background-color: rgba(255, 255, 255, 0.2);
-                border: 2px solid rgba(255, 255, 255, 0.4);
+                bottom: 20px;
+                left: 20px;
+                width: 100px;
+                height: 100px;
+                background-color: rgba(255, 255, 255, 0.15);
+                border: 2px solid rgba(255, 255, 255, 0.3);
                 border-radius: 50%;
                 pointer-events: auto;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
             }
             
             .joystick-knob {
                 position: absolute;
-                width: 50px;
-                height: 50px;
-                background-color: rgba(255, 255, 255, 0.6);
+                width: 40px;
+                height: 40px;
+                background-color: rgba(255, 255, 255, 0.7);
                 border-radius: 50%;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                transition: all 0.1s ease;
             }
             
             .touch-button {
                 position: absolute;
-                width: 80px;
-                height: 80px;
-                background-color: rgba(255, 255, 255, 0.3);
-                border: 2px solid rgba(255, 255, 255, 0.5);
+                background-color: rgba(255, 255, 255, 0.2);
+                border: 2px solid rgba(255, 255, 255, 0.4);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 30px;
+                font-size: 24px;
                 pointer-events: auto;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-tap-highlight-color: transparent;
+                transition: all 0.1s ease;
+            }
+            
+            .touch-button:active {
+                background-color: rgba(255, 255, 255, 0.4);
+                transform: scale(0.95);
             }
             
             #fire-button {
-                bottom: 20%;
-                right: 15%;
+                bottom: 30px;
+                right: 30px;
+                width: 80px;
+                height: 80px;
+                background-color: rgba(255, 100, 100, 0.3);
+                border-color: rgba(255, 100, 100, 0.6);
+                font-size: 28px;
+            }
+            
+            #fire-button:active {
+                background-color: rgba(255, 100, 100, 0.6);
+                box-shadow: 0 0 15px rgba(255, 100, 100, 0.8);
             }
             
             #weapon-button {
-                bottom: 35%;
-                right: 15%;
+                bottom: 30px;
+                right: 130px;
+                width: 60px;
+                height: 60px;
+                background-color: rgba(100, 150, 255, 0.3);
+                border-color: rgba(100, 150, 255, 0.6);
+            }
+            
+            #weapon-button:active {
+                background-color: rgba(100, 150, 255, 0.6);
+                box-shadow: 0 0 15px rgba(100, 150, 255, 0.8);
+            }
+            
+            #afterburner-button {
+                bottom: 100px;
+                right: 30px;
+                width: 60px;
+                height: 60px;
+                background-color: rgba(255, 200, 100, 0.3);
+                border-color: rgba(255, 200, 100, 0.6);
+            }
+            
+            #afterburner-button:active,
+            #afterburner-button.active {
+                background-color: rgba(255, 200, 100, 0.6);
+                box-shadow: 0 0 15px rgba(255, 200, 100, 0.8);
+            }
+            
+            #mobile-menu-button {
+                bottom: 100px;
+                right: 100px;
+                width: 50px;
+                height: 50px;
+                background-color: rgba(200, 200, 200, 0.3);
+                border-color: rgba(200, 200, 200, 0.6);
+                font-size: 20px;
+            }
+            
+            #mobile-menu-button:active {
+                background-color: rgba(200, 200, 200, 0.6);
+                box-shadow: 0 0 15px rgba(200, 200, 200, 0.8);
             }
             
             @media (hover: none) and (pointer: coarse) {
                 .touch-ui {
-                    display: block;
+                    display: block !important;
+                }
+            }
+            
+            /* Small mobile adjustments */
+            @media screen and (max-width: 480px) {
+                .touch-ui {
+                    height: 120px;
+                }
+                
+                .touch-joystick {
+                    width: 80px;
+                    height: 80px;
+                    bottom: 15px;
+                    left: 15px;
+                }
+                
+                .joystick-knob {
+                    width: 30px;
+                    height: 30px;
+                }
+                
+                #fire-button {
+                    width: 65px;
+                    height: 65px;
+                    bottom: 20px;
+                    right: 20px;
+                    font-size: 20px;
+                }
+                
+                #weapon-button {
+                    width: 50px;
+                    height: 50px;
+                    bottom: 20px;
+                    right: 100px;
+                    font-size: 18px;
+                }
+                
+                #afterburner-button {
+                    width: 50px;
+                    height: 50px;
+                    bottom: 80px;
+                    right: 20px;
+                    font-size: 18px;
+                }
+                
+                #mobile-menu-button {
+                    width: 40px;
+                    height: 40px;
+                    bottom: 80px;
+                    right: 80px;
+                    font-size: 16px;
                 }
             }
         `;
@@ -272,7 +409,9 @@ export class InputHandler {
             joystick: joystick,
             knob: joystickKnob,
             fireButton: fireButton,
-            weaponButton: weaponButton
+            weaponButton: weaponButton,
+            afterburnerButton: afterburnerButton,
+            menuButton: menuButton
         };
     }
     

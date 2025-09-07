@@ -7,6 +7,23 @@ body {
     font-weight: 400;
     overflow: hidden;
     overscroll-behavior-y: contain;
+    /* Disable text selection globally to prevent accidental highlighting */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Disable touch callouts on mobile */
+    -webkit-touch-callout: none;
+    /* Disable tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow text selection on form elements where it's needed */
+input, textarea, select, button, [contenteditable] {
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
 }
 
 .game-container {
@@ -656,35 +673,429 @@ input[type="range"] {
     text-shadow: 0 0 5px #4af;
 }
 
-/* Mobile responsiveness for touch controls */
-@media (hover: none) and (pointer: coarse) {
-    /* Adjust UI elements to avoid overlap with touch controls */
-    #score-container, #health-container, #shield-container, #energy-container, #credits-container {
+/* Mobile and Tablet Responsive Design */
+@media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+    /* Global mobile adjustments */
+    body {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+    }
+    
+    /* Menu adjustments for mobile */
+    #menu {
+        padding: 10px;
+    }
+    
+    #menu h1 {
+        font-size: 2.5rem;
+        margin: 20px 0;
+    }
+    
+    #menu button {
+        min-height: 48px;
+        min-width: 120px;
         font-size: 16px;
-        padding: 5px 8px;
+        padding: 12px 24px;
+        margin: 8px;
+        touch-action: manipulation;
     }
     
-    /* Move UI elements away from the edges to avoid overlap with touch controls */
-    #game-ui {
-        padding: 50px 20px;
+    /* Options overlay mobile adjustments */
+    .options-panel {
+        width: 95%;
+        max-width: 400px;
+        margin: 10px;
+        max-height: 85vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    /* Make buttons easier to tap */
-    button {
+    .options-panel h2 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+    
+    .section {
+        margin-bottom: 15px;
+        padding: 10px;
+    }
+    
+    .section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+    
+    /* Compact controls list for mobile */
+    .controls-list, .instructions-list {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        padding-left: 15px;
+    }
+    
+    .controls-list li, .instructions-list li {
+        margin-bottom: 4px;
+    }
+    
+    /* Audio controls mobile adjustments */
+    .slider-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin-bottom: 10px;
+    }
+    
+    .slider-row label {
+        min-width: unset;
+        font-size: 0.85rem;
+    }
+    
+    input[type="range"] {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    input[type="checkbox"] {
+        transform: scale(1.2);
+        margin-right: 8px;
+    }
+    
+    /* Profile section mobile adjustments */
+    .pilot-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .pilot-name-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .profile-avatar-canvas {
+        margin: 10px auto;
+    }
+    
+    .pilot-buttons {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .pilot-buttons button {
+        width: 100%;
         min-height: 44px;
-        min-width: 44px;
-        padding: 10px 15px;
     }
     
-    /* Ensure modals are accessible on small screens */
-    .modal-content {
-        width: 90%;
-        max-width: 500px;
+    .profile-buttons {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        margin-top: 15px;
     }
     
-    /* Prevent double-tap zoom on controls */
-    .touch-ui, .touch-joystick, .touch-button {
+    .profile-buttons button {
+        width: 100%;
+        min-height: 44px;
+    }
+    
+    /* Avatar selection mobile adjustments */
+    .avatar-selection {
+        max-height: 200px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .avatar-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 8px;
+        padding: 10px;
+    }
+    
+    .avatar-option {
+        padding: 6px;
+    }
+    
+    .avatar-canvas {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .avatar-name {
+        font-size: 0.65rem;
+    }
+    
+    /* Close button mobile adjustments */
+    .close-btn {
+        top: 8px;
+        right: 8px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.3em;
+    }
+    
+    /* HUD adjustments for mobile - avoid touch control overlap */
+    #hud-container {
+        padding: 60px 10px 140px 10px; /* More padding at bottom for touch controls */
+    }
+    
+    /* Adjust game UI elements to avoid touch control overlap */
+    #score-container, #health-container, #shield-container, 
+    #energy-container, #credits-container {
+        font-size: 14px;
+        padding: 4px 6px;
+    }
+    
+    /* Minimap adjustments for mobile */
+    #minimap-container {
+        width: 80px;
+        height: 80px;
+        bottom: 150px; /* Move up to avoid touch controls */
+        right: 10px;
+    }
+    
+    /* Status panel adjustments for mobile */
+    #status-panel {
+        bottom: 150px; /* Move up to avoid touch controls */
+        left: 10px;
+        transform: scale(0.8);
+        transform-origin: bottom left;
+    }
+    
+    /* Touch controls styling */
+    .touch-ui {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 140px; /* Fixed height for touch control area */
+        pointer-events: none;
+        z-index: 1001;
+        background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+    }
+    
+    .touch-joystick {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 100px;
+        height: 100px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        pointer-events: auto;
         touch-action: none;
+    }
+    
+    .joystick-knob {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .touch-button {
+        position: absolute;
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        pointer-events: auto;
+        touch-action: none;
+        user-select: none;
+        transition: all 0.1s ease;
+    }
+    
+    .touch-button:active {
+        background-color: rgba(255, 255, 255, 0.4);
+        transform: scale(0.95);
+    }
+    
+    /* Fire button - larger and prominent */
+    #fire-button {
+        bottom: 30px;
+        right: 30px;
+        width: 80px;
+        height: 80px;
+        background-color: rgba(255, 100, 100, 0.3);
+        border-color: rgba(255, 100, 100, 0.6);
+    }
+    
+    #fire-button:active {
+        background-color: rgba(255, 100, 100, 0.6);
+    }
+    
+    /* Weapon switch button */
+    #weapon-button {
+        bottom: 30px;
+        right: 130px;
+        width: 60px;
+        height: 60px;
+        background-color: rgba(100, 150, 255, 0.3);
+        border-color: rgba(100, 150, 255, 0.6);
+    }
+    
+    #weapon-button:active {
+        background-color: rgba(100, 150, 255, 0.6);
+    }
+    
+    /* Afterburner button */
+    #afterburner-button {
+        bottom: 100px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background-color: rgba(255, 200, 100, 0.3);
+        border-color: rgba(255, 200, 100, 0.6);
+    }
+    
+    #afterburner-button:active,
+    #afterburner-button.active {
+        background-color: rgba(255, 200, 100, 0.6);
+        box-shadow: 0 0 15px rgba(255, 200, 100, 0.8);
+    }
+    
+    /* Mobile menu/settings button */
+    #mobile-menu-button {
+        bottom: 100px;
+        right: 100px;
+        width: 50px;
+        height: 50px;
+        background-color: rgba(200, 200, 200, 0.3);
+        border-color: rgba(200, 200, 200, 0.6);
+        font-size: 20px;
+    }
+    
+    #mobile-menu-button:active {
+        background-color: rgba(200, 200, 200, 0.6);
+        box-shadow: 0 0 15px rgba(200, 200, 200, 0.8);
+    }
+    
+    /* Prevent double-tap zoom on all interactive elements */
+    button, .touch-button, .touch-joystick, input, select, textarea {
+        touch-action: manipulation;
+    }
+}
+
+/* Small mobile devices (phones in portrait) */
+@media screen and (max-width: 480px) {
+    #menu h1 {
+        font-size: 2rem;
+    }
+    
+    .options-panel {
+        width: 98%;
+        margin: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .section {
+        padding: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .controls-list, .instructions-list {
+        font-size: 0.8rem;
+    }
+    
+    /* Smaller touch controls for small screens */
+    .touch-joystick {
+        width: 80px;
+        height: 80px;
+        bottom: 15px;
+        left: 15px;
+    }
+    
+    .joystick-knob {
+        width: 30px;
+        height: 30px;
+    }
+    
+    #fire-button {
+        width: 65px;
+        height: 65px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 20px;
+    }
+    
+    #weapon-button {
+        width: 50px;
+        height: 50px;
+        bottom: 20px;
+        right: 100px;
+        font-size: 18px;
+    }
+    
+        #afterburner-button {
+            width: 50px;
+            height: 50px;
+            bottom: 80px;
+            right: 20px;
+            font-size: 18px;
+        }
+        
+        #mobile-menu-button {
+            width: 40px;
+            height: 40px;
+            bottom: 80px;
+            right: 80px;
+            font-size: 16px;
+        }    /* Adjust HUD for smaller screens */
+    #hud-container {
+        padding: 50px 5px 120px 5px;
+    }
+    
+    #minimap-container {
+        width: 60px;
+        height: 60px;
+        bottom: 130px;
+        right: 5px;
+    }
+    
+    #status-panel {
+        bottom: 130px;
+        left: 5px;
+        transform: scale(0.7);
+    }
+}
+
+/* Tablet landscape adjustments */
+@media screen and (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+    .touch-ui {
+        height: 120px;
+    }
+    
+    .touch-joystick {
+        width: 90px;
+        height: 90px;
+    }
+    
+    #fire-button {
+        width: 70px;
+        height: 70px;
+    }
+    
+    #weapon-button, #afterburner-button {
+        width: 55px;
+        height: 55px;
+    }
+    
+    #minimap-container {
+        bottom: 130px;
+    }
+    
+    #status-panel {
+        bottom: 130px;
     }
 }
 
