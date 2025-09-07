@@ -643,14 +643,14 @@ export class MultiplayerManager {
 
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
-            // Get player names for the kill message
+            // Get player names for the kill message with proper fallback logic
             const killerName = data.attackerId === this.playerId ? 
                 'You' : 
-                (this.players[data.attackerId]?.name || 'Another player');
+                (this.players[data.attackerId]?.name || this.playerNameCache[data.attackerId] || 'Another player');
 
             const victimName = data.playerId === this.playerId ? 
                 'you' : 
-                (this.players[data.playerId]?.name || 'another player');
+                (this.players[data.playerId]?.name || this.playerNameCache[data.playerId] || 'another player');
                 
             // IMPORTANT: If this is OUR player that died, ALWAYS create the explosion effect immediately
             // This ensures death animation is visible even if server and client communication has issues
@@ -745,7 +745,7 @@ export class MultiplayerManager {
         this.socket.on('playerDestroyedByAsteroid', (data) => {
             const victimName = data.playerId === this.playerId ? 
                 'You' : 
-                (this.players[data.playerId]?.name || data.playerName || 'A player');
+                (this.players[data.playerId]?.name || this.playerNameCache[data.playerId] || data.playerName || 'A player');
                 
             // Show kill announcement for all asteroid deaths
             this.ensureKillAnnouncerReady();
@@ -768,7 +768,7 @@ export class MultiplayerManager {
                 return;
             }
             
-            const playerName = this.players[playerId]?.name || 'A player';
+            const playerName = this.players[playerId]?.name || this.playerNameCache[playerId] || 'A player';
             this.removeRemotePlayer(playerId);
             this.showGameMessage(`${playerName} left the game`, '#aaa');
             
@@ -1744,7 +1744,7 @@ export class MultiplayerManager {
         }
         
         // Show damage message
-        const attacker = this.players[attackerId]?.name || 'Another player';
+        const attacker = this.players[attackerId]?.name || this.playerNameCache[attackerId] || 'Another player';
         this.showGameMessage(`Hit by ${attacker} (-${damage.toFixed(1)})`, '#f88');
     }
 
@@ -1782,7 +1782,7 @@ export class MultiplayerManager {
         }, duration * 1000);
         
         // Show disruption message
-        const attacker = this.players[attackerId]?.name || 'Another player';
+        const attacker = this.players[attackerId]?.name || this.playerNameCache[attackerId] || 'Another player';
         this.showGameMessage(`Shields disrupted by ${attacker}!`, '#f84');
     }
 
@@ -1851,7 +1851,7 @@ export class MultiplayerManager {
         if (attackerId === 'asteroid') {
             deathMessage = 'Destroyed by an asteroid!';
         } else {
-            const attacker = this.players[attackerId]?.name || 'Another player';
+            const attacker = this.players[attackerId]?.name || this.playerNameCache[attackerId] || 'Another player';
             deathMessage = `Destroyed by ${attacker}!`;
         }
         this.showGameMessage(deathMessage, '#f44', 3000);
@@ -1864,7 +1864,7 @@ export class MultiplayerManager {
             // Get killer name for nemesis tracking
             let killerName = null;
             if (attackerId !== 'asteroid') {
-                killerName = this.players[attackerId]?.name || 'Unknown Player';
+                killerName = this.players[attackerId]?.name || this.playerNameCache[attackerId] || 'Unknown Player';
             }
             this.game.playerProfile.onDeath(killerName);
         }
@@ -1937,7 +1937,7 @@ export class MultiplayerManager {
         const deadPlayerName = deadPlayer.name || 'A player';
         const attacker = attackerId === this.playerId 
             ? 'You' 
-            : (this.players[attackerId]?.name || 'Another player');
+            : (this.players[attackerId]?.name || this.playerNameCache[attackerId] || 'Another player');
         
             // Show kill message
             if (attackerId === this.playerId) {
