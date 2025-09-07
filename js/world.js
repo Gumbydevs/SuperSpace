@@ -556,6 +556,17 @@
 
                     // Create hit effect at the impact point
                     this.createProjectileHitEffect(impactX, impactY, asteroid.radius, soundManager);
+                    
+                    // Send projectile impact to other players for visual sync
+                    const multiplayerAvailable = window.game && window.game.multiplayer && window.game.multiplayer.connected;
+                    if (multiplayerAvailable) {
+                        window.game.multiplayer.sendProjectileImpact({
+                            x: impactX,
+                            y: impactY,
+                            radius: asteroid.radius,
+                            asteroidId: asteroid.id
+                        });
+                    }
 
                     // Handle special projectile effects before removing the projectile
                     if (projectile.type === 'plasma' && projectile.splashRadius) {
@@ -608,25 +619,56 @@
                         }
                         player.addCredits(creditReward);
                         
+                        // Track fragments and powerups for multiplayer sync
+                        const fragmentsCreated = [];
+                        const powerupsCreated = [];
+                        const originalAsteroidCount = this.asteroids.length;
+                        
                         // Split asteroid if it's not small
                         if (asteroid.size !== 'small') {
                             this.splitAsteroid(asteroid, soundManager);
                             
+                            // Get the newly created fragments (they were added to the end of the array)
+                            const newFragments = this.asteroids.slice(originalAsteroidCount);
+                            fragmentsCreated.push(...newFragments);
+                            
                             // Chance to spawn powerup
                             if (Math.random() < 0.3) {
                                 this.spawnPowerup(asteroid.x, asteroid.y);
+                                // Find the newly spawned powerup
+                                const newPowerup = this.powerups[this.powerups.length - 1];
+                                if (newPowerup) {
+                                    powerupsCreated.push({
+                                        x: newPowerup.x,
+                                        y: newPowerup.y,
+                                        type: newPowerup.type
+                                    });
+                                }
                             }
                         } else if (Math.random() < 0.1) {
                             // Small chance for small asteroids to spawn powerup
                             this.spawnPowerup(asteroid.x, asteroid.y);
+                            const newPowerup = this.powerups[this.powerups.length - 1];
+                            if (newPowerup) {
+                                powerupsCreated.push({
+                                    x: newPowerup.x,
+                                    y: newPowerup.y,
+                                    type: newPowerup.type
+                                });
+                            }
                         }
                         
                         // Remove the original asteroid
                         this.asteroids.splice(i, 1);
                         
-                        // Send hit to server for sync (but don't wait for response)
+                        // Send destruction data to server for other players
                         if (multiplayerAvailable) {
-                            window.game.multiplayer.sendHit('asteroid', asteroid.id, projectile.damage, asteroid.scoreValue, creditReward, true);
+                            window.game.multiplayer.sendAsteroidDestruction(
+                                asteroid,
+                                fragmentsCreated,
+                                powerupsCreated,
+                                { x: impactX, y: impactY, radius: asteroid.radius }
+                            );
                         }
                     }
                 }

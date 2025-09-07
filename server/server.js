@@ -621,6 +621,37 @@ io.on('connection', (socket) => {
   socket.on('ping', () => {
     playerLastActivity[socket.id] = Date.now();
   });
+
+  // Handle asteroid destruction from players (for syncing fragments and powerups)
+  socket.on('asteroidDestroyed', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    console.log(`Player ${socket.id} destroyed asteroid ${data.asteroidId} with ${data.fragments.length} fragments and ${data.powerups.length} powerups`);
+    
+    // Broadcast the destruction to all other players
+    socket.broadcast.emit('playerAsteroidDestroyed', {
+      playerId: socket.id,
+      asteroidId: data.asteroidId,
+      position: data.position,
+      fragments: data.fragments,
+      powerups: data.powerups,
+      explosion: data.explosion
+    });
+  });
+
+  // Handle projectile impacts from players (for visual sync)
+  socket.on('projectileImpact', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Broadcast the impact to all other players
+    socket.broadcast.emit('playerProjectileImpact', {
+      playerId: socket.id,
+      x: data.x,
+      y: data.y,
+      radius: data.radius,
+      asteroidId: data.asteroidId
+    });
+  });
   
   // Player disconnect
   socket.on('disconnect', () => {

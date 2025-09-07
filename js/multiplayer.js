@@ -446,6 +446,24 @@ export class MultiplayerManager {
                 console.warn('No game world available to handle asteroid destruction');
             }
         });
+
+        // Handle asteroid destruction from other players
+        this.socket.on('playerAsteroidDestroyed', (data) => {
+            console.log('💥 Player asteroid destroyed:', data);
+            if (this.game.world && data.playerId !== this.socket.id) {
+                // Another player destroyed an asteroid - show the effects
+                this.handleOtherPlayerAsteroidDestruction(data);
+            }
+        });
+
+        // Handle projectile impacts from other players
+        this.socket.on('playerProjectileImpact', (data) => {
+            console.log('💥 Player projectile impact:', data);
+            if (this.game.world && data.playerId !== this.socket.id) {
+                // Show the hit effect for other players
+                this.game.world.createProjectileHitEffect(data.x, data.y, data.radius);
+            }
+        });
         
         // Handle world update from server
         this.socket.on('worldUpdate', (data) => {
@@ -973,6 +991,43 @@ export class MultiplayerManager {
         
         console.log('Sending hit to server:', hitData);
         this.socket.emit('hit', hitData);
+    }
+
+    // Send asteroid destruction with fragments and powerups
+    sendAsteroidDestruction(asteroid, fragments, powerups, explosionData) {
+        if (!this.connected) return;
+        
+        const destructionData = {
+            asteroidId: asteroid.id,
+            position: { x: asteroid.x, y: asteroid.y },
+            fragments: fragments.map(frag => ({
+                id: frag.id,
+                x: frag.x,
+                y: frag.y,
+                radius: frag.radius,
+                health: frag.health,
+                rotation: frag.rotation,
+                rotationSpeed: frag.rotationSpeed,
+                velocityX: frag.velocityX,
+                velocityY: frag.velocityY,
+                size: frag.size,
+                scoreValue: frag.scoreValue,
+                vertices: frag.vertices
+            })),
+            powerups: powerups,
+            explosion: explosionData
+        };
+        
+        console.log('Sending asteroid destruction to server:', destructionData);
+        this.socket.emit('asteroidDestroyed', destructionData);
+    }
+
+    // Send projectile impact for visual sync
+    sendProjectileImpact(impactData) {
+        if (!this.connected) return;
+        
+        console.log('Sending projectile impact to server:', impactData);
+        this.socket.emit('projectileImpact', impactData);
     }
 
     // Send shield disruption data when player disrupts enemy shields
@@ -2103,6 +2158,39 @@ export class MultiplayerManager {
             console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
         } else {
             console.log('No fragments in server response');
+        }
+    }
+
+    // Handle other player's asteroid destruction
+    handleOtherPlayerAsteroidDestruction(data) {
+        console.log('Handling other player asteroid destruction:', data);
+        
+        // Find and remove the asteroid
+        const asteroidIndex = this.game.world.asteroids.findIndex(a => a.id === data.asteroidId);
+        if (asteroidIndex >= 0) {
+            this.game.world.asteroids.splice(asteroidIndex, 1);
+            console.log(`Removed asteroid ${data.asteroidId} destroyed by other player`);
+        }
+        
+        // Create explosion effect
+        if (data.explosion) {
+            this.game.world.createExplosion(data.explosion.x, data.explosion.y, data.explosion.radius);
+        }
+        
+        // Add fragments
+        if (data.fragments && data.fragments.length > 0) {
+            data.fragments.forEach(fragment => {
+                this.game.world.asteroids.push(fragment);
+            });
+            console.log(`Added ${data.fragments.length} fragments from other player`);
+        }
+        
+        // Add powerups
+        if (data.powerups && data.powerups.length > 0) {
+            data.powerups.forEach(powerup => {
+                this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
+            });
+            console.log(`Added ${data.powerups.length} powerups from other player`);
         }
     }
 
