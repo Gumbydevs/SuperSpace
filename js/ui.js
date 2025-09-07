@@ -761,4 +761,46 @@ export class UI {
     hideOptionsOverlay() {
         if (this.optionsOverlay) this.optionsOverlay.classList.add('hidden');
     }
+
+    // Render fire rate boost timer on canvas
+    renderFireRateBoostTimer(ctx, player) {
+        if (!player.fireRateBoosts || player.fireRateBoosts.length === 0) {
+            return;
+        }
+
+        const currentTime = Date.now();
+        let longestTimeLeft = 0;
+        
+        // Find the boost with the most time remaining
+        for (let boost of player.fireRateBoosts) {
+            const elapsed = currentTime - boost.startTime;
+            const timeLeft = boost.duration - elapsed;
+            if (timeLeft > longestTimeLeft) {
+                longestTimeLeft = timeLeft;
+            }
+        }
+
+        if (longestTimeLeft > 0) {
+            const seconds = Math.ceil(longestTimeLeft / 1000);
+            
+            // Position timer near the health bar
+            const x = 20;
+            const y = 150;
+            
+            // Draw background
+            ctx.fillStyle = 'rgba(255, 51, 51, 0.3)';
+            ctx.fillRect(x - 5, y - 25, 120, 35);
+            
+            // Draw border
+            ctx.strokeStyle = '#f33';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 5, y - 25, 120, 35);
+            
+            // Draw text
+            ctx.fillStyle = '#f33';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`FIRE BOOST: ${seconds}s`, x, y);
+        }
+    }
 }

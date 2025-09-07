@@ -714,6 +714,11 @@ class Game {
         if (this.gameState === 'playing' || this.gameState === 'dying') {
             this.ui.renderMinimap(this.ctx, this.player, this.world);
         }
+
+        // Render fire rate boost timer
+        if (this.gameState === 'playing') {
+            this.ui.renderFireRateBoostTimer(this.ctx, this.player);
+        }
     }
 
     // Here we handle the game over state

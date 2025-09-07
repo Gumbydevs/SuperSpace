@@ -507,6 +507,9 @@
         // Update star animations and parallax effect
         this.updateStars(deltaTime, player);
         
+        // Update fire rate boosts
+        this.updateFireRateBoosts(player);
+        
         // In multiplayer-only mode, server handles ALL asteroid management - ZERO local generation
 
         // Update safe zone pulse phase for docking lights
@@ -1297,20 +1300,32 @@
                         window.game.multiplayer.showGameMessage('New Weapon: Seeker Missile!', '#f00');
                     }
                 } else {
-                    // Improve fire rate
-                    player.fireCooldownTime *= 0.9;
+                    // Apply temporary fire rate boost - 60% faster for 10 seconds
+                    const fireRateBoost = {
+                        multiplier: 0.4, // 60% faster (100% / 0.4 = 250% total)
+                        duration: 10000, // 10 seconds
+                        startTime: Date.now()
+                    };
                     
-                    // Show pickup message
+                    // Store the boost info
+                    if (!player.fireRateBoosts) {
+                        player.fireRateBoosts = [];
+                    }
+                    player.fireRateBoosts.push(fireRateBoost);
+                    
+                    // Apply the boost immediately
+                    if (!player.originalFireCooldownTime) {
+                        player.originalFireCooldownTime = player.fireCooldownTime;
+                    }
+                    player.fireCooldownTime = player.originalFireCooldownTime * fireRateBoost.multiplier;
+                    
+                    // Show pickup message with timer
                     if (window.game && window.game.multiplayer) {
-                        window.game.multiplayer.showGameMessage('Fire Rate Improved!', '#f00');
+                        window.game.multiplayer.showGameMessage('FIRE RATE BOOST! (10s)', '#f33');
                     }
                 }
                 
-                // Update weapon display in UI
-                const weaponElement = document.getElementById('weapons');
-                if (weaponElement) {
-                    weaponElement.textContent = player.currentWeapon;
-                }
+
                 
                 // Update weapon icon based on new weapon
                 const weaponIcon = document.getElementById('weapon-icon');
@@ -1365,6 +1380,48 @@
             // Remove finished explosions
             if (explosion.timeLeft <= 0) {
                 this.explosions.splice(i, 1);
+            }
+        }
+    }
+
+    // Update fire rate boosts - handle timers and cleanup expired boosts
+    updateFireRateBoosts(player) {
+        if (!player.fireRateBoosts || player.fireRateBoosts.length === 0) {
+            return;
+        }
+        
+        const currentTime = Date.now();
+        let hasActiveBoosts = false;
+        
+        // Check each boost and remove expired ones
+        player.fireRateBoosts = player.fireRateBoosts.filter(boost => {
+            const elapsed = currentTime - boost.startTime;
+            if (elapsed < boost.duration) {
+                hasActiveBoosts = true;
+                return true; // Keep this boost
+            }
+            return false; // Remove this boost
+        });
+        
+        if (!hasActiveBoosts) {
+            // No more boosts active - restore original fire rate
+            if (player.originalFireCooldownTime) {
+                player.fireCooldownTime = player.originalFireCooldownTime;
+                player.originalFireCooldownTime = null;
+            }
+            player.fireRateBoosts = [];
+        } else {
+            // Calculate strongest boost (lowest multiplier = fastest fire rate)
+            let strongestMultiplier = 1.0;
+            for (let boost of player.fireRateBoosts) {
+                if (boost.multiplier < strongestMultiplier) {
+                    strongestMultiplier = boost.multiplier;
+                }
+            }
+            
+            // Apply the strongest boost
+            if (player.originalFireCooldownTime) {
+                player.fireCooldownTime = player.originalFireCooldownTime * strongestMultiplier;
             }
         }
     }
@@ -1598,23 +1655,23 @@
                 let label;
                 switch (powerup.type) {
                     case 'health':
-                        color = '#0f0';  // Green
+                        color = '#3f3';  // Bright green (matches UI)
                         label = 'HEALTH';
                         break;
                     case 'weapon':
-                        color = '#f00';  // Red
-                        label = 'WEAPON';
+                        color = '#f33';  // Red (fire rate boost)
+                        label = 'FIRE RATE';
                         break;
                     case 'shield':
-                        color = '#00f';  // Blue
+                        color = '#33f';  // Blue (matches UI)
                         label = 'SHIELD';
                         break;
                     case 'energy':
-                        color = '#ff0';  // Yellow
+                        color = '#f0f';  // Pink/magenta (matches UI)
                         label = 'ENERGY';
                         break;
                     case 'credits':
-                        color = '#fff';  // White
+                        color = '#ff0';  // Yellow (like gold/coins)
                         label = 'CREDITS';
                         break;
                     default:
