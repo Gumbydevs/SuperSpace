@@ -10,6 +10,10 @@ export class PlayerProfile {
             totalShots: 0,
             totalHits: 0,
             gamesPlayed: 0,
+            totalWins: 0,        // Total wins across all sessions
+            totalLosses: 0,      // Total losses across all sessions
+            totalKills: 0,       // Total player kills
+            totalDeaths: 0,      // Total deaths
             highestScore: 0,
             longestSurvival: 0,
             favoriteWeapon: 'Basic Laser',
@@ -18,7 +22,10 @@ export class PlayerProfile {
             totalCreditsEarned: 0,
             totalCreditsSpent: 0,
             asteroidsDestroyed: 0,
-            averageAccuracy: 0
+            averageAccuracy: 0,
+            nemesis: null,       // Player who killed us the most
+            nemesisKills: 0,     // How many times nemesis killed us
+            killedByPlayers: {}  // Track who killed us and how many times
         };
         
         this.loadStats();
@@ -118,6 +125,44 @@ export class PlayerProfile {
             const survivalTime = (Date.now() - this.currentGameStartTime) / 1000;
             this.stats.longestSurvival = Math.max(this.stats.longestSurvival, survivalTime);
         }
+        this.saveStats();
+    }
+    
+    // Track wins (called when player gets a kill)
+    onWin() {
+        this.stats.totalWins++;
+        this.stats.totalKills++;
+        this.saveStats();
+    }
+    
+    // Track deaths and losses (called when player dies)
+    onDeath(killerName = null) {
+        this.stats.totalLosses++;
+        this.stats.totalDeaths++;
+        
+        // Track nemesis (who killed us the most)
+        if (killerName && killerName !== 'asteroid') {
+            if (!this.stats.killedByPlayers[killerName]) {
+                this.stats.killedByPlayers[killerName] = 0;
+            }
+            this.stats.killedByPlayers[killerName]++;
+            
+            // Update nemesis
+            let topKiller = null;
+            let maxKills = 0;
+            for (const [player, kills] of Object.entries(this.stats.killedByPlayers)) {
+                if (kills > maxKills) {
+                    maxKills = kills;
+                    topKiller = player;
+                }
+            }
+            
+            if (topKiller) {
+                this.stats.nemesis = topKiller;
+                this.stats.nemesisKills = maxKills;
+            }
+        }
+        
         this.saveStats();
     }
     
@@ -222,9 +267,10 @@ export class PlayerProfile {
             { label: 'Games Played', value: this.stats.gamesPlayed },
             { label: 'Total Play Time', value: this.formatTime(this.stats.totalPlayTime) },
             { label: 'Highest Score', value: this.stats.highestScore.toLocaleString() },
-            { label: 'Current Wins', value: this.player.wins || 0 },
-            { label: 'Current Losses', value: this.player.losses || 0 },
+            { label: 'Total Wins', value: this.stats.totalWins },
+            { label: 'Total Losses', value: this.stats.totalLosses },
             { label: 'Win Rate', value: this.getWinRate() + '%' },
+            { label: 'K/D Ratio', value: this.getKDRatio() },
             { label: 'Longest Survival', value: this.formatTime(this.stats.longestSurvival) }
         ]));
         
@@ -233,8 +279,11 @@ export class PlayerProfile {
             { label: 'Total Shots Fired', value: this.stats.totalShots.toLocaleString() },
             { label: 'Total Hits', value: this.stats.totalHits.toLocaleString() },
             { label: 'Average Accuracy', value: this.stats.averageAccuracy.toFixed(1) + '%' },
+            { label: 'Player Kills', value: this.stats.totalKills },
+            { label: 'Total Deaths', value: this.stats.totalDeaths },
             { label: 'Favorite Weapon', value: this.stats.favoriteWeapon },
-            { label: 'Asteroids Destroyed', value: this.stats.asteroidsDestroyed.toLocaleString() }
+            { label: 'Asteroids Destroyed', value: this.stats.asteroidsDestroyed.toLocaleString() },
+            { label: 'Nemesis', value: this.stats.nemesis ? `${this.stats.nemesis} (${this.stats.nemesisKills} kills)` : 'None' }
         ]));
         
         // Economic Stats
@@ -435,9 +484,16 @@ export class PlayerProfile {
     }
     
     getWinRate() {
-        const total = (this.player.wins || 0) + (this.player.losses || 0);
+        const total = this.stats.totalWins + this.stats.totalLosses;
         if (total === 0) return 0;
-        return ((this.player.wins || 0) / total * 100).toFixed(1);
+        return ((this.stats.totalWins) / total * 100).toFixed(1);
+    }
+    
+    getKDRatio() {
+        if (this.stats.totalDeaths === 0) {
+            return this.stats.totalKills > 0 ? this.stats.totalKills.toFixed(2) : '0.00';
+        }
+        return (this.stats.totalKills / this.stats.totalDeaths).toFixed(2);
     }
     
     getAverageSpeed() {

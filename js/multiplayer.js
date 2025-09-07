@@ -348,6 +348,11 @@ export class MultiplayerManager {
             // Start periodic leaderboard updates for real-time sync
             this.startLeaderboardUpdates();
             
+            // Track game session start for survival time
+            if (this.game.playerProfile && typeof this.game.playerProfile.onGameStart === 'function') {
+                this.game.playerProfile.onGameStart();
+            }
+            
             // Update the player count display
             this.updatePlayerCount();
         });
@@ -1730,7 +1735,22 @@ export class MultiplayerManager {
             this.game.achievements.onDeath();
         }
         if (this.game.playerProfile && typeof this.game.playerProfile.onDeath === 'function') {
-            this.game.playerProfile.onDeath();
+            // Get killer name for nemesis tracking
+            let killerName = null;
+            if (attackerId !== 'asteroid') {
+                killerName = this.players[attackerId]?.name || 'Unknown Player';
+            }
+            this.game.playerProfile.onDeath(killerName);
+        }
+        
+        // Track game end for survival time
+        if (this.game.playerProfile && typeof this.game.playerProfile.onGameEnd === 'function') {
+            this.game.playerProfile.onGameEnd();
+        }
+        
+        // Increment local losses count
+        if (this.game.player) {
+            this.game.player.losses += 1;
         }
         
         // Respawn after delay
@@ -1759,6 +1779,11 @@ export class MultiplayerManager {
             
             // Notify server about respawn
             this.sendRespawn(spawnX, spawnY);
+            
+            // Start tracking new survival session
+            if (this.game.playerProfile && typeof this.game.playerProfile.onGameStart === 'function') {
+                this.game.playerProfile.onGameStart();
+            }
             
             this.showGameMessage('Respawned!', '#4f4');
         }, 3000);
@@ -1798,6 +1823,9 @@ export class MultiplayerManager {
                     }
                     if (this.game.playerProfile && typeof this.game.playerProfile.onKill === 'function') {
                         this.game.playerProfile.onKill(this.game.player.currentWeapon, true);
+                    }
+                    if (this.game.playerProfile && typeof this.game.playerProfile.onWin === 'function') {
+                        this.game.playerProfile.onWin();
                     }
                     if (this.game.playerProfile && typeof this.game.playerProfile.onCreditsEarned === 'function') {
                         this.game.playerProfile.onCreditsEarned(250);
