@@ -47,6 +47,21 @@ export class PlayerProfile {
         localStorage.setItem('playerStats', JSON.stringify(this.stats));
     }
     
+    // Update playtime (called from game loop)
+    updatePlaytime(deltaTime) {
+        // Update playtime every few seconds to avoid too frequent saves
+        if (!this.lastPlaytimeUpdate) {
+            this.lastPlaytimeUpdate = Date.now();
+        }
+        
+        // Update every 5 seconds
+        const now = Date.now();
+        if (now - this.lastPlaytimeUpdate >= 5000) {
+            this.saveStats();
+            this.lastPlaytimeUpdate = now;
+        }
+    }
+    
     // Update statistics
     onShot(weapon) {
         this.stats.totalShots++;
