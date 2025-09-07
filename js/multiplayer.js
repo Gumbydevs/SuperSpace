@@ -28,6 +28,9 @@ export class MultiplayerManager {
         // Track players currently in respawn process to avoid "left game" messages
         this.respawningPlayers = new Set();
         
+        // Track recent kill events to prevent duplicates
+        this.recentKillEvents = new Map(); // key: "attackerId-playerId", value: timestamp
+        
         // Show offline status immediately
         this.addConnectionIndicator();
         this.createPlayerListUI();
@@ -643,6 +646,29 @@ export class MultiplayerManager {
 
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
+            // Create unique key for this kill event
+            const killEventKey = `${data.attackerId}-${data.playerId}`;
+            const now = Date.now();
+            
+            // Check if this is a duplicate kill event (within 1 second)
+            if (this.recentKillEvents.has(killEventKey)) {
+                const lastKillTime = this.recentKillEvents.get(killEventKey);
+                if (now - lastKillTime < 1000) {
+                    console.log('🚫 DUPLICATE KILL EVENT BLOCKED:', killEventKey);
+                    return; // Skip this duplicate event
+                }
+            }
+            
+            // Record this kill event
+            this.recentKillEvents.set(killEventKey, now);
+            
+            // Clean up old kill events (older than 5 seconds)
+            for (const [key, timestamp] of this.recentKillEvents.entries()) {
+                if (now - timestamp > 5000) {
+                    this.recentKillEvents.delete(key);
+                }
+            }
+            
             // Get player names for the kill message with proper fallback logic
             const killerName = data.attackerId === this.playerId ? 
                 'You' : 
