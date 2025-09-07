@@ -716,7 +716,7 @@ input[type="range"] {
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
     /* Lower shop and settings/options buttons to avoid overlapping online players status */
     #shop-btn {
-        top: 80px !important;
+        top: 90px !important;
     }
     #mobile-menu-button {
         top: 20px !important;
