@@ -60,7 +60,6 @@ class Game {
         this.createMuteButton();
         this.createMusicButton();
         this.createShopButton();
-        this.createProfileButton();
         this.createAdminButton();
         
         // Set up keyboard shortcuts
@@ -271,33 +270,13 @@ class Game {
         document.body.appendChild(shopBtn);
     }
     
-    // Here we create a profile button to access player statistics
-    createProfileButton() {
-        const profileBtn = document.createElement('button');
-        profileBtn.textContent = '👤 Profile';
-        profileBtn.id = 'profile-btn';
-        profileBtn.style.position = 'absolute';
-        profileBtn.style.top = '114px'; // Position below shop button
-        profileBtn.style.right = '0px';
-        profileBtn.style.zIndex = '1002';
-        profileBtn.style.background = 'rgba(0, 50, 0, 0.7)';
-        profileBtn.style.color = 'white';
-        profileBtn.style.border = '1px solid #3f3';
-        profileBtn.style.borderRadius = '5px';
-        profileBtn.style.padding = '6px 12px';
-        profileBtn.style.cursor = 'pointer';
-        profileBtn.style.display = 'none';  // Initially hidden until game starts
-        profileBtn.onclick = () => this.toggleProfile();
-        document.body.appendChild(profileBtn);
-    }
-    
     // Here we create an admin button for game management
     createAdminButton() {
         const adminBtn = document.createElement('button');
         adminBtn.textContent = '⚙️ Admin';
         adminBtn.id = 'admin-btn';
         adminBtn.style.position = 'absolute';
-        adminBtn.style.top = '152px'; // Position below profile button
+        adminBtn.style.top = '114px'; // Position below shop button (no profile button anymore)
         adminBtn.style.right = '0px';
         adminBtn.style.zIndex = '1002';
         adminBtn.style.background = 'rgba(50, 0, 0, 0.7)';
@@ -314,14 +293,7 @@ class Game {
     // Here we toggle the admin interface on/off
     toggleAdmin() {
         if (this.adminSystem) {
-            this.adminSystem.toggleAdmin();
-        }
-    }
-    
-    // Here we toggle the profile interface on/off
-    toggleProfile() {
-        if (this.playerProfile) {
-            this.playerProfile.toggleProfile();
+            this.adminSystem.toggleAdminPanel();
         }
     }
     
@@ -358,9 +330,11 @@ class Game {
                 this.toggleShop();
             }
             
-            // Profile hotkey (P key)
+            // Profile hotkey (P key) - show profile directly
             if (e.code === 'KeyP') {
-                this.toggleProfile();
+                if (this.playerProfile) {
+                    this.playerProfile.showProfile();
+                }
             }
             
             // Cheat code system
@@ -455,9 +429,6 @@ class Game {
         
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
-        
-        // Show profile button when game starts
-        document.getElementById('profile-btn').style.display = 'block';
         
         // Show gameplay UI elements
         this.ui.setGameplayUIVisibility(true);
@@ -619,6 +590,42 @@ class Game {
         currentNameInfo.style.marginLeft = '8px';
         currentNameInfo.textContent = `Current name: ${this.multiplayer ? this.multiplayer.playerName : 'Unknown'}`;
         optionsList.appendChild(currentNameInfo);
+        
+        // Add profile option
+        const profileOption = document.createElement('div');
+        profileOption.style.display = 'flex';
+        profileOption.style.justifyContent = 'space-between';
+        profileOption.style.alignItems = 'center';
+        profileOption.style.marginBottom = '10px';
+        profileOption.style.padding = '8px';
+        profileOption.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+        profileOption.style.borderRadius = '5px';
+        
+        const profileLabel = document.createElement('div');
+        profileLabel.textContent = '📊 Player Profile';
+        profileLabel.style.fontWeight = 'bold';
+        
+        const profileButton = document.createElement('button');
+        profileButton.textContent = 'View Stats';
+        profileButton.style.padding = '5px 10px';
+        profileButton.style.backgroundColor = '#4af';
+        profileButton.style.color = 'white';
+        profileButton.style.border = 'none';
+        profileButton.style.borderRadius = '3px';
+        profileButton.style.cursor = 'pointer';
+        profileButton.onclick = () => {
+            // Close options dialog first
+            document.body.removeChild(backdrop);
+            
+            // Show profile
+            if (this.playerProfile) {
+                this.playerProfile.showProfile();
+            }
+        };
+        
+        profileOption.appendChild(profileLabel);
+        profileOption.appendChild(profileButton);
+        optionsList.appendChild(profileOption);
         
         // Add game info option
         const gameInfoOption = document.createElement('div');
