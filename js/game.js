@@ -697,21 +697,21 @@ class Game {
         // Render the world (stars and asteroids)
         this.world.render(this.ctx, this.player);
         
-        // Only render the player and projectiles when actively playing
+        // Render the player when actively playing
         if (this.gameState === 'playing') {
             this.player.render(this.ctx);
-            
-            // Render other players from multiplayer
-            if (this.multiplayer && this.multiplayer.connected) {
-                this.multiplayer.render(this.ctx);
-            }
+        }
+        
+        // Always render other players from multiplayer (even when dying)
+        if (this.multiplayer && this.multiplayer.connected) {
+            this.multiplayer.render(this.ctx);
         }
         
         // Restore context to original state
         this.ctx.restore();
         
-        // Only render minimap when playing
-        if (this.gameState === 'playing') {
+        // Render minimap when playing or dying (so dead players can see what's happening)
+        if (this.gameState === 'playing' || this.gameState === 'dying') {
             this.ui.renderMinimap(this.ctx, this.player, this.world);
         }
     }
