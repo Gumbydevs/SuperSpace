@@ -246,10 +246,10 @@ input[type="range"] {
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
-    min-height: 32px;
+    min-height: 40px;
 }
 
-.avatar-option:hover {
+.avatar-option:hover:not(.disabled) {
     background: rgba(51, 51, 255, 0.15);
     border-color: #33f;
     box-shadow: 0 0 8px rgba(51, 51, 255, 0.4);
@@ -261,10 +261,22 @@ input[type="range"] {
     box-shadow: 0 0 10px rgba(68, 175, 255, 0.6);
 }
 
+.avatar-option.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(20, 20, 20, 0.4);
+    border-color: rgba(40, 40, 40, 0.6);
+}
+
 .avatar-canvas {
     border-radius: 2px;
     margin-bottom: 2px;
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-option.disabled .avatar-canvas {
+    border-color: rgba(100, 100, 100, 0.3);
+    background: rgba(60, 60, 60, 0.3);
 }
 
 .avatar-name {
@@ -277,6 +289,10 @@ input[type="range"] {
 
 .avatar-option.selected .avatar-name {
     color: #4af;
+}
+
+.avatar-option.disabled .avatar-name {
+    color: #666;
 }
 
 /* Coming Soon Placeholders */
