@@ -2286,9 +2286,16 @@ export class Player {
                     // Create mining fragments at impact point
                     this.createMiningFragments(hitTarget.object, this.miningBeam.targetX, this.miningBeam.targetY, deltaTime);
                     
-                    // Send asteroid hit to server
+                    // Calculate score points for asteroid destruction
+                    let points = 0;
+                    if (hitTarget.object.health - asteroidDamage <= 0) {
+                        // Asteroid will be destroyed, award points
+                        points = hitTarget.object.scoreValue || 0;
+                    }
+                    
+                    // Send asteroid hit to server with score points
                     if (window.game && window.game.multiplayer) {
-                        window.game.multiplayer.sendHit('asteroid', hitTarget.object.id, asteroidDamage);
+                        window.game.multiplayer.sendHit('asteroid', hitTarget.object.id, asteroidDamage, points);
                     }
                     
                 } else if (hitTarget.type === 'player') {
