@@ -626,9 +626,11 @@ io.on('connection', (socket) => {
   socket.on('asteroidDestroyed', (data) => {
     playerLastActivity[socket.id] = Date.now();
     
-    console.log(`Player ${socket.id} destroyed asteroid ${data.asteroidId} with ${data.fragments.length} fragments and ${data.powerups.length} powerups`);
+    console.log(`🌟 SERVER: Player ${socket.id} destroyed asteroid ${data.asteroidId}`);
+    console.log(`🌟 SERVER: Fragments: ${data.fragments ? data.fragments.length : 0}, Powerups: ${data.powerups ? data.powerups.length : 0}`);
     
     // Broadcast the destruction to all other players
+    console.log(`🌟 SERVER: Broadcasting to ${Object.keys(gameState.players).length - 1} other players`);
     socket.broadcast.emit('playerAsteroidDestroyed', {
       playerId: socket.id,
       asteroidId: data.asteroidId,

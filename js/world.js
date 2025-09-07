@@ -663,6 +663,11 @@
                         
                         // Send destruction data to server for other players
                         if (multiplayerAvailable) {
+                            console.log('🚀 Sending asteroid destruction to server:', {
+                                asteroid: asteroid.id,
+                                fragments: fragmentsCreated.length,
+                                powerups: powerupsCreated.length
+                            });
                             window.game.multiplayer.sendAsteroidDestruction(
                                 asteroid,
                                 fragmentsCreated,

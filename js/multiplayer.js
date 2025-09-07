@@ -449,10 +449,14 @@ export class MultiplayerManager {
 
         // Handle asteroid destruction from other players
         this.socket.on('playerAsteroidDestroyed', (data) => {
-            console.log('💥 Player asteroid destroyed:', data);
+            console.log('💥 Received playerAsteroidDestroyed event:', data);
+            console.log('💥 My socket ID:', this.socket.id, 'Event from:', data.playerId);
             if (this.game.world && data.playerId !== this.socket.id) {
+                console.log('💥 Processing asteroid destruction from other player');
                 // Another player destroyed an asteroid - show the effects
                 this.handleOtherPlayerAsteroidDestruction(data);
+            } else {
+                console.log('💥 Ignoring own asteroid destruction or no game world');
             }
         });
 
@@ -2163,35 +2167,49 @@ export class MultiplayerManager {
 
     // Handle other player's asteroid destruction
     handleOtherPlayerAsteroidDestruction(data) {
-        console.log('Handling other player asteroid destruction:', data);
+        console.log('🔥 Handling other player asteroid destruction:', data);
+        console.log('🔥 Current asteroids before:', this.game.world.asteroids.length);
         
         // Find and remove the asteroid
         const asteroidIndex = this.game.world.asteroids.findIndex(a => a.id === data.asteroidId);
         if (asteroidIndex >= 0) {
             this.game.world.asteroids.splice(asteroidIndex, 1);
-            console.log(`Removed asteroid ${data.asteroidId} destroyed by other player`);
+            console.log(`🔥 Removed asteroid ${data.asteroidId} destroyed by other player`);
+        } else {
+            console.log(`🔥 Asteroid ${data.asteroidId} not found in local asteroids array`);
         }
         
         // Create explosion effect
         if (data.explosion) {
+            console.log('🔥 Creating explosion at:', data.explosion);
             this.game.world.createExplosion(data.explosion.x, data.explosion.y, data.explosion.radius);
         }
         
         // Add fragments
         if (data.fragments && data.fragments.length > 0) {
-            data.fragments.forEach(fragment => {
+            console.log(`🔥 Adding ${data.fragments.length} fragments:`, data.fragments);
+            data.fragments.forEach((fragment, index) => {
+                console.log(`🔥 Adding fragment ${index}:`, fragment);
                 this.game.world.asteroids.push(fragment);
             });
-            console.log(`Added ${data.fragments.length} fragments from other player`);
+            console.log(`🔥 Added ${data.fragments.length} fragments from other player`);
+        } else {
+            console.log('🔥 No fragments to add');
         }
         
         // Add powerups
         if (data.powerups && data.powerups.length > 0) {
-            data.powerups.forEach(powerup => {
+            console.log(`🔥 Adding ${data.powerups.length} powerups:`, data.powerups);
+            data.powerups.forEach((powerup, index) => {
+                console.log(`🔥 Spawning powerup ${index}:`, powerup);
                 this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
             });
-            console.log(`Added ${data.powerups.length} powerups from other player`);
+            console.log(`🔥 Added ${data.powerups.length} powerups from other player`);
+        } else {
+            console.log('🔥 No powerups to add');
         }
+        
+        console.log('🔥 Current asteroids after:', this.game.world.asteroids.length);
     }
 
     // Connection indicator UI
