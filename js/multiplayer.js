@@ -317,11 +317,14 @@ export class MultiplayerManager {
         
         // Listen for real-time player health updates
         this.socket.on('playerHealthUpdate', (data) => {
-            // console.log('Received playerHealthUpdate:', data);
-            if (data.id !== this.playerId && this.players[data.id]) {
-                // console.log(`Updating player ${this.players[data.id].name} health from ${this.players[data.id].health} to ${data.health}`);
+            // Sync health and shield for both local and remote players
+            if (data.id === this.playerId) {
+                this.game.player.health = data.health;
+                if (data.shield !== undefined) {
+                    this.game.player.shield = data.shield;
+                }
+            } else if (this.players[data.id]) {
                 this.players[data.id].health = data.health;
-                // Also update shield if provided
                 if (data.shield !== undefined) {
                     this.players[data.id].shield = data.shield;
                 }
