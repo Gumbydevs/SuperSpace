@@ -603,7 +603,16 @@ class Game {
             
             // Check for player death
             if (this.player.health <= 0) {
-                this.gameOver();
+                // In multiplayer, death is handled by the multiplayer system
+                if (this.multiplayer && this.multiplayer.connected) {
+                    // Let multiplayer handle death - it has its own respawn logic
+                    if (!this.player.deathTriggered) {
+                        this.player.die(); // This will trigger multiplayer.handleDeath
+                    }
+                } else {
+                    // In single-player, show game over screen
+                    this.gameOver();
+                }
             }
         } else if (this.gameState === 'dying') {
             // Update world particles for ship destruction effect
