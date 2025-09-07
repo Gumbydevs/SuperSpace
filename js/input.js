@@ -148,12 +148,13 @@ export class InputHandler {
         afterburnerButton.innerHTML = '🚀';
         touchUI.appendChild(afterburnerButton);
         
-        // Create mobile menu/pause button
+        // Create mobile menu/pause button - only on mobile devices
         const menuButton = document.createElement('div');
         menuButton.id = 'mobile-menu-button';
         menuButton.className = 'touch-button mobile-menu-button';
         menuButton.innerHTML = '⚙️';
-        touchUI.appendChild(menuButton);
+        menuButton.style.display = 'none'; // Hidden by default
+        document.body.appendChild(menuButton); // Add to body instead of touchUI
         
         document.body.appendChild(touchUI);
         
@@ -207,16 +208,9 @@ export class InputHandler {
         // Add mobile menu button events
         menuButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            // Simulate Escape key press to open options menu
-            if (!this.keys.includes('Escape')) {
-                this.keys.push('Escape');
-                // Remove it after a short delay to simulate a keypress
-                setTimeout(() => {
-                    const index = this.keys.indexOf('Escape');
-                    if (index > -1) {
-                        this.keys.splice(index, 1);
-                    }
-                }, 100);
+            // Directly call the showOptionsOverlay function if available
+            if (window.game && window.game.ui && window.game.ui.showOptionsOverlay) {
+                window.game.ui.showOptionsOverlay();
             }
         });
         
@@ -337,6 +331,10 @@ export class InputHandler {
                 background-color: rgba(200, 200, 200, 0.3);
                 border-color: rgba(200, 200, 200, 0.6);
                 font-size: 20px;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1002;
             }
             
             #mobile-menu-button:active {
@@ -347,6 +345,10 @@ export class InputHandler {
             @media (hover: none) and (pointer: coarse) {
                 .touch-ui {
                     display: block !important;
+                }
+                
+                #mobile-menu-button {
+                    display: flex !important;
                 }
             }
             
@@ -393,11 +395,11 @@ export class InputHandler {
                 }
                 
                 #mobile-menu-button {
-                    width: 40px;
-                    height: 40px;
-                    bottom: 80px;
-                    right: 80px;
-                    font-size: 16px;
+                    width: 45px;
+                    height: 45px;
+                    top: 15px;
+                    right: 15px;
+                    font-size: 18px;
                 }
             }
         `;

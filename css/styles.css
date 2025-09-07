@@ -836,7 +836,12 @@ input[type="range"] {
     
     /* HUD adjustments for mobile - avoid touch control overlap */
     #hud-container {
-        padding: 60px 10px 140px 10px; /* More padding at bottom for touch controls */
+        padding: 80px 10px 140px 10px; /* More padding at top for menu button, bottom for touch controls */
+    }
+    
+    /* Move top info panel down to avoid mobile menu button */
+    #top-info-panel {
+        top: 70px !important;
     }
     
     /* Adjust game UI elements to avoid touch control overlap */
@@ -848,18 +853,23 @@ input[type="range"] {
     
     /* Minimap adjustments for mobile */
     #minimap-container {
-        width: 80px;
-        height: 80px;
-        bottom: 150px; /* Move up to avoid touch controls */
+        width: 90px !important;
+        height: 90px !important;
+        bottom: 150px !important; /* Move up to avoid touch controls */
         right: 10px;
+        border: 2px solid #555 !important;
     }
     
     /* Status panel adjustments for mobile */
     #status-panel {
-        bottom: 150px; /* Move up to avoid touch controls */
+        bottom: 150px !important; /* Move up to avoid touch controls */
         left: 10px;
-        transform: scale(0.8);
+        transform: scale(0.85) !important;
         transform-origin: bottom left;
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        border: 2px solid #444 !important;
+        box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
+        z-index: 1001 !important;
     }
     
     /* Touch controls styling */
@@ -964,15 +974,25 @@ input[type="range"] {
         box-shadow: 0 0 15px rgba(255, 200, 100, 0.8);
     }
     
-    /* Mobile menu/settings button */
+    /* Mobile menu/settings button - positioned at top right, away from combat controls */
     #mobile-menu-button {
-        bottom: 100px;
-        right: 100px;
+        top: 20px;
+        right: 20px;
         width: 50px;
         height: 50px;
         background-color: rgba(200, 200, 200, 0.3);
         border-color: rgba(200, 200, 200, 0.6);
         font-size: 20px;
+        position: fixed;
+        z-index: 1002;
+        display: none; /* Hidden on desktop */
+    }
+    
+    /* Show mobile menu button only on touch devices */
+    @media (hover: none) and (pointer: coarse) {
+        #mobile-menu-button {
+            display: flex !important;
+        }
     }
     
     #mobile-menu-button:active {
@@ -1045,27 +1065,32 @@ input[type="range"] {
         }
         
         #mobile-menu-button {
-            width: 40px;
-            height: 40px;
-            bottom: 80px;
-            right: 80px;
-            font-size: 16px;
-        }    /* Adjust HUD for smaller screens */
+            width: 45px;
+            height: 45px;
+            top: 15px;
+            right: 15px;
+            font-size: 18px;
+        }
+    }
+    
+    /* Adjust HUD for smaller screens */
     #hud-container {
         padding: 50px 5px 120px 5px;
     }
     
+    /* Minimap adjustments for small mobile */
     #minimap-container {
-        width: 60px;
-        height: 60px;
-        bottom: 130px;
+        width: 75px !important;
+        height: 75px !important;
+        bottom: 140px !important;
         right: 5px;
     }
     
+    /* Status panel adjustments for small mobile */
     #status-panel {
-        bottom: 130px;
+        bottom: 140px !important;
         left: 5px;
-        transform: scale(0.7);
+        transform: scale(0.8) !important;
     }
 }
 
