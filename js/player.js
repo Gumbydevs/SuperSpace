@@ -292,6 +292,27 @@ export class Player {
                 this.weaponIndex = (this.weaponIndex + 1) % this.weapons.length;
             }
             this.currentWeapon = this.weapons[this.weaponIndex];
+            
+            // Update currentWeaponId to match the switched weapon
+            // Map weapon display names to shop system IDs
+            const weaponNameToId = {
+                'Basic Laser': 'laser',
+                'Burst Cannon': 'burst', 
+                'Seeker Missile': 'missile',
+                'Plasma Cannon': 'plasma',
+                'Quantum Disruptor': 'quantum',
+                'Rocket Launcher': 'rocket'
+            };
+            this.currentWeaponId = weaponNameToId[this.currentWeapon] || 'laser';
+            
+            // Update fire rate to match the new weapon
+            if (window.shopSystem && window.shopSystem.availableWeapons) {
+                const weapon = window.shopSystem.availableWeapons.find(w => w.id === this.currentWeaponId);
+                if (weapon && weapon.stats) {
+                    this.fireCooldownTime = weapon.stats.cooldown;
+                }
+            }
+            
             this.weaponSwitchCooldown = 0.3; // 300ms cooldown
             // Only play sound if weapon actually changed
             if (previousWeapon !== this.currentWeapon) {
