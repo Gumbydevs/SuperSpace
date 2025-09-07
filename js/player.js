@@ -539,18 +539,34 @@ export class Player {
                                         remotePlayer.y
                                     );
                                 } else {
-                                    // Normal hit effect
-                                    window.game.world.createProjectileHitEffect(
-                                        projectile.x,
-                                        projectile.y,
-                                        12 + projectile.damage * 0.3, // Size based on damage
-                                        window.game.soundManager
-                                    );
+                                    // Check if this is an explosive projectile (missile or has explosion radius)
+                                    if (projectile.type === 'missile' || projectile.explosionRadius > 0) {
+                                        // Create explosion effect for seeker missiles and other explosive projectiles
+                                        window.game.world.createExplosion(
+                                            projectile.x,
+                                            projectile.y,
+                                            projectile.explosionRadius || 25, // Default explosion size for missiles
+                                            window.game.soundManager,
+                                            projectile.type === 'missile' ? 'missile' : 'rocket'
+                                        );
+                                    } else {
+                                        // Regular hit effect for non-explosive projectiles
+                                        window.game.world.createProjectileHitEffect(
+                                            projectile.x,
+                                            projectile.y,
+                                            12 + projectile.damage * 0.3, // Size based on damage
+                                            window.game.soundManager
+                                        );
+                                    }
                                 }
                             }
                             
-                            // Send hit info to server
-                            window.game.multiplayer.sendHit('player', remotePlayer.id, projectile.damage);
+                            // Send hit info to server - include explosion damage if applicable
+                            let totalDamage = projectile.damage;
+                            if (projectile.explosionDamage > 0 && remotePlayer.shield <= 0) {
+                                totalDamage += projectile.explosionDamage;
+                            }
+                            window.game.multiplayer.sendHit('player', remotePlayer.id, totalDamage);
                             
                             // Also broadcast the hit effect to all clients
                             window.game.multiplayer.sendProjectileHit(
@@ -608,8 +624,28 @@ export class Player {
                     // Update projectile position and check range
                     projectile.update(deltaTime);
                     
-                    // Remove projectiles that travel beyond their range
-                    if (projectile.distanceTraveled > projectile.range) {
+                    // Check if projectile should explode (for explosive projectiles that reach range limit or hit obstacles)
+                    if (projectile.distanceTraveled > projectile.range || projectile.hasExploded) {
+                        // Create explosion effect for explosive projectiles that didn't hit a target
+                        if ((projectile.type === 'missile' || projectile.explosionRadius > 0) && window.game.world) {
+                            window.game.world.createExplosion(
+                                projectile.x,
+                                projectile.y,
+                                projectile.explosionRadius || 20, // Smaller explosion for range-expired missiles
+                                window.game.soundManager,
+                                projectile.type === 'missile' ? 'missile' : 'rocket'
+                            );
+                            
+                            // Broadcast explosion to other players
+                            if (window.game.multiplayer && window.game.multiplayer.connected) {
+                                window.game.multiplayer.socket.emit('projectileExplosion', {
+                                    x: projectile.x,
+                                    y: projectile.y,
+                                    radius: projectile.explosionRadius || 20,
+                                    type: projectile.type === 'missile' ? 'missile' : 'rocket'
+                                });
+                            }
+                        }
                         this.projectiles.splice(i, 1);
                     }
                 }
@@ -658,31 +694,54 @@ export class Player {
                         if (distSq < collisionRadiusSq) {
                             // Check if local player is in safe zone
                             if (!window.game.world || !window.game.world.isInSafeZone(this)) {
-                                console.log(`💥 Remote projectile hit local player! Damage: ${projectile.damage}`);
+                                console.log(`💥 Remote projectile hit local player! Damage: ${projectile.damage}, Type: ${projectile.type}`);
                                 
-                                // Create hit effect immediately
-                                if (window.game.world) {
-                                    if (this.shield > 0) {
-                                        // Shield hit effect - blue energy ripple
-                                        this.createShieldHitEffect(
+                                // Create explosion effect for seeker missiles and other explosive projectiles
+                                if (projectile.type === 'missile' || projectile.explosionRadius > 0) {
+                                    if (window.game.world) {
+                                        // Create visual explosion
+                                        window.game.world.createExplosion(
                                             projectile.x,
                                             projectile.y,
-                                            this.x,
-                                            this.y
-                                        );
-                                    } else {
-                                        // Normal hit effect
-                                        window.game.world.createProjectileHitEffect(
-                                            projectile.x,
-                                            projectile.y,
-                                            12 + projectile.damage * 0.3,
-                                            window.game.soundManager
+                                            projectile.explosionRadius || 25, // Default explosion size for missiles
+                                            window.game.soundManager,
+                                            'missile' // Explosion type
                                         );
                                     }
+                                    
+                                    // Apply explosion damage if the projectile has it
+                                    if (projectile.explosionDamage > 0) {
+                                        const totalDamage = projectile.damage + projectile.explosionDamage;
+                                        this.takeDamage(totalDamage, remotePlayer.id);
+                                    } else {
+                                        // Just direct damage for regular missiles
+                                        this.takeDamage(projectile.damage, remotePlayer.id);
+                                    }
+                                } else {
+                                    // Create hit effect for non-explosive projectiles
+                                    if (window.game.world) {
+                                        if (this.shield > 0) {
+                                            // Shield hit effect - blue energy ripple
+                                            this.createShieldHitEffect(
+                                                projectile.x,
+                                                projectile.y,
+                                                this.x,
+                                                this.y
+                                            );
+                                        } else {
+                                            // Normal hit effect
+                                            window.game.world.createProjectileHitEffect(
+                                                projectile.x,
+                                                projectile.y,
+                                                12 + projectile.damage * 0.3,
+                                                window.game.soundManager
+                                            );
+                                        }
+                                    }
+                                    
+                                    // Apply damage immediately to local player
+                                    this.takeDamage(projectile.damage, remotePlayer.id);
                                 }
-                                
-                                // Apply damage immediately to local player
-                                this.takeDamage(projectile.damage, remotePlayer.id);
                                 
                                 // Notify server of the hit
                                 if (window.game.multiplayer) {
@@ -1121,7 +1180,7 @@ export class Player {
                 break;
                 
             case 'Seeker Missile':
-                // Fire a single homing missile - slower for better tracking visibility
+                // Fire a single homing missile - slower for better tracking visibility with explosion
                 projectiles.push(new Projectile(
                     this.x, this.y,
                     this.rotation,
@@ -1129,7 +1188,18 @@ export class Player {
                     weaponStats ? weaponStats.damage : 13, // Updated fallback damage to match shop stats proportion
                     weaponStats ? weaponStats.speed : 300, // Slower speed for better homing visualization
                     weaponStats ? weaponStats.range : 1000, // Longer range
-                    true  // Homing capability
+                    true,  // Homing capability
+                    0,     // splashRadius 
+                    30,    // explosionRadius - small explosion on impact
+                    8,     // explosionDamage - extra area damage from explosion
+                    0,     // minDetonationRange
+                    0,     // maxDetonationRange
+                    false, // shieldDisruption
+                    0,     // disruptionDuration
+                    0,     // armingTime
+                    0,     // lifetime
+                    1.0,   // asteroidDamageMultiplier
+                    1.0    // playerDamageMultiplier
                 ));
                 
                 // Play missile launch sound

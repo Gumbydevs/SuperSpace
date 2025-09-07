@@ -1626,7 +1626,7 @@ export class MultiplayerManager {
                     });
                 }
                 
-                return this.distanceTraveled < this.range;
+                return this.distanceTraveled < this.range && !this.hasExploded;
             },
             
             // Add render method for enhanced visual effects
