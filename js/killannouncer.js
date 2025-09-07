@@ -149,14 +149,21 @@ export class KillAnnouncer {
         // Create avatar element if killerAvatar is provided
         if (killerAvatar && window.ui && window.ui.avatarManager) {
             const avatarImg = document.createElement('img');
-            const avatarDataUrl = window.ui.avatarManager.generateSmallAvatar(killerAvatar);
+            // Use a larger avatar - create a custom canvas for larger size
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            window.ui.avatarManager.drawAvatar(canvas, killerAvatar, 64);
+            const avatarDataUrl = canvas.toDataURL();
+            
             avatarImg.src = avatarDataUrl;
-            avatarImg.style.width = '24px';
-            avatarImg.style.height = '24px';
-            avatarImg.style.marginRight = '8px';
+            avatarImg.style.width = '64px';
+            avatarImg.style.height = '64px';
+            avatarImg.style.marginRight = '16px';
             avatarImg.style.imageRendering = 'pixelated'; // Keep pixelated look
-            avatarImg.style.border = '1px solid rgba(255, 255, 255, 0.3)';
-            avatarImg.style.borderRadius = '2px';
+            avatarImg.style.border = '2px solid rgba(255, 255, 255, 0.5)';
+            avatarImg.style.borderRadius = '4px';
+            avatarImg.style.boxShadow = '0 0 8px rgba(0, 0, 0, 0.7)';
             announcementContainer.appendChild(avatarImg);
         }
         
