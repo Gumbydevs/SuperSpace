@@ -149,6 +149,10 @@ io.on('connection', (socket) => {
     if (!data || !data.targetId) return;
     const targetSocket = io.sockets.sockets.get(data.targetId);
     if (targetSocket) {
+      // Broadcast to all players that this player was kicked
+      const kickedPlayer = gameState.players[data.targetId];
+      const kickedName = kickedPlayer ? kickedPlayer.name : 'A player';
+      io.emit('adminPlayerKicked', { id: data.targetId, name: kickedName });
       targetSocket.emit('kickedByAdmin');
       targetSocket.disconnect(true);
       console.log(`Admin kicked player: ${data.targetId}`);

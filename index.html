@@ -346,6 +346,13 @@
         });
     </script>
 
+    <script>
+    // Block gameplay if kicked
+    if (sessionStorage.getItem('wasKicked') === '1') {
+        document.body.innerHTML = '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
+        throw new Error('Blocked by admin kick');
+    }
+    </script>
     <script src="js/game.js" type="module"></script>
 </body>
 </html>

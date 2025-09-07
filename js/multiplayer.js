@@ -41,14 +41,27 @@ export class MultiplayerManager {
         // Listen for admin kick event
         if (this.socket) {
             this.socket.on('kickedByAdmin', () => {
+                sessionStorage.setItem('wasKicked', '1');
                 alert('You have been kicked by an admin.');
                 if (this.socket) this.socket.disconnect();
-                window.location.reload();
+                window.location.href = '/';
+            });
+            // Listen for admin kick broadcast
+            this.socket.on('adminPlayerKicked', (data) => {
+                if (data && data.name) {
+                    window.game?.multiplayer?.showGameMessage?.(`${data.name} was kicked by an admin.`, '#ff4444');
+                }
             });
         }
     }
 
     connect(serverUrl = 'http://localhost:3000') {
+        // Block connection if kicked
+        if (sessionStorage.getItem('wasKicked') === '1') {
+            alert('You have been kicked from the game by an admin.');
+            window.location.href = '/';
+            return;
+        }
         // If we're already connected or have already set a name, skip the dialog
         const showNameDialog = !this.connected && !this.hasSetName;
         
