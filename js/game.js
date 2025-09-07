@@ -537,10 +537,14 @@ class Game {
                 // Track survival time
                 const currentTime = Date.now();
                 const survivalTime = (currentTime - this.gameStartTime) / 1000;
-                this.achievements.onSurvivalTime(survivalTime);
+                if (typeof this.achievements.onSurvivalTime === 'function') {
+                    this.achievements.onSurvivalTime(survivalTime);
+                }
                 
                 // Track credits
-                this.achievements.onCreditsChanged(this.player.credits || 0);
+                if (typeof this.achievements.onCreditsChanged === 'function') {
+                    this.achievements.onCreditsChanged(this.player.credits || 0);
+                }
             }
             
             if (this.playerProfile) {

@@ -1604,10 +1604,10 @@ export class ShopSystem {
         this.selectShip(shipId);
         
         // Track achievements
-        if (window.game && window.game.achievements) {
+        if (window.game && window.game.achievements && typeof window.game.achievements.onShopPurchase === 'function') {
             window.game.achievements.onShopPurchase('ship', ship.price);
         }
-        if (window.game && window.game.playerProfile) {
+        if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onShopPurchase === 'function') {
             window.game.playerProfile.onShopPurchase('ship', ship.price);
         }
         
@@ -1682,10 +1682,10 @@ export class ShopSystem {
         this.selectWeapon(weaponId);
         
         // Track achievements
-        if (window.game && window.game.achievements) {
+        if (window.game && window.game.achievements && typeof window.game.achievements.onShopPurchase === 'function') {
             window.game.achievements.onShopPurchase('weapon', weapon.price);
         }
-        if (window.game && window.game.playerProfile) {
+        if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onShopPurchase === 'function') {
             window.game.playerProfile.onShopPurchase('weapon', weapon.price);
         }
         
@@ -1784,10 +1784,10 @@ export class ShopSystem {
         }
         
         // Track achievements
-        if (window.game && window.game.achievements) {
+        if (window.game && window.game.achievements && typeof window.game.achievements.onShopPurchase === 'function') {
             window.game.achievements.onShopPurchase('upgrade', price);
         }
-        if (window.game && window.game.playerProfile) {
+        if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onShopPurchase === 'function') {
             window.game.playerProfile.onShopPurchase('upgrade', price);
         }
         

@@ -625,11 +625,13 @@
                         player.addCredits(creditReward);
                         
                         // Track achievements and player profile
-                        if (window.game && window.game.achievements) {
+                        if (window.game && window.game.achievements && typeof window.game.achievements.onAsteroidDestroyed === 'function') {
                             window.game.achievements.onAsteroidDestroyed();
                         }
-                        if (window.game && window.game.playerProfile) {
+                        if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onCreditsEarned === 'function') {
                             window.game.playerProfile.onCreditsEarned(creditReward);
+                        }
+                        if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onAsteroidDestroyed === 'function') {
                             window.game.playerProfile.onAsteroidDestroyed();
                         }
                         
