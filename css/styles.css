@@ -712,6 +712,58 @@ input[type="range"] {
     background: rgba(70, 0, 0, 0.9);
 }
 
+/* Collapsible Player List Styles (Desktop and Mobile) */
+#player-list {
+    transition: transform 0.3s ease-in-out;
+    position: relative;
+}
+
+/* Collapsed state for player list */
+#player-list.collapsed {
+    transform: translateX(-85%);
+}
+
+/* Player list toggle tab */
+#player-list-toggle {
+    position: absolute;
+    top: 50%;
+    right: -30px;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #555;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    z-index: 1002;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-weight: 500;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    transition: all 0.2s ease;
+    user-select: none;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3);
+}
+
+#player-list-toggle:hover {
+    background: rgba(0, 0, 50, 0.9);
+    border-color: #33f;
+    color: #8cf;
+    text-shadow: 0 0 4px #33f;
+    box-shadow: 2px 0 8px rgba(51, 51, 255, 0.3);
+}
+
+#player-list-toggle:active {
+    background: rgba(0, 0, 70, 0.9);
+    transform: translateY(-50%) scale(0.95);
+}
+
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
     /* Shop button for Mobile Only */
@@ -909,6 +961,43 @@ input[type="range"] {
         border: 2px solid #444 !important;
         border-radius: 6px !important;
         z-index: 1001 !important;
+        transition: transform 0.3s ease-in-out !important;
+    }
+    
+    /* Collapsed state for player list */
+    #player-list.collapsed {
+        transform: translateX(-90%) scale(0.9) !important;
+        transform-origin: top left !important;
+    }
+    
+    /* Player list toggle tab */
+    #player-list-toggle {
+        position: absolute !important;
+        top: 50% !important;
+        right: -30px !important;
+        transform: translateY(-50%) !important;
+        width: 30px !important;
+        height: 60px !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+        border: 1px solid #444 !important;
+        border-left: none !important;
+        border-radius: 0 8px 8px 0 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 14px !important;
+        color: #fff !important;
+        z-index: 1002 !important;
+        writing-mode: vertical-rl !important;
+        text-orientation: mixed !important;
+        font-weight: 500 !important;
+        transition: background-color 0.2s ease !important;
+    }
+    
+    #player-list-toggle:hover {
+        background: rgba(0, 0, 50, 0.9) !important;
+        border-color: #33f !important;
     }
     
     #player-list-container {
@@ -1333,6 +1422,19 @@ input[type="range"] {
         font-size: 8px;
         padding: 4px;
         transform: scale(0.7);
+    }
+    
+    /* Small mobile collapsed state */
+    #player-list.collapsed {
+        transform: translateX(-85%) scale(0.7) !important;
+    }
+    
+    /* Smaller toggle button for small mobile */
+    #player-list-toggle {
+        width: 25px !important;
+        height: 50px !important;
+        right: -25px !important;
+        font-size: 12px !important;
     }
     
     #player-list-container {

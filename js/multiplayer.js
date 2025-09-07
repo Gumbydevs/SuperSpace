@@ -2598,6 +2598,38 @@ export class MultiplayerManager {
         
         contentContainer.appendChild(listContainer);
         playerList.appendChild(contentContainer);
+        
+        // Create toggle button
+        const toggleButton = document.createElement('div');
+        toggleButton.id = 'player-list-toggle';
+        toggleButton.innerHTML = '◀';
+        toggleButton.title = 'Toggle Player List';
+        
+        // Check if player list was previously collapsed
+        const wasCollapsed = localStorage.getItem('playerListCollapsed') === 'true';
+        if (wasCollapsed) {
+            playerList.classList.add('collapsed');
+            toggleButton.innerHTML = '▶';
+            toggleButton.title = 'Show Player List';
+        }
+        
+        // Add click handler for toggle functionality
+        toggleButton.addEventListener('click', () => {
+            const isCollapsed = playerList.classList.contains('collapsed');
+            if (isCollapsed) {
+                playerList.classList.remove('collapsed');
+                toggleButton.innerHTML = '◀';
+                toggleButton.title = 'Hide Player List';
+                localStorage.setItem('playerListCollapsed', 'false');
+            } else {
+                playerList.classList.add('collapsed');
+                toggleButton.innerHTML = '▶';
+                toggleButton.title = 'Show Player List';
+                localStorage.setItem('playerListCollapsed', 'true');
+            }
+        });
+        
+        playerList.appendChild(toggleButton);
         document.body.appendChild(playerList);
         
         // Update the player list immediately
