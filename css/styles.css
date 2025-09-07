@@ -892,11 +892,29 @@ input[type="range"] {
     }
     
     #health-container {
-        bottom: 65px !important;
+        bottom: 80px !important;
     }
     
     #shield-container {
+        bottom: 65px !important;
+    }
+    
+    /* Move weapon display to bottom center on mobile - MOBILE ONLY */
+    #status-panel .status-item:has(#weapons), 
+    #status-panel .status-item:has(#weapon-icon) {
+        position: fixed !important;
         bottom: 50px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        font-size: 12px !important;
+        padding: 3px 5px !important;
+        z-index: 1002 !important;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        width: auto !important;
+        min-width: 80px !important;
+        text-align: center !important;
     }
     
     /* Minimap adjustments for mobile */
@@ -1054,6 +1072,26 @@ input[type="range"] {
         display: none; /* Hidden on desktop */
     }
     
+    /* Position options button below shop button on mobile/tablet only */
+    #options-btn {
+        position: fixed !important;
+        top: 122px !important; /* Below shop button (76px + height + margin) */
+        right: 10px !important;
+        z-index: 1002 !important;
+        font-size: 14px !important;
+        padding: 6px 12px !important;
+        min-height: 36px !important;
+        min-width: 80px !important;
+    }
+    
+    /* Ensure shop button stays in correct position on mobile */
+    #shop-btn {
+        position: fixed !important;
+        top: 76px !important;
+        right: 10px !important;
+        z-index: 1002 !important;
+    }
+    
     /* Show mobile menu button only on touch devices */
     @media (hover: none) and (pointer: coarse) {
         #mobile-menu-button {
@@ -1152,7 +1190,7 @@ input[type="range"] {
     #afterburner-button {
         width: 50px;
         height: 50px;
-        bottom: 80px;
+        bottom: 95px;
         right: 20px;
         font-size: 18px;
     }
