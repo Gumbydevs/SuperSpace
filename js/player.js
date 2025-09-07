@@ -37,7 +37,7 @@ export class Player {
 
         // Here we track the player's current ship and equipment
         this.currentShip = 'scout'; // Default starting ship
-        this.currentWeaponId = 'laser'; // Track weapon by ID for shop integration
+        this.currentWeaponId = 'disengaged'; // Track weapon by ID for shop integration
 
         // Here we define the player's economy and score
         // Load persisted credits from localStorage or default to 0
