@@ -1,14 +1,14 @@
-// Defines daily and weekly challenges
+// Defines daily and weekly challenges - REBALANCED for slower progression
 export const CHALLENGES = {
     daily: [
-        { id: 'survive_5', description: 'Survive for 5 minutes', reward: 200 },
-        { id: 'destroy_50_asteroids', description: 'Destroy 50 asteroids', reward: 150 },
-        { id: 'earn_500_credits', description: 'Earn 500 credits in one session', reward: 100 }
+        { id: 'survive_10', description: 'Survive for 10 minutes', reward: 500 },
+        { id: 'destroy_200_asteroids', description: 'Destroy 200 asteroids', reward: 400 },
+        { id: 'earn_1000_credits', description: 'Earn 1000 credits in one session', reward: 300 }
     ],
     weekly: [
-        { id: 'score_10000', description: 'Score 10,000 points in one game', reward: 500 },
-        { id: 'kill_10_enemies', description: 'Kill 10 enemy ships', reward: 400 },
-        { id: 'play_10_games', description: 'Play 10 games this week', reward: 300 }
+        { id: 'score_50000', description: 'Score 50,000 points in one game', reward: 1500 },
+        { id: 'kill_25_enemies', description: 'Kill 25 enemy ships', reward: 1200 },
+        { id: 'play_20_games', description: 'Play 20 games this week', reward: 800 }
     ]
 };
 
@@ -32,23 +32,23 @@ export class ChallengeSystem {
             if (this.completed[challengeType].includes(ch.id)) return;
             let done = false;
             switch (ch.id) {
-                case 'survive_5':
-                    done = this.profile.stats.longestSurvival >= 300;
+                case 'survive_10':
+                    done = this.profile.stats.longestSurvival >= 600;
                     break;
-                case 'destroy_50_asteroids':
-                    done = this.profile.stats.asteroidsDestroyed >= 50;
+                case 'destroy_200_asteroids':
+                    done = this.profile.stats.asteroidsDestroyed >= 200;
                     break;
-                case 'earn_500_credits':
-                    done = this.profile.stats.totalCreditsEarned >= 500;
+                case 'earn_1000_credits':
+                    done = this.profile.stats.totalCreditsEarned >= 1000;
                     break;
-                case 'score_10000':
-                    done = this.player.score >= 10000;
+                case 'score_50000':
+                    done = this.player.score >= 50000;
                     break;
-                case 'kill_10_enemies':
-                    done = this.profile.stats.totalKills >= 10;
+                case 'kill_25_enemies':
+                    done = this.profile.stats.totalKills >= 25;
                     break;
-                case 'play_10_games':
-                    done = this.profile.stats.gamesPlayed >= 10;
+                case 'play_20_games':
+                    done = this.profile.stats.gamesPlayed >= 20;
                     break;
             }
             if (done && !this.completed[challengeType].includes(ch.id)) {

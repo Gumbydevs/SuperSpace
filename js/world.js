@@ -90,11 +90,11 @@
         this.asteroidSpawnTimer = 0;
         this.asteroidSpawnInterval = 2;
 
-        // Here we define how many credits each asteroid type is worth
+        // Here we define how many credits each asteroid type is worth - REBALANCED for slower progression
         this.asteroidCreditValues = {
-            small: { min: 10, max: 25 },
-            medium: { min: 20, max: 50 },
-            large: { min: 40, max: 100 }
+            small: { min: 2, max: 8 },
+            medium: { min: 5, max: 15 },
+            large: { min: 10, max: 25 }
         };
     }
 
@@ -364,8 +364,8 @@
             const radius = size === 'small' ? 20 : size === 'medium' ? 40 : 60;
             // Here we set health based on size category
             const health = size === 'small' ? 50 : size === 'medium' ? 100 : 200;
-            // Here we set score value based on size category
-            const scoreValue = size === 'small' ? 100 : size === 'medium' ? 200 : 400;
+            // Here we set score value based on size category - REBALANCED for slower progression
+            const scoreValue = size === 'small' ? 25 : size === 'medium' ? 50 : 100;
 
             // Here we create an asteroid with random position and properties
             asteroids.push({

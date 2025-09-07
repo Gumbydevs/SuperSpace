@@ -29,7 +29,7 @@ export class ShopSystem {
                 id: 'fighter',
                 name: 'Fighter',
                 description: 'Balanced combat vessel with good speed and firepower.',
-                price: 1000,
+                price: 3000,
                 owned: localStorage.getItem('ship_fighter') === 'true',
                 stats: {
                     maxHealth: 150,
@@ -47,7 +47,7 @@ export class ShopSystem {
                 id: 'heavy',
                 name: 'Heavy Cruiser',
                 description: 'Slower but heavily armed and armored warship.',
-                price: 1000,
+                price: 4000,
                 owned: localStorage.getItem('ship_heavy') === 'true',
                 stats: {
                     maxHealth: 250,
@@ -65,7 +65,7 @@ export class ShopSystem {
                 id: 'stealth',
                 name: 'Stealth Ship',
                 description: 'Fast and hard to detect, but lightly armored.',
-                price: 1000,
+                price: 5000,
                 owned: localStorage.getItem('ship_stealth') === 'true',
                 stats: {
                     maxHealth: 120,
@@ -117,7 +117,7 @@ export class ShopSystem {
                 id: 'burst',
                 name: 'Burst Cannon',
                 description: 'Fires multiple projectiles in a spread pattern.',
-                price: 2000,
+                price: 5000,
                 owned: localStorage.getItem('weapon_burst') === 'true',
                 stats: {
                     damage: 4, // Per projectile, but fires 3
@@ -132,7 +132,7 @@ export class ShopSystem {
                 id: 'mininglaser',
                 name: 'Mining Laser',
                 description: 'Continuous beam weapon that excels against asteroids but has reduced damage against ships.',
-                price: 6000,
+                price: 12000,
                 owned: localStorage.getItem('weapon_mininglaser') === 'true',
                 stats: {
                     damage: 8, // Moderate direct damage
@@ -149,7 +149,7 @@ export class ShopSystem {
                 id: 'missile',
                 name: 'Seeker Missile',
                 description: 'Guided missile with high damage but slow reload.',
-                price: 5000,
+                price: 8000,
                 owned: localStorage.getItem('weapon_missile') === 'true',
                 stats: {
                     damage: 26, // Split the difference between original 35 and nerfed 18
@@ -164,7 +164,7 @@ export class ShopSystem {
                 id: 'mines',
                 name: 'Space Mines',
                 description: 'Deploy proximity mines behind your ship. Mines arm after 2 seconds and explode on contact.',
-                price: 9000,
+                price: 18000,
                 owned: localStorage.getItem('weapon_mines') === 'true',
                 stats: {
                     damage: 50, // High damage on direct hit
@@ -182,7 +182,7 @@ export class ShopSystem {
                 id: 'plasma',
                 name: 'Plasma Cannon',
                 description: 'Heavy energy weapon with splash damage.',
-                price: 8000,
+                price: 15000,
                 owned: localStorage.getItem('weapon_plasma') === 'true',
                 stats: {
                     damage: 32, // Higher damage
@@ -197,7 +197,7 @@ export class ShopSystem {
                 id: 'rocket',
                 name: 'Fusion Mortar',
                 description: 'Fires explosive fusion shells that detonate at range with massive area damage.',
-                price: 12000,
+                price: 25000,
                 owned: localStorage.getItem('weapon_rocket') === 'true',
                 stats: {
                     damage: 15, // Lower direct damage since it's area-focused
@@ -216,7 +216,7 @@ export class ShopSystem {
                 id: 'railgun',
                 name: 'Railgun',
                 description: 'Electromagnetic accelerator that fires high-velocity spikes with devastating penetration power.',
-                price: 18000,
+                price: 35000,
                 owned: localStorage.getItem('weapon_railgun') === 'true',
                 stats: {
                     damage: 80, // Reduced from 120 - still high but more balanced
@@ -232,7 +232,7 @@ export class ShopSystem {
                 id: 'quantum',
                 name: 'Quantum Disruptor',
                 description: 'Advanced weapon that phases through obstacles and disables enemy shields.',
-                price: 22000,
+                price: 45000,
                 owned: localStorage.getItem('weapon_quantum') === 'true',
                 stats: {
                     damage: 90, // Even higher
@@ -253,10 +253,10 @@ export class ShopSystem {
                 id: 'engine',
                 name: 'Engine Upgrade',
                 description: 'Improves speed and acceleration.',
-                basePrice: 1000,
+                basePrice: 2500,
                 level: parseInt(localStorage.getItem('upgrade_engine') || '0'),
                 maxLevel: 3,
-                getPrice: (level) => 1000 * (level + 1),
+                getPrice: (level) => 2500 * (level + 1),
                 getEffect: (level) => ({ 
                     maxSpeed: level * 30, 
                     acceleration: level * 25 
@@ -266,20 +266,20 @@ export class ShopSystem {
                 id: 'shield',
                 name: 'Shield Generator',
                 description: 'Adds rechargeable shields that absorb damage.',
-                basePrice: 3000,
+                basePrice: 6000,
                 level: parseInt(localStorage.getItem('upgrade_shield') || '0'),
                 maxLevel: 3,
-                getPrice: (level) => 3000 * (level + 1),
+                getPrice: (level) => 6000 * (level + 1),
                 getEffect: (level) => ({ shieldCapacity: 50 + (level * 50) })
             },
             {
                 id: 'energy',
                 name: 'Energy System',
                 description: 'Increases energy capacity and recharge rate.',
-                basePrice: 2000,
+                basePrice: 4000,
                 level: parseInt(localStorage.getItem('upgrade_energy') || '0'),
                 maxLevel: 3,
-                getPrice: (level) => 2000 * (level + 1),
+                getPrice: (level) => 4000 * (level + 1),
                 getEffect: (level) => ({ 
                     maxEnergy: 100 + (level * 50),
                     energyRegen: 5 + (level * 3)
@@ -289,10 +289,10 @@ export class ShopSystem {
                 id: 'armor',
                 name: 'Hull Reinforcement',
                 description: 'Increases maximum health and damage resistance.',
-                basePrice: 2500,
+                basePrice: 5000,
                 level: parseInt(localStorage.getItem('upgrade_armor') || '0'),
                 maxLevel: 3,
-                getPrice: (level) => 2500 * (level + 1),
+                getPrice: (level) => 5000 * (level + 1),
                 getEffect: (level) => ({ 
                     maxHealth: level * 30,
                     damageReduction: level * 0.1
@@ -1130,7 +1130,7 @@ export class ShopSystem {
                 Points allocated this run: ${skillSystem.getAllocatedPoints()}/${skillSystem.MAX_POINTS_PER_RUN}
             </div>
             <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-                Earn 1 skill point per 1000 score points
+                Earn 1 skill point per 5000 score points
             </div>
         `;
         container.appendChild(infoDiv);
@@ -1437,20 +1437,28 @@ export class ShopSystem {
         // Add some basic progress indicators based on challenge type
         if (!isCompleted) {
             switch (challenge.id) {
-                case 'survive_5':
+                case 'survive_10':
                     const currentSurvival = this.player.playerProfile?.stats?.longestSurvival || 0;
-                    progress.textContent = `Best survival: ${Math.floor(currentSurvival)} / 300 seconds`;
+                    progress.textContent = `Best survival: ${Math.floor(currentSurvival)} / 600 seconds`;
                     break;
-                case 'destroy_50_asteroids':
+                case 'destroy_200_asteroids':
                     const currentAsteroids = this.player.playerProfile?.stats?.asteroidsDestroyed || 0;
-                    progress.textContent = `Asteroids destroyed: ${currentAsteroids} / 50`;
+                    progress.textContent = `Asteroids destroyed: ${currentAsteroids} / 200`;
                     break;
-                case 'score_10000':
-                    progress.textContent = `Current score: ${this.player.score} / 10,000`;
+                case 'earn_1000_credits':
+                    const currentCreditsEarned = this.player.playerProfile?.stats?.totalCreditsEarned || 0;
+                    progress.textContent = `Credits earned: ${currentCreditsEarned} / 1,000`;
                     break;
-                case 'kill_100_enemies':
+                case 'score_50000':
+                    progress.textContent = `Current score: ${this.player.score} / 50,000`;
+                    break;
+                case 'kill_25_enemies':
                     const currentKills = this.player.playerProfile?.stats?.totalKills || 0;
-                    progress.textContent = `Enemy kills: ${currentKills} / 100`;
+                    progress.textContent = `Enemy kills: ${currentKills} / 25`;
+                    break;
+                case 'play_20_games':
+                    const currentGames = this.player.playerProfile?.stats?.gamesPlayed || 0;
+                    progress.textContent = `Games played: ${currentGames} / 20`;
                     break;
             }
         } else {

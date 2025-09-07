@@ -429,15 +429,15 @@ export class MultiplayerManager {
                     if (serverAsteroid.radius <= 25) {
                         size = 'small';
                         health = 50;
-                        scoreValue = 100;
+                        scoreValue = 25;
                     } else if (serverAsteroid.radius <= 45) {
                         size = 'medium';
                         health = 100;
-                        scoreValue = 200;
+                        scoreValue = 50;
                     } else {
                         size = 'large';
                         health = 200;
-                        scoreValue = 400;
+                        scoreValue = 100;
                     }
 
                     return {
@@ -1944,8 +1944,8 @@ export class MultiplayerManager {
                 
                 // Award credits and points immediately for responsive gameplay
                 if (this.game.player) {
-                    this.game.player.score += 500;  // Restore immediate score update
-                    this.game.player.addCredits(250);
+                    this.game.player.score += 250;  // Reduced from 500 for balance
+                    this.game.player.addCredits(100);
                     this.game.player.wins += 1;  // Track wins locally too
                     this.updatePlayerList(); // Update UI immediately
                     
