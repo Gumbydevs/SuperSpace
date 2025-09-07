@@ -636,7 +636,7 @@ input[type="range"] {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
     z-index: 1000;
-    display: flex;
+    display: none; /* Hidden by default */
     align-items: center;
     justify-content: center;
     -webkit-backdrop-filter: blur(5px);

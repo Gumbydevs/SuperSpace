@@ -262,7 +262,11 @@
             console.log('hasAgreed:', hasAgreed);
 
             if (!hasAgreed) {
+                console.log('Showing disclaimer popup');
                 disclaimerPopup.style.display = 'flex';
+            } else {
+                console.log('User has already agreed, hiding disclaimer');
+                disclaimerPopup.style.display = 'none';
             }
 
             agreeBtn.addEventListener('click', function() {
