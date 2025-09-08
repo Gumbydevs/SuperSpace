@@ -408,112 +408,123 @@ export class PremiumStore {
     render(ctx, canvas) {
         if (!this.storeOpen) return;
         
+        // Calculate 70% scaled dimensions centered on screen
+        const scale = 0.7;
+        const scaledWidth = canvas.width * scale;
+        const scaledHeight = canvas.height * scale;
+        const offsetX = (canvas.width - scaledWidth) / 2;
+        const offsetY = (canvas.height - scaledHeight) / 2;
+        
         // Store background - match game style
         ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Sci-fi border effect
+        // Sci-fi border effect (scaled and centered)
         ctx.strokeStyle = '#00ffff';
         ctx.lineWidth = 3;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+        ctx.strokeRect(offsetX + 20, offsetY + 20, scaledWidth - 40, scaledHeight - 40);
         
         // Inner border
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
-        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+        ctx.strokeRect(offsetX + 25, offsetY + 25, scaledWidth - 50, scaledHeight - 50);
         
         // Store header - match game typography
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 32px Orbitron, Arial, sans-serif';
+        ctx.font = 'bold 24px Orbitron, Arial, sans-serif'; // Slightly smaller font
         ctx.textAlign = 'center';
-        ctx.fillText('PREMIUM STORE', canvas.width / 2, 70);
+        ctx.fillText('PREMIUM STORE', canvas.width / 2, offsetY + 55);
         
         // Subtitle
         ctx.fillStyle = '#00ffff';
-        ctx.font = '16px Orbitron, Arial, sans-serif';
-        ctx.fillText('COSMETIC UPGRADES & SPACE GEMS', canvas.width / 2, 95);
+        ctx.font = '14px Orbitron, Arial, sans-serif'; // Smaller subtitle
+        ctx.fillText('COSMETIC UPGRADES & SPACE GEMS', canvas.width / 2, offsetY + 75);
         
-        // Space Gems display - sci-fi style
+        // Space Gems display - sci-fi style (scaled)
+        const gemsBoxWidth = 160;
+        const gemsBoxHeight = 25;
         ctx.fillStyle = '#000000';
-        ctx.fillRect(canvas.width / 2 - 100, 105, 200, 30);
+        ctx.fillRect(canvas.width / 2 - gemsBoxWidth/2, offsetY + 85, gemsBoxWidth, gemsBoxHeight);
         ctx.strokeStyle = '#00ffff';
         ctx.lineWidth = 2;
-        ctx.strokeRect(canvas.width / 2 - 100, 105, 200, 30);
+        ctx.strokeRect(canvas.width / 2 - gemsBoxWidth/2, offsetY + 85, gemsBoxWidth, gemsBoxHeight);
         
         ctx.fillStyle = '#00ffff';
-        ctx.font = 'bold 18px Orbitron, Arial, sans-serif';
-        ctx.fillText(`💎 ${this.spaceGems} SPACE GEMS`, canvas.width / 2, 125);
+        ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller gem display
+        ctx.fillText(`💎 ${this.spaceGems} SPACE GEMS`, canvas.width / 2, offsetY + 100);
         
         // Tab buttons - game style
-        this.renderTabs(ctx, canvas);
+        this.renderTabs(ctx, canvas, offsetX, offsetY, scale);
         
         // Store content
-        this.renderStoreContent(ctx, canvas);
+        this.renderStoreContent(ctx, canvas, offsetX, offsetY, scale);
         
-        // Close button - sci-fi style
+        // Close button - sci-fi style (scaled and repositioned)
+        const closeButtonWidth = 50;
+        const closeButtonHeight = 28;
         ctx.fillStyle = '#ff3333';
-        ctx.fillRect(canvas.width - 80, 30, 60, 35);
+        ctx.fillRect(offsetX + scaledWidth - closeButtonWidth - 20, offsetY + 25, closeButtonWidth, closeButtonHeight);
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
-        ctx.strokeRect(canvas.width - 80, 30, 60, 35);
+        ctx.strokeRect(offsetX + scaledWidth - closeButtonWidth - 20, offsetY + 25, closeButtonWidth, closeButtonHeight);
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px Orbitron, Arial, sans-serif';
+        ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller close button text
         ctx.textAlign = 'center';
-        ctx.fillText('CLOSE', canvas.width - 50, 52);
+        ctx.fillText('CLOSE', offsetX + scaledWidth - closeButtonWidth/2 - 20, offsetY + 42);
         
-        // Instructions - match game style
+        // Instructions - match game style (scaled)
         ctx.fillStyle = '#cccccc';
-        ctx.font = '14px Orbitron, Arial, sans-serif';
+        ctx.font = '12px Orbitron, Arial, sans-serif'; // Smaller instructions
         ctx.textAlign = 'center';
-        ctx.fillText('CLICK ITEMS TO PURCHASE WITH SPACE GEMS', canvas.width / 2, canvas.height - 50);
-        ctx.fillText('PURCHASE SPACE GEMS WITH REAL MONEY IN THE GEMS TAB', canvas.width / 2, canvas.height - 30);
+        ctx.fillText('CLICK ITEMS TO PURCHASE WITH SPACE GEMS', canvas.width / 2, offsetY + scaledHeight - 40);
+        ctx.fillText('PURCHASE SPACE GEMS WITH REAL MONEY IN THE GEMS TAB', canvas.width / 2, offsetY + scaledHeight - 25);
     }
     
-    renderTabs(ctx, canvas) {
+    renderTabs(ctx, canvas, offsetX, offsetY, scale) {
         const tabs = [
             { id: 'avatars', name: 'AVATARS', icon: '👨‍🚀' },
             { id: 'skins', name: 'SHIP SKINS', icon: '🚀' },
             { id: 'gems', name: 'SPACE GEMS', icon: '💎' }
         ];
         
-        const tabWidth = 160;
+        const tabWidth = 120; // Smaller tabs
         const startX = (canvas.width - (tabs.length * tabWidth)) / 2;
         
         tabs.forEach((tab, index) => {
             const x = startX + (index * tabWidth);
-            const y = 150;
+            const y = offsetY + 120; // Adjusted for scaled layout
             const isActive = this.currentTab === tab.id;
             
             // Tab background - sci-fi style
             ctx.fillStyle = isActive ? '#003366' : '#001122';
-            ctx.fillRect(x, y, tabWidth - 10, 40);
+            ctx.fillRect(x, y, tabWidth - 10, 32); // Smaller tab height
             
             // Tab border
             ctx.strokeStyle = isActive ? '#00ffff' : '#666666';
             ctx.lineWidth = isActive ? 3 : 1;
-            ctx.strokeRect(x, y, tabWidth - 10, 40);
+            ctx.strokeRect(x, y, tabWidth - 10, 32);
             
-            // Tab text - Orbitron font
+            // Tab text - Orbitron font (smaller)
             ctx.fillStyle = isActive ? '#00ffff' : '#ffffff';
-            ctx.font = `${isActive ? 'bold ' : ''}14px Orbitron, Arial, sans-serif`;
+            ctx.font = `${isActive ? 'bold ' : ''}12px Orbitron, Arial, sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, y + 25);
+            ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, y + 20);
         });
     }
     
-    renderStoreContent(ctx, canvas) {
+    renderStoreContent(ctx, canvas, offsetX, offsetY, scale) {
         const items = this.getCurrentTabItems();
-        const startY = 220;
-        const itemHeight = 140;
+        const startY = offsetY + 170; // Adjusted for scaled layout
+        const itemHeight = 100; // Smaller item height
         const itemsPerRow = 2;
-        const itemWidth = 320;
-        const spacing = 40;
+        const itemWidth = 240; // Smaller item width
+        const spacing = 30; // Smaller spacing
         
         items.forEach((item, index) => {
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
             const x = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
-            const y = startY + row * (itemHeight + 30);
+            const y = startY + row * (itemHeight + 25); // Smaller row spacing
             
             this.renderStoreItem(ctx, item, x, y, itemWidth, itemHeight);
         });
@@ -535,44 +546,44 @@ export class PremiumStore {
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 3, y + 3, width - 6, height - 6);
         
-        // Item content - Orbitron font
+        // Item content - Orbitron font (scaled down)
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Orbitron, Arial, sans-serif';
+        ctx.font = 'bold 13px Orbitron, Arial, sans-serif'; // Smaller main font
         ctx.textAlign = 'left';
         
         if (item.gems !== undefined) {
             // Gem package
-            ctx.fillText(item.name.toUpperCase(), x + 15, y + 25);
-            ctx.font = '12px Orbitron, Arial, sans-serif';
+            ctx.fillText(item.name.toUpperCase(), x + 12, y + 20);
+            ctx.font = '10px Orbitron, Arial, sans-serif'; // Smaller description
             ctx.fillStyle = '#cccccc';
-            ctx.fillText(item.description, x + 15, y + 45);
+            ctx.fillText(item.description, x + 12, y + 35);
             
             ctx.fillStyle = '#00ffff';
-            ctx.font = 'bold 18px Orbitron, Arial, sans-serif';
-            ctx.fillText(`💎 ${item.gems}${item.bonus > 0 ? ` + ${item.bonus} BONUS` : ''}`, x + 15, y + 75);
+            ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller gem count
+            ctx.fillText(`💎 ${item.gems}${item.bonus > 0 ? ` + ${item.bonus} BONUS` : ''}`, x + 12, y + 55);
             
             ctx.fillStyle = '#ffff00';
-            ctx.font = 'bold 20px Orbitron, Arial, sans-serif';
-            ctx.fillText(`$${item.price}`, x + 15, y + 105);
+            ctx.font = 'bold 16px Orbitron, Arial, sans-serif'; // Smaller price
+            ctx.fillText(`$${item.price}`, x + 12, y + 75);
             
             if (item.popular) {
                 ctx.fillStyle = '#ff4444';
-                ctx.font = 'bold 12px Orbitron, Arial, sans-serif';
-                ctx.fillText('POPULAR!', x + width - 90, y + 20);
+                ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller popular text
+                ctx.fillText('POPULAR!', x + width - 70, y + 15);
             }
             
-            // Purchase button
-            const btnX = x + width - 100;
-            const btnY = y + height - 35;
+            // Purchase button (smaller)
+            const btnX = x + width - 80;
+            const btnY = y + height - 28;
             ctx.fillStyle = '#006600';
-            ctx.fillRect(btnX, btnY, 80, 25);
+            ctx.fillRect(btnX, btnY, 65, 20);
             ctx.strokeStyle = '#00ff00';
             ctx.lineWidth = 2;
-            ctx.strokeRect(btnX, btnY, 80, 25);
+            ctx.strokeRect(btnX, btnY, 65, 20);
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 12px Orbitron, Arial, sans-serif';
+            ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller button text
             ctx.textAlign = 'center';
-            ctx.fillText('BUY NOW', btnX + 40, btnY + 16);
+            ctx.fillText('BUY NOW', btnX + 32, btnY + 13);
             
         } else {
             // Avatar or skin - render actual preview
@@ -825,18 +836,18 @@ export class PremiumStore {
             }
             
             ctx.textAlign = 'left';
-            ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
+            ctx.font = 'bold 12px Orbitron, Arial, sans-serif'; // Smaller item name
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(item.name.toUpperCase(), x + 100, y + 25);
+            ctx.fillText(item.name.toUpperCase(), x + 80, y + 20); // Adjusted position for smaller layout
             
-            ctx.font = '11px Orbitron, Arial, sans-serif';
+            ctx.font = '9px Orbitron, Arial, sans-serif'; // Smaller description
             ctx.fillStyle = '#cccccc';
             
             // Wrap long descriptions to fit in the item box
             const words = item.description.split(' ');
             let line = '';
-            let textY = y + 45; // Use different variable name to avoid conflict
-            const maxWidth = width - 110; // Leave space for preview and padding
+            let textY = y + 35; // Use different variable name to avoid conflict
+            const maxWidth = width - 90; // Leave space for preview and padding
             
             for (let n = 0; n < words.length; n++) {
                 const testLine = line + words[n] + ' ';
@@ -844,14 +855,14 @@ export class PremiumStore {
                 const testWidth = metrics.width;
                 
                 if (testWidth > maxWidth && n > 0) {
-                    ctx.fillText(line, x + 100, textY);
+                    ctx.fillText(line, x + 80, textY);
                     line = words[n] + ' ';
-                    textY += 14; // Line height
+                    textY += 11; // Smaller line height
                 } else {
                     line = testLine;
                 }
             }
-            ctx.fillText(line, x + 100, textY);
+            ctx.fillText(line, x + 80, textY);
             
             // Rarity - position it AFTER the description text ends
             const rarityColors = {
@@ -860,22 +871,22 @@ export class PremiumStore {
                 'legendary': '#ff6600'
             };
             ctx.fillStyle = rarityColors[item.rarity] || '#cccccc';
-            ctx.font = 'bold 12px Orbitron, Arial, sans-serif';
-            ctx.fillText(item.rarity.toUpperCase(), x + 100, textY + 20); // 20px below description
+            ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller rarity text
+            ctx.fillText(item.rarity.toUpperCase(), x + 80, textY + 15); // Smaller spacing
             
             // Price or owned status
             if (!isOwned) {
                 ctx.fillStyle = '#00ffff';
-                ctx.font = 'bold 16px Orbitron, Arial, sans-serif';
-                ctx.fillText(`💎 ${item.gemPrice}`, x + 100, textY + 45); // Position relative to description end
+                ctx.font = 'bold 12px Orbitron, Arial, sans-serif'; // Smaller price
+                ctx.fillText(`💎 ${item.gemPrice}`, x + 80, textY + 30); // Position relative to description end
                 
                 ctx.fillStyle = '#ffff00';
-                ctx.font = '11px Orbitron, Arial, sans-serif';
-                ctx.fillText(`or $${item.realPrice}`, x + 100, textY + 65); // Position relative to description end
+                ctx.font = '9px Orbitron, Arial, sans-serif'; // Smaller real price
+                ctx.fillText(`or $${item.realPrice}`, x + 80, textY + 45); // Position relative to description end
                 
-                // Purchase button
-                const btnX = x + width - 100;
-                const btnY = y + height - 35;
+                // Purchase button (smaller)
+                const btnX = x + width - 80;
+                const btnY = y + height - 28;
                 ctx.fillStyle = '#003366';
                 ctx.fillRect(btnX, btnY, 80, 25);
                 ctx.strokeStyle = '#00ffff';
