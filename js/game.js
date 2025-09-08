@@ -12,6 +12,7 @@ import { PlayerProfile } from './playerprofile.js';
 import { AdminSystem } from './adminsystem.js';
 import { SkillSystem } from './skillSystem.js';
 import { ChallengeSystem } from './challenges.js';
+import { NPCManager } from './npc.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -42,12 +43,14 @@ class Game {
         this.adminSystem = new AdminSystem();  // Admin tools and management
         this.skillSystem = new SkillSystem(this.player);
         this.challengeSystem = new ChallengeSystem(this.player, this.playerProfile);
+        this.npcManager = new NPCManager(this.world, this.soundManager);  // NPC enemies and AI
         this.lastTime = 0;  // Used for calculating delta time between frames
         this.gameState = 'menu';  // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
         this.thrusterSoundActive = false;  // Tracks if thruster sound is currently playing
         
         // Make systems globally accessible
         window.admin = this.adminSystem;
+        window.npcManager = this.npcManager;  // Make NPC manager accessible for admin tools
         
         // Initialize multiplayer system (but don't connect yet)
         this.multiplayer = new MultiplayerManager(this);
@@ -540,6 +543,11 @@ class Game {
             // Here we update world elements like asteroids and powerups
             this.world.update(deltaTime, this.player, this.soundManager);
             
+            // Update NPCs and AI enemies
+            this.npcManager.update(deltaTime, this.player);
+            this.npcManager.updateNPCProjectiles(deltaTime, this.player);
+            this.npcManager.checkProjectileCollisions(this.player);
+            
             // Update multiplayer status and send player position to server
             if (this.multiplayer && this.multiplayer.connected) {
                 this.multiplayer.update(deltaTime);
@@ -654,6 +662,9 @@ class Game {
         
         // Render the world (stars and asteroids)
         this.world.render(this.ctx, this.player);
+        
+        // Render NPCs and enemies
+        this.npcManager.render(this.ctx);
         
         // Render the player when actively playing
         if (this.gameState === 'playing') {

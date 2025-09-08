@@ -635,6 +635,11 @@
                             window.game.playerProfile.onAsteroidDestroyed();
                         }
                         
+                        // Chance for alien to emerge from destroyed asteroid
+                        if (window.game && window.game.npcManager) {
+                            window.game.npcManager.spawnAlienFromAsteroid(asteroid.x, asteroid.y);
+                        }
+                        
                         // Track fragments and powerups for multiplayer sync
                         const fragmentsCreated = [];
                         const powerupsCreated = [];
@@ -698,6 +703,33 @@
                 }
             });
         });
+
+        // Check collisions between player projectiles and NPCs
+        if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
+            window.game.npcManager.npcs.forEach((npc, npcIndex) => {
+                player.projectiles.forEach((projectile, projectileIndex) => {
+                    const dx = projectile.x - npc.x;
+                    const dy = projectile.y - npc.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < npc.radius) {
+                        // Hit NPC
+                        npc.health -= projectile.damage;
+                        
+                        // Create hit effect
+                        this.createProjectileHitEffect(projectile.x, projectile.y, npc.radius, soundManager);
+                        
+                        // Remove projectile
+                        player.projectiles.splice(projectileIndex, 1);
+                        
+                        // Check if NPC is destroyed
+                        if (npc.health <= 0) {
+                            // Will be handled in NPC manager update
+                        }
+                    }
+                });
+            });
+        }
 
         // Keep player within world boundaries
         this.wrapPosition(player);

@@ -405,6 +405,16 @@ export class AdminSystem {
             </div>
         `;
         
+        // NPC/Enemy tools
+        debugSection.innerHTML += `
+            <h4 style="color: #4fc3f7; margin-top: 20px;">👽 NPC & Enemy Controls</h4>
+            <div style="margin: 10px 0;">
+                <button id="spawn-dreadnaught" style="background: #f00; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">⚠️ SPAWN DREADNAUGHT</button>
+                <button id="spawn-aliens" style="background: #0a4; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">👽 Spawn Aliens</button>
+                <button id="clear-npcs" style="background: #844; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Clear All NPCs</button>
+            </div>
+        `;
+        
         // Player tools
         debugSection.innerHTML += `
             <h4 style="color: #4fc3f7; margin-top: 20px;">👤 Player Tools</h4>
@@ -438,6 +448,15 @@ export class AdminSystem {
                     break;
                 case 'clear-world':
                     this.clearWorld();
+                    break;
+                case 'spawn-dreadnaught':
+                    this.spawnDreadnaught();
+                    break;
+                case 'spawn-aliens':
+                    this.spawnAliens();
+                    break;
+                case 'clear-npcs':
+                    this.clearNPCs();
                     break;
                 case 'give-credits-btn':
                     this.giveCredits();
@@ -798,6 +817,54 @@ export class AdminSystem {
             window.game.world.asteroids = [];
             window.game.world.powerups = [];
             alert('World cleared!');
+        }
+    }
+    
+    // NPC and Enemy Controls
+    spawnDreadnaught() {
+        if (window.game && window.npcManager) {
+            if (window.npcManager.dreadnaughtActive) {
+                alert('Dreadnaught already active! Only one can exist at a time.');
+                return;
+            }
+            
+            const dreadnaught = window.npcManager.spawnDreadnaught();
+            if (dreadnaught) {
+                alert('⚠️ DREADNAUGHT SPAWNED! Prepare for battle!');
+            }
+        } else {
+            alert('NPC Manager not available!');
+        }
+    }
+    
+    spawnAliens() {
+        if (window.game && window.npcManager && window.game.world) {
+            // Spawn 3-5 aliens at random locations
+            const count = 3 + Math.floor(Math.random() * 3);
+            let spawned = 0;
+            
+            for (let i = 0; i < count; i++) {
+                const x = (Math.random() - 0.5) * window.game.world.width;
+                const y = (Math.random() - 0.5) * window.game.world.height;
+                
+                if (window.npcManager.spawnAlienFromAsteroid(x, y, true)) { // Force spawn
+                    spawned++;
+                }
+            }
+            
+            alert(`Spawned ${spawned} alien scouts!`);
+        } else {
+            alert('NPC Manager not available!');
+        }
+    }
+    
+    clearNPCs() {
+        if (window.game && window.npcManager) {
+            const npcCount = window.npcManager.getNPCCount();
+            window.npcManager.clearAll();
+            alert(`Cleared ${npcCount} NPCs!`);
+        } else {
+            alert('NPC Manager not available!');
         }
     }
     

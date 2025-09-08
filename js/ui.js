@@ -695,6 +695,43 @@ export class UI {
             });
         }
         
+        // Draw NPCs on minimap
+        if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
+            window.game.npcManager.npcs.forEach(npc => {
+                const nx = (npc.x + world.width/2) * scale;
+                const ny = (npc.y + world.height/2) * scale;
+                
+                // Different colors for different NPC types
+                let npcColor;
+                switch(npc.type) {
+                    case 'alien_scout':
+                        npcColor = '#0f0'; // Green for aliens
+                        break;
+                    case 'dreadnaught':
+                        npcColor = '#f00'; // Red for dreadnaught
+                        break;
+                    default:
+                        npcColor = '#f80'; // Orange for other NPCs
+                }
+                
+                minimapCtx.fillStyle = npcColor;
+                minimapCtx.beginPath();
+                const npcSize = npc.type === 'dreadnaught' ? 4 : 2; // Larger dot for boss
+                minimapCtx.arc(nx, ny, this.isMobileDevice ? npcSize : npcSize + 0.5, 0, Math.PI * 2);
+                minimapCtx.fill();
+                
+                // Add pulsing effect for dreadnaught
+                if (npc.type === 'dreadnaught') {
+                    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300);
+                    minimapCtx.strokeStyle = `rgba(255, 0, 0, ${pulse})`;
+                    minimapCtx.lineWidth = 2;
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(nx, ny, 6, 0, Math.PI * 2);
+                    minimapCtx.stroke();
+                }
+            });
+        }
+        
         // Draw player (always draw last so it's on top)
         const playerX = (player.x + world.width/2) * scale;
         const playerY = (player.y + world.height/2) * scale;

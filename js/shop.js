@@ -368,8 +368,12 @@ export class ShopSystem {
         if (ship && ship.owned) {
             this.player.currentShip = currentShipId;
             
-            // Apply ship appearance
-            if (ship.appearance && ship.appearance.color) {
+            // Apply ship appearance - use saved color if available, otherwise use ship default
+            const savedShipColor = localStorage.getItem('playerShipColor');
+            if (savedShipColor) {
+                this.player.color = savedShipColor;
+                this.player.shipColor = savedShipColor;
+            } else if (ship.appearance && ship.appearance.color) {
                 this.player.color = ship.appearance.color;
                 this.player.shipColor = ship.appearance.color;
                 localStorage.setItem('playerShipColor', ship.appearance.color);
