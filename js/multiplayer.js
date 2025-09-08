@@ -722,6 +722,8 @@ export class MultiplayerManager {
                 ship: this.game.player.currentShip || 'scout',
                 name: this.playerName,
                 color: this.game.player.color || '#0f0',
+                shipColor: this.game.player.shipColor || '#33f',
+                engineColor: this.game.player.engineColor || '#f66',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
                 losses: this.game.player.losses || 0,
@@ -1340,6 +1342,8 @@ export class MultiplayerManager {
             ship: this.game.player.currentShip || 'scout',
             name: this.playerName,
             color: this.game.player.color || '#0f0',
+            shipColor: this.game.player.shipColor || '#33f',
+            engineColor: this.game.player.engineColor || '#f66',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0,
@@ -1366,6 +1370,8 @@ export class MultiplayerManager {
                 maxShield: this.game.player.shieldCapacity || 0,
                 ship: this.game.player.currentShip || 'scout',
                 color: this.game.player.color || '#0f0',
+                shipColor: this.game.player.shipColor || '#33f',
+                engineColor: this.game.player.engineColor || '#f66',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
                 losses: this.game.player.losses || 0,
@@ -1586,6 +1592,8 @@ export class MultiplayerManager {
             maxShield: this.game.player.shieldCapacity || 0,
             ship: this.game.player.currentShip || 'scout',
             color: this.game.player.color || '#0f0',
+            shipColor: this.game.player.shipColor || '#33f',
+            engineColor: this.game.player.engineColor || '#f66',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0,
@@ -1718,6 +1726,8 @@ export class MultiplayerManager {
             ship: playerData.ship || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
+            shipColor: playerData.shipColor || '#33f',
+            engineColor: playerData.engineColor || '#f66',
             score: playerData.score || 0,
             wins: playerData.wins || 0,
             losses: playerData.losses || 0,
@@ -1770,6 +1780,8 @@ export class MultiplayerManager {
             player.maxShield = playerData.maxShield !== undefined ? playerData.maxShield : (player.maxShield || 0);
             player.ship = playerData.ship || player.ship;
             player.color = playerData.color || player.color;
+            player.shipColor = playerData.shipColor || player.shipColor;
+            player.engineColor = playerData.engineColor || player.engineColor;
             player.avatar = playerData.avatar || player.avatar;
             
             // Debug: Log stat updates

@@ -198,6 +198,8 @@ io.on('connection', (socket) => {
       losses: playerData.losses || 0,
       credits: 0,
       color: playerData.color || getRandomColor(),
+      shipColor: playerData.shipColor || '#33f',
+      engineColor: playerData.engineColor || '#f66',
       avatar: playerData.avatar || 'han',
       projectiles: [],
       miningBeam: {
@@ -237,6 +239,8 @@ io.on('connection', (socket) => {
       player.maxShield = data.maxShield || 0;
       player.ship = data.ship;
       player.color = data.color || player.color;
+      player.shipColor = data.shipColor || player.shipColor;
+      player.engineColor = data.engineColor || player.engineColor;
       player.avatar = data.avatar || player.avatar; // Update avatar data
       
       // Update stats from client (since client calculates scores immediately)
@@ -285,6 +289,8 @@ io.on('connection', (socket) => {
         maxShield: player.maxShield,
         ship: player.ship,
         color: player.color,
+        shipColor: player.shipColor,
+        engineColor: player.engineColor,
         avatar: player.avatar, // Include avatar data
         score: player.score,
         wins: player.wins,
@@ -686,6 +692,44 @@ io.on('connection', (socket) => {
           ship: data.id
         });
       }
+    }
+  });
+  
+  // Handle ship color updates
+  socket.on('shipColorUpdate', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    if (gameState.players[socket.id]) {
+      // Update player's ship color
+      gameState.players[socket.id].shipColor = data.color;
+      
+      // Broadcast the ship color change to all other players
+      socket.broadcast.emit('shipColorUpdate', {
+        playerId: socket.id,
+        color: data.color
+      });
+      
+      console.log(`Player ${gameState.players[socket.id].name} changed ship color to ${data.color}`);
+    }
+  });
+  
+  // Handle engine color updates
+  socket.on('engineColorUpdate', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    if (gameState.players[socket.id]) {
+      // Update player's engine color
+      gameState.players[socket.id].engineColor = data.color;
+      
+      // Broadcast the engine color change to all other players
+      socket.broadcast.emit('engineColorUpdate', {
+        playerId: socket.id,
+        color: data.color
+      });
+      
+      console.log(`Player ${gameState.players[socket.id].name} changed engine color to ${data.color}`);
     }
   });
   
