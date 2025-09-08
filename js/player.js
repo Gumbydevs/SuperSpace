@@ -2078,6 +2078,7 @@ export class Player {
     // New method to set ship color and save it to localStorage
     setShipColor(color) {
         this.shipColor = color;
+        this.color = color; // Update main color to match ship color
         localStorage.setItem('playerShipColor', color);
         
         // If in multiplayer, notify others of the color change

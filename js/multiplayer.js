@@ -1697,6 +1697,7 @@ export class MultiplayerManager {
     handleRemoteShipColorUpdate(playerId, color) {
         if (this.players[playerId]) {
             this.players[playerId].shipColor = color;
+            this.players[playerId].color = color; // Update main color to match ship color
         }
     }
     
