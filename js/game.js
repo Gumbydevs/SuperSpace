@@ -407,6 +407,13 @@ class Game {
         // Allow premium store access during menu or playing
         if (this.gameState === 'menu' || this.gameState === 'playing') {
             this.premiumStore.toggleStore();
+            
+            // Adjust canvas z-index to put premium store above everything
+            if (this.premiumStore.storeOpen) {
+                this.canvas.style.zIndex = '10003'; // Above all UI buttons (which are 1002)
+            } else {
+                this.canvas.style.zIndex = '1'; // Back to normal
+            }
         }
     }
     
