@@ -1635,7 +1635,7 @@ export class Player {
                 window.game.shipSkins.renderShipWithSkin(ctx, tempShip, window.game.premiumStore);
             } else {
                 // Fallback: Draw different ship based on the currentShip property
-            switch(this.currentShip) {
+                switch(this.currentShip) {
                 case 'fighter':
                     // Enhanced fighter ship design
                     // Main body
@@ -2127,6 +2127,7 @@ export class Player {
                         ctx.fillRect(-4, 3, 8, 5);
                     }
                 }
+            }
             }
             
             ctx.restore();
