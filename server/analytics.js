@@ -347,16 +347,14 @@ class ServerAnalytics {
             // Save session data to file
             this.saveSessionData(session);
 
-            // Clean up session from memory after some time
-            setTimeout(() => {
-                this.sessions.delete(playerId);
-                // refresh today's concurrent counter
-                const day = this.getDateString();
-                if (this.dailyStats.has(day)) {
-                    const stats = this.dailyStats.get(day);
-                    stats.currentConcurrent = this.sessions.size;
-                }
-            }, 300000); // 5 minutes
+            // Clean up session from memory immediately
+            this.sessions.delete(playerId);
+            // refresh today's concurrent counter
+            const day = this.getDateString();
+            if (this.dailyStats.has(day)) {
+                const stats = this.dailyStats.get(day);
+                stats.currentConcurrent = this.sessions.size;
+            }
         }
     }
 
