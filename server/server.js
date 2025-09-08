@@ -279,7 +279,18 @@ io.on('connection', (socket) => {
       const clientIp = socket.request.connection.remoteAddress || 
                        socket.request.headers['x-forwarded-for'] || 
                        'unknown';
+      // Forward to analytics
       analytics.processEvent(eventData, clientIp);
+
+      // Track mapping from socket -> playerId/sessionId so server can synthesize events on disconnect
+      try {
+        socket.analytics = socket.analytics || {};
+        if (eventData.playerId) socket.analytics.playerId = eventData.playerId;
+        if (eventData.sessionId) socket.analytics.sessionId = eventData.sessionId;
+        socket.analytics.lastEventAt = Date.now();
+      } catch (e) {
+        // ignore mapping errors
+      }
     } catch (error) {
       console.error('Error processing analytics event:', error);
     }
@@ -825,6 +836,21 @@ io.on('connection', (socket) => {
         x: gameState.players[socket.id].x,
         y: gameState.players[socket.id].y
       });
+
+      // Emit analytics respawn event so server records life start
+      try {
+        const clientIp = socket.request.connection.remoteAddress || socket.request.headers['x-forwarded-for'] || 'unknown';
+        const respawnEvent = {
+          sessionId: socket.analytics && socket.analytics.sessionId ? socket.analytics.sessionId : `session_${Date.now()}_${socket.id}`,
+          playerId: socket.analytics && socket.analytics.playerId ? socket.analytics.playerId : socket.id,
+          eventType: 'respawn',
+          timestamp: Date.now(),
+          data: { x: gameState.players[socket.id].x, y: gameState.players[socket.id].y }
+        };
+        analytics.processEvent(respawnEvent, clientIp);
+      } catch (e) {
+        // ignore analytics errors
+      }
     }
   });
   
@@ -851,6 +877,25 @@ io.on('connection', (socket) => {
           ship: data.id
         });
       }
+    }
+    // Also emit server-side analytics for purchases (in case client didn't)
+    try {
+      const clientIp = socket.request.connection.remoteAddress || socket.request.headers['x-forwarded-for'] || 'unknown';
+      const purchaseEvent = {
+        sessionId: socket.analytics && socket.analytics.sessionId ? socket.analytics.sessionId : `session_${Date.now()}_${socket.id}`,
+        playerId: socket.analytics && socket.analytics.playerId ? socket.analytics.playerId : socket.id,
+        eventType: 'shop_purchase',
+        timestamp: Date.now(),
+        data: {
+          type: data.type,
+          item: data.id,
+          cost: data.cost || 0,
+          credits: data.credits || null
+        }
+      };
+      analytics.processEvent(purchaseEvent, clientIp);
+    } catch (e) {
+      // ignore analytics errors
     }
   });
   
@@ -1117,6 +1162,30 @@ io.on('connection', (socket) => {
   
   // Player disconnect
   socket.on('disconnect', () => {
+    // Synthesize session_end for analytics when possible
+    try {
+      const clientIp = socket.request && socket.request.connection && (socket.request.connection.remoteAddress || socket.request.headers['x-forwarded-for']) || 'unknown';
+      if (socket.analytics && socket.analytics.playerId) {
+        const pid = socket.analytics.playerId;
+        const sessionObj = analytics.sessions.get(pid);
+        if (sessionObj) {
+          // compute approximate session duration
+          const start = sessionObj.startTime || sessionObj.events && sessionObj.events.length && sessionObj.events[0].timestamp || Date.now();
+          const duration = Date.now() - start;
+          const endEvent = {
+            sessionId: socket.analytics.sessionId || sessionObj.sessionIds && Array.from(sessionObj.sessionIds)[0] || `session_${Date.now()}_${pid}`,
+            playerId: pid,
+            eventType: 'session_end',
+            timestamp: Date.now(),
+            data: { sessionDuration: duration }
+          };
+          analytics.processEvent(endEvent, clientIp);
+        }
+      }
+    } catch (e) {
+      console.error('Error synthesizing session_end on disconnect:', e);
+    }
+
     if (gameState.players[socket.id]) {
       console.log(`Player ${gameState.players[socket.id].name} disconnected`);
       
@@ -1137,8 +1206,8 @@ io.on('connection', (socket) => {
       // Send player left message to all other clients
       socket.broadcast.emit('playerLeft', socket.id);
       
-      // Remove the player from the game state
-      delete gameState.players[socket.id];
+  // Remove the player from the game state
+  delete gameState.players[socket.id];
       
       // Remove player activity tracking
       delete playerLastActivity[socket.id];
