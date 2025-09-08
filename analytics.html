@@ -223,6 +223,7 @@
             setInterval(loadAllData, 300000);
         });
         
+        const API_BASE = "https://superspace-server.onrender.com";
         async function loadAllData() {
             try {
                 document.getElementById('loadingIndicator').style.display = 'block';
@@ -230,7 +231,7 @@
                 document.getElementById('dashboardContent').style.display = 'none';
                 
                 // Load main analytics data
-                const response = await fetch('/analytics');
+                const response = await fetch(`${API_BASE}/analytics`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -240,17 +241,17 @@
                 updateKeyStats(data);
                 
                 // Load hourly activity data
-                const hourlyResponse = await fetch('/analytics/hourly');
+                const hourlyResponse = await fetch(`${API_BASE}/analytics/hourly`);
                 const hourlyData = await hourlyResponse.json();
                 updateHourlyChart(hourlyData.hourlyActivity);
                 
                 // Load retention data
-                const retentionResponse = await fetch('/analytics/retention');
+                const retentionResponse = await fetch(`${API_BASE}/analytics/retention`);
                 const retentionData = await retentionResponse.json();
                 updateRetentionChart(retentionData);
                 
                 // Load report data for tables
-                const reportResponse = await fetch('/analytics/report');
+                const reportResponse = await fetch(`${API_BASE}/analytics/report`);
                 const reportData = await reportResponse.json();
                 updateTables(reportData);
                 
