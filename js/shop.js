@@ -1525,16 +1525,20 @@ export class ShopSystem {
             
             // Check if player has a ship skin selected
             const selectedSkin = localStorage.getItem('selectedShipSkin');
-            if (selectedSkin && selectedSkin !== 'none' && window.game && window.game.shipSkins) {
-                // Use ship skin system to render with skin
+            if (window.game && window.game.shipSkins) {
+                // ALWAYS use ship skin system to render with skin for consistent detailed geometry
                 const tempPlayer = {
                     ...this.player,
                     x: 0,
                     y: 0,
                     angle: 0,
-                    shipSkin: selectedSkin,
+                    rotation: 0,
+                    currentShip: this.player.currentShip || 'scout',
+                    shipSkin: selectedSkin && selectedSkin !== 'none' ? selectedSkin : null,
                     getShipColor: () => this.player.shipColor || '#33f',
-                    getEngineColor: () => this.player.engineColor || '#f66'
+                    getEngineColor: () => this.player.engineColor || '#f66',
+                    shipColor: this.player.shipColor || '#33f',
+                    engineColor: this.player.engineColor || '#f66'
                 };
                 
                 window.game.shipSkins.renderShipWithSkin(ctx, tempPlayer, window.game.premiumStore);
