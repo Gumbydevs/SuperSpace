@@ -85,6 +85,15 @@ export class MultiplayerManager {
 
     // Reset all player progress and show notification
     resetPlayerProgress(oldVersion) {
+        console.log('🔄 Starting progress reset...');
+        
+        // Log current localStorage before reset
+        console.log('📊 Current localStorage before reset:');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            console.log(`  ${key}: ${localStorage.getItem(key)}`);
+        }
+        
         // List of localStorage keys to preserve (keep player name and basic settings)
         const keysToPreserve = [
             'playerName',
@@ -104,6 +113,8 @@ export class MultiplayerManager {
             }
         });
         
+        console.log('💾 Preserving data:', preservedData);
+        
         // Clear all localStorage
         localStorage.clear();
         
@@ -111,6 +122,57 @@ export class MultiplayerManager {
         Object.keys(preservedData).forEach(key => {
             localStorage.setItem(key, preservedData[key]);
         });
+        
+        // Explicitly reset key game progress items
+        localStorage.setItem('playerCredits', '0');  // Reset credits to 0
+        localStorage.setItem('currentShip', 'scout'); // Reset to default ship
+        localStorage.removeItem('playerShipColor');   // Remove custom ship color
+        localStorage.removeItem('playerEngineColor'); // Remove custom engine color
+        
+        // Reset all ship ownership
+        const shipIds = ['scout', 'interceptor', 'destroyer', 'cruiser'];
+        shipIds.forEach(shipId => {
+            if (shipId !== 'scout') { // Keep scout as owned
+                localStorage.removeItem(`ship_${shipId}`);
+            }
+        });
+        
+        // Reset all weapon ownership
+        const weaponIds = ['disengaged', 'laser', 'plasma', 'rocket', 'railgun', 'seeker', 'mine', 'disruptor'];
+        weaponIds.forEach(weaponId => {
+            if (weaponId !== 'disengaged') { // Keep disengaged as owned
+                localStorage.removeItem(`weapon_${weaponId}`);
+            }
+        });
+        
+        // Reset all upgrade levels
+        const upgradeIds = ['engine', 'armor', 'shield', 'weapon'];
+        upgradeIds.forEach(upgradeId => {
+            localStorage.removeItem(`upgrade_${upgradeId}_level`);
+        });
+        
+        console.log('🔄 Reset completed. New localStorage:');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            console.log(`  ${key}: ${localStorage.getItem(key)}`);
+        }
+        
+        // Force reload the player's credits and stats if game player exists
+        if (this.game && this.game.player) {
+            console.log('🔄 Resetting game player data...');
+            this.game.player._credits = 0;
+            this.game.player.currentShip = 'scout';
+            this.game.player.score = 0;
+            this.game.player.wins = 0;
+            this.game.player.losses = 0;
+            
+            // Reset ship appearance to default
+            this.game.player.shipColor = '#33f';
+            this.game.player.engineColor = '#f66';
+            this.game.player.color = '#33f';
+            
+            console.log('✅ Game player data reset complete');
+        }
         
         // Show reset notification
         setTimeout(() => {
@@ -204,6 +266,9 @@ export class MultiplayerManager {
         
         continueBtn.onclick = () => {
             document.body.removeChild(backdrop);
+            
+            // Force refresh the game state after reset
+            this.refreshGameStateAfterReset();
         };
         
         dialog.appendChild(continueBtn);
@@ -228,15 +293,38 @@ export class MultiplayerManager {
         
         document.body.appendChild(backdrop);
         
-        // Auto-close after 10 seconds if user doesn't click
-        setTimeout(() => {
-            if (document.getElementById('progress-reset-modal')) {
-                document.body.removeChild(backdrop);
-            }
-        }, 10000);
+        // Dialog stays open until user clicks continue - no auto-close timeout
         
         // Also log to console for debugging
         console.log(`🔄 Progress reset complete! ${oldVersion} → ${this.GAME_VERSION}`);
+    }
+
+    // Force refresh game state after reset to ensure everything is updated
+    refreshGameStateAfterReset() {
+        console.log('🔄 Refreshing game state after reset...');
+        
+        // Reload the shop system if it exists
+        if (this.game && this.game.shop) {
+            console.log('🔄 Reinitializing shop system...');
+            this.game.shop.loadOwnedItems();
+            this.game.shop.loadCurrentShip();
+            this.game.shop.updateShopContent();
+        }
+        
+        // Refresh UI elements
+        if (this.game && this.game.ui) {
+            console.log('🔄 Refreshing UI...');
+            // Update any credit displays
+            this.game.ui.updateCreditsDisplay?.();
+        }
+        
+        // Force a stats broadcast to sync with multiplayer
+        if (this.connected) {
+            console.log('🔄 Broadcasting reset stats to multiplayer...');
+            this.broadcastStatsUpdate();
+        }
+        
+        console.log('✅ Game state refresh complete');
     }
 
     // Manual method to force a progress reset (useful for testing)
@@ -244,6 +332,30 @@ export class MultiplayerManager {
         const currentVersion = localStorage.getItem('gameVersion') || 'Unknown';
         console.log('🔄 Forcing progress reset...');
         this.resetPlayerProgress(currentVersion);
+    }
+
+    // Debug method to check current game state
+    debugGameState() {
+        console.log('🔍 CURRENT GAME STATE DEBUG:');
+        console.log('📦 LocalStorage:');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            console.log(`  ${key}: ${localStorage.getItem(key)}`);
+        }
+        
+        if (this.game && this.game.player) {
+            console.log('🎮 Game Player:');
+            console.log(`  Credits: ${this.game.player._credits || this.game.player.credits}`);
+            console.log(`  Ship: ${this.game.player.currentShip}`);
+            console.log(`  Score: ${this.game.player.score}`);
+            console.log(`  Wins: ${this.game.player.wins}`);
+            console.log(`  Losses: ${this.game.player.losses}`);
+            console.log(`  Color: ${this.game.player.color}`);
+        }
+        
+        console.log('🔄 Version Info:');
+        console.log(`  Current: ${this.GAME_VERSION}`);
+        console.log(`  Stored: ${localStorage.getItem('gameVersion')}`);
     }
 
     connect(serverUrl = 'http://localhost:3000') {
