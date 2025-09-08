@@ -229,10 +229,8 @@ class ServerAnalytics {
                 }
                 break;
             case 'session_end':
-                // Decrement concurrent counter if present
-                if (stats.currentConcurrent && stats.currentConcurrent > 0) {
-                    stats.currentConcurrent--;
-                }
+                // Record session duration but don't manually decrement concurrent
+                // (we use sessions.size directly now)
                 if (event.data && event.data.sessionDuration) {
                     stats.totalSessionTime = (stats.totalSessionTime || 0) + event.data.sessionDuration;
                     stats.sessionDurations.push(event.data.sessionDuration);
@@ -602,8 +600,6 @@ class ServerAnalytics {
                 stats.sessionDurations = stats.sessionDurations || [];
                 stats.sessionDurations.push(event.data && event.data.sessionDuration ? event.data.sessionDuration : 0);
                 stats.totalSessionTime = (stats.totalSessionTime || 0) + (event.data && event.data.sessionDuration ? event.data.sessionDuration : 0);
-                // decrement concurrent
-                if (stats.currentConcurrent && stats.currentConcurrent > 0) stats.currentConcurrent--;
             }
 
             // Remove session and refresh today's concurrent counter
@@ -653,6 +649,10 @@ class ServerAnalytics {
             ? (todayStats.lifeDurations.reduce((a, b) => a + b, 0) / todayStats.lifeDurations.length)
             : 0;
 
+        // Fix currentConcurrent to match actual sessions
+        const actualCurrent = this.sessions.size;
+        todayStats.currentConcurrent = actualCurrent;
+        
         return {
             today: {
                 ...todayStats,
@@ -667,9 +667,10 @@ class ServerAnalytics {
                 averageSessionDuration: avgSession,
                 averageLifeDuration: avgLife,
                 peakConcurrentToday: todayStats.peakConcurrent || 0,
-                globalPeakConcurrent: this.globalPeak || 0
+                globalPeakConcurrent: this.globalPeak || 0,
+                currentConcurrent: actualCurrent
             },
-            activeSessions: activePlayerIds.length,
+            activeSessions: actualCurrent,
             recentEvents: this.events.slice(-50), // Last 50 events
             totalPlayers: this.playerProfiles.size
         };
