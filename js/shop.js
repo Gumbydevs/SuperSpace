@@ -1868,7 +1868,7 @@ export class ShopSystem {
         shipSkinsSection.style.marginBottom = '20px';
         
         const shipSkinsLabel = document.createElement('div');
-        shipSkinsLabel.textContent = '🌟 Premium Ship Skins';
+        shipSkinsLabel.textContent = `🌟 Premium Ship Skins - ${currentShipType.charAt(0).toUpperCase() + currentShipType.slice(1)}`;
         shipSkinsLabel.style.fontWeight = 'bold';
         shipSkinsLabel.style.marginBottom = '10px';
         shipSkinsLabel.style.color = '#FFD700';
@@ -1876,7 +1876,15 @@ export class ShopSystem {
         
         // Get owned ship skins
         const purchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
-        const ownedSkins = purchases.skins || [];
+        const allOwnedSkins = purchases.skins || [];
+        
+        // Filter skins for current ship type only
+        const currentShipType = this.player.shipType || 'scout'; // Default to scout
+        const ownedSkins = allOwnedSkins.filter(skinId => {
+            // Check if this skin is for the current ship type
+            const skinData = window.game.premiumStore.shipSkins.find(skin => skin.id === skinId);
+            return skinData && skinData.shipType === currentShipType;
+        });
         
         if (ownedSkins.length > 0) {
             // Create skins grid
@@ -1973,7 +1981,7 @@ export class ShopSystem {
             noSkinsMessage.style.backgroundColor = 'rgba(0, 10, 30, 0.5)';
             
             const message = document.createElement('div');
-            message.textContent = 'No premium skins owned';
+            message.textContent = `No premium skins owned for ${currentShipType.charAt(0).toUpperCase() + currentShipType.slice(1)} ship`;
             message.style.marginBottom = '10px';
             message.style.color = '#aaa';
             
