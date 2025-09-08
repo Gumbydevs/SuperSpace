@@ -921,41 +921,52 @@ export class PremiumStore {
     handleClick(x, y, canvas) {
         if (!this.storeOpen) return false;
         
-        // Close button - updated position
-        if (x >= canvas.width - 80 && x <= canvas.width - 20 && y >= 30 && y <= 65) {
+        // Calculate 70% scaled dimensions centered on screen (same as render method)
+        const scale = 0.7;
+        const scaledWidth = canvas.width * scale;
+        const scaledHeight = canvas.height * scale;
+        const offsetX = (canvas.width - scaledWidth) / 2;
+        const offsetY = (canvas.height - scaledHeight) / 2;
+        
+        // Close button - updated position (matches render method)
+        const closeButtonWidth = 50;
+        const closeButtonHeight = 28;
+        const closeX = offsetX + scaledWidth - closeButtonWidth - 20;
+        const closeY = offsetY + 25;
+        if (x >= closeX && x <= closeX + closeButtonWidth && y >= closeY && y <= closeY + closeButtonHeight) {
             this.toggleStore();
             return true;
         }
         
-        // Tab buttons - updated positions
+        // Tab buttons - updated positions (matches render method)
         const tabs = ['avatars', 'skins', 'gems'];
-        const tabWidth = 160;
+        const tabWidth = 120; // Smaller tabs
         const startX = (canvas.width - (tabs.length * tabWidth)) / 2;
         
         for (let i = 0; i < tabs.length; i++) {
             const tabX = startX + (i * tabWidth);
-            const tabY = 150;
+            const tabY = offsetY + 120; // Adjusted for scaled layout
             
-            if (x >= tabX && x <= tabX + tabWidth - 10 && y >= tabY && y <= tabY + 40) {
+            if (x >= tabX && x <= tabX + tabWidth - 10 && y >= tabY && y <= tabY + 32) { // Smaller tab height
                 this.setTab(tabs[i]);
                 return true;
             }
         }
         
-        // Store items - updated positions
+        // Store items - updated positions (matches render method)
         const items = this.getCurrentTabItems();
-        const startY = 220;
-        const itemHeight = 140;
+        const startY = offsetY + 170; // Adjusted for scaled layout
+        const itemHeight = 100; // Smaller item height
         const itemsPerRow = 2;
-        const itemWidth = 320;
-        const spacing = 40;
+        const itemWidth = 240; // Smaller item width
+        const spacing = 30; // Smaller spacing
         
         for (let index = 0; index < items.length; index++) {
             const item = items[index];
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
             const itemX = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
-            const itemY = startY + row * (itemHeight + 30);
+            const itemY = startY + row * (itemHeight + 25); // Smaller row spacing
             
             if (x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight) {
                 this.handleItemClick(item);
