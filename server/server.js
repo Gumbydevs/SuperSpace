@@ -408,7 +408,9 @@ io.on('connection', (socket) => {
       // Broadcast player destroyed event
       io.emit('playerDestroyed', {
         playerId: data.targetId,
-        attackerId: socket.id
+        attackerId: socket.id,
+        killerAvatar: attackerPlayer.avatar || 'han',
+        killerName: attackerPlayer.name || `Player-${socket.id.substring(0, 4)}`
       });
     }
   });
@@ -575,7 +577,9 @@ io.on('connection', (socket) => {
           
           io.emit('playerDestroyed', {
             playerId: data.targetId,
-            attackerId: socket.id
+            attackerId: socket.id,
+            killerAvatar: gameState.players[socket.id].avatar || 'han',
+            killerName: gameState.players[socket.id].name || `Player-${socket.id.substring(0, 4)}`
           });
           
           // Award points to the attacker

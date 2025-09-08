@@ -671,15 +671,6 @@ export class MultiplayerManager {
                 }
             }
             
-            // Get player names for the kill message with proper fallback logic
-            const killerName = data.attackerId === this.playerId ? 
-                'You' : 
-                (this.players[data.attackerId]?.name || this.playerNameCache[data.attackerId] || 'Another player');
-
-            const victimName = data.playerId === this.playerId ? 
-                'you' : 
-                (this.players[data.playerId]?.name || this.playerNameCache[data.playerId] || 'another player');
-                
             // IMPORTANT: If this is OUR player that died, ALWAYS create the explosion effect immediately
             // This ensures death animation is visible even if server and client communication has issues
             if (data.playerId === this.playerId) {
@@ -718,24 +709,28 @@ export class MultiplayerManager {
                 killAnnouncerReady
             });
 
-            // Get killer avatar information
-            let killerAvatar = null;
-            if (data.attackerId === this.playerId) {
-                // Local player is the killer - get their avatar
-                killerAvatar = localStorage.getItem('selectedAvatar') || 'han';
-            } else if (this.players[data.attackerId]) {
-                // Remote player is the killer - get their avatar from player data
-                killerAvatar = this.players[data.attackerId].avatar || 'han';
-            }
+            // Get killer avatar information from server data (most reliable)
+            let killerAvatar = data.killerAvatar || 'han';
+            
+            // Update player names to use server-provided data when available
+            const killerName = data.killerName || (data.attackerId === this.playerId ? 
+                'You' : 
+                (this.players[data.attackerId]?.name || this.playerNameCache[data.attackerId] || 'Another player'));
+
+            const victimName = data.playerId === this.playerId ? 
+                'you' : 
+                (this.players[data.playerId]?.name || this.playerNameCache[data.playerId] || 'another player');
 
             // Debug: Log avatar information
             console.log('🎭 KILL AVATAR INFO:', {
                 attackerId: data.attackerId,
+                playerId: data.playerId,
                 localPlayerId: this.playerId,
-                isLocalPlayerKiller: data.attackerId === this.playerId,
-                killerAvatar,
-                localPlayerAvatar: localStorage.getItem('selectedAvatar'),
-                killerPlayerData: this.players[data.attackerId]
+                killerAvatar: killerAvatar,
+                killerName: killerName,
+                victimName: victimName,
+                serverProvidedAvatar: data.killerAvatar,
+                serverProvidedName: data.killerName
             });
 
             // Announce the kill with the kill announcer system for all players
