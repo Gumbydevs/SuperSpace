@@ -51,34 +51,39 @@ export class AvatarManager {
 
         console.log('Available premium avatars:', premiumAvatarData.length);
         
-        // Step 1: Reset all premium slots - remove premium data from disabled options
+        // Step 1: First, reset ALL avatar options completely to prevent duplicates
         const allOptions = document.querySelectorAll('.avatar-option');
-        allOptions.forEach(option => {
-            const avatarId = option.dataset.avatar;
-            if (avatarId && premiumAvatarData.some(p => p.id === avatarId)) {
-                // This is a premium slot - reset it first
-                const lockIcon = option.querySelector('.premium-lock');
-                if (lockIcon) lockIcon.remove();
-                
-                // Reset styling
-                option.style.border = '';
-                option.style.background = '';
-                
-                if (!this.ownsAvatar(avatarId)) {
-                    // If we don't own it, make it disabled and remove the data
-                    option.classList.add('disabled');
-                    delete option.dataset.avatar;
-                    option.querySelector('.avatar-name').textContent = 'LOCKED';
-                }
+        const freeAvatars = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
+        const freeAvatarNames = ['Han Solo', 'Ellen Ripley', 'Android Pilot', 'Alien Commander', 'Long John', 'Pilot Missy'];
+        
+        // Reset all options to their default free avatars first
+        allOptions.forEach((option, index) => {
+            // Remove any existing premium lock icons
+            const lockIcon = option.querySelector('.premium-lock');
+            if (lockIcon) lockIcon.remove();
+            
+            // Reset styling
+            option.style.border = '';
+            option.style.background = '';
+            option.classList.remove('disabled');
+            
+            // Assign free avatars to first 6 slots
+            if (index < freeAvatars.length) {
+                option.dataset.avatar = freeAvatars[index];
+                option.querySelector('.avatar-name').textContent = freeAvatarNames[index];
+            } else {
+                // Extra slots for premium avatars - initially disabled
+                delete option.dataset.avatar;
+                option.querySelector('.avatar-name').textContent = 'LOCKED';
+                option.classList.add('disabled');
             }
         });
 
-        // Step 2: Assign premium avatars to disabled slots
-        const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
-        console.log('Found disabled options after reset:', disabledOptions.length);
+        // Step 2: Now assign premium avatars to the extra slots (beyond the 6 free ones)
+        const premiumSlotStart = Math.min(freeAvatars.length, allOptions.length);
         
-        for (let i = 0; i < Math.min(premiumAvatarData.length, disabledOptions.length); i++) {
-            const option = disabledOptions[i];
+        for (let i = 0; i < premiumAvatarData.length && (premiumSlotStart + i) < allOptions.length; i++) {
+            const option = allOptions[premiumSlotStart + i];
             const premiumData = premiumAvatarData[i];
             
             // Set up the premium avatar slot

@@ -413,75 +413,158 @@ export class ShipSkinSystem {
     
     // Render just the ship hull for previews (no shields, UI, etc.)
     renderShipHullOnly(ctx, ship) {
-        const shipColor = ship.getShipColor ? ship.getShipColor() : '#33f';
-        const engineColor = ship.getEngineColor ? ship.getEngineColor() : '#f66';
+        const shipColor = ship.getShipColor ? ship.getShipColor() : (ship.shipColor || '#33f');
+        const engineColor = ship.getEngineColor ? ship.getEngineColor() : (ship.engineColor || '#f66');
         
         // Render based on current ship type if available
-        const shipType = window.game?.player?.shipType || 'scout';
+        const shipType = ship.currentShip || window.game?.player?.shipType || 'scout';
         
-        ctx.fillStyle = shipColor;
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
+        ctx.save();
+        ctx.translate(ship.x || 0, ship.y || 0);
+        if (ship.rotation) {
+            ctx.rotate(ship.rotation);
+        }
         
+        // Use the SAME detailed geometry as premium store previews
         switch (shipType) {
             case 'scout':
-                // Scout ship - sleek and fast
+                // EXACT scout ship geometry from premium store
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(15, 0);     // Nose
-                ctx.lineTo(-8, -4);    // Left wing
-                ctx.lineTo(-6, -2);    // Left inner
-                ctx.lineTo(-6, 2);     // Right inner
-                ctx.lineTo(-8, 4);     // Right wing
+                ctx.moveTo(0, -15); // front nose
+                ctx.lineTo(-4, -10); // left nose edge
+                ctx.lineTo(-12, 0); // left wing tip
+                ctx.lineTo(-8, 8); // left rear corner
+                ctx.lineTo(-5, 5); // left engine mount
+                ctx.lineTo(0, 7); // center bottom
+                ctx.lineTo(5, 5); // right engine mount
+                ctx.lineTo(8, 8); // right rear corner
+                ctx.lineTo(12, 0); // right wing tip
+                ctx.lineTo(4, -10); // right nose edge
                 ctx.closePath();
                 ctx.fill();
+                
+                // Cockpit canopy
+                ctx.fillStyle = 'rgba(130, 200, 255, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(0, -5, 3, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Detail lines
+                ctx.strokeStyle = 'rgba(50, 50, 50, 0.7)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(-4, -8);
+                ctx.moveTo(8, 0);
+                ctx.lineTo(4, -8);
                 ctx.stroke();
                 break;
                 
             case 'fighter':
-                // Fighter ship - angular and aggressive
+                // EXACT fighter ship geometry from premium store
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(12, 0);     // Nose
-                ctx.lineTo(-6, -6);    // Left wing
-                ctx.lineTo(-4, -3);    // Left inner
-                ctx.lineTo(-4, 3);     // Right inner
-                ctx.lineTo(-6, 6);     // Right wing
+                ctx.moveTo(0, -16); // Front nose tip
+                ctx.lineTo(-3, -11); // Left side of nose
+                ctx.lineTo(-13, -3); // Left wing tip
+                ctx.lineTo(-9, 0); // Left wing inner edge
+                ctx.lineTo(-11, 9); // Left rear wing
+                ctx.lineTo(-3, 6); // Left engine mount
+                ctx.lineTo(0, 7); // Center bottom
+                ctx.lineTo(3, 6); // Right engine mount
+                ctx.lineTo(11, 9); // Right rear wing
+                ctx.lineTo(9, 0); // Right wing inner edge
+                ctx.lineTo(13, -3); // Right wing tip
+                ctx.lineTo(3, -11); // Right side of nose
                 ctx.closePath();
                 ctx.fill();
-                ctx.stroke();
+                
+                // Cockpit
+                ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 3, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wing markings/details
+                ctx.fillStyle = engineColor;
+                ctx.beginPath();
+                ctx.moveTo(-11, -2);
+                ctx.lineTo(-7, -1);
+                ctx.lineTo(-7, 1);
+                ctx.lineTo(-11, 0);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(11, -2);
+                ctx.lineTo(7, -1);
+                ctx.lineTo(7, 1);
+                ctx.lineTo(11, 0);
+                ctx.closePath();
+                ctx.fill();
                 break;
                 
-            case 'cruiser':
-                // Cruiser ship - larger and bulkier
+            case 'heavy':
+                // EXACT heavy ship geometry from premium store
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(10, 0);     // Nose
-                ctx.lineTo(-10, -8);   // Left wing
-                ctx.lineTo(-8, -4);    // Left inner
-                ctx.lineTo(-8, 4);     // Right inner
-                ctx.lineTo(-10, 8);    // Right wing
+                ctx.moveTo(0, -18); // Nose tip
+                ctx.lineTo(-5, -13); // Left front angled edge
+                ctx.lineTo(-8, -3); // Left mid-hull
+                ctx.lineTo(-16, 0); // Left wing tip
+                ctx.lineTo(-16, 3); // Left wing corner
+                ctx.lineTo(-12, 5); // Left wing inner
+                ctx.lineTo(-6, 11); // Left engine mount
+                ctx.lineTo(0, 9); // Bottom center
+                ctx.lineTo(6, 11); // Right engine mount
+                ctx.lineTo(12, 5); // Right wing inner 
+                ctx.lineTo(16, 3); // Right wing corner
+                ctx.lineTo(16, 0); // Right wing tip
+                ctx.lineTo(8, -3); // Right mid-hull
+                ctx.lineTo(5, -13); // Right front angled edge
                 ctx.closePath();
                 ctx.fill();
+                
+                // Heavy armor plating
+                ctx.strokeStyle = engineColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-6, -9);
+                ctx.lineTo(-9, -3);
+                ctx.moveTo(6, -9);
+                ctx.lineTo(9, -3);
+                ctx.moveTo(-6, -3);
+                ctx.lineTo(6, -3);
                 ctx.stroke();
+                
+                // Cockpit
+                ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
+                ctx.beginPath();
+                ctx.ellipse(0, -7, 3, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Side weapon mounts
+                ctx.fillStyle = '#555';
+                ctx.beginPath();
+                ctx.rect(-14, -1, 5, 2);
+                ctx.rect(9, -1, 5, 2);
+                ctx.fill();
                 break;
                 
             default:
-                // Default scout design
+                // Simple default ship
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(15, 0);
-                ctx.lineTo(-8, -4);
-                ctx.lineTo(-6, -2);
-                ctx.lineTo(-6, 2);
-                ctx.lineTo(-8, 4);
-                ctx.closePath();
+                ctx.arc(0, 0, 8, 0, Math.PI * 2);
                 ctx.fill();
+                
+                ctx.strokeStyle = engineColor;
+                ctx.lineWidth = 2;
                 ctx.stroke();
+                break;
         }
         
-        // Engine glow
-        ctx.fillStyle = engineColor;
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        ctx.arc(-6, 0, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
+        ctx.restore();
     }
 }
