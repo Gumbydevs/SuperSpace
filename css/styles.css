@@ -1182,7 +1182,7 @@ input[type="range"] {
     
     /* Afterburner button */
     #afterburner-button {
-    bottom: 175px;
+        bottom: 200px; /* Moved higher to prevent overlap */
         right: 30px;
         width: 60px;
         height: 60px;
@@ -1404,7 +1404,7 @@ input[type="range"] {
     #afterburner-button {
         width: 50px;
         height: 50px;
-        bottom: 130px;
+        bottom: 150px; /* Moved higher to prevent overlap */
         right: 20px;
         font-size: 18px;
     }
@@ -1439,9 +1439,10 @@ input[type="range"] {
     
     /* Status panel adjustments for small mobile */
     #status-panel {
-        bottom: 170px !important; /* Higher to avoid touch controls */
-        left: 10px !important;
-        transform: scale(0.85) !important;
+        bottom: 10px !important; /* Bottom center like regular mobile */
+        left: 50% !important; /* Center horizontally */
+        transform: translateX(-50%) scale(0.85) !important; /* Center and scale */
+        transform-origin: bottom center !important;
         max-width: 220px !important;
     }
     
