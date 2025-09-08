@@ -232,80 +232,36 @@ export class ShipSkinSystem {
     
     // Render ship with skin
     renderShipWithSkin(ctx, ship, premiumStore) {
-        // First render all the non-ship elements that the player renders
-        if (ship.projectiles) {
-            ship.projectiles.forEach(projectile => {
-                projectile.render(ctx);
-            });
-        }
-        
-        // Render remote projectiles from multiplayer if available
-        if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
-            Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
-                if (remotePlayer.projectiles && Array.isArray(remotePlayer.projectiles)) {
-                    remotePlayer.projectiles.forEach(projectile => {
-                        if (projectile.x !== undefined && projectile.y !== undefined) {
-                            if (projectile.render && typeof projectile.render === 'function') {
-                                projectile.render(ctx);
-                            } else {
-                                ship.renderRemoteProjectile(ctx, projectile);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-        
-        // Render mining beam if available
-        if (ship.renderMiningBeam) {
-            ship.renderMiningBeam(ctx);
-        }
-        
-        // Don't render the ship if not visible
-        if (!ship.visible) {
-            return;
-        }
-        
+        // Get active skin appearance
         const skinId = this.getActiveSkin(ship.currentShip);
         const appearance = skinId ? this.getSkinAppearance(premiumStore, ship.currentShip, skinId) : null;
         
+        // If we have a skin, temporarily override the ship colors
+        const originalShipColor = ship.shipColor;
+        const originalEngineColor = ship.engineColor;
+        
+        if (appearance) {
+            ship.shipColor = appearance.color;
+            ship.engineColor = appearance.accent || appearance.color;
+        }
+        
         ctx.save();
         
-        // Apply skin effects before rendering ship
+        // Apply any special skin effects
         if (appearance) {
             this.applySkinEffects(ctx, ship, appearance);
         }
         
-        // Render shields if active
-        if (ship.shield > 0) {
-            const shieldPercentage = ship.shield / ship.shieldCapacity;
-            const glowSize = 25 + (shieldPercentage * 8);
-            const glowOpacity = 0.3 + (shieldPercentage * 0.4);
-            
-            const shieldGradient = ctx.createRadialGradient(ship.x, ship.y, 0, ship.x, ship.y, glowSize);
-            shieldGradient.addColorStop(0, `rgba(100, 149, 237, ${glowOpacity})`);
-            shieldGradient.addColorStop(0.7, `rgba(100, 149, 237, ${glowOpacity * 0.5})`);
-            shieldGradient.addColorStop(1, 'rgba(100, 149, 237, 0)');
-            
-            ctx.fillStyle = shieldGradient;
-            ctx.beginPath();
-            ctx.arc(ship.x, ship.y, glowSize, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        // Use skin colors or default ship colors
-        const shipColor = appearance ? appearance.color : ship.color;
-        const accentColor = appearance ? (appearance.accent || shipColor) : ship.engineColor;
-        
-        // Render the ship with new colors
-        this.renderShipGeometry(ctx, ship, shipColor, accentColor);
-        
-        // Render engine trail
-        if (ship.speed > 0) {
-            this.renderEngineTrail(ctx, ship, accentColor);
-        }
+        // Call the original ship render method - this preserves your original ship designs!
+        ship.render(ctx);
         
         ctx.restore();
+        
+        // Restore original colors
+        if (appearance) {
+            ship.shipColor = originalShipColor;
+            ship.engineColor = originalEngineColor;
+        }
     }
     
     renderShipGeometry(ctx, ship, primaryColor, accentColor) {
