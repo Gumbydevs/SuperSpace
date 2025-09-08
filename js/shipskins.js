@@ -27,11 +27,30 @@ export class ShipSkinSystem {
     setActiveSkin(shipType, skinId) {
         this.activeSkins[shipType] = skinId;
         this.saveActiveSkins();
+        
+        // Also update the global selectedShipSkin storage for consistency
+        if (skinId && skinId !== 'none') {
+            localStorage.setItem('selectedShipSkin', skinId);
+        } else {
+            localStorage.setItem('selectedShipSkin', 'none');
+        }
+        
         console.log(`Set active skin for ${shipType}: ${skinId}`);
     }
     
     // Get active skin for a ship type
     getActiveSkin(shipType) {
+        // First check the new global selectedShipSkin storage (used by shop/player)
+        const globalSelectedSkin = localStorage.getItem('selectedShipSkin');
+        if (globalSelectedSkin && globalSelectedSkin !== 'none') {
+            // Verify this skin is for the current ship type
+            const skin = window.game?.premiumStore?.shipSkins?.find(s => s.id === globalSelectedSkin);
+            if (skin && skin.shipType === shipType) {
+                return globalSelectedSkin;
+            }
+        }
+        
+        // Fall back to the old activeSkins storage
         return this.activeSkins[shipType] || null;
     }
     
@@ -232,8 +251,8 @@ export class ShipSkinSystem {
     
     // Render ship with skin
     renderShipWithSkin(ctx, ship, premiumStore) {
-        // Get active skin appearance
-        const skinId = this.getActiveSkin(ship.currentShip);
+        // Get active skin appearance - check ship.shipSkin first (for shop previews), then stored active skin
+        let skinId = ship.shipSkin || this.getActiveSkin(ship.currentShip);
         const appearance = skinId ? this.getSkinAppearance(premiumStore, ship.currentShip, skinId) : null;
         
         // If we have a skin, temporarily override the ship colors
