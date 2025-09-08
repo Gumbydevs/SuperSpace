@@ -970,4 +970,21 @@ export class AvatarManager {
         ctx.fillRect(4*scale, 18*scale, 2*scale, 1*scale);
         ctx.fillRect(18*scale, 18*scale, 2*scale, 1*scale);
     }
+    
+    // Draw profile avatar (for UI display)
+    drawProfileAvatar() {
+        const profileCanvas = document.getElementById('profile-avatar');
+        if (profileCanvas) {
+            const ctx = profileCanvas.getContext('2d');
+            this.drawAvatar(profileCanvas, this.selectedAvatar);
+        }
+        
+        // Also update any other profile displays
+        const avatarDisplays = document.querySelectorAll('.avatar-display');
+        avatarDisplays.forEach(canvas => {
+            if (canvas.dataset.avatar === 'current') {
+                this.drawAvatar(canvas, this.selectedAvatar);
+            }
+        });
+    }
 }
