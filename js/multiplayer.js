@@ -696,9 +696,6 @@ export class MultiplayerManager {
                 }
             }
                 
-            // Ensure kill announcer is ready before announcing kills
-            const killAnnouncerReady = this.ensureKillAnnouncerReady();
-
             // Get killer avatar information from server data (most reliable)
             let killerAvatar = data.killerAvatar || 'han';
             
