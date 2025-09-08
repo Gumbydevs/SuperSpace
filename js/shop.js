@@ -1990,8 +1990,8 @@ export class ShopSystem {
             premiumButton.onclick = () => {
                 // Close shop and open premium store
                 this.hidePage();
-                if (window.game && window.game.premiumStore) {
-                    window.game.premiumStore.show();
+                if (window.game && window.game.togglePremiumStore) {
+                    window.game.togglePremiumStore();
                 }
             };
             

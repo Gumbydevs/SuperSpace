@@ -313,6 +313,9 @@ export class PremiumStore {
         itemArray.push(itemId);
         item.owned = true;
         
+        console.log(`Purchase successful! Item ${itemId} added to array:`, itemArray);
+        console.log('Current premiumPurchases:', this.premiumPurchases);
+        
         // Record purchase
         this.premiumPurchases.purchaseHistory.push({
             type: itemType,
@@ -328,8 +331,11 @@ export class PremiumStore {
         
         // Refresh avatar manager if an avatar was purchased
         if (itemType === 'avatar' && this.avatarManager) {
+            console.log('Refreshing avatar manager after avatar purchase...');
             this.avatarManager.setupPremiumAvatars();
             this.avatarManager.drawAllAvatars();
+        } else if (itemType === 'avatar') {
+            console.log('No avatar manager reference found!');
         }
         
         console.log(`Purchased ${item.name} for ${item.gemPrice} Space Gems`);

@@ -29,12 +29,15 @@ export class AvatarManager {
     // Check if player owns a premium avatar
     ownsAvatar(avatarId) {
         const purchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+        console.log(`Checking ownership for ${avatarId}:`, purchases.avatars);
         return purchases.avatars && purchases.avatars.includes(avatarId);
     }
 
     // Setup premium avatars in the modal
     setupPremiumAvatars() {
+        console.log('Setting up premium avatars...');
         const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
+        console.log('Found disabled options:', disabledOptions.length);
         const premiumAvatarData = [
             { id: 'golden_astronaut', name: 'Golden Ace' },
             { id: 'alien_commander', name: 'Zorg Prime' }, 
