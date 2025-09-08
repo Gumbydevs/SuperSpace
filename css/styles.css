@@ -720,7 +720,7 @@ input[type="range"] {
 
 /* Collapsed state for player list */
 #player-list.collapsed {
-    transform: translateX(-98%);
+    transform: translateX(calc(-98% - 15px));
 }
 
 /* Player list toggle tab */
@@ -802,11 +802,25 @@ input[type="range"] {
     #mobile-menu-button {
         top: 35px !important;
     }
+    
+    /* Connection indicator mobile positioning */
+    #connection-indicator {
+        top: 10px !important;
+        left: 10px !important;
+        z-index: 1003 !important;
+        font-size: 12px !important;
+    }
     /* Hide mute and music buttons on mobile/tablet only */
     #mute-btn,
     #music-btn {
         display: none !important;
     }
+    
+    /* Connection indicator mobile adjustments - keep under player list */
+    #connection-indicator {
+        z-index: 50 !important; /* Lower than player list (z-index: 1001) */
+    }
+    
     /* Global mobile adjustments */
     body {
         -webkit-text-size-adjust: 100%;
@@ -983,7 +997,7 @@ input[type="range"] {
     
     /* Collapsed state for player list */
     #player-list.collapsed {
-        transform: translateX(-75%) scale(0.9) !important;
+        transform: translateX(calc(-75% - 20px)) scale(0.9) !important;
         transform-origin: top left !important;
     }
     
@@ -1442,7 +1456,7 @@ input[type="range"] {
     
     /* Small mobile collapsed state */
     #player-list.collapsed {
-        transform: translateX(-70%) scale(0.7) !important;
+        transform: translateX(calc(-70% - 15px)) scale(0.7) !important;
     }
     
     /* Smaller toggle button for small mobile */
