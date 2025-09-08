@@ -10,6 +10,12 @@ export class MultiplayerManager {
         this.lastLeaderboardState = '';
         this.playerId = null;
         
+        // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
+        this.GAME_VERSION = "2025.09.07.001"; // Format: YYYY.MM.DD.increment
+        
+        // Check for version reset before loading any data
+        this.checkAndHandleVersionReset();
+        
         // Initialize our kill announcer system
         this.killAnnouncer = new KillAnnouncer();
         
@@ -56,6 +62,188 @@ export class MultiplayerManager {
                 }
             });
         }
+    }
+
+    // Check if game version has changed and reset progress if needed
+    checkAndHandleVersionReset() {
+        const storedVersion = localStorage.getItem('gameVersion');
+        
+        // If no stored version or version has changed, reset progress
+        if (!storedVersion || storedVersion !== this.GAME_VERSION) {
+            console.log('🔄 Game version changed - resetting player progress...');
+            
+            // Store old version for logging
+            const oldVersion = storedVersion || 'Unknown';
+            
+            // Reset all game progress
+            this.resetPlayerProgress(oldVersion);
+            
+            // Update stored version to current
+            localStorage.setItem('gameVersion', this.GAME_VERSION);
+        }
+    }
+
+    // Reset all player progress and show notification
+    resetPlayerProgress(oldVersion) {
+        // List of localStorage keys to preserve (keep player name and basic settings)
+        const keysToPreserve = [
+            'playerName',
+            'hasSetName',
+            'gameVersion',
+            'soundEnabled',
+            'musicEnabled',
+            'selectedAvatar'  // Keep avatar selection
+        ];
+        
+        // Get all keys that should be preserved
+        const preservedData = {};
+        keysToPreserve.forEach(key => {
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                preservedData[key] = value;
+            }
+        });
+        
+        // Clear all localStorage
+        localStorage.clear();
+        
+        // Restore preserved data
+        Object.keys(preservedData).forEach(key => {
+            localStorage.setItem(key, preservedData[key]);
+        });
+        
+        // Show reset notification
+        setTimeout(() => {
+            this.showProgressResetNotification(oldVersion);
+        }, 1000); // Delay to ensure UI is ready
+    }
+
+    // Show a prominent notification about progress reset
+    showProgressResetNotification(oldVersion) {
+        // Create modal backdrop
+        const backdrop = document.createElement('div');
+        backdrop.id = 'progress-reset-modal';
+        backdrop.style.position = 'fixed';
+        backdrop.style.top = '0';
+        backdrop.style.left = '0';
+        backdrop.style.width = '100%';
+        backdrop.style.height = '100%';
+        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        backdrop.style.display = 'flex';
+        backdrop.style.justifyContent = 'center';
+        backdrop.style.alignItems = 'center';
+        backdrop.style.zIndex = '10000';
+        backdrop.style.animation = 'fadeIn 0.3s ease-in';
+        
+        // Create modal dialog
+        const dialog = document.createElement('div');
+        dialog.style.backgroundColor = '#1a1a2e';
+        dialog.style.color = '#fff';
+        dialog.style.borderRadius = '15px';
+        dialog.style.padding = '30px';
+        dialog.style.maxWidth = '500px';
+        dialog.style.width = '90%';
+        dialog.style.boxShadow = '0 0 30px rgba(0, 100, 255, 0.3)';
+        dialog.style.border = '2px solid #4a90ff';
+        dialog.style.textAlign = 'center';
+        dialog.style.transform = 'scale(0.8)';
+        dialog.style.animation = 'modalPop 0.3s ease-out forwards';
+        
+        // Create title
+        const title = document.createElement('h2');
+        title.innerHTML = '🚀 MAJOR UPDATE DETECTED! 🚀';
+        title.style.margin = '0 0 20px 0';
+        title.style.color = '#ff6b6b';
+        title.style.fontSize = '24px';
+        title.style.textShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
+        dialog.appendChild(title);
+        
+        // Create message
+        const message = document.createElement('div');
+        message.innerHTML = `
+            <p style="margin: 10px 0; font-size: 16px; color: #ccc;">
+                SuperSpace has been updated with major improvements!
+            </p>
+            <p style="margin: 10px 0; font-size: 14px; color: #aaa;">
+                Your progress has been reset to ensure compatibility with the new features.
+            </p>
+            <p style="margin: 15px 0; font-size: 12px; color: #888;">
+                Version: ${oldVersion} → ${this.GAME_VERSION}
+            </p>
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 107, 107, 0.1); border-radius: 10px; border-left: 4px solid #ff6b6b;">
+                <p style="margin: 0; font-size: 14px; color: #ffcc00;">
+                    ⚡ Your pilot name and avatar have been preserved!
+                </p>
+            </div>
+        `;
+        dialog.appendChild(message);
+        
+        // Create continue button
+        const continueBtn = document.createElement('button');
+        continueBtn.textContent = '🎯 Continue Playing';
+        continueBtn.style.padding = '12px 24px';
+        continueBtn.style.borderRadius = '8px';
+        continueBtn.style.border = 'none';
+        continueBtn.style.backgroundColor = '#4a90ff';
+        continueBtn.style.color = '#fff';
+        continueBtn.style.fontSize = '16px';
+        continueBtn.style.fontWeight = 'bold';
+        continueBtn.style.cursor = 'pointer';
+        continueBtn.style.transition = 'all 0.2s ease';
+        continueBtn.style.marginTop = '20px';
+        
+        // Button hover effects
+        continueBtn.onmouseover = () => {
+            continueBtn.style.backgroundColor = '#6ba3ff';
+            continueBtn.style.transform = 'scale(1.05)';
+        };
+        continueBtn.onmouseout = () => {
+            continueBtn.style.backgroundColor = '#4a90ff';
+            continueBtn.style.transform = 'scale(1)';
+        };
+        
+        continueBtn.onclick = () => {
+            document.body.removeChild(backdrop);
+        };
+        
+        dialog.appendChild(continueBtn);
+        backdrop.appendChild(dialog);
+        
+        // Add CSS animations if not already present
+        if (!document.getElementById('progress-reset-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'progress-reset-styles';
+            styles.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes modalPop {
+                    from { transform: scale(0.8); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+        
+        document.body.appendChild(backdrop);
+        
+        // Auto-close after 10 seconds if user doesn't click
+        setTimeout(() => {
+            if (document.getElementById('progress-reset-modal')) {
+                document.body.removeChild(backdrop);
+            }
+        }, 10000);
+        
+        // Also log to console for debugging
+        console.log(`🔄 Progress reset complete! ${oldVersion} → ${this.GAME_VERSION}`);
+    }
+
+    // Manual method to force a progress reset (useful for testing)
+    forceProgressReset() {
+        const currentVersion = localStorage.getItem('gameVersion') || 'Unknown';
+        console.log('🔄 Forcing progress reset...');
+        this.resetPlayerProgress(currentVersion);
     }
 
     connect(serverUrl = 'http://localhost:3000') {
