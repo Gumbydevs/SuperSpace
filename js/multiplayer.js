@@ -728,6 +728,16 @@ export class MultiplayerManager {
                 killerAvatar = this.players[data.attackerId].avatar || 'han';
             }
 
+            // Debug: Log avatar information
+            console.log('🎭 KILL AVATAR INFO:', {
+                attackerId: data.attackerId,
+                localPlayerId: this.playerId,
+                isLocalPlayerKiller: data.attackerId === this.playerId,
+                killerAvatar,
+                localPlayerAvatar: localStorage.getItem('selectedAvatar'),
+                killerPlayerData: this.players[data.attackerId]
+            });
+
             // Announce the kill with the kill announcer system for all players
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {

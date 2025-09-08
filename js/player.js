@@ -606,12 +606,9 @@ export class Player {
                             
                             // Check if kill - Only trigger if remote player health will drop to 0 or below
                             if (remotePlayer.shield <= 0 && remotePlayer.health <= projectile.damage) {
-                                // This hit will kill the player - announce it on all screens
-                                // We use setTimeout to make sure the server has time to process the hit first
-                                setTimeout(() => {
-                                    const localPlayerAvatar = localStorage.getItem('selectedAvatar') || 'han';
-                                    window.game.killAnnouncer.announceKill(this.name || 'Unknown', remotePlayer.name, 'destroyed', localPlayerAvatar);
-                                }, 500);
+                                // This hit will kill the player - the multiplayer system will handle the kill announcement
+                                // through the proper server channels with correct avatar information
+                                console.log('💀 Kill predicted by local client:', this.name, 'vs', remotePlayer.name);
                             }
                             
                             hit = true;
