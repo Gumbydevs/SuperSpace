@@ -329,29 +329,29 @@ class Game {
         const premiumBtn = document.createElement('button');
         premiumBtn.textContent = '💎 Premium';
         premiumBtn.id = 'premium-btn';
-        // Style the premium button with a special premium look
+        // Style the premium button to match shop button size and positioning
         premiumBtn.style.position = 'absolute';
-        premiumBtn.style.top = '114px'; // Position below shop button
+        premiumBtn.style.top = '114px'; // Position below shop button (76px + 38px gap)
         premiumBtn.style.right = '0px';
         premiumBtn.style.zIndex = '1002';
         premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
         premiumBtn.style.color = 'white';
-        premiumBtn.style.border = '2px solid #ffd700';
-        premiumBtn.style.borderRadius = '8px';
-        premiumBtn.style.padding = '6px 12px';
+        premiumBtn.style.border = '1px solid #ffd700';
+        premiumBtn.style.borderRadius = '5px'; // Match shop button radius
+        premiumBtn.style.padding = '6px 12px'; // Match shop button padding
         premiumBtn.style.cursor = 'pointer';
         premiumBtn.style.display = 'none';  // Initially hidden until game starts
-        premiumBtn.style.fontWeight = 'bold';
-        premiumBtn.style.textShadow = '0 0 5px rgba(255, 215, 0, 0.5)';
-        premiumBtn.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+        premiumBtn.style.fontWeight = 'normal'; // Match shop button font weight
+        premiumBtn.style.fontSize = '14px'; // Match standard button size
+        premiumBtn.style.fontSize = '14px'; // Match standard button size
         
-        // Add hover effect
+        // Add subtle hover effect
         premiumBtn.onmouseenter = () => {
-            premiumBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.6)';
-            premiumBtn.style.transform = 'scale(1.05)';
+            premiumBtn.style.background = 'linear-gradient(45deg, #7b1fa2, #ab47bc)';
+            premiumBtn.style.transform = 'scale(1.02)';
         };
         premiumBtn.onmouseleave = () => {
-            premiumBtn.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+            premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
             premiumBtn.style.transform = 'scale(1)';
         };
         
