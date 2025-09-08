@@ -1038,6 +1038,74 @@ export class MultiplayerManager {
             }
         });
 
+        // Handle NPC projectile events
+        this.socket.on('npcProjectile', (data) => {
+            if (this.game.world) {
+                // Create projectile on receiving client
+                const projectile = {
+                    x: data.x,
+                    y: data.y,
+                    velocityX: data.velocityX,
+                    velocityY: data.velocityY,
+                    type: data.type,
+                    owner: data.owner,
+                    color: data.color,
+                    size: data.size,
+                    life: data.life,
+                    maxLife: data.maxLife,
+                    update: function(deltaTime) {
+                        this.x += this.velocityX * deltaTime;
+                        this.y += this.velocityY * deltaTime;
+                        this.life -= deltaTime / this.maxLife;
+                    },
+                    render: function(ctx) {
+                        ctx.save();
+                        ctx.globalAlpha = this.life;
+                        ctx.fillStyle = this.color;
+                        if (this.type === 'dreadnaught_cannon') {
+                            ctx.shadowBlur = 15;
+                            ctx.shadowColor = this.color;
+                        }
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Add trailing effect for dreadnaught
+                        if (this.type === 'dreadnaught_cannon') {
+                            ctx.globalAlpha *= 0.5;
+                            ctx.beginPath();
+                            ctx.arc(this.x - this.velocityX * 0.01, this.y - this.velocityY * 0.01, this.size * 0.7, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    }
+                };
+                
+                if (!this.game.world.npcProjectiles) {
+                    this.game.world.npcProjectiles = [];
+                }
+                this.game.world.npcProjectiles.push(projectile);
+            }
+        });
+
+        // Handle NPC projectile hits (when other players' NPCs hit this player)
+        this.socket.on('npcProjectileHit', (data) => {
+            if (this.game.player) {
+                console.log(`Received NPC projectile hit for ${data.damage} damage (${data.projectileType})`);
+                this.game.player.takeDamage(data.damage);
+                
+                // Create hit effect at player location
+                if (this.game.world) {
+                    this.game.world.createProjectileHitEffect(
+                        this.game.player.x, 
+                        this.game.player.y, 
+                        this.game.player.collisionRadius, 
+                        this.game.soundManager
+                    );
+                }
+            }
+        });
+
         // Handle natural dreadnaught spawn events from server
         this.socket.on('naturalDreadnaughtSpawn', (data) => {
             console.log('🛸 Server triggered natural dreadnaught spawn!');

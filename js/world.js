@@ -818,6 +818,64 @@
             });
         }
 
+        // Check collisions between NPC projectiles and all players (local and remote)
+        if (this.npcProjectiles && this.npcProjectiles.length > 0) {
+            const allPlayers = [player];
+            
+            // Add remote players
+            if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
+                Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                    if (remotePlayer && !remotePlayer.destroyed && remotePlayer.health > 0) {
+                        allPlayers.push(remotePlayer);
+                    }
+                });
+            }
+            
+            // Check collisions for each player
+            allPlayers.forEach(targetPlayer => {
+                if (!targetPlayer || targetPlayer.destroyed || targetPlayer.health <= 0) return;
+                
+                for (let i = this.npcProjectiles.length - 1; i >= 0; i--) {
+                    const projectile = this.npcProjectiles[i];
+                    if (!projectile || projectile.life <= 0) continue;
+                    
+                    const dx = projectile.x - targetPlayer.x;
+                    const dy = projectile.y - targetPlayer.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    const collisionRadius = projectile.size + (targetPlayer.collisionRadius || targetPlayer.width / 2);
+                    
+                    if (distance < collisionRadius) {
+                        // Hit the player
+                        const damage = projectile.type === 'dreadnaught_cannon' ? 35 : 20;
+                        
+                        // Only apply damage to local player directly
+                        if (targetPlayer === player) {
+                            targetPlayer.takeDamage(damage);
+                            console.log(`NPC projectile hit local player for ${damage} damage!`);
+                        } else {
+                            // For remote players, send damage event through multiplayer
+                            if (window.game.multiplayer && window.game.multiplayer.connected) {
+                                window.game.multiplayer.socket.emit('npcProjectileHit', {
+                                    playerId: targetPlayer.id,
+                                    damage: damage,
+                                    projectileType: projectile.type
+                                });
+                            }
+                            console.log(`NPC projectile hit remote player ${targetPlayer.id} for ${damage} damage!`);
+                        }
+                        
+                        // Create hit effect
+                        this.createProjectileHitEffect(projectile.x, projectile.y, projectile.size * 2, soundManager);
+                        
+                        // Remove projectile
+                        this.npcProjectiles.splice(i, 1);
+                        break; // Exit inner loop since projectile is destroyed
+                    }
+                }
+            });
+        }
+
         // Here we update powerups and check for player collection
         this.powerups.forEach((powerup, i) => {
             // Animate powerup pulsing effect

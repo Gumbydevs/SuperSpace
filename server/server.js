@@ -972,6 +972,29 @@ io.on('connection', (socket) => {
     // Broadcast NPC update to all other players
     socket.broadcast.emit('npcUpdate', updateData);
   });
+
+  // Handle NPC projectiles
+  socket.on('npcProjectile', (projectileData) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Broadcast NPC projectile to all other players
+    socket.broadcast.emit('npcProjectile', projectileData);
+  });
+
+  // Handle NPC projectile hitting remote players
+  socket.on('npcProjectileHit', (hitData) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Forward the damage to the specific player
+    const targetSocket = io.sockets.sockets.get(hitData.playerId);
+    if (targetSocket) {
+      targetSocket.emit('npcProjectileHit', {
+        damage: hitData.damage,
+        projectileType: hitData.projectileType
+      });
+      console.log(`NPC projectile hit forwarded to player ${hitData.playerId} for ${hitData.damage} damage`);
+    }
+  });
   
   // Ping/heartbeat from client (to keep connection alive and reset inactivity timer)
   socket.on('ping', () => {

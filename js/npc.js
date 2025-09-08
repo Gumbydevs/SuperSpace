@@ -303,17 +303,28 @@ export class NPCManager {
             return;
         }
         
-        // Find closest target (player or other players)
-        const targets = [player];
+        // Find closest target (player or other players) - ENHANCED for proper multiplayer targeting
+        const targets = [];
+        
+        // Add local player
+        if (player && !player.destroyed && player.health > 0) {
+            targets.push(player);
+        }
+        
+        // Add all remote players from multiplayer
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
-            targets.push(...Object.values(window.game.multiplayer.players));
+            Object.values(window.game.multiplayer.players).forEach(remotePlayer => {
+                if (remotePlayer && !remotePlayer.destroyed && remotePlayer.health > 0) {
+                    targets.push(remotePlayer);
+                }
+            });
         }
         
         let closestTarget = null;
         let closestDistance = Infinity;
         
         targets.forEach(target => {
-            if (!target || target.destroyed) return;
+            if (!target || target.destroyed || target.health <= 0) return;
             const dx = target.x - alien.x;
             const dy = target.y - alien.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -458,19 +469,21 @@ export class NPCManager {
             );
             
             // Only switch targets if:
-            // 1. New target is MUCH closer (50% closer) OR
-            // 2. Current target is very far away (>1000 units) OR  
-            // 3. Haven't switched targets in the last 10 seconds
+            // 1. Current target is destroyed/invalid OR
+            // 2. Current target is VERY far (>1500 units) OR  
+            // 3. Haven't switched targets in the last 15 seconds AND new target is significantly closer
             const timeSinceLastSwitch = Date.now() - (dreadnaught.lastTargetSwitch || 0);
+            const currentTargetValid = !dreadnaught.target.destroyed && currentTargetDistance < 1500;
+            
             const shouldSwitch = (
-                closestDistance < currentTargetDistance * 0.5 || // Much closer target
-                currentTargetDistance > 1000 || // Current target too far
-                timeSinceLastSwitch > 10000 // Been targeting same for 10+ seconds
+                !currentTargetValid || // Current target invalid or too far
+                (timeSinceLastSwitch > 15000 && closestDistance < currentTargetDistance * 0.3) // 15+ seconds AND new target is 70% closer
             );
             
             if (shouldSwitch) {
                 dreadnaught.target = closestTarget;
                 dreadnaught.lastTargetSwitch = Date.now();
+                console.log(`Dreadnaught switched target after ${(timeSinceLastSwitch/1000).toFixed(1)}s`);
             }
         } else {
             dreadnaught.target = closestTarget;
@@ -647,6 +660,9 @@ export class NPCManager {
         }
         this.world.npcProjectiles.push(projectile);
         
+        // Broadcast projectile to other players
+        this.broadcastNPCProjectile(projectile);
+        
         // Play alien weapon sound
         if (this.soundManager) {
             this.soundManager.play('laser', {
@@ -731,6 +747,9 @@ export class NPCManager {
                             this.world.npcProjectiles = [];
                         }
                         this.world.npcProjectiles.push(projectile);
+                        
+                        // Broadcast projectile to other players
+                        this.broadcastNPCProjectile(projectile);
                         
                         mount.lastFire = currentTime;
                     }
@@ -1199,6 +1218,24 @@ export class NPCManager {
                 state: npc.state,
                 health: npc.health,
                 velocity: npc.velocity
+            });
+        }
+    }
+    
+    // Broadcast NPC projectile to other players
+    broadcastNPCProjectile(projectile) {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('npcProjectile', {
+                x: projectile.x,
+                y: projectile.y,
+                velocityX: projectile.velocityX,
+                velocityY: projectile.velocityY,
+                type: projectile.type,
+                owner: projectile.owner,
+                color: projectile.color,
+                size: projectile.size,
+                life: projectile.life,
+                maxLife: projectile.maxLife
             });
         }
     }
