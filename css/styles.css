@@ -720,7 +720,7 @@ input[type="range"] {
 
 /* Collapsed state for player list */
 #player-list.collapsed {
-    transform: translateX(-85%);
+    transform: translateX(-95%);
 }
 
 /* Player list toggle tab */
@@ -795,36 +795,34 @@ input[type="range"] {
     }
     
 
+    
+    /* Futuristic style for menu buttons - unified for desktop and mobile */
     #menu button {
-        min-height: 48px;
-        min-width: 120px;
-        font-size: 16px;
-        padding: 12px 24px;
-        margin: 8px;
-        touch-action: manipulation;
-    }
-
-    /* Futuristic style for the main Play button */
-    #play-btn {
         font-family: 'Orbitron', 'Courier New', monospace !important;
-        font-weight: 700 !important;
-        font-size: 2.1rem !important;
-        letter-spacing: 0.12em !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
         color: #8cf !important;
         background: linear-gradient(90deg, #111a40 0%, #2233aa 100%) !important;
         border: 2px solid #33f !important;
         border-radius: 8px !important;
-        box-shadow: 0 0 16px #33f4, 0 0 4px #fff2 !important;
-        text-shadow: 0 0 8px #33f, 0 0 2px #fff;
-        transition: all 0.2s cubic-bezier(.4,2,.6,1);
+        box-shadow: 0 0 12px #33f4, 0 0 3px #fff2 !important;
+        text-shadow: 0 0 6px #33f, 0 0 1px #fff !important;
+        transition: all 0.2s cubic-bezier(.4,2,.6,1) !important;
+        min-height: 48px !important;
+        min-width: 120px !important;
+        padding: 12px 24px !important;
+        margin: 8px !important;
+        touch-action: manipulation !important;
     }
-    #play-btn:hover {
+    
+    #menu button:hover {
         background: linear-gradient(90deg, #2233aa 0%, #111a40 100%) !important;
         color: #fff !important;
         border-color: #8cf !important;
-        box-shadow: 0 0 24px #8cf8, 0 0 8px #fff4 !important;
-        transform: scale(1.06) !important;
+        box-shadow: 0 0 18px #8cf8, 0 0 6px #fff4 !important;
+        transform: scale(1.04) !important;
     }
     
     /* Options overlay mobile adjustments */
@@ -987,7 +985,7 @@ input[type="range"] {
     
     /* Collapsed state for player list */
     #player-list.collapsed {
-        transform: translateX(-90%) scale(0.9) !important;
+        transform: translateX(-82%) scale(0.9) !important;
         transform-origin: top left !important;
     }
     
@@ -1446,7 +1444,7 @@ input[type="range"] {
     
     /* Small mobile collapsed state */
     #player-list.collapsed {
-        transform: translateX(-85%) scale(0.7) !important;
+        transform: translateX(-80%) scale(0.7) !important;
     }
     
     /* Smaller toggle button for small mobile */
