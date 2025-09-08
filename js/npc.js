@@ -186,10 +186,8 @@ export class NPCManager {
             // Flash red warning text
             this.showMessage('⚠️ DREADNAUGHT DETECTED ⚠️', '#f00', 5000, true);
             
-            // Add screen flash effect
-            if (window.game.multiplayer) {
-                window.game.multiplayer.addScreenFlash('#ff0000', 0.3, 1000);
-            }
+            // Skip screen flash effect - function doesn't exist
+            // TODO: Implement screen flash in game engine if needed
         }
         
         // Play warning sound

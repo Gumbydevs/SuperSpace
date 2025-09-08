@@ -187,8 +187,11 @@ setInterval(() => {
     const randomPlayerId = activePlayers[Math.floor(Math.random() * activePlayers.length)];
     const randomSocket = io.sockets.sockets.get(randomPlayerId);
     
+    console.log(`🎯 Selected player ${randomPlayerId} for dreadnaught spawn`);
+    console.log(`📡 Socket found: ${randomSocket ? 'YES' : 'NO'}`);
+    
     if (randomSocket) {
-      console.log(`🎯 Triggering dreadnaught spawn for player: ${randomPlayerId}`);
+      console.log(`🚀 Sending naturalDreadnaughtSpawn event to ${randomPlayerId}`);
       
       // Send natural dreadnaught spawn command to the selected player
       randomSocket.emit('naturalDreadnaughtSpawn', {
@@ -203,6 +206,10 @@ setInterval(() => {
         duration: 5000,
         priority: true
       });
+      
+      console.log(`📢 Server announcement sent to all players`);
+    } else {
+      console.log(`❌ Failed to find socket for player ${randomPlayerId}`);
     }
     
     lastDreadnaughtSpawn = now;
