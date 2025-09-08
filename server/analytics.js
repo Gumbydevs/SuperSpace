@@ -14,6 +14,8 @@ class ServerAnalytics {
         this.playerProfiles = new Map(); // Player behavior profiles
         this.events = []; // Recent events buffer
         this.maxEventsBuffer = 10000; // Keep last 10k events in memory
+    this.currentActive = 0; // number of currently active unique players (by playerId)
+    this.globalPeak = 0; // all-time peak concurrent players
         
         this.initializeStorage();
         this.startPeriodicSave();
@@ -46,6 +48,25 @@ class ServerAnalytics {
             try {
                 const todayData = await fs.readFile(todayFile, 'utf8');
                 const stats = JSON.parse(todayData);
+                // Restore Set fields that were serialized as arrays
+                if (stats.uniqueSessions && Array.isArray(stats.uniqueSessions)) {
+                    stats.uniqueSessions = new Set(stats.uniqueSessions);
+                } else {
+                    stats.uniqueSessions = new Set();
+                }
+                if (stats.uniqueIPs && Array.isArray(stats.uniqueIPs)) {
+                    stats.uniqueIPs = new Set(stats.uniqueIPs);
+                } else {
+                    stats.uniqueIPs = new Set();
+                }
+                // Ensure arrays exist for durations
+                stats.gameDurations = stats.gameDurations || [];
+                stats.sessionDurations = stats.sessionDurations || [];
+                stats.lifeDurations = stats.lifeDurations || [];
+                // Ensure concurrent counters exist
+                stats.currentConcurrent = stats.currentConcurrent || 0;
+                stats.peakConcurrent = stats.peakConcurrent || 0;
+
                 this.dailyStats.set(today, stats);
                 console.log(`Loaded existing stats for ${today}`);
             } catch (e) {
@@ -111,12 +132,23 @@ class ServerAnalytics {
                     deaths: 0,
                     shotsFired: 0,
                     coinsEarned: 0,
+                    totalTimeAlive: 0,
+                    lifeDurations: [],
+                    lastLifeStart: null,
                     shipsUsed: new Set(),
                     weaponsUsed: new Set(),
                     achievementsUnlocked: new Set(),
                     challengesCompleted: new Set()
                 }
             });
+            // New unique active player connected
+            this.currentActive++;
+            const today = this.getDateString();
+            if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
+            const stats = this.dailyStats.get(today);
+            stats.currentConcurrent = (stats.currentConcurrent || 0) + 1;
+            stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, stats.currentConcurrent);
+            this.globalPeak = Math.max(this.globalPeak, stats.peakConcurrent);
         } else {
             this.sessions.get(playerId).sessionIds.add(sessionId);
         }
@@ -156,6 +188,10 @@ class ServerAnalytics {
         switch (event.eventType) {
             case 'session_start':
                 stats.totalSessions++;
+                // increment concurrent counter for the day
+                stats.currentConcurrent = (stats.currentConcurrent || 0) + 1;
+                stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, stats.currentConcurrent);
+                this.globalPeak = Math.max(this.globalPeak, stats.peakConcurrent);
                 break;
                 
             case 'game_start':
@@ -173,6 +209,16 @@ class ServerAnalytics {
                         stats.shipUsage[event.data.shipType] = 0;
                     }
                     stats.shipUsage[event.data.shipType]++;
+                }
+                break;
+            case 'session_end':
+                // Decrement concurrent counter if present
+                if (stats.currentConcurrent && stats.currentConcurrent > 0) {
+                    stats.currentConcurrent--;
+                }
+                if (event.data && event.data.sessionDuration) {
+                    stats.totalSessionTime = (stats.totalSessionTime || 0) + event.data.sessionDuration;
+                    stats.sessionDurations.push(event.data.sessionDuration);
                 }
                 break;
                 
@@ -260,28 +306,71 @@ class ServerAnalytics {
             case 'game_end':
                 this.handleGameEnd(event);
                 break;
+            case 'player_death':
+                // record end of life for life-duration calculation
+                this.handlePlayerDeath(event);
+                break;
+            case 'game_start':
+            case 'respawn':
+                // mark life start
+                this.handleLifeStart(event);
+                break;
         }
     }
     
     handleSessionEnd(event) {
-        const session = this.sessions.get(event.sessionId);
-        if (session && event.data.sessionDuration) {
+        const playerId = event.playerId || event.sessionId;
+        const session = this.sessions.get(playerId);
+        if (session && event.data && event.data.sessionDuration) {
             // Update player profile with session data
-            const playerId = session.playerId || event.sessionId;
             const profile = this.playerProfiles.get(playerId);
             if (profile) {
                 profile.totalPlayTime += event.data.sessionDuration;
                 profile.longestSession = Math.max(profile.longestSession, event.data.sessionDuration);
             }
-            
+
             // Save session data to file
             this.saveSessionData(session);
-            
+
             // Clean up session from memory after some time
             setTimeout(() => {
-                this.sessions.delete(event.sessionId);
+                this.sessions.delete(playerId);
+                // update currentActive
+                if (this.currentActive && this.currentActive > 0) this.currentActive--;
             }, 300000); // 5 minutes
         }
+    }
+
+    handlePlayerDeath(event) {
+        const playerId = event.playerId || event.sessionId;
+        const session = this.sessions.get(playerId);
+        if (!session) return;
+
+        const gs = session.gameStats;
+        gs.deaths += 1;
+
+        // If we have a recorded life start, compute life duration
+        if (gs.lastLifeStart) {
+            const lifeDuration = event.timestamp - gs.lastLifeStart;
+            gs.lifeDurations.push(lifeDuration);
+            gs.totalTimeAlive = (gs.totalTimeAlive || 0) + lifeDuration;
+            gs.lastLifeStart = null;
+            // Also update daily stats
+            const day = event.day;
+            if (this.dailyStats.has(day)) {
+                const stats = this.dailyStats.get(day);
+                stats.lifeDurations = stats.lifeDurations || [];
+                stats.lifeDurations.push(lifeDuration);
+                stats.totalLifeTime = (stats.totalLifeTime || 0) + lifeDuration;
+            }
+        }
+    }
+
+    handleLifeStart(event) {
+        const playerId = event.playerId || event.sessionId;
+        const session = this.sessions.get(playerId);
+        if (!session) return;
+        session.gameStats.lastLifeStart = event.timestamp;
     }
     
     handleGameEnd(event) {
@@ -333,6 +422,10 @@ class ServerAnalytics {
             gamesCompleted: 0,
             totalGameTime: 0,
             gameDurations: [],
+            sessionDurations: [],
+            totalSessionTime: 0,
+            lifeDurations: [],
+            totalLifeTime: 0,
             totalKills: 0,
             totalDeaths: 0,
             totalShots: 0,
@@ -354,18 +447,21 @@ class ServerAnalytics {
     
     async saveSessionData(session) {
         try {
-            const filename = `session_${session.sessionId}.json`;
+            const sid = session.playerId || 'unknown';
+            const start = session.startTime || Date.now();
+            const filename = `session_${sid}_${start}.json`;
             const filepath = path.join(this.dataDir, 'sessions', filename);
             
             // Convert sets to arrays for JSON serialization
             const sessionData = {
                 ...session,
+                sessionIds: Array.from(session.sessionIds || []),
                 gameStats: {
                     ...session.gameStats,
-                    shipsUsed: Array.from(session.gameStats.shipsUsed),
-                    weaponsUsed: Array.from(session.gameStats.weaponsUsed),
-                    achievementsUnlocked: Array.from(session.gameStats.achievementsUnlocked),
-                    challengesCompleted: Array.from(session.gameStats.challengesCompleted)
+                    shipsUsed: Array.from(session.gameStats.shipsUsed || []),
+                    weaponsUsed: Array.from(session.gameStats.weaponsUsed || []),
+                    achievementsUnlocked: Array.from(session.gameStats.achievementsUnlocked || []),
+                    challengesCompleted: Array.from(session.gameStats.challengesCompleted || [])
                 }
             };
             
@@ -444,6 +540,16 @@ class ServerAnalytics {
         const todayStats = this.dailyStats.get(today) || this.createEmptyDayStats();
         // Only count unique playerIds for active sessions
         const activePlayerIds = Array.from(this.sessions.keys());
+        // Compute average session duration for today
+        const avgSession = todayStats.sessionDurations && todayStats.sessionDurations.length > 0
+            ? (todayStats.sessionDurations.reduce((a, b) => a + b, 0) / todayStats.sessionDurations.length)
+            : 0;
+
+        // Compute average life duration for today
+        const avgLife = todayStats.lifeDurations && todayStats.lifeDurations.length > 0
+            ? (todayStats.lifeDurations.reduce((a, b) => a + b, 0) / todayStats.lifeDurations.length)
+            : 0;
+
         return {
             today: {
                 ...todayStats,
@@ -454,7 +560,11 @@ class ServerAnalytics {
                     : 0,
                 completionRate: todayStats.gamesStarted > 0 
                     ? todayStats.gamesCompleted / todayStats.gamesStarted 
-                    : 0
+                    : 0,
+                averageSessionDuration: avgSession,
+                averageLifeDuration: avgLife,
+                peakConcurrentToday: todayStats.peakConcurrent || 0,
+                globalPeakConcurrent: this.globalPeak || 0
             },
             activeSessions: activePlayerIds.length,
             recentEvents: this.events.slice(-50), // Last 50 events

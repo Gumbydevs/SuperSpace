@@ -166,6 +166,22 @@
                 <div class="stat-label">Avg Game Duration</div>
             </div>
             <div class="stat-card">
+                <div class="stat-value" id="avgSessionDuration">-</div>
+                <div class="stat-label">Avg Session Length</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgLifeDuration">-</div>
+                <div class="stat-label">Avg Time Alive</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="peakToday">-</div>
+                <div class="stat-label">Peak Concurrent (Today)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="globalPeak">-</div>
+                <div class="stat-label">All-time Peak</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-value" id="completionRate">-</div>
                 <div class="stat-label">Game Completion Rate</div>
             </div>
@@ -280,6 +296,11 @@
             const avgDuration = data.today.averageGameDuration || 0;
             document.getElementById('avgGameDuration').textContent = 
                 formatDuration(avgDuration);
+            // New metrics
+            document.getElementById('avgSessionDuration').textContent = formatDuration(data.today.averageSessionDuration || 0);
+            document.getElementById('avgLifeDuration').textContent = formatDuration(data.today.averageLifeDuration || 0);
+            document.getElementById('peakToday').textContent = data.today.peakConcurrentToday || 0;
+            document.getElementById('globalPeak').textContent = data.today.globalPeakConcurrent || 0;
             
             const completionRate = (data.today.completionRate * 100) || 0;
             document.getElementById('completionRate').textContent = 
