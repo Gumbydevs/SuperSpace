@@ -973,7 +973,7 @@ export class AvatarManager {
     
     // Draw profile avatar (for UI display)
     drawProfileAvatar() {
-        const profileCanvas = document.getElementById('profile-avatar');
+        const profileCanvas = document.getElementById('profileAvatarCanvas');
         if (profileCanvas) {
             const ctx = profileCanvas.getContext('2d');
             this.drawAvatar(profileCanvas, this.selectedAvatar);
