@@ -11,7 +11,7 @@ export class MultiplayerManager {
         this.playerId = null;
         
         // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
-        this.GAME_VERSION = "2025.09.07.001"; // Format: YYYY.MM.DD.increment
+        this.GAME_VERSION = "2025.09.07.002"; // Format: YYYY.MM.DD.increment
         
         // Check for version reset before loading any data
         this.checkAndHandleVersionReset();
