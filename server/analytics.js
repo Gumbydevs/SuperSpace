@@ -93,6 +93,7 @@ class ServerAnalytics {
         } catch (error) {
             console.error('Error loading existing data:', error);
         }
+    }
     
     processEvent(eventData, clientIp) {
         try {
