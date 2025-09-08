@@ -715,7 +715,7 @@ export class MultiplayerManager {
                 killerName,
                 victimName,
                 hasKillAnnouncer: !!this.killAnnouncer,
-                killAnnouncerReady
+                killAnnouncerReady: this.ensureKillAnnouncerReady()
             });
 
             // Debug: Log avatar information
@@ -734,7 +734,7 @@ export class MultiplayerManager {
             // Show appropriate message based on player perspective
             if (data.attackerId === this.playerId) {
                 // If you're the killer
-                if (killAnnouncerReady) {
+                if (this.ensureKillAnnouncerReady()) {
                     this.killAnnouncer.announceKill('You', victimName, 'destroyed', killerAvatar);
                 } else {
                     console.error('❌ KillAnnouncer not ready for kill announcement!');
@@ -743,7 +743,7 @@ export class MultiplayerManager {
                 }
             } else if (data.playerId === this.playerId) {
                 // If you're the victim - you see who killed you
-                if (killAnnouncerReady) {
+                if (this.ensureKillAnnouncerReady()) {
                     this.killAnnouncer.announceKill(killerName, 'you', 'destroyed', killerAvatar);
                 } else {
                     console.error('❌ KillAnnouncer not ready for death announcement!');
@@ -752,7 +752,7 @@ export class MultiplayerManager {
                 }
             } else {
                 // If you're a spectator - you see who killed whom
-                if (killAnnouncerReady) {
+                if (this.ensureKillAnnouncerReady()) {
                     this.killAnnouncer.announceKill(killerName, victimName, 'destroyed', killerAvatar);
                 } else {
                     console.error('❌ KillAnnouncer not ready for spectator announcement!');
