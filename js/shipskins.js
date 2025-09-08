@@ -252,8 +252,14 @@ export class ShipSkinSystem {
             this.applySkinEffects(ctx, ship, appearance);
         }
         
-        // Call the original ship render method - this preserves your original ship designs!
-        ship.render(ctx);
+        // Call the original ship render method if available
+        // For shop previews, the ship might not have a render method
+        if (typeof ship.render === 'function') {
+            ship.render(ctx);
+        } else {
+            // Fallback: render a basic ship for preview
+            this.renderBasicShipForPreview(ctx, ship);
+        }
         
         ctx.restore();
         
@@ -404,5 +410,32 @@ export class ShipSkinSystem {
         }
         
         ctx.restore();
+    }
+    
+    // Basic ship rendering for shop previews
+    renderBasicShipForPreview(ctx, ship) {
+        const shipColor = ship.getShipColor ? ship.getShipColor() : '#33f';
+        const engineColor = ship.getEngineColor ? ship.getEngineColor() : '#f66';
+        
+        // Draw basic ship shape for preview
+        ctx.fillStyle = shipColor;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        
+        // Simple triangular ship
+        ctx.beginPath();
+        ctx.moveTo(15, 0);   // Nose
+        ctx.lineTo(-10, -8); // Left wing
+        ctx.lineTo(-5, 0);   // Center back
+        ctx.lineTo(-10, 8);  // Right wing
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Engine glow
+        ctx.fillStyle = engineColor + '88';
+        ctx.beginPath();
+        ctx.arc(-7, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
