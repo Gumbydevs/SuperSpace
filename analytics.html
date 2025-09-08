@@ -157,14 +157,7 @@
                 <div class="stat-value" id="todaySessions">-</div>
                 <div class="stat-label">Today's Sessions</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="todayGames">-</div>
-                <div class="stat-label">Games Today</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="avgGameDuration">-</div>
-                <div class="stat-label">Avg Game Duration</div>
-            </div>
+            
             <div class="stat-card">
                 <div class="stat-value" id="avgSessionDuration">-</div>
                 <div class="stat-label">Avg Session Length</div>
@@ -291,11 +284,6 @@
             document.getElementById('activeSessions').textContent = data.activeSessions || 0;
             document.getElementById('totalPlayers').textContent = data.totalPlayers || 0;
             document.getElementById('todaySessions').textContent = data.today.uniqueSessions || 0;
-            document.getElementById('todayGames').textContent = data.today.gamesCompleted || 0;
-            
-            const avgDuration = data.today.averageGameDuration || 0;
-            document.getElementById('avgGameDuration').textContent = 
-                formatDuration(avgDuration);
             // New metrics
             document.getElementById('avgSessionDuration').textContent = formatDuration(data.today.averageSessionDuration || 0);
             document.getElementById('avgLifeDuration').textContent = formatDuration(data.today.averageLifeDuration || 0);
