@@ -666,9 +666,10 @@ export class NPCManager {
         if (dreadnaught.burstCount < dreadnaught.burstMax && 
             currentTime - dreadnaught.lastFireTime > dreadnaught.fireRate) {
             
-            // Fire from multiple weapon mounts
-            dreadnaught.weaponMounts.forEach((mount, index) => {
-                if (currentTime - mount.lastFire > 200) { // Stagger weapon fire
+            // Fire from multiple weapon mounts (with safety check)
+            if (dreadnaught.weaponMounts && dreadnaught.weaponMounts.length > 0) {
+                dreadnaught.weaponMounts.forEach((mount, index) => {
+                    if (currentTime - mount.lastFire > 200) { // Stagger weapon fire
                     const mountWorldX = dreadnaught.x + Math.cos(dreadnaught.rotation - Math.PI/2) * mount.x - Math.sin(dreadnaught.rotation - Math.PI/2) * mount.y;
                     const mountWorldY = dreadnaught.y + Math.sin(dreadnaught.rotation - Math.PI/2) * mount.x + Math.cos(dreadnaught.rotation - Math.PI/2) * mount.y;
                     
@@ -723,13 +724,12 @@ export class NPCManager {
                         
                         mount.lastFire = currentTime;
                     }
-                }
-            });
+                    }
+                });
+            }
             
             dreadnaught.burstCount++;
-            dreadnaught.lastFireTime = currentTime;
-            
-            // Play dreadnaught weapon sound
+            dreadnaught.lastFireTime = currentTime;            // Play dreadnaught weapon sound
             if (this.soundManager) {
                 this.soundManager.play('explosion', {
                     volume: 0.6,
@@ -917,19 +917,21 @@ export class NPCManager {
         
         // Weapon mounts
         ctx.fillStyle = '#888';
-        dreadnaught.weaponMounts.forEach(mount => {
-            ctx.beginPath();
-            ctx.arc(mount.x, mount.y, 5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Weapon barrel
-            ctx.strokeStyle = '#aaa';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(mount.x, mount.y);
-            ctx.lineTo(mount.x, mount.y - 15);
-            ctx.stroke();
-        });
+        if (dreadnaught.weaponMounts && dreadnaught.weaponMounts.length > 0) {
+            dreadnaught.weaponMounts.forEach(mount => {
+                ctx.beginPath();
+                ctx.arc(mount.x, mount.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Weapon barrel
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(mount.x, mount.y);
+                ctx.lineTo(mount.x, mount.y - 15);
+                ctx.stroke();
+            });
+        }
         
         // Engine glow
         const engineGlow = 0.5 + 0.5 * Math.sin(dreadnaught.engineGlowPhase);
@@ -1144,6 +1146,12 @@ export class NPCManager {
                 state: npc.state || 'spawning'
             };
             
+            // Include additional data for specific NPC types
+            if (npc.type === 'dreadnaught' && npc.weaponMounts) {
+                npcData.weaponMounts = npc.weaponMounts;
+                npcData.targetPosition = npc.targetPosition;
+            }
+            
             window.game.multiplayer.socket.emit('npcSpawn', npcData);
         }
     }
@@ -1224,6 +1232,21 @@ export class NPCManager {
             warningFlash: 0,
             isRemote: true // Flag for remote NPCs
         };
+        
+        // Add type-specific properties for proper rendering
+        if (npcData.type === 'dreadnaught') {
+            // Essential dreadnaught properties for rendering
+            remoteNPC.weaponMounts = npcData.weaponMounts || [
+                { x: -40, y: -60, lastFire: 0 },
+                { x: 40, y: -60, lastFire: 0 },
+                { x: -60, y: 0, lastFire: 0 },
+                { x: 60, y: 0, lastFire: 0 },
+                { x: 0, y: 40, lastFire: 0 }
+            ];
+            remoteNPC.targetPosition = npcData.targetPosition || { x: 0, y: 0 };
+            remoteNPC.burstCount = 0;
+            remoteNPC.burstMax = 5;
+        }
         
         this.npcs.push(remoteNPC);
         console.log(`Remote NPC spawned: ${npcData.type} (${npcData.id})`);

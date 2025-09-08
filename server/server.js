@@ -168,6 +168,8 @@ setInterval(() => {
     return now - lastActivity < DREADNAUGHT_ACTIVITY_THRESHOLD;
   });
   
+  console.log(`🔍 Dreadnaught spawn check: ${activePlayers.length} active players, next spawn in ${Math.max(0, nextDreadnaughtSpawn - now)}ms`);
+  
   // Check if conditions are met for dreadnaught spawning
   const shouldSpawn = (
     activePlayers.length >= DREADNAUGHT_MIN_PLAYERS && // Enough active players
@@ -178,6 +180,8 @@ setInterval(() => {
   
   if (shouldSpawn) {
     console.log(`🛸 NATURAL DREADNAUGHT SPAWN: ${activePlayers.length} active players detected`);
+    console.log(`🔍 Spawn conditions: activePlayers=${activePlayers.length}, minRequired=${DREADNAUGHT_MIN_PLAYERS}`);
+    console.log(`⏰ Time check: now=${now}, nextSpawn=${nextDreadnaughtSpawn}, timeSinceLastSpawn=${now - lastDreadnaughtSpawn}`);
     
     // Trigger dreadnaught spawn for a random active player
     const randomPlayerId = activePlayers[Math.floor(Math.random() * activePlayers.length)];
