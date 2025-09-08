@@ -25,6 +25,9 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         
+        // Ensure canvas has proper z-index (reset any inline styles)
+        this.canvas.style.zIndex = '1';
+        
         // Here we initialize all major game systems
         this.world = new World();  // Manages game world, asteroids, powerups, etc.
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);  // Creates player ship at center
@@ -407,13 +410,7 @@ class Game {
         // Allow premium store access during menu or playing
         if (this.gameState === 'menu' || this.gameState === 'playing') {
             this.premiumStore.toggleStore();
-            
-            // Adjust canvas z-index to put premium store above everything
-            if (this.premiumStore.storeOpen) {
-                this.canvas.style.zIndex = '10003'; // Above all UI buttons (which are 1002)
-            } else {
-                this.canvas.style.zIndex = '1'; // Back to normal
-            }
+            // Premium store renders directly on canvas, no z-index changes needed
         }
     }
     
