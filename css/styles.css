@@ -720,7 +720,7 @@ input[type="range"] {
 
 /* Collapsed state for player list */
 #player-list.collapsed {
-    transform: translateX(-95%);
+    transform: translateX(-98%);
 }
 
 /* Player list toggle tab */
@@ -985,7 +985,7 @@ input[type="range"] {
     
     /* Collapsed state for player list */
     #player-list.collapsed {
-        transform: translateX(-82%) scale(0.9) !important;
+        transform: translateX(-75%) scale(0.9) !important;
         transform-origin: top left !important;
     }
     
@@ -1444,7 +1444,7 @@ input[type="range"] {
     
     /* Small mobile collapsed state */
     #player-list.collapsed {
-        transform: translateX(-80%) scale(0.7) !important;
+        transform: translateX(-70%) scale(0.7) !important;
     }
     
     /* Smaller toggle button for small mobile */
