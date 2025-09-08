@@ -352,6 +352,16 @@ export class PremiumStore {
             console.log('localStorage premiumPurchases:', JSON.parse(localStorage.getItem('premiumPurchases') || '{}'));
         };
         
+        // Add manual refresh function
+        window.refreshAvatars = () => {
+            console.log('Manually refreshing avatars...');
+            if (this.avatarManager) {
+                this.avatarManager.setupPremiumAvatars();
+                this.avatarManager.drawAllAvatars();
+                console.log('Avatar refresh complete');
+            }
+        };
+        
         return true;
     }
     

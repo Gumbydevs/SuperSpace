@@ -16,13 +16,18 @@ export class AvatarManager {
 
     tryInitialize() {
         const avatarOptions = document.querySelectorAll('.avatar-option');
+        console.log('Avatar manager initializing, found options:', avatarOptions.length);
         if (avatarOptions.length > 0) {
             this.setupAvatarSelection();
             this.setupModalControls();
+            console.log('About to setup premium avatars...');
             this.setupPremiumAvatars();
             this.drawAllAvatars();
             this.drawProfileAvatar();
             this.initialized = true;
+            console.log('Avatar manager initialization complete');
+        } else {
+            console.log('No avatar options found, skipping initialization');
         }
     }
 
@@ -39,7 +44,7 @@ export class AvatarManager {
         const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
         console.log('Found disabled options:', disabledOptions.length);
         const premiumAvatarData = [
-            { id: 'golden_astronaut', name: 'Golden Ace' },
+            { id: 'astronaut_gold', name: 'Golden Ace' },
             { id: 'alien_commander', name: 'Zorg Prime' }, 
             { id: 'cyber_pilot', name: 'Cyber-X' },
             { id: 'galaxy_explorer', name: 'Nova Star' },
