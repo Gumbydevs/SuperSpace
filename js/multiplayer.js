@@ -189,10 +189,10 @@ export class MultiplayerManager {
             this.game.player.wins = 0;
             this.game.player.losses = 0;
             
-            // Reset ship appearance to default
-            this.game.player.shipColor = '#33f';
-            this.game.player.engineColor = '#f66';
-            this.game.player.color = '#33f';
+            // Reset ship appearance to saved values or defaults
+            this.game.player.shipColor = localStorage.getItem('playerShipColor') || '#33f';
+            this.game.player.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
+            this.game.player.color = this.game.player.shipColor;
             
             console.log('✅ Game player data reset complete');
         }

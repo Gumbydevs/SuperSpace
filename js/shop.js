@@ -368,6 +368,13 @@ export class ShopSystem {
         if (ship && ship.owned) {
             this.player.currentShip = currentShipId;
             
+            // Apply ship appearance
+            if (ship.appearance && ship.appearance.color) {
+                this.player.color = ship.appearance.color;
+                this.player.shipColor = ship.appearance.color;
+                localStorage.setItem('playerShipColor', ship.appearance.color);
+            }
+            
             // Apply ship stats to player
             this.player.maxHealth = ship.stats.maxHealth;
             this.player.maxSpeed = ship.stats.maxSpeed;
