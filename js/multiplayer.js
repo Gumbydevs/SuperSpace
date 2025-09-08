@@ -699,16 +699,6 @@ export class MultiplayerManager {
             // Ensure kill announcer is ready before announcing kills
             const killAnnouncerReady = this.ensureKillAnnouncerReady();
 
-            // Debug: Log kill event details
-            console.log('🔥 KILL EVENT:', {
-                attackerId: data.attackerId,
-                playerId: data.playerId,
-                killerName,
-                victimName,
-                hasKillAnnouncer: !!this.killAnnouncer,
-                killAnnouncerReady
-            });
-
             // Get killer avatar information from server data (most reliable)
             let killerAvatar = data.killerAvatar || 'han';
             
@@ -720,6 +710,16 @@ export class MultiplayerManager {
             const victimName = data.playerId === this.playerId ? 
                 'you' : 
                 (this.players[data.playerId]?.name || this.playerNameCache[data.playerId] || 'another player');
+
+            // Debug: Log kill event details
+            console.log('🔥 KILL EVENT:', {
+                attackerId: data.attackerId,
+                playerId: data.playerId,
+                killerName,
+                victimName,
+                hasKillAnnouncer: !!this.killAnnouncer,
+                killAnnouncerReady
+            });
 
             // Debug: Log avatar information
             console.log('🎭 KILL AVATAR INFO:', {
