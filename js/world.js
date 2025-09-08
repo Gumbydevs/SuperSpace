@@ -706,29 +706,40 @@
 
         // Check collisions between player projectiles and NPCs
         if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
-            window.game.npcManager.npcs.forEach((npc, npcIndex) => {
-                player.projectiles.forEach((projectile, projectileIndex) => {
+            for (let npcIndex = window.game.npcManager.npcs.length - 1; npcIndex >= 0; npcIndex--) {
+                const npc = window.game.npcManager.npcs[npcIndex];
+                
+                for (let projectileIndex = player.projectiles.length - 1; projectileIndex >= 0; projectileIndex--) {
+                    const projectile = player.projectiles[projectileIndex];
                     const dx = projectile.x - npc.x;
                     const dy = projectile.y - npc.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < npc.radius) {
+                    if (distance < npc.radius + 15) { // Generous collision detection
                         // Hit NPC
                         npc.health -= projectile.damage;
                         
-                        // Create hit effect
-                        this.createProjectileHitEffect(projectile.x, projectile.y, npc.radius, soundManager);
+                        // Create hit effect at impact point
+                        const impactX = npc.x + (dx / distance) * npc.radius;
+                        const impactY = npc.y + (dy / distance) * npc.radius;
+                        this.createProjectileHitEffect(impactX, impactY, npc.radius * 0.5, soundManager);
+                        
+                        // Handle special projectile effects
+                        if (projectile.type === 'rocket' && projectile.explosive) {
+                            projectile.createExplosion(this, soundManager);
+                        }
                         
                         // Remove projectile
                         player.projectiles.splice(projectileIndex, 1);
                         
-                        // Check if NPC is destroyed
-                        if (npc.health <= 0) {
-                            // Will be handled in NPC manager update
-                        }
+                        // Award partial score for hitting
+                        player.score += npc.type === 'dreadnaught' ? 10 : 5;
+                        
+                        console.log(`Hit NPC ${npc.type} for ${projectile.damage} damage. Health: ${npc.health}/${npc.maxHealth}`);
+                        break; // Exit projectile loop since this projectile hit
                     }
-                });
-            });
+                }
+            }
         }
 
         // Keep player within world boundaries

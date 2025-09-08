@@ -15,6 +15,10 @@ export class NPCManager {
         
         // Alien spawn chances (high for testing)
         this.alienSpawnChance = 0.8; // 80% chance for testing (normally would be 0.1-0.2)
+        
+        // Timeout timers for NPCs
+        this.alienLifespan = 120000; // 2 minutes before aliens fly away
+        this.dreadnaughtRetreatTimer = 180000; // 3 minutes before dreadnaught retreats
     }
     
     // Create an alien scout that emerges from an asteroid
@@ -53,10 +57,15 @@ export class NPCManager {
             patrolAngle: Math.random() * Math.PI * 2,
             patrolRadius: 200,
             patrolCenter: { x: asteroidX, y: asteroidY },
-            state: 'emerging' // emerging, patrolling, attacking, fleeing
+            state: 'emerging', // emerging, patrolling, attacking, fleeing, leaving
+            spawnTime: Date.now(),
+            lastTargetTime: 0 // Track when alien last had a target
         };
         
         this.npcs.push(alien);
+        
+        // Broadcast alien spawn to other players
+        this.broadcastNPCSpawn(alien);
         
         // Play emergence sound effect
         if (this.soundManager) {
@@ -133,7 +142,9 @@ export class NPCManager {
             
             // Movement AI
             targetPosition: { x: 0, y: 0 }, // Move toward center
-            state: 'approaching', // approaching, combat, retreating
+            state: 'approaching', // approaching, combat, retreating, leaving
+            spawnTime: Date.now(),
+            lastPlayerContact: Date.now(), // Track when dreadnaught last saw players
             
             // Weapons
             weaponMounts: [
@@ -148,6 +159,9 @@ export class NPCManager {
         this.npcs.push(dreadnaught);
         this.dreadnaughtActive = true;
         this.dreadnaughtWarningSent = false;
+        
+        // Broadcast NPC spawn to other players
+        this.broadcastNPCSpawn(dreadnaught);
         
         // Show dramatic warning
         this.showDreadnaughtWarning();
@@ -186,12 +200,71 @@ export class NPCManager {
                 continue;
             }
             
+            // Check for timeout/lifespan
+            const age = Date.now() - npc.spawnTime;
+            if (npc.type === 'alien_scout' && age > this.alienLifespan) {
+                // Alien flies away after timeout
+                npc.state = 'leaving';
+            } else if (npc.type === 'dreadnaught' && age > this.dreadnaughtRetreatTimer) {
+                // Dreadnaught retreats after timeout
+                npc.state = 'leaving';
+            }
+            
+            // Skip AI updates for remote NPCs (they're controlled by other players)
+            if (npc.isRemote) {
+                // Only update visual effects for remote NPCs
+                if (npc.type === 'alien_scout') {
+                    npc.glowPhase += deltaTime * 3;
+                } else if (npc.type === 'dreadnaught') {
+                    npc.shieldPhase += deltaTime * 2;
+                    npc.engineGlowPhase += deltaTime * 4;
+                    npc.warningFlash += deltaTime * 8;
+                }
+                continue;
+            }
+            
+            // Run AI for local NPCs only
             if (npc.type === 'alien_scout') {
                 this.updateAlienScout(npc, deltaTime, player);
             } else if (npc.type === 'dreadnaught') {
                 this.updateDreadnaught(npc, deltaTime, player);
             }
+            
+            // Remove NPCs that have left the map
+            if (npc.state === 'leaving' && this.isOffScreen(npc)) {
+                this.npcs.splice(i, 1);
+                
+                // Broadcast departure to other players
+                this.broadcastNPCLeaving(npc);
+                
+                if (npc.type === 'dreadnaught') {
+                    this.dreadnaughtActive = false;
+                    this.showMessage('Dreadnaught has left the area...', '#888', 3000);
+                }
+            }
         }
+    }
+    
+    // Check if entity is in safe zone
+    isInSafeZone(entity) {
+        if (!this.world || !this.world.safeZone) return false;
+        
+        const dx = entity.x - this.world.safeZone.x;
+        const dy = entity.y - this.world.safeZone.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        return distance < this.world.safeZone.size / 2;
+    }
+    
+    // Check if NPC is off screen/out of world bounds
+    isOffScreen(npc) {
+        const bounds = this.world.boundaries;
+        const margin = 200; // Extra margin before considering "off screen"
+        
+        return (npc.x < bounds.left - margin || 
+                npc.x > bounds.right + margin ||
+                npc.y < bounds.top - margin || 
+                npc.y > bounds.bottom + margin);
     }
     
     // Update alien scout AI
@@ -238,31 +311,72 @@ export class NPCManager {
         
         alien.target = closestTarget;
         
-        if (closestTarget && closestDistance < alien.aggroRange) {
+        // Check for leaving state
+        if (alien.state === 'leaving') {
+            // Fly toward edge of map
+            const bounds = this.world.boundaries;
+            const centerX = (bounds.left + bounds.right) / 2;
+            const centerY = (bounds.top + bounds.bottom) / 2;
+            
+            // Choose the closest edge to fly toward
+            let targetX, targetY;
+            if (Math.abs(alien.x - bounds.left) < Math.abs(alien.x - bounds.right)) {
+                targetX = bounds.left - 300; // Fly off left edge
+                targetY = alien.y;
+            } else {
+                targetX = bounds.right + 300; // Fly off right edge
+                targetY = alien.y;
+            }
+            
+            const dx = targetX - alien.x;
+            const dy = targetY - alien.y;
+            alien.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+            alien.velocity.x = Math.cos(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+            alien.velocity.y = Math.sin(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+        }
+        else if (closestTarget && closestDistance < alien.aggroRange && !this.isInSafeZone(closestTarget)) {
             // Attack mode
             alien.state = 'attacking';
+            alien.lastTargetTime = Date.now();
             const dx = closestTarget.x - alien.x;
             const dy = closestTarget.y - alien.y;
             
-            // Face target
-            alien.rotation = Math.atan2(dy, dx) + Math.PI / 2;
-            
-            // Move toward target but maintain distance
-            if (closestDistance > alien.attackRange * 0.8) {
-                alien.velocity.x = Math.cos(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
-                alien.velocity.y = Math.sin(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
-            } else if (closestDistance < alien.attackRange * 0.5) {
-                // Back away
-                alien.velocity.x = -Math.cos(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
-                alien.velocity.y = -Math.sin(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
-            }
-            
-            // Fire at target
-            if (Date.now() - alien.lastFireTime > alien.fireRate) {
-                this.fireAlienWeapon(alien, closestTarget);
-                alien.lastFireTime = Date.now();
+            // Don't attack if alien is in safe zone
+            if (this.isInSafeZone(alien)) {
+                // Move out of safe zone first
+                const safeZone = this.world.safeZone;
+                const escapeX = alien.x + (alien.x - safeZone.x) * 2; // Move away from center
+                const escapeY = alien.y + (alien.y - safeZone.y) * 2;
+                
+                alien.velocity.x = Math.cos(Math.atan2(escapeY - alien.y, escapeX - alien.x)) * alien.speed * deltaTime;
+                alien.velocity.y = Math.sin(Math.atan2(escapeY - alien.y, escapeX - alien.x)) * alien.speed * deltaTime;
+            } else {
+                // Face target
+                alien.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+                
+                // Move toward target but maintain distance
+                if (closestDistance > alien.attackRange * 0.8) {
+                    alien.velocity.x = Math.cos(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+                    alien.velocity.y = Math.sin(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+                } else if (closestDistance < alien.attackRange * 0.5) {
+                    // Back away
+                    alien.velocity.x = -Math.cos(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+                    alien.velocity.y = -Math.sin(alien.rotation - Math.PI / 2) * alien.speed * deltaTime;
+                }
+                
+                // Fire at target (only if not in safe zone)
+                if (Date.now() - alien.lastFireTime > alien.fireRate) {
+                    this.fireAlienWeapon(alien, closestTarget);
+                    alien.lastFireTime = Date.now();
+                }
             }
         } else {
+            // Check if alien has been without a target for too long
+            if (alien.lastTargetTime > 0 && Date.now() - alien.lastTargetTime > 30000) { // 30 seconds without target
+                alien.state = 'leaving';
+                return;
+            }
+            
             // Patrol mode
             alien.state = 'patrolling';
             alien.patrolAngle += deltaTime * 0.5;
@@ -323,9 +437,50 @@ export class NPCManager {
         
         dreadnaught.target = closestTarget;
         
+        // Update last player contact time if any players are nearby
+        if (closestTarget && closestDistance < dreadnaught.aggroRange * 1.5) {
+            dreadnaught.lastPlayerContact = Date.now();
+        }
+        
+        // Check if dreadnaught should retreat (no players for a while)
+        if (Date.now() - dreadnaught.lastPlayerContact > 60000) { // 1 minute without players
+            dreadnaught.state = 'leaving';
+        }
+        
         // Movement AI based on state
-        if (dreadnaught.state === 'approaching') {
-            // Move toward center of map
+        if (dreadnaught.state === 'leaving') {
+            // Retreat to edge of map
+            const bounds = this.world.boundaries;
+            const targetX = dreadnaught.x > 0 ? bounds.right + 300 : bounds.left - 300;
+            const targetY = dreadnaught.y > 0 ? bounds.bottom + 300 : bounds.top - 300;
+            
+            const dx = targetX - dreadnaught.x;
+            const dy = targetY - dreadnaught.y;
+            
+            dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+            dreadnaught.velocity.x = Math.cos(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+            dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+        }
+        else if (dreadnaught.state === 'approaching') {
+            // Check if we should avoid approaching safe zone - change target if needed
+            const safeZone = this.world.safeZone;
+            const distanceToSafeZone = Math.sqrt(
+                (dreadnaught.targetPosition.x - safeZone.x) ** 2 + 
+                (dreadnaught.targetPosition.y - safeZone.y) ** 2
+            );
+            
+            // If target is in safe zone, find new target position away from safe zone
+            if (distanceToSafeZone < safeZone.size / 2 + 200) {
+                // Pick a new target position outside safe zone
+                const angle = Math.random() * Math.PI * 2;
+                const distance = safeZone.size / 2 + 500;
+                dreadnaught.targetPosition = {
+                    x: safeZone.x + Math.cos(angle) * distance,
+                    y: safeZone.y + Math.sin(angle) * distance
+                };
+            }
+            
+            // Move toward target position
             const dx = dreadnaught.targetPosition.x - dreadnaught.x;
             const dy = dreadnaught.targetPosition.y - dreadnaught.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -338,22 +493,43 @@ export class NPCManager {
                 dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
             }
         } else if (dreadnaught.state === 'combat') {
-            // Combat maneuvers - slow circle strafe
-            const circleAngle = Date.now() / 5000;
-            const circleRadius = 300;
-            const targetX = Math.cos(circleAngle) * circleRadius;
-            const targetY = Math.sin(circleAngle) * circleRadius;
+            // Combat maneuvers - slow circle strafe, but avoid safe zone
+            const safeZone = this.world.safeZone;
+            const distanceToSafeZone = Math.sqrt(
+                (dreadnaught.x - safeZone.x) ** 2 + 
+                (dreadnaught.y - safeZone.y) ** 2
+            );
             
-            const dx = targetX - dreadnaught.x;
-            const dy = targetY - dreadnaught.y;
+            // Stay at least 400 units away from safe zone center
+            const minSafeDistance = safeZone.size / 2 + 400;
             
-            dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
-            dreadnaught.velocity.x = dx * 0.1 * deltaTime;
-            dreadnaught.velocity.y = dy * 0.1 * deltaTime;
+            if (distanceToSafeZone < minSafeDistance) {
+                // Move away from safe zone
+                const awayAngle = Math.atan2(dreadnaught.y - safeZone.y, dreadnaught.x - safeZone.x);
+                dreadnaught.velocity.x = Math.cos(awayAngle) * dreadnaught.speed * deltaTime;
+                dreadnaught.velocity.y = Math.sin(awayAngle) * dreadnaught.speed * deltaTime;
+                dreadnaught.rotation = awayAngle + Math.PI / 2;
+            } else {
+                // Normal circle strafe pattern
+                const circleAngle = Date.now() / 5000;
+                const circleRadius = 400;
+                const targetX = Math.cos(circleAngle) * circleRadius;
+                const targetY = Math.sin(circleAngle) * circleRadius;
+                
+                const dx = targetX - dreadnaught.x;
+                const dy = targetY - dreadnaught.y;
+                
+                dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+                dreadnaught.velocity.x = dx * 0.1 * deltaTime;
+                dreadnaught.velocity.y = dy * 0.1 * deltaTime;
+            }
             
-            // Fire weapons
+            // Only fire weapons if no players are in safe zone
             if (closestTarget && closestDistance < dreadnaught.attackRange) {
-                this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
+                const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
+                if (!targetInSafeZone) {
+                    this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
+                }
             }
         }
         
@@ -361,10 +537,12 @@ export class NPCManager {
         dreadnaught.x += dreadnaught.velocity.x;
         dreadnaught.y += dreadnaught.velocity.y;
         
-        // Keep in reasonable bounds (don't wrap, just limit)
-        const bounds = this.world.boundaries;
-        dreadnaught.x = Math.max(bounds.left + 200, Math.min(bounds.right - 200, dreadnaught.x));
-        dreadnaught.y = Math.max(bounds.top + 200, Math.min(bounds.bottom - 200, dreadnaught.y));
+        // Only limit bounds if not leaving - let it go off-screen when leaving
+        if (dreadnaught.state !== 'leaving') {
+            const bounds = this.world.boundaries;
+            dreadnaught.x = Math.max(bounds.left + 200, Math.min(bounds.right - 200, dreadnaught.x));
+            dreadnaught.y = Math.max(bounds.top + 200, Math.min(bounds.bottom - 200, dreadnaught.y));
+        }
     }
     
     // Fire alien scout weapon
@@ -508,6 +686,9 @@ export class NPCManager {
     
     // Destroy an NPC
     destroyNPC(npc, index) {
+        // Broadcast destruction to other players
+        this.broadcastNPCDestruction(npc);
+        
         // Create explosion
         this.world.createExplosion(npc.x, npc.y, npc.radius * 1.5, this.soundManager);
         
@@ -790,6 +971,11 @@ export class NPCManager {
     checkProjectileCollisions(player) {
         if (!this.world.npcProjectiles) return;
         
+        // Don't damage players in safe zone
+        if (this.world.isInSafeZone && this.world.isInSafeZone(player)) {
+            return;
+        }
+        
         this.world.npcProjectiles.forEach((projectile, index) => {
             const dx = projectile.x - player.x;
             const dy = projectile.y - player.y;
@@ -834,10 +1020,135 @@ export class NPCManager {
     
     // Clear all NPCs
     clearAll() {
+        // Broadcast NPC clear to other players
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('npcClearAll', {});
+        }
+        
         this.npcs = [];
         this.dreadnaughtActive = false;
         if (this.world.npcProjectiles) {
             this.world.npcProjectiles = [];
         }
+    }
+    
+    // Broadcast NPC spawn to other players
+    broadcastNPCSpawn(npc) {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            const npcData = {
+                id: npc.id,
+                type: npc.type,
+                x: npc.x,
+                y: npc.y,
+                rotation: npc.rotation,
+                health: npc.health,
+                maxHealth: npc.maxHealth,
+                radius: npc.radius,
+                speed: npc.speed,
+                state: npc.state || 'spawning'
+            };
+            
+            window.game.multiplayer.socket.emit('npcSpawn', npcData);
+        }
+    }
+    
+    // Broadcast NPC destruction to other players
+    broadcastNPCDestruction(npc) {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('npcDestroyed', {
+                id: npc.id,
+                type: npc.type,
+                x: npc.x,
+                y: npc.y
+            });
+        }
+    }
+    
+    // Broadcast NPC leaving to other players
+    broadcastNPCLeaving(npc) {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('npcLeaving', {
+                id: npc.id,
+                type: npc.type
+            });
+        }
+    }
+    
+    // Handle receiving NPC data from other players
+    handleRemoteNPCSpawn(npcData) {
+        // Check if NPC already exists
+        const existingNPC = this.npcs.find(npc => npc.id === npcData.id);
+        if (existingNPC) return;
+        
+        // Create remote NPC (AI disabled for remote NPCs)
+        const remoteNPC = {
+            id: npcData.id,
+            type: npcData.type,
+            x: npcData.x,
+            y: npcData.y,
+            rotation: npcData.rotation,
+            health: npcData.health,
+            maxHealth: npcData.maxHealth,
+            radius: npcData.radius,
+            speed: npcData.speed,
+            state: 'remote', // Mark as remote
+            velocity: { x: 0, y: 0 },
+            // Visual effects
+            glowPhase: Math.random() * Math.PI * 2,
+            shieldPhase: 0,
+            engineGlowPhase: 0,
+            warningFlash: 0,
+            isRemote: true // Flag for remote NPCs
+        };
+        
+        this.npcs.push(remoteNPC);
+        
+        if (npcData.type === 'dreadnaught') {
+            this.showDreadnaughtWarning();
+        } else if (npcData.type === 'alien_scout') {
+            this.showMessage('⚠️ ALIEN DETECTED', '#0f0', 2000);
+        }
+    }
+    
+    // Handle remote NPC destruction
+    handleRemoteNPCDestruction(npcData) {
+        const index = this.npcs.findIndex(npc => npc.id === npcData.id);
+        if (index >= 0) {
+            const npc = this.npcs[index];
+            
+            // Create explosion effect
+            this.world.createExplosion(npcData.x, npcData.y, npc.radius * 1.5, this.soundManager);
+            
+            // Remove NPC
+            this.npcs.splice(index, 1);
+            
+            if (npc.type === 'dreadnaught') {
+                this.dreadnaughtActive = false;
+                this.showMessage('🎉 VICTORY! Dreadnaught eliminated!', '#ffd700', 5000, true);
+            }
+        }
+    }
+    
+    // Handle remote NPC leaving
+    handleRemoteNPCLeaving(npcData) {
+        const index = this.npcs.findIndex(npc => npc.id === npcData.id);
+        if (index >= 0) {
+            const npc = this.npcs[index];
+            
+            // Remove NPC
+            this.npcs.splice(index, 1);
+            
+            if (npc.type === 'dreadnaught') {
+                this.dreadnaughtActive = false;
+                this.showMessage('Dreadnaught has left the area...', '#888', 3000);
+            }
+        }
+    }
+    
+    // Handle remote NPC clear all
+    handleRemoteNPCClearAll(data) {
+        this.npcs = [];
+        this.dreadnaughtActive = false;
+        this.showMessage('All NPCs cleared by admin', '#ff6b6b', 3000);
     }
 }

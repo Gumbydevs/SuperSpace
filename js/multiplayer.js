@@ -1003,6 +1003,34 @@ export class MultiplayerManager {
             }
         });
 
+        // Handle NPC spawn events
+        this.socket.on('npcSpawn', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.handleRemoteNPCSpawn(data);
+            }
+        });
+
+        // Handle NPC destruction events
+        this.socket.on('npcDestroyed', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.handleRemoteNPCDestruction(data);
+            }
+        });
+
+        // Handle NPC leaving events
+        this.socket.on('npcLeaving', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.handleRemoteNPCLeaving(data);
+            }
+        });
+
+        // Handle NPC clear all events
+        this.socket.on('npcClearAll', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.handleRemoteNPCClearAll(data);
+            }
+        });
+
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
             // Create unique key for this kill event
