@@ -1950,6 +1950,13 @@ export class ShopSystem {
         this.player.currentShip = shipId;
         localStorage.setItem('currentShip', shipId);
         
+        // Apply ship appearance
+        if (ship.appearance && ship.appearance.color) {
+            this.player.color = ship.appearance.color;
+            this.player.shipColor = ship.appearance.color;
+            localStorage.setItem('playerShipColor', ship.appearance.color);
+        }
+        
         // Apply ship stats to player
         this.player.maxHealth = ship.stats.maxHealth;
         this.player.maxSpeed = ship.stats.maxSpeed;
@@ -1976,6 +1983,11 @@ export class ShopSystem {
         // If health is above new max, cap it
         if (this.player.health > this.player.maxHealth) {
             this.player.health = this.player.maxHealth;
+        }
+        
+        // Notify multiplayer system of appearance change
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.forceStatsUpdate();
         }
         
         // Update shop display

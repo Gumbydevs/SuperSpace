@@ -696,8 +696,19 @@ export class MultiplayerManager {
                 }
             }
                 
-            // Get killer avatar information from server data (most reliable)
-            let killerAvatar = data.killerAvatar || 'han';
+            // Get killer avatar information - prioritize local data for more accuracy
+            let killerAvatar = data.killerAvatar;
+            
+            // If no server-provided avatar, try to get from local player data
+            if (!killerAvatar) {
+                if (data.attackerId === this.playerId) {
+                    // If it's the local player, use their selected avatar
+                    killerAvatar = localStorage.getItem('selectedAvatar') || 'han';
+                } else {
+                    // For remote players, try to get from player data or fallback to 'han'
+                    killerAvatar = this.players[data.attackerId]?.avatar || 'han';
+                }
+            }
             
             // Update player names to use server-provided data when available
             const killerName = data.killerName || (data.attackerId === this.playerId ? 
@@ -971,9 +982,9 @@ export class MultiplayerManager {
             health: this.game.player.health,
             shield: this.game.player.shield || 0,
             maxShield: this.game.player.shieldCapacity || 0,
-            ship: this.game.player.shipId || 'scout',
+            ship: this.game.player.currentShip || 'scout',
             name: this.playerName,
-            color: this.getRandomPlayerColor(),
+            color: this.game.player.color || '#0f0',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0,
@@ -998,11 +1009,12 @@ export class MultiplayerManager {
                 health: this.game.player.health,
                 shield: this.game.player.shield || 0,
                 maxShield: this.game.player.shieldCapacity || 0,
-                ship: this.game.player.shipId || 'scout',
+                ship: this.game.player.currentShip || 'scout',
                 color: this.game.player.color || '#0f0',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
                 losses: this.game.player.losses || 0,
+                avatar: localStorage.getItem('selectedAvatar') || 'han',
                 miningBeam: this.game.player.miningBeam ? {
                     active: this.game.player.miningBeam.active,
                     targetX: this.game.player.miningBeam.targetX,
@@ -1217,11 +1229,12 @@ export class MultiplayerManager {
             health: this.game.player.health,
             shield: this.game.player.shield || 0,
             maxShield: this.game.player.shieldCapacity || 0,
-            ship: this.game.player.shipId || 'scout',
+            ship: this.game.player.currentShip || 'scout',
             color: this.game.player.color || '#0f0',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
-            losses: this.game.player.losses || 0
+            losses: this.game.player.losses || 0,
+            avatar: localStorage.getItem('selectedAvatar') || 'han'
         };
         
         console.log('Force broadcasting player stats:', { score: playerData.score, wins: playerData.wins, losses: playerData.losses });
@@ -1402,6 +1415,7 @@ export class MultiplayerManager {
             player.maxShield = playerData.maxShield !== undefined ? playerData.maxShield : (player.maxShield || 0);
             player.ship = playerData.ship || player.ship;
             player.color = playerData.color || player.color;
+            player.avatar = playerData.avatar || player.avatar;
             
             // Debug: Log stat updates
             const oldScore = player.score;

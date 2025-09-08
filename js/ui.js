@@ -11,6 +11,13 @@ export class UI {
         // Initialize Avatar Manager
         this.avatarManager = new AvatarManager();
         
+        // Set up avatar change callback to notify multiplayer
+        this.avatarManager.onAvatarChange = (newAvatar) => {
+            if (this.game && this.game.multiplayer && this.game.multiplayer.connected) {
+                this.game.multiplayer.forceStatsUpdate();
+            }
+        };
+        
         // Add window resize listener to adjust UI when device orientation changes
         window.addEventListener('resize', () => {
             const wasMobile = this.isMobileDevice;
