@@ -22,11 +22,19 @@ app.use(express.static(path.join(__dirname, '..')));
 // Add a home route that shows server status
 app.get('/status', (req, res) => {
   console.log('Status endpoint hit from origin:', req.get('origin'));
+  const now = Date.now();
   res.json({
     status: 'running',
     players: Object.keys(gameState.players).length,
+    activePlayers: Object.keys(playerLastActivity).filter(playerId => 
+      now - (playerLastActivity[playerId] || 0) < 30000
+    ).length,
     uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    npcs: gameState.npcs.length,
+    dreadnaughtActive: gameState.npcs.some(npc => npc.type === 'dreadnaught'),
+    nextDreadnaughtSpawn: nextDreadnaughtSpawn,
+    timeUntilNextDreadnaught: Math.max(0, nextDreadnaughtSpawn - now)
   });
 });
 
@@ -142,6 +150,64 @@ setInterval(() => {
     }
   }
 }, ASTEROID_REGENERATION_TIME);
+
+// Natural Dreadnaught spawning system
+const DREADNAUGHT_MIN_PLAYERS = 2; // Minimum players needed for dreadnaught events
+const DREADNAUGHT_MIN_INTERVAL = 5 * 60 * 1000; // 5 minutes minimum between dreadnaughts
+const DREADNAUGHT_MAX_INTERVAL = 15 * 60 * 1000; // 15 minutes maximum between dreadnaughts
+const DREADNAUGHT_ACTIVITY_THRESHOLD = 30000; // Player must be active within 30 seconds
+
+let lastDreadnaughtSpawn = Date.now();
+let nextDreadnaughtSpawn = Date.now() + DREADNAUGHT_MIN_INTERVAL + Math.random() * (DREADNAUGHT_MAX_INTERVAL - DREADNAUGHT_MIN_INTERVAL);
+
+// Check for natural dreadnaught spawning every 30 seconds
+setInterval(() => {
+  const now = Date.now();
+  const activePlayers = Object.keys(gameState.players).filter(playerId => {
+    const lastActivity = playerLastActivity[playerId] || 0;
+    return now - lastActivity < DREADNAUGHT_ACTIVITY_THRESHOLD;
+  });
+  
+  // Check if conditions are met for dreadnaught spawning
+  const shouldSpawn = (
+    activePlayers.length >= DREADNAUGHT_MIN_PLAYERS && // Enough active players
+    now > nextDreadnaughtSpawn && // Time interval has passed
+    now - lastDreadnaughtSpawn > DREADNAUGHT_MIN_INTERVAL && // Minimum time since last
+    !gameState.npcs.some(npc => npc.type === 'dreadnaught') // No existing dreadnaught
+  );
+  
+  if (shouldSpawn) {
+    console.log(`🛸 NATURAL DREADNAUGHT SPAWN: ${activePlayers.length} active players detected`);
+    
+    // Trigger dreadnaught spawn for a random active player
+    const randomPlayerId = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+    const randomSocket = io.sockets.sockets.get(randomPlayerId);
+    
+    if (randomSocket) {
+      console.log(`🎯 Triggering dreadnaught spawn for player: ${randomPlayerId}`);
+      
+      // Send natural dreadnaught spawn command to the selected player
+      randomSocket.emit('naturalDreadnaughtSpawn', {
+        message: 'You have been chosen to face the Dreadnaught!',
+        spawn: true
+      });
+      
+      // Announce to all players
+      io.emit('serverAnnouncement', {
+        message: '⚠️ DREADNAUGHT THREAT DETECTED - PREPARE FOR BATTLE! ⚠️',
+        color: '#ff4444',
+        duration: 5000,
+        priority: true
+      });
+    }
+    
+    lastDreadnaughtSpawn = now;
+    // Schedule next spawn with some randomness
+    nextDreadnaughtSpawn = now + DREADNAUGHT_MIN_INTERVAL + Math.random() * (DREADNAUGHT_MAX_INTERVAL - DREADNAUGHT_MIN_INTERVAL);
+    
+    console.log(`📅 Next dreadnaught spawn scheduled for: ${new Date(nextDreadnaughtSpawn).toLocaleTimeString()}`);
+  }
+}, 30000); // Check every 30 seconds
 
 // Connection handling
 io.on('connection', (socket) => {
@@ -845,6 +911,36 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('npcClearAll', data);
     
     console.log(`All NPCs cleared by admin ${socket.id}`);
+  });
+
+  // Handle admin request for dreadnaught schedule info
+  socket.on('getDreadnaughtSchedule', () => {
+    const now = Date.now();
+    const timeUntilNext = Math.max(0, nextDreadnaughtSpawn - now);
+    const activePlayers = Object.keys(gameState.players).filter(playerId => {
+      const lastActivity = playerLastActivity[playerId] || 0;
+      return now - lastActivity < DREADNAUGHT_ACTIVITY_THRESHOLD;
+    }).length;
+    
+    socket.emit('dreadnaughtScheduleInfo', {
+      nextSpawnTime: nextDreadnaughtSpawn,
+      timeUntilNext: timeUntilNext,
+      lastSpawnTime: lastDreadnaughtSpawn,
+      activePlayers: activePlayers,
+      minPlayersNeeded: DREADNAUGHT_MIN_PLAYERS,
+      dreadnaughtActive: gameState.npcs.some(npc => npc.type === 'dreadnaught')
+    });
+  });
+
+  // Handle admin force next dreadnaught spawn
+  socket.on('forceNextDreadnaught', () => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Set next spawn to now (will trigger on next check)
+    nextDreadnaughtSpawn = Date.now();
+    
+    console.log(`Admin ${socket.id} forced next dreadnaught spawn`);
+    socket.emit('adminMessage', 'Next dreadnaught spawn triggered! It will spawn within 30 seconds if conditions are met.');
   });
 
   // Handle NPC state updates (position, rotation, etc.)

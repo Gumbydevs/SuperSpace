@@ -1038,6 +1038,47 @@ export class MultiplayerManager {
             }
         });
 
+        // Handle natural dreadnaught spawn events from server
+        this.socket.on('naturalDreadnaughtSpawn', (data) => {
+            console.log('🛸 Server triggered natural dreadnaught spawn!');
+            if (this.game.npcManager && !this.game.npcManager.dreadnaughtActive) {
+                // Spawn the dreadnaught
+                const dreadnaught = this.game.npcManager.spawnDreadnaught();
+                if (dreadnaught) {
+                    console.log('✅ Natural dreadnaught spawned successfully');
+                    
+                    // Show special message for the chosen player
+                    if (data.message) {
+                        this.game.npcManager.showMessage(data.message, '#ffaa00', 4000, true);
+                    }
+                } else {
+                    console.log('❌ Failed to spawn natural dreadnaught');
+                }
+            }
+        });
+
+        // Handle server announcements
+        this.socket.on('serverAnnouncement', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.showMessage(
+                    data.message, 
+                    data.color || '#ffffff', 
+                    data.duration || 3000, 
+                    data.priority || false
+                );
+            }
+        });
+
+        // Handle dreadnaught schedule info response
+        this.socket.on('dreadnaughtScheduleInfo', (data) => {
+            this.updateDreadnaughtScheduleDisplay(data);
+        });
+
+        // Handle admin messages
+        this.socket.on('adminMessage', (message) => {
+            alert(`Server: ${message}`);
+        });
+
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
             // Create unique key for this kill event
@@ -4177,5 +4218,36 @@ export class MultiplayerManager {
                 destroyed: this.game.player.health <= 0
             });
         }
+    }
+
+    // Update dreadnaught schedule display in admin panel
+    updateDreadnaughtScheduleDisplay(data) {
+        const scheduleElement = document.getElementById('dreadnaught-schedule-info');
+        if (!scheduleElement) return;
+
+        const nextSpawnTime = new Date(data.nextSpawnTime);
+        const lastSpawnTime = new Date(data.lastSpawnTime);
+        const timeUntil = data.timeUntilNext;
+
+        let status = '';
+        if (data.dreadnaughtActive) {
+            status = '🛸 <strong style="color: #ff4444;">DREADNAUGHT CURRENTLY ACTIVE</strong>';
+        } else if (timeUntil <= 0) {
+            status = '⚡ <strong style="color: #ffaa00;">READY TO SPAWN</strong> (waiting for conditions)';
+        } else {
+            const minutes = Math.floor(timeUntil / 60000);
+            const seconds = Math.floor((timeUntil % 60000) / 1000);
+            status = `⏳ Next spawn in: <strong>${minutes}m ${seconds}s</strong>`;
+        }
+
+        const conditionsMet = data.activePlayers >= data.minPlayersNeeded;
+        const conditionsColor = conditionsMet ? '#4caf50' : '#ff9800';
+
+        scheduleElement.innerHTML = `
+            ${status}<br>
+            <span style="color: ${conditionsColor};">👥 Active players: ${data.activePlayers}/${data.minPlayersNeeded} required</span><br>
+            <span style="color: #888;">📅 Next scheduled: ${nextSpawnTime.toLocaleTimeString()}</span><br>
+            <span style="color: #888;">🕐 Last spawn: ${lastSpawnTime.toLocaleTimeString()}</span>
+        `;
     }
 }

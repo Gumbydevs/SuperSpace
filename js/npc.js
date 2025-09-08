@@ -1291,4 +1291,44 @@ export class NPCManager {
             npc.velocity = updateData.velocity || { x: 0, y: 0 };
         }
     }
+    
+    // Emergency function to clean up stuck/duplicate NPCs
+    emergencyCleanup() {
+        console.log('Performing emergency NPC cleanup...');
+        
+        // Remove duplicate NPCs (same ID)
+        const seen = new Set();
+        this.npcs = this.npcs.filter(npc => {
+            if (seen.has(npc.id)) {
+                console.log(`Removing duplicate NPC: ${npc.id}`);
+                return false;
+            }
+            seen.add(npc.id);
+            return true;
+        });
+        
+        // Remove NPCs that are too old or in invalid states
+        this.npcs = this.npcs.filter(npc => {
+            const age = Date.now() - npc.spawnTime;
+            if (age > 300000) { // 5 minutes
+                console.log(`Removing old NPC: ${npc.id} (age: ${age}ms)`);
+                return false;
+            }
+            return true;
+        });
+        
+        // Reset dreadnaught flag if no dreadnaughts exist
+        const dreadnaughtExists = this.npcs.some(npc => npc.type === 'dreadnaught');
+        if (!dreadnaughtExists) {
+            this.dreadnaughtActive = false;
+        }
+        
+        // Clear NPC projectiles
+        if (this.world && this.world.npcProjectiles) {
+            this.world.npcProjectiles = [];
+        }
+        
+        console.log(`Emergency cleanup complete. ${this.npcs.length} NPCs remaining.`);
+        this.showMessage(`Emergency cleanup: ${this.npcs.length} NPCs remaining`, '#ff6b6b', 3000);
+    }
 }

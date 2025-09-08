@@ -414,6 +414,15 @@ export class AdminSystem {
                 <button id="clear-npcs" style="background: #844; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Clear All NPCs</button>
                 <button id="emergency-npc-cleanup" style="background: #a44; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🚨 Emergency NPC Cleanup</button>
             </div>
+            
+            <h4 style="color: #ffaa00; margin-top: 20px;">📅 Natural Dreadnaught Schedule</h4>
+            <div style="margin: 10px 0;">
+                <div id="dreadnaught-schedule-info" style="color: #ccc; font-size: 12px; margin-bottom: 10px; background: #1a1a1a; padding: 8px; border-radius: 4px;">
+                    <em>Loading schedule info...</em>
+                </div>
+                <button id="check-dreadnaught-schedule" style="background: #555; border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 8px;">📊 Refresh Schedule</button>
+                <button id="force-next-dreadnaught" style="background: #880; border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer;">⚡ Force Next Spawn</button>
+            </div>
         `;
         
         // Player tools
@@ -461,6 +470,12 @@ export class AdminSystem {
                     break;
                 case 'emergency-npc-cleanup':
                     this.emergencyNPCCleanup();
+                    break;
+                case 'check-dreadnaught-schedule':
+                    this.checkDreadnaughtSchedule();
+                    break;
+                case 'force-next-dreadnaught':
+                    this.forceNextDreadnaught();
                     break;
                 case 'give-credits-btn':
                     this.giveCredits();
@@ -878,6 +893,25 @@ export class AdminSystem {
             alert('Emergency NPC cleanup performed! Check console for details.');
         } else {
             alert('NPC Manager not available!');
+        }
+    }
+    
+    checkDreadnaughtSchedule() {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('getDreadnaughtSchedule');
+        } else {
+            alert('Not connected to server!');
+        }
+    }
+    
+    forceNextDreadnaught() {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            const confirmed = confirm('Force the next natural dreadnaught spawn? This will trigger it within 30 seconds if conditions are met.');
+            if (confirmed) {
+                window.game.multiplayer.socket.emit('forceNextDreadnaught');
+            }
+        } else {
+            alert('Not connected to server!');
         }
     }
     
