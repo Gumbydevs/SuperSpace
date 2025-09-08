@@ -787,14 +787,7 @@ class Game {
         
         // Render the player when actively playing
         if (this.gameState === 'playing') {
-            // Check if player has a ship skin selected
-            if (this.player.shipSkin && this.shipSkins) {
-                // Render with ship skin
-                this.shipSkins.renderShipWithSkin(this.ctx, this.player, this.premiumStore);
-            } else {
-                // Render normal ship
-                this.player.render(this.ctx);
-            }
+            this.player.render(this.ctx);
         }
         
         // Always render other players from multiplayer (even when dying)

@@ -253,13 +253,31 @@ export class ShipSkinSystem {
         }
         
         // Call the original ship render method if available
-        // For shop previews, the ship might not have a render method
         if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
-            // For shop previews, we need to render the actual ship
-            // Get the ship type from the player and render it properly
-            this.renderProperShipForPreview(ctx, ship);
+            // For shop previews, use the actual player's render method
+            if (window.game && window.game.player && typeof window.game.player.render === 'function') {
+                // Temporarily override player position and rotation for preview
+                const originalX = window.game.player.x;
+                const originalY = window.game.player.y;
+                const originalRotation = window.game.player.rotation;
+                
+                window.game.player.x = 0;
+                window.game.player.y = 0;
+                window.game.player.rotation = 0;
+                
+                // Render using the actual player's render method
+                window.game.player.render(ctx);
+                
+                // Restore original position
+                window.game.player.x = originalX;
+                window.game.player.y = originalY;
+                window.game.player.rotation = originalRotation;
+            } else {
+                // Last resort fallback
+                this.renderProperShipForPreview(ctx, ship);
+            }
         }
         
         ctx.restore();
