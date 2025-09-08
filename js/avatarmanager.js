@@ -5,7 +5,7 @@ export class AvatarManager {
     constructor(premiumStore = null) {
         this.selectedAvatar = localStorage.getItem('selectedAvatar') || 'han';
         this.avatarOptions = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
-        this.premiumAvatars = ['golden_astronaut', 'alien_commander', 'cyber_pilot', 'galaxy_explorer', 'neon_warrior'];
+        this.premiumAvatars = ['astronaut_gold', 'alien_commander', 'cyber_pilot', 'galaxy_explorer', 'neon_warrior'];
         this.premiumStore = premiumStore;
         this.initialized = false;
         this.tempSelection = null; // For modal selection
@@ -41,8 +41,6 @@ export class AvatarManager {
     // Setup premium avatars in the modal
     setupPremiumAvatars() {
         console.log('Setting up premium avatars...');
-        const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
-        console.log('Found disabled options:', disabledOptions.length);
         const premiumAvatarData = [
             { id: 'astronaut_gold', name: 'Golden Ace' },
             { id: 'alien_commander', name: 'Zorg Prime' }, 
@@ -51,38 +49,71 @@ export class AvatarManager {
             { id: 'neon_warrior', name: 'Neon Ghost' }
         ];
 
-        // Replace the first 5 disabled options with premium avatars
-        for (let i = 0; i < Math.min(5, disabledOptions.length); i++) {
+        console.log('Available premium avatars:', premiumAvatarData.length);
+        
+        // Step 1: Reset all premium slots - remove premium data from disabled options
+        const allOptions = document.querySelectorAll('.avatar-option');
+        allOptions.forEach(option => {
+            const avatarId = option.dataset.avatar;
+            if (avatarId && premiumAvatarData.some(p => p.id === avatarId)) {
+                // This is a premium slot - reset it first
+                const lockIcon = option.querySelector('.premium-lock');
+                if (lockIcon) lockIcon.remove();
+                
+                // Reset styling
+                option.style.border = '';
+                option.style.background = '';
+                
+                if (!this.ownsAvatar(avatarId)) {
+                    // If we don't own it, make it disabled and remove the data
+                    option.classList.add('disabled');
+                    delete option.dataset.avatar;
+                    option.querySelector('.avatar-name').textContent = 'LOCKED';
+                }
+            }
+        });
+
+        // Step 2: Assign premium avatars to disabled slots
+        const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
+        console.log('Found disabled options after reset:', disabledOptions.length);
+        
+        for (let i = 0; i < Math.min(premiumAvatarData.length, disabledOptions.length); i++) {
             const option = disabledOptions[i];
             const premiumData = premiumAvatarData[i];
+            
+            // Set up the premium avatar slot
+            option.dataset.avatar = premiumData.id;
+            option.querySelector('.avatar-name').textContent = premiumData.name;
+            
+            console.log(`Setting up ${premiumData.name} (${premiumData.id}), owned: ${this.ownsAvatar(premiumData.id)}`);
             
             if (this.ownsAvatar(premiumData.id)) {
                 // Player owns this avatar - enable it
                 option.classList.remove('disabled');
-                option.dataset.avatar = premiumData.id;
-                option.querySelector('.avatar-name').textContent = premiumData.name;
-                
-                // Add premium styling
+                // Add premium styling for owned
                 option.style.border = '2px solid #FFD700';
                 option.style.background = 'linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 255, 255, 0.05))';
             } else {
                 // Player doesn't own this avatar - show as premium locked
-                option.dataset.avatar = premiumData.id;
-                option.querySelector('.avatar-name').textContent = premiumData.name;
+                option.classList.add('disabled');
                 option.style.border = '2px solid #888';
                 option.style.background = 'linear-gradient(45deg, rgba(136, 136, 136, 0.1), rgba(0, 0, 0, 0.3))';
                 
                 // Add premium lock icon
                 const lockIcon = document.createElement('div');
                 lockIcon.innerHTML = '🔒';
+                lockIcon.className = 'premium-lock';
                 lockIcon.style.position = 'absolute';
                 lockIcon.style.top = '5px';
                 lockIcon.style.right = '5px';
                 lockIcon.style.fontSize = '12px';
+                lockIcon.style.zIndex = '10';
                 option.style.position = 'relative';
                 option.appendChild(lockIcon);
             }
         }
+        
+        console.log('Premium avatar setup complete');
     }
 
     // Method to initialize after DOM is ready
