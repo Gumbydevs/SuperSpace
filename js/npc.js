@@ -86,7 +86,18 @@ export class NPCManager {
     
     // Spawn the massive Dreadnaught boss
     spawnDreadnaught() {
-        if (this.dreadnaughtActive) return; // Only one dreadnaught at a time
+        if (this.dreadnaughtActive) {
+            console.log('Dreadnaught already active, cannot spawn another');
+            return null; // Only one dreadnaught at a time
+        }
+        
+        // Double-check by looking for existing dreadnaughts
+        const existingDreadnaught = this.npcs.find(npc => npc.type === 'dreadnaught');
+        if (existingDreadnaught) {
+            console.log('Found existing dreadnaught in NPC list, cannot spawn');
+            this.dreadnaughtActive = true;
+            return null;
+        }
         
         // Spawn at edge of map
         const spawnSide = Math.floor(Math.random() * 4);
@@ -228,6 +239,12 @@ export class NPCManager {
                 this.updateAlienScout(npc, deltaTime, player);
             } else if (npc.type === 'dreadnaught') {
                 this.updateDreadnaught(npc, deltaTime, player);
+            }
+            
+            // Broadcast NPC state updates for local NPCs (throttled)
+            if (!npc.isRemote && (!npc.lastBroadcast || Date.now() - npc.lastBroadcast > 100)) {
+                this.broadcastNPCUpdate(npc);
+                npc.lastBroadcast = Date.now();
             }
             
             // Remove NPCs that have left the map
@@ -547,6 +564,12 @@ export class NPCManager {
     
     // Fire alien scout weapon
     fireAlienWeapon(alien, target) {
+        // SAFETY: Never fire weapons for remote NPCs
+        if (alien.isRemote) {
+            console.warn('Attempted to fire weapon for remote NPC, blocked!');
+            return;
+        }
+        
         const dx = target.x - alien.x;
         const dy = target.y - alien.y;
         const angle = Math.atan2(dy, dx);
@@ -599,6 +622,12 @@ export class NPCManager {
     
     // Fire dreadnaught weapons
     fireDreadnaughtWeapons(dreadnaught, targets, deltaTime) {
+        // SAFETY: Never fire weapons for remote NPCs
+        if (dreadnaught.isRemote) {
+            console.warn('Attempted to fire dreadnaught weapons for remote NPC, blocked!');
+            return;
+        }
+        
         const currentTime = Date.now();
         
         // Burst fire system
@@ -1020,6 +1049,8 @@ export class NPCManager {
     
     // Clear all NPCs
     clearAll() {
+        console.log(`Clearing ${this.npcs.length} NPCs`);
+        
         // Broadcast NPC clear to other players
         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
             window.game.multiplayer.socket.emit('npcClearAll', {});
@@ -1027,9 +1058,47 @@ export class NPCManager {
         
         this.npcs = [];
         this.dreadnaughtActive = false;
+        this.dreadnaughtWarningSent = false;
+        
         if (this.world.npcProjectiles) {
             this.world.npcProjectiles = [];
         }
+        
+        this.showMessage('All NPCs cleared!', '#ff6b6b', 3000);
+    }
+    
+    // Emergency function to clean up stuck/duplicate NPCs
+    emergencyCleanup() {
+        console.log('Performing emergency NPC cleanup...');
+        
+        // Remove duplicate NPCs (same ID)
+        const seen = new Set();
+        this.npcs = this.npcs.filter(npc => {
+            if (seen.has(npc.id)) {
+                console.log(`Removing duplicate NPC: ${npc.id}`);
+                return false;
+            }
+            seen.add(npc.id);
+            return true;
+        });
+        
+        // Remove NPCs that are too old or in invalid states
+        this.npcs = this.npcs.filter(npc => {
+            const age = Date.now() - npc.spawnTime;
+            if (age > 300000) { // 5 minutes
+                console.log(`Removing old NPC: ${npc.id} (age: ${age}ms)`);
+                return false;
+            }
+            return true;
+        });
+        
+        // Reset dreadnaught flag if no dreadnaughts exist
+        const dreadnaughtExists = this.npcs.some(npc => npc.type === 'dreadnaught');
+        if (!dreadnaughtExists) {
+            this.dreadnaughtActive = false;
+        }
+        
+        console.log(`Emergency cleanup complete. ${this.npcs.length} NPCs remaining.`);
     }
     
     // Broadcast NPC spawn to other players
@@ -1074,11 +1143,35 @@ export class NPCManager {
         }
     }
     
+    // Broadcast NPC state updates to other players (position, rotation, state)
+    broadcastNPCUpdate(npc) {
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.socket.emit('npcUpdate', {
+                id: npc.id,
+                x: npc.x,
+                y: npc.y,
+                rotation: npc.rotation,
+                state: npc.state,
+                health: npc.health,
+                velocity: npc.velocity
+            });
+        }
+    }
+    
     // Handle receiving NPC data from other players
     handleRemoteNPCSpawn(npcData) {
         // Check if NPC already exists
         const existingNPC = this.npcs.find(npc => npc.id === npcData.id);
-        if (existingNPC) return;
+        if (existingNPC) {
+            console.log(`NPC ${npcData.id} already exists, skipping duplicate spawn`);
+            return;
+        }
+        
+        // Prevent spawning too many NPCs to avoid performance issues
+        if (this.npcs.length > 20) {
+            console.log('Too many NPCs already spawned, ignoring remote spawn');
+            return;
+        }
         
         // Create remote NPC (AI disabled for remote NPCs)
         const remoteNPC = {
@@ -1093,7 +1186,11 @@ export class NPCManager {
             speed: npcData.speed,
             state: 'remote', // Mark as remote
             velocity: { x: 0, y: 0 },
-            // Visual effects
+            // Essential for preventing issues
+            lastFireTime: 0,
+            fireRate: 1000,
+            spawnTime: Date.now(),
+            // Visual effects only
             glowPhase: Math.random() * Math.PI * 2,
             shieldPhase: 0,
             engineGlowPhase: 0,
@@ -1102,11 +1199,13 @@ export class NPCManager {
         };
         
         this.npcs.push(remoteNPC);
+        console.log(`Remote NPC spawned: ${npcData.type} (${npcData.id})`);
         
+        // Reduced intensity warnings for remote NPCs
         if (npcData.type === 'dreadnaught') {
-            this.showDreadnaughtWarning();
+            this.showMessage('⚠️ DREADNAUGHT DETECTED', '#ff4444', 2000);
         } else if (npcData.type === 'alien_scout') {
-            this.showMessage('⚠️ ALIEN DETECTED', '#0f0', 2000);
+            this.showMessage('⚠️ ALIEN DETECTED', '#0f0', 1500);
         }
     }
     
@@ -1150,5 +1249,19 @@ export class NPCManager {
         this.npcs = [];
         this.dreadnaughtActive = false;
         this.showMessage('All NPCs cleared by admin', '#ff6b6b', 3000);
+    }
+    
+    // Handle remote NPC updates (position, state, etc.)
+    handleRemoteNPCUpdate(updateData) {
+        const npc = this.npcs.find(npc => npc.id === updateData.id);
+        if (npc && npc.isRemote) {
+            // Update position and state
+            npc.x = updateData.x;
+            npc.y = updateData.y;
+            npc.rotation = updateData.rotation;
+            npc.state = updateData.state;
+            npc.health = updateData.health;
+            npc.velocity = updateData.velocity || { x: 0, y: 0 };
+        }
     }
 }

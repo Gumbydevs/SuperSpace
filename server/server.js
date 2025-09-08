@@ -846,6 +846,25 @@ io.on('connection', (socket) => {
     
     console.log(`All NPCs cleared by admin ${socket.id}`);
   });
+
+  // Handle NPC state updates (position, rotation, etc.)
+  socket.on('npcUpdate', (updateData) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Update NPC in server game state
+    const npc = gameState.npcs.find(npc => npc.id === updateData.id && npc.spawnerId === socket.id);
+    if (npc) {
+      npc.x = updateData.x;
+      npc.y = updateData.y;
+      npc.rotation = updateData.rotation;
+      npc.state = updateData.state;
+      npc.health = updateData.health;
+      npc.lastUpdate = Date.now();
+    }
+    
+    // Broadcast NPC update to all other players
+    socket.broadcast.emit('npcUpdate', updateData);
+  });
   
   // Ping/heartbeat from client (to keep connection alive and reset inactivity timer)
   socket.on('ping', () => {

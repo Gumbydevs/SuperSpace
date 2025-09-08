@@ -1031,6 +1031,13 @@ export class MultiplayerManager {
             }
         });
 
+        // Handle NPC update events (position, state sync)
+        this.socket.on('npcUpdate', (data) => {
+            if (this.game.npcManager) {
+                this.game.npcManager.handleRemoteNPCUpdate(data);
+            }
+        });
+
         // Handle player destruction
         this.socket.on('playerDestroyed', (data) => {
             // Create unique key for this kill event

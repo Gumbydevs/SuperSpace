@@ -412,6 +412,7 @@ export class AdminSystem {
                 <button id="spawn-dreadnaught" style="background: #f00; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">⚠️ SPAWN DREADNAUGHT</button>
                 <button id="spawn-aliens" style="background: #0a4; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">👽 Spawn Aliens</button>
                 <button id="clear-npcs" style="background: #844; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Clear All NPCs</button>
+                <button id="emergency-npc-cleanup" style="background: #a44; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">🚨 Emergency NPC Cleanup</button>
             </div>
         `;
         
@@ -457,6 +458,9 @@ export class AdminSystem {
                     break;
                 case 'clear-npcs':
                     this.clearNPCs();
+                    break;
+                case 'emergency-npc-cleanup':
+                    this.emergencyNPCCleanup();
                     break;
                 case 'give-credits-btn':
                     this.giveCredits();
@@ -863,6 +867,15 @@ export class AdminSystem {
             const npcCount = window.npcManager.getNPCCount();
             window.npcManager.clearAll();
             alert(`Cleared ${npcCount} NPCs!`);
+        } else {
+            alert('NPC Manager not available!');
+        }
+    }
+    
+    emergencyNPCCleanup() {
+        if (window.game && window.npcManager) {
+            window.npcManager.emergencyCleanup();
+            alert('Emergency NPC cleanup performed! Check console for details.');
         } else {
             alert('NPC Manager not available!');
         }
