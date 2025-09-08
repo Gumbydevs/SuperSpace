@@ -3531,6 +3531,13 @@ export class MultiplayerManager {
                 ctx.closePath();
                 ctx.fill();
                 
+                // Add white outline for black ships
+                if (shipColor === '#000') {
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
                 // Cockpit
                 ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
                 ctx.beginPath();
@@ -3609,6 +3616,13 @@ export class MultiplayerManager {
                 ctx.lineTo(8, -20); // Right front angled edge
                 ctx.closePath();
                 ctx.fill();
+                
+                // Add white outline for black ships
+                if (shipColor === '#000') {
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
                 
                 // Heavy armor plating
                 ctx.strokeStyle = 'rgba(60, 60, 60, 0.8)';
@@ -3719,6 +3733,13 @@ export class MultiplayerManager {
                 ctx.closePath();
                 ctx.fill();
                 
+                // Add white outline for black ships
+                if (shipColor === '#000') {
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
                 // Stealth panels with subtle gradient
                 const stealthGradient = ctx.createLinearGradient(0, -15, 0, 15);
                 stealthGradient.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
@@ -3791,6 +3812,13 @@ export class MultiplayerManager {
                 ctx.lineTo(4, -10); // right nose edge
                 ctx.closePath();
                 ctx.fill();
+                
+                // Add white outline for black ships
+                if (shipColor === '#000') {
+                    ctx.strokeStyle = '#ddd';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
                 
                 // Cockpit canopy
                 ctx.fillStyle = 'rgba(130, 200, 255, 0.7)';
