@@ -61,7 +61,8 @@ const INACTIVITY_CHECK_INTERVAL = 30000; // 30 seconds in milliseconds
 const gameState = {
   players: {},
   asteroids: [],
-  powerups: []
+  powerups: [],
+  npcs: [] // Add NPC tracking
 };
 
 // Track last activity time for each player
@@ -789,6 +790,62 @@ io.on('connection', (socket) => {
     
     console.log(`Shield disruption: ${socket.id} -> ${data.targetId} for ${data.duration}s`);
   });
+
+  // Handle NPC spawn events
+  socket.on('npcSpawn', (npcData) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Add NPC to server game state
+    gameState.npcs.push({
+      ...npcData,
+      spawnerId: socket.id,
+      spawnTime: Date.now()
+    });
+    
+    // Broadcast NPC spawn to all other players
+    socket.broadcast.emit('npcSpawn', npcData);
+    
+    console.log(`NPC spawned: ${npcData.type} (${npcData.id}) by player ${socket.id}`);
+  });
+
+  // Handle NPC destruction events
+  socket.on('npcDestroyed', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Remove NPC from server game state
+    gameState.npcs = gameState.npcs.filter(npc => npc.id !== data.npcId);
+    
+    // Broadcast NPC destruction to all other players
+    socket.broadcast.emit('npcDestroyed', data);
+    
+    console.log(`NPC destroyed: ${data.npcId} by player ${socket.id}`);
+  });
+
+  // Handle NPC leaving events
+  socket.on('npcLeaving', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Remove NPC from server game state
+    gameState.npcs = gameState.npcs.filter(npc => npc.id !== data.npcId);
+    
+    // Broadcast NPC leaving to all other players
+    socket.broadcast.emit('npcLeaving', data);
+    
+    console.log(`NPC leaving: ${data.npcId}`);
+  });
+
+  // Handle admin NPC clear events
+  socket.on('npcClearAll', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    
+    // Clear all NPCs from server game state
+    gameState.npcs = [];
+    
+    // Broadcast NPC clear to all other players
+    socket.broadcast.emit('npcClearAll', data);
+    
+    console.log(`All NPCs cleared by admin ${socket.id}`);
+  });
   
   // Ping/heartbeat from client (to keep connection alive and reset inactivity timer)
   socket.on('ping', () => {
@@ -832,6 +889,20 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (gameState.players[socket.id]) {
       console.log(`Player ${gameState.players[socket.id].name} disconnected`);
+      
+      // Clean up NPCs spawned by this player
+      const playerNPCs = gameState.npcs.filter(npc => npc.spawnerId === socket.id);
+      if (playerNPCs.length > 0) {
+        console.log(`Cleaning up ${playerNPCs.length} NPCs spawned by disconnected player`);
+        
+        // Remove NPCs from game state
+        gameState.npcs = gameState.npcs.filter(npc => npc.spawnerId !== socket.id);
+        
+        // Notify all clients to remove these NPCs
+        playerNPCs.forEach(npc => {
+          socket.broadcast.emit('npcDestroyed', { npcId: npc.id });
+        });
+      }
       
       // Send player left message to all other clients
       socket.broadcast.emit('playerLeft', socket.id);
