@@ -1211,10 +1211,18 @@ export class MultiplayerManager {
                 }
             }
             
-            // Update player names to use server-provided data when available
-            const killerName = data.killerName || (data.attackerId === this.playerId ? 
-                'You' : 
-                (this.players[data.attackerId]?.name || this.playerNameCache[data.attackerId] || 'Another player'));
+
+            // Determine if the killer is an NPC (Alien or Dreadnaught)
+            let killerName;
+            if (data.npcType === 'alien_scout' || data.npcType === 'Alien') {
+                killerName = 'Alien';
+            } else if (data.npcType === 'dreadnaught' || data.npcType === 'Dreadnaught') {
+                killerName = 'Dreadnaught';
+            } else {
+                killerName = data.killerName || (data.attackerId === this.playerId ? 
+                    'You' : 
+                    (this.players[data.attackerId]?.name || this.playerNameCache[data.attackerId] || 'Another player'));
+            }
 
             const victimName = data.playerId === this.playerId ? 
                 'you' : 
