@@ -1,7 +1,5 @@
-// TEMPORARY: Analytics reset endpoint (secure with secret key)
-const fs = require('fs').promises;
-const analyticsDataDir = require('path').join(__dirname, 'analytics_data');
-app.post('/analytics/reset', async (req, res) => {
+// GET endpoint for analytics reset (for browser use)
+app.get('/analytics/reset', async (req, res) => {
   const secret = req.query.secret;
   if (secret !== 'superspaceRESET_8f7c2b1e4d9a') {
     return res.status(403).json({ error: 'Forbidden' });
@@ -30,6 +28,9 @@ app.post('/analytics/reset', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// TEMPORARY: Analytics reset endpoint (secure with secret key)
+const fs = require('fs').promises;
+const analyticsDataDir = require('path').join(__dirname, 'analytics_data');
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
