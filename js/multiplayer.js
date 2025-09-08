@@ -3297,8 +3297,10 @@ export class MultiplayerManager {
             // Generate small avatar for this player
             if (window.ui && window.ui.avatarManager) {
                 const avatarDataUrl = window.ui.avatarManager.generateSmallAvatar(player.avatar);
-                profilePicture.style.backgroundImage = `url(${avatarDataUrl})`;
-                profilePicture.style.backgroundColor = 'transparent';
+                if (avatarDataUrl) {
+                    profilePicture.style.backgroundImage = `url(${avatarDataUrl})`;
+                    profilePicture.style.backgroundColor = 'transparent';
+                }
             }
 
             const playerName = document.createElement('span');

@@ -729,6 +729,9 @@ export class AvatarManager {
                 ctx.fillRect(2, 12, 12, 4);
                 break;
         }
+        
+        // Return the canvas as data URL for use in player list
+        return canvas.toDataURL();
     }
     
     // Draw premium avatars
