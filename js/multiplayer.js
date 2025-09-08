@@ -11,7 +11,7 @@ export class MultiplayerManager {
         this.playerId = null;
         
         // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
-        this.GAME_VERSION = "2025.09.07.002"; // Format: YYYY.MM.DD.increment
+        this.GAME_VERSION = "2025.09.07.003"; // Format: YYYY.MM.DD.increment
         
         // Check for version reset before loading any data
         this.checkAndHandleVersionReset();
@@ -306,9 +306,23 @@ export class MultiplayerManager {
         // Reload the shop system if it exists
         if (this.game && this.game.shop) {
             console.log('🔄 Reinitializing shop system...');
-            this.game.shop.loadOwnedItems();
-            this.game.shop.loadCurrentShip();
+            this.game.shop.loadCurrentEquipment();
+            this.game.shop.applyAllPurchasedUpgrades();
             this.game.shop.updateShopContent();
+        }
+        
+        // Force update the player credits and state
+        if (this.game && this.game.player) {
+            console.log('🔄 Reloading player credits from localStorage...');
+            // Reload credits from localStorage - use direct property access to avoid double localStorage write
+            this.game.player._credits = parseInt(localStorage.getItem('playerCredits') || 0);
+            
+            // Force update the credits display
+            const creditsElement = document.getElementById('credits');
+            if (creditsElement) {
+                creditsElement.textContent = this.game.player.credits;
+                console.log(`💰 Credits display updated to: ${this.game.player.credits}`);
+            }
         }
         
         // Refresh UI elements
