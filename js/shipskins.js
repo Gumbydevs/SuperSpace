@@ -257,8 +257,9 @@ export class ShipSkinSystem {
         if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
-            // Fallback: render a basic ship for preview
-            this.renderBasicShipForPreview(ctx, ship);
+            // For shop previews, we need to render the actual ship
+            // Get the ship type from the player and render it properly
+            this.renderProperShipForPreview(ctx, ship);
         }
         
         ctx.restore();
@@ -412,30 +413,46 @@ export class ShipSkinSystem {
         ctx.restore();
     }
     
-    // Basic ship rendering for shop previews
-    renderBasicShipForPreview(ctx, ship) {
+    // Proper ship rendering for shop previews
+    renderProperShipForPreview(ctx, ship) {
         const shipColor = ship.getShipColor ? ship.getShipColor() : '#33f';
         const engineColor = ship.getEngineColor ? ship.getEngineColor() : '#f66';
         
-        // Draw basic ship shape for preview
+        // Use the same ship rendering as the actual game
+        // This is based on the default ship design from player.js
+        
         ctx.fillStyle = shipColor;
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1;
         
-        // Simple triangular ship
+        // Main ship body (triangle with rounded edges)
         ctx.beginPath();
-        ctx.moveTo(15, 0);   // Nose
-        ctx.lineTo(-10, -8); // Left wing
-        ctx.lineTo(-5, 0);   // Center back
-        ctx.lineTo(-10, 8);  // Right wing
+        ctx.moveTo(12, 0);    // Nose point
+        ctx.lineTo(-8, -6);   // Left wing
+        ctx.lineTo(-6, -3);   // Left inner
+        ctx.lineTo(-6, 3);    // Right inner  
+        ctx.lineTo(-8, 6);    // Right wing
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
         
-        // Engine glow
-        ctx.fillStyle = engineColor + '88';
+        // Cockpit detail
+        ctx.fillStyle = '#444';
         ctx.beginPath();
-        ctx.arc(-7, 0, 3, 0, Math.PI * 2);
+        ctx.arc(2, 0, 2, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Engine glow
+        ctx.fillStyle = engineColor;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(-6, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        
+        // Wing tips
+        ctx.fillStyle = '#aaa';
+        ctx.fillRect(-8, -6, 2, 1);
+        ctx.fillRect(-8, 5, 2, 1);
     }
 }
