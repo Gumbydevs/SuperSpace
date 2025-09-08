@@ -764,6 +764,35 @@ input[type="range"] {
     transform: translateY(-50%) scale(0.95);
 }
 
+/* Futuristic style for menu buttons - unified for desktop and mobile */
+#menu button {
+    font-family: 'Orbitron', 'Courier New', monospace !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #8cf !important;
+    background: linear-gradient(90deg, #111a40 0%, #2233aa 100%) !important;
+    border: 2px solid #33f !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 12px #33f4, 0 0 3px #fff2 !important;
+    text-shadow: 0 0 6px #33f, 0 0 1px #fff !important;
+    transition: all 0.2s cubic-bezier(.4,2,.6,1) !important;
+    min-height: 48px !important;
+    min-width: 120px !important;
+    padding: 12px 24px !important;
+    margin: 8px !important;
+    touch-action: manipulation !important;
+}
+
+#menu button:hover {
+    background: linear-gradient(90deg, #2233aa 0%, #111a40 100%) !important;
+    color: #fff !important;
+    border-color: #8cf !important;
+    box-shadow: 0 0 18px #8cf8, 0 0 6px #fff4 !important;
+    transform: scale(1.04) !important;
+}
+
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
     /* Shop button for Mobile Only */
@@ -793,38 +822,7 @@ input[type="range"] {
         font-size: 2.5rem;
         margin: 20px 0;
     }
-    
 
-    
-    /* Futuristic style for menu buttons - unified for desktop and mobile */
-    #menu button {
-        font-family: 'Orbitron', 'Courier New', monospace !important;
-        font-weight: 600 !important;
-        font-size: 1.1rem !important;
-        letter-spacing: 0.08em !important;
-        text-transform: uppercase !important;
-        color: #8cf !important;
-        background: linear-gradient(90deg, #111a40 0%, #2233aa 100%) !important;
-        border: 2px solid #33f !important;
-        border-radius: 8px !important;
-        box-shadow: 0 0 12px #33f4, 0 0 3px #fff2 !important;
-        text-shadow: 0 0 6px #33f, 0 0 1px #fff !important;
-        transition: all 0.2s cubic-bezier(.4,2,.6,1) !important;
-        min-height: 48px !important;
-        min-width: 120px !important;
-        padding: 12px 24px !important;
-        margin: 8px !important;
-        touch-action: manipulation !important;
-    }
-    
-    #menu button:hover {
-        background: linear-gradient(90deg, #2233aa 0%, #111a40 100%) !important;
-        color: #fff !important;
-        border-color: #8cf !important;
-        box-shadow: 0 0 18px #8cf8, 0 0 6px #fff4 !important;
-        transform: scale(1.04) !important;
-    }
-    
     /* Options overlay mobile adjustments */
     .options-panel {
         width: 95%;
