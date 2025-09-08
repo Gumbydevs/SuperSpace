@@ -7,7 +7,7 @@ class GameAnalytics {
     constructor() {
         this.sessionId = this.generateSessionId();
         this.sessionStartTime = Date.now();
-        this.playerId = null;
+        this.playerId = this.getOrCreatePlayerId();
         this.playerIp = null; // Server will track this
         this.events = [];
         this.isEnabled = true;
@@ -38,13 +38,26 @@ class GameAnalytics {
         this.trackSessionStart();
     }
     
+    getOrCreatePlayerId() {
+        let pid = localStorage.getItem('superspace_player_id');
+        if (!pid) {
+            pid = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('superspace_player_id', pid);
+        }
+        return pid;
+    }
+    
     generateSessionId() {
         return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
     setPlayerId(id) {
-        this.playerId = id;
-        this.trackEvent('player_identified', { playerId: id });
+        // Only set if not already set (persistent)
+        if (!this.playerId) {
+            this.playerId = id;
+            localStorage.setItem('superspace_player_id', id);
+        }
+        this.trackEvent('player_identified', { playerId: this.playerId });
     }
     
     setupEventListeners() {

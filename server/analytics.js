@@ -94,15 +94,16 @@ class ServerAnalytics {
     
     updateSession(event) {
         const { sessionId, playerId } = event;
-        
-        if (!this.sessions.has(sessionId)) {
-            this.sessions.set(sessionId, {
-                sessionId,
+        // Use playerId as the main key for presence and stats
+        if (!this.sessions.has(playerId)) {
+            this.sessions.set(playerId, {
                 playerId,
+                sessionIds: new Set([sessionId]),
                 startTime: event.timestamp,
                 lastActivity: event.timestamp,
                 events: [],
                 ip: event.clientIp,
+                totalConnectedTime: 0,
                 gameStats: {
                     gamesPlayed: 0,
                     totalGameTime: 0,
@@ -116,12 +117,12 @@ class ServerAnalytics {
                     challengesCompleted: new Set()
                 }
             });
+        } else {
+            this.sessions.get(playerId).sessionIds.add(sessionId);
         }
-        
-        const session = this.sessions.get(sessionId);
+        const session = this.sessions.get(playerId);
         session.lastActivity = event.timestamp;
         session.events.push(event);
-        
         // Keep only last 100 events per session to manage memory
         if (session.events.length > 100) {
             session.events = session.events.slice(-100);
@@ -441,7 +442,8 @@ class ServerAnalytics {
     getCurrentStats() {
         const today = this.getDateString();
         const todayStats = this.dailyStats.get(today) || this.createEmptyDayStats();
-        
+        // Only count unique playerIds for active sessions
+        const activePlayerIds = Array.from(this.sessions.keys());
         return {
             today: {
                 ...todayStats,
@@ -454,7 +456,7 @@ class ServerAnalytics {
                     ? todayStats.gamesCompleted / todayStats.gamesStarted 
                     : 0
             },
-            activeSessions: this.sessions.size,
+            activeSessions: activePlayerIds.length,
             recentEvents: this.events.slice(-50), // Last 50 events
             totalPlayers: this.playerProfiles.size
         };
