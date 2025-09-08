@@ -1867,6 +1867,9 @@ export class ShopSystem {
         const shipSkinsSection = document.createElement('div');
         shipSkinsSection.style.marginBottom = '20px';
         
+        // Get current ship type first
+        const currentShipType = this.player.shipType || 'scout'; // Default to scout
+
         const shipSkinsLabel = document.createElement('div');
         shipSkinsLabel.textContent = `🌟 Premium Ship Skins - ${currentShipType.charAt(0).toUpperCase() + currentShipType.slice(1)}`;
         shipSkinsLabel.style.fontWeight = 'bold';
@@ -1879,14 +1882,11 @@ export class ShopSystem {
         const allOwnedSkins = purchases.skins || [];
         
         // Filter skins for current ship type only
-        const currentShipType = this.player.shipType || 'scout'; // Default to scout
         const ownedSkins = allOwnedSkins.filter(skinId => {
             // Check if this skin is for the current ship type
             const skinData = window.game.premiumStore.shipSkins.find(skin => skin.id === skinId);
             return skinData && skinData.shipType === currentShipType;
-        });
-        
-        if (ownedSkins.length > 0) {
+        });        if (ownedSkins.length > 0) {
             // Create skins grid
             const skinsGrid = document.createElement('div');
             skinsGrid.style.display = 'grid';
