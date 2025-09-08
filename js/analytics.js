@@ -13,8 +13,19 @@ class GameAnalytics {
         this.isEnabled = true;
 
         // Always connect analytics socket to the correct server
-        if (!window.socket || !window.socket.io || window.socket.io.uri !== "https://superspace-server.onrender.com") {
-            window.socket = io("https://superspace-server.onrender.com");
+        this.socketAvailable = false;
+        try {
+            if (typeof io === 'function') {
+                if (!window.socket || !window.socket.io || window.socket.io.uri !== "https://superspace-server.onrender.com") {
+                    window.socket = io("https://superspace-server.onrender.com");
+                }
+                this.socketAvailable = !!(window.socket && window.socket.emit);
+            } else {
+                console.warn('Analytics: Socket.IO client not found. Analytics will buffer locally only.');
+            }
+        } catch (e) {
+            console.warn('Analytics: failed to initialize socket:', e);
+            this.socketAvailable = false;
         }
 
         // Session tracking
@@ -39,12 +50,17 @@ class GameAnalytics {
     }
     
     getOrCreatePlayerId() {
-        let pid = localStorage.getItem('superspace_player_id');
-        if (!pid) {
-            pid = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('superspace_player_id', pid);
+        try {
+            let pid = localStorage.getItem('superspace_player_id');
+            if (!pid) {
+                pid = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                try { localStorage.setItem('superspace_player_id', pid); } catch(e) { /* ignore */ }
+            }
+            return pid;
+        } catch (e) {
+            // localStorage may be unavailable in some browsers/privacy modes
+            return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
-        return pid;
     }
     
     generateSessionId() {
@@ -78,7 +94,7 @@ class GameAnalytics {
     
     trackEvent(eventType, data = {}) {
         if (!this.isEnabled) return;
-        
+
         const event = {
             sessionId: this.sessionId,
             playerId: this.playerId,
@@ -86,18 +102,26 @@ class GameAnalytics {
             timestamp: Date.now(),
             data: data
         };
-        
-        // Send immediately to server via socket
-        if (window.socket) {
-            window.socket.emit('analytics_event', event);
+
+        // Send immediately to server via socket (guarded)
+        if (this.socketAvailable && window.socket && typeof window.socket.emit === 'function') {
+            try {
+                window.socket.emit('analytics_event', event);
+            } catch (e) {
+                console.warn('Analytics: socket emit failed', e);
+                this.socketAvailable = false;
+            }
         }
-        
+
         // Also store locally as backup
-        this.events.push(event);
-        
-        // Keep only last 100 events in memory
-        if (this.events.length > 100) {
-            this.events = this.events.slice(-100);
+        try {
+            this.events.push(event);
+            // Keep only last 100 events in memory
+            if (this.events.length > 100) {
+                this.events = this.events.slice(-100);
+            }
+        } catch (e) {
+            // ignore push errors
         }
     }
     
@@ -242,7 +266,7 @@ class GameAnalytics {
     trackKill(victimId, weapon) {
         if (this.currentGameSession) {
             this.currentGameSession.kills++;
-            this.currentGameSession.weaponsUsed.add(weapon);
+            if (weapon) this.currentGameSession.weaponsUsed.add(weapon);
         }
         
         this.trackEvent('player_kill', {
@@ -278,7 +302,7 @@ class GameAnalytics {
     trackWeaponFire(weapon, target) {
         if (this.currentGameSession) {
             this.currentGameSession.shotsFired++;
-            this.currentGameSession.weaponsUsed.add(weapon);
+            if (weapon) this.currentGameSession.weaponsUsed.add(weapon);
         }
         
         this.trackEvent('weapon_fire', {

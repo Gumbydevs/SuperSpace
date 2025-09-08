@@ -24,6 +24,9 @@ app.use(cors({
   credentials: false
 }));
 
+// Allow JSON bodies (used by admin endpoints)
+app.use(express.json());
+
 // Serve static files from the parent directory
 app.use(express.static(path.join(__dirname, '..')));
 
@@ -92,6 +95,43 @@ app.get('/analytics/retention', (req, res) => {
   } catch (error) {
     console.error('Error getting retention data:', error);
     res.status(500).json({ error: 'Failed to get retention data' });
+  }
+});
+
+// Debug endpoint - shows current sessions and today's dailyStats for troubleshooting
+app.get('/analytics/debug', (req, res) => {
+  try {
+    const sessions = [];
+    for (const [playerId, s] of analytics.sessions.entries()) {
+      sessions.push({
+        playerId,
+        sessionIds: Array.from(s.sessionIds || []),
+        startTime: s.startTime,
+        lastActivity: s.lastActivity,
+        events: s.events ? s.events.length : 0,
+        ip: s.ip
+      });
+    }
+
+    const today = analytics.getDateString();
+    const todayStats = analytics.dailyStats.get(today) || analytics.createEmptyDayStats();
+
+    res.json({
+      sessions,
+      currentActive: analytics.currentActive || 0,
+      globalPeak: analytics.globalPeak || 0,
+      today: {
+        date: today,
+        totalSessions: todayStats.totalSessions || 0,
+        uniqueSessions: (todayStats.uniqueSessions && typeof todayStats.uniqueSessions.size === 'number') ? todayStats.uniqueSessions.size : (Array.isArray(todayStats.uniqueSessions) ? todayStats.uniqueSessions.length : 0),
+        currentConcurrent: todayStats.currentConcurrent || 0,
+        peakConcurrent: todayStats.peakConcurrent || 0,
+        sessionDurations: todayStats.sessionDurations ? todayStats.sessionDurations.slice(-20) : []
+      }
+    });
+  } catch (e) {
+    console.error('Error in analytics debug endpoint:', e);
+    res.status(500).json({ error: 'debug failed' });
   }
 });
 
@@ -279,6 +319,29 @@ io.on('connection', (socket) => {
       const clientIp = socket.request.connection.remoteAddress || 
                        socket.request.headers['x-forwarded-for'] || 
                        'unknown';
+      // Basic per-socket rate limiting (simple sliding window)
+      socket.analytics = socket.analytics || {};
+      const now = Date.now();
+      const windowMs = 60000; // 60s window
+      const maxPerWindow = 600; // 600 events / minute (10/s) - adjust if needed
+      if (!socket.analytics.windowStart || now - socket.analytics.windowStart > windowMs) {
+        socket.analytics.windowStart = now;
+        socket.analytics.windowCount = 0;
+      }
+      socket.analytics.windowCount = (socket.analytics.windowCount || 0) + 1;
+      if (socket.analytics.windowCount > maxPerWindow) {
+        // drop noisy client events
+        console.warn(`Analytics rate limit exceeded for socket ${socket.id}`);
+        return;
+      }
+
+      // Basic validation to avoid malformed/spoofed data
+      const validEvent = eventData && typeof eventData === 'object' && typeof eventData.eventType === 'string' && (typeof eventData.timestamp === 'number' || !eventData.timestamp);
+      if (!validEvent) {
+        console.warn(`Invalid analytics_event from ${socket.id}:`, eventData && eventData.eventType);
+        return;
+      }
+
       // Forward to analytics
       analytics.processEvent(eventData, clientIp);
 
@@ -1284,4 +1347,60 @@ function getRandomColor() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`SuperSpace multiplayer server running on port ${PORT}`);
+});
+
+// Secure reset endpoint for analytics data (POST only, requires header)
+app.post('/analytics/reset', async (req, res) => {
+  try {
+    const secretHeader = req.get('x-analytics-secret');
+    const envSecret = process.env.ANALYTICS_RESET_SECRET || 'superspaceRESET_8f7c2b1e4d9a';
+    if (!secretHeader || secretHeader !== envSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Remove analytics data directory contents safely
+    const dir = path.join(__dirname, 'analytics_data');
+    console.log('Admin requested analytics reset');
+    try {
+      // delete files but keep directory
+      const items = await fs.readdir(dir);
+      for (const item of items) {
+        const p = path.join(dir, item);
+        // remove files or directories recursively
+        await fs.rm(p, { recursive: true, force: true });
+      }
+    } catch (e) {
+      // ignore errors reading dir
+      console.error('Error clearing analytics dir:', e);
+    }
+
+    // Recreate directories and re-init analytics state
+    try {
+      await fs.mkdir(path.join(dir, 'daily'), { recursive: true });
+      await fs.mkdir(path.join(dir, 'sessions'), { recursive: true });
+      await fs.mkdir(path.join(dir, 'players'), { recursive: true });
+    } catch (e) {
+      console.error('Error recreating analytics dirs:', e);
+    }
+
+    // Reset in-memory analytics instance
+    try {
+      analytics.dailyStats = new Map();
+      analytics.playerProfiles = new Map();
+      analytics.events = [];
+      analytics.sessions = new Map();
+      analytics.currentActive = 0;
+      analytics.globalPeak = 0;
+      await analytics.saveMeta();
+      // create today's empty stats
+      analytics.dailyStats.set(analytics.getDateString(), analytics.createEmptyDayStats());
+    } catch (e) {
+      console.error('Error resetting analytics in memory:', e);
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error in analytics reset:', error);
+    res.status(500).json({ error: 'Reset failed' });
+  }
 });

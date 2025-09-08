@@ -5,16 +5,14 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-
 class ServerAnalytics {
     constructor() {
         this.dataDir = path.join(__dirname, 'analytics_data');
-        this.sessions = new Map(); // Active sessions
-        this.dailyStats = new Map(); // Daily aggregated stats
-        this.playerProfiles = new Map(); // Player behavior profiles
-        this.events = []; // Recent events buffer
-        this.maxEventsBuffer = 10000; // Keep last 10k events in memory
-    this.currentActive = 0; // number of currently active unique players (by playerId)
+    this.sessions = new Map(); // Active sessions
+    this.dailyStats = new Map(); // Daily aggregated stats
+    this.playerProfiles = new Map(); // Player behavior profiles
+    this.events = []; // Recent events buffer
+    this.maxEventsBuffer = 10000; // Keep last 10k events in memory
     this.globalPeak = 0; // all-time peak concurrent players
     this.metaFile = path.join(this.dataDir, 'meta.json');
     this.reaperIntervalMs = 60000; // check every 60s
@@ -95,7 +93,6 @@ class ServerAnalytics {
         } catch (error) {
             console.error('Error loading existing data:', error);
         }
-    }
     
     processEvent(eventData, clientIp) {
         try {
@@ -107,7 +104,7 @@ class ServerAnalytics {
                 day: this.getDateString(),
                 hour: new Date().getHours()
             };
-            
+
             // Add to events buffer
             this.events.push(enrichedEvent);
             if (this.events.length > this.maxEventsBuffer) {
@@ -159,13 +156,13 @@ class ServerAnalytics {
                     challengesCompleted: new Set()
                 }
             });
-            // New unique active player connected
-            this.currentActive++;
+            // New unique active player connected — compute current concurrent from sessions size
             const today = this.getDateString();
             if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
             const stats = this.dailyStats.get(today);
-            stats.currentConcurrent = (stats.currentConcurrent || 0) + 1;
-            stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, stats.currentConcurrent);
+            const concurrent = this.sessions.size; // after adding
+            stats.currentConcurrent = concurrent;
+            stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, concurrent);
             // update globalPeak and persist if increased
             const newGlobal = Math.max(this.globalPeak || 0, stats.peakConcurrent || 0);
             if (newGlobal > this.globalPeak) {
@@ -211,10 +208,6 @@ class ServerAnalytics {
         switch (event.eventType) {
             case 'session_start':
                 stats.totalSessions++;
-                // increment concurrent counter for the day
-                stats.currentConcurrent = (stats.currentConcurrent || 0) + 1;
-                stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, stats.currentConcurrent);
-                this.globalPeak = Math.max(this.globalPeak, stats.peakConcurrent);
                 break;
                 
             case 'game_start':
@@ -358,8 +351,12 @@ class ServerAnalytics {
             // Clean up session from memory after some time
             setTimeout(() => {
                 this.sessions.delete(playerId);
-                // update currentActive
-                if (this.currentActive && this.currentActive > 0) this.currentActive--;
+                // refresh today's concurrent counter
+                const day = this.getDateString();
+                if (this.dailyStats.has(day)) {
+                    const stats = this.dailyStats.get(day);
+                    stats.currentConcurrent = this.sessions.size;
+                }
             }, 300000); // 5 minutes
         }
     }
@@ -608,9 +605,12 @@ class ServerAnalytics {
                 if (stats.currentConcurrent && stats.currentConcurrent > 0) stats.currentConcurrent--;
             }
 
-            // Remove session and update active counter
+            // Remove session and refresh today's concurrent counter
             this.sessions.delete(playerId);
-            if (this.currentActive && this.currentActive > 0) this.currentActive--;
+            if (this.dailyStats.has(day)) {
+                const stats = this.dailyStats.get(day);
+                stats.currentConcurrent = this.sessions.size;
+            }
         } catch (e) {
             console.error('Error handling immediate session end:', e);
         }
