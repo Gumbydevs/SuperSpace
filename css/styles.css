@@ -687,6 +687,12 @@ input[type="range"] {
     cursor: pointer;
     font-family: inherit;
     font-size: 14px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #shop-btn:hover {
