@@ -329,6 +329,9 @@ export class PremiumStore {
         this.saveSpaceGems();
         this.savePremiumPurchases();
         
+        // Update owned status to sync the .owned properties
+        this.updateOwnedStatus();
+        
         // Refresh avatar manager if an avatar was purchased
         if (itemType === 'avatar' && this.avatarManager) {
             console.log('Refreshing avatar manager after avatar purchase...');
@@ -339,6 +342,16 @@ export class PremiumStore {
         }
         
         console.log(`Purchased ${item.name} for ${item.gemPrice} Space Gems`);
+        
+        // Add global debug function
+        window.debugPurchaseState = () => {
+            console.log('=== PURCHASE DEBUG STATE ===');
+            console.log('Space Gems:', this.spaceGems);
+            console.log('Premium Purchases:', this.premiumPurchases);
+            console.log('Premium Avatars with owned status:', this.premiumAvatars.map(a => ({id: a.id, owned: a.owned})));
+            console.log('localStorage premiumPurchases:', JSON.parse(localStorage.getItem('premiumPurchases') || '{}'));
+        };
+        
         return true;
     }
     
