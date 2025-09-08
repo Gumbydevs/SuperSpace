@@ -1983,7 +1983,7 @@ export class ShopSystem {
         
         // Notify multiplayer system of appearance change
         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-            window.game.multiplayer.forceStatsUpdate();
+            window.game.multiplayer.broadcastStatsUpdate();
         }
         
         // Update shop display

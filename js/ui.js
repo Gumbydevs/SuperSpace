@@ -14,7 +14,7 @@ export class UI {
         // Set up avatar change callback to notify multiplayer
         this.avatarManager.onAvatarChange = (newAvatar) => {
             if (this.game && this.game.multiplayer && this.game.multiplayer.connected) {
-                this.game.multiplayer.forceStatsUpdate();
+                this.game.multiplayer.broadcastStatsUpdate();
             }
         };
         
