@@ -237,6 +237,7 @@ io.on('connection', (socket) => {
       player.maxShield = data.maxShield || 0;
       player.ship = data.ship;
       player.color = data.color || player.color;
+      player.avatar = data.avatar || player.avatar; // Update avatar data
       
       // Update stats from client (since client calculates scores immediately)
       if (data.score !== undefined) {
@@ -284,6 +285,7 @@ io.on('connection', (socket) => {
         maxShield: player.maxShield,
         ship: player.ship,
         color: player.color,
+        avatar: player.avatar, // Include avatar data
         score: player.score,
         wins: player.wins,
         losses: player.losses,
