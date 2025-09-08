@@ -1,4 +1,7 @@
-// GET endpoint for analytics reset (for browser use)
+
+// ...existing code...
+
+// GET endpoint for analytics reset (for browser use) - must come after app, fs, analyticsDataDir, analytics are defined
 app.get('/analytics/reset', async (req, res) => {
   const secret = req.query.secret;
   if (secret !== 'superspaceRESET_8f7c2b1e4d9a') {
