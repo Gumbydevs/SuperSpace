@@ -1,7 +1,7 @@
 export class ShopSystem {
     constructor(player) {
         this.player = player;
-        this.MAX_LOADOUT = 3; // Maximum purchasable weapons per run
+        // Removed MAX_LOADOUT - players can now equip unlimited weapons
         this.shopOpen = false;
         this.currentTab = 'ships'; // 'ships', 'weapons', 'upgrades'
         
@@ -1069,18 +1069,14 @@ export class ShopSystem {
                 button.onclick = () => this.selectWeapon(weapon.id);
                 button.style.backgroundColor = '#3f3';
             } else {
-                const currentOwned = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
-                const atLoadoutLimit = currentOwned >= this.MAX_LOADOUT;
                 const cannotAfford = (this.player.credits || 0) < weapon.price;
                 
                 button.textContent = `Buy (${weapon.price})`;
-                button.disabled = cannotAfford || atLoadoutLimit;
+                button.disabled = cannotAfford;
                 button.onclick = () => this.buyWeapon(weapon.id);
                 button.style.backgroundColor = '#33f';
                 
-                if (atLoadoutLimit) {
-                    button.title = `Loadout limit reached (${this.MAX_LOADOUT} weapons max per run)`;
-                } else if (cannotAfford) {
+                if (cannotAfford) {
                     button.title = 'Insufficient credits';
                 }
             }
@@ -1997,12 +1993,6 @@ export class ShopSystem {
     buyWeapon(weaponId) {
         const weapon = this.availableWeapons.find(w => w.id === weaponId);
         if (!weapon || weapon.owned || (this.player.credits || 0) < weapon.price) {
-            return;
-        }
-        
-        // Check loadout limit (prevent buying beyond max weapons per run)
-        const currentOwned = this.availableWeapons.filter(w => w.owned && w.price > 0).length;
-        if (currentOwned >= this.MAX_LOADOUT) {
             return;
         }
         
