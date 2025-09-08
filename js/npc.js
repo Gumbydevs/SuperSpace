@@ -143,8 +143,8 @@ export class NPCManager {
             burstMax: 5,
             burstCooldown: 3000,
             lastBurstTime: 0,
-            aggroRange: 800,
-            attackRange: 600,
+            aggroRange: 1000, // Increased aggro range for earlier detection
+            attackRange: 700, // Slightly increased attack range
             
             // Visual effects
             shieldPhase: 0,
@@ -452,7 +452,20 @@ export class NPCManager {
             }
         });
         
-        dreadnaught.target = closestTarget;
+        // Improved target selection - reduce target flipping
+        if (dreadnaught.target && closestTarget) {
+            const currentTargetDistance = Math.sqrt(
+                (dreadnaught.target.x - dreadnaught.x) ** 2 + 
+                (dreadnaught.target.y - dreadnaught.y) ** 2
+            );
+            
+            // Only switch targets if new target is significantly closer (25% closer)
+            if (closestDistance < currentTargetDistance * 0.75) {
+                dreadnaught.target = closestTarget;
+            }
+        } else {
+            dreadnaught.target = closestTarget;
+        }
         
         // Update last player contact time if any players are nearby
         if (closestTarget && closestDistance < dreadnaught.aggroRange * 1.5) {
@@ -502,12 +515,26 @@ export class NPCManager {
             const dy = dreadnaught.targetPosition.y - dreadnaught.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            if (distance < 100) {
+            // Switch to combat mode earlier if players are nearby
+            if (distance < 100 || (closestTarget && closestDistance < dreadnaught.aggroRange)) {
                 dreadnaught.state = 'combat';
             } else {
                 dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
                 dreadnaught.velocity.x = Math.cos(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
                 dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+            }
+            
+            // Fire weapons while approaching if players are in range and attacking
+            if (closestTarget && closestDistance < dreadnaught.attackRange) {
+                const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
+                if (!targetInSafeZone) {
+                    // Face the target while approaching
+                    const targetDx = closestTarget.x - dreadnaught.x;
+                    const targetDy = closestTarget.y - dreadnaught.y;
+                    dreadnaught.rotation = Math.atan2(targetDy, targetDx) + Math.PI / 2;
+                    
+                    this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
+                }
             }
         } else if (dreadnaught.state === 'combat') {
             // Combat maneuvers - slow circle strafe, but avoid safe zone

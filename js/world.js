@@ -715,13 +715,19 @@
                     const dy = projectile.y - npc.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distance < npc.radius + 15) { // Generous collision detection
-                        // Hit NPC
+                    // Improved collision detection - smaller hitbox for dreadnaught hull
+                    let hitRadius = npc.radius;
+                    if (npc.type === 'dreadnaught') {
+                        // Use a more realistic hull hitbox for dreadnaught (smaller than visual radius)
+                        hitRadius = npc.radius * 0.7; // 70% of visual size for hull hits
+                    }
+
+                    if (distance < hitRadius + 10) { // Hit NPC
                         npc.health -= projectile.damage;
                         
                         // Create hit effect at impact point
-                        const impactX = npc.x + (dx / distance) * npc.radius;
-                        const impactY = npc.y + (dy / distance) * npc.radius;
+                        const impactX = npc.x + (dx / distance) * hitRadius;
+                        const impactY = npc.y + (dy / distance) * hitRadius;
                         this.createProjectileHitEffect(impactX, impactY, npc.radius * 0.5, soundManager);
                         
                         // Handle special projectile effects
@@ -774,6 +780,40 @@
                     if (window.game.multiplayer.connected) {
                         window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
                     }
+                }
+            });
+        }
+
+        // Check collisions between player and NPCs
+        if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
+            window.game.npcManager.npcs.forEach(npc => {
+                if (!npc || npc.isRemote) return; // Skip invalid or remote NPCs
+                
+                const dx = player.x - npc.x;
+                const dy = player.y - npc.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Use different collision radii for different NPC types
+                let npcCollisionRadius = npc.radius * 0.8; // Slightly smaller than visual radius
+                if (npc.type === 'dreadnaught') {
+                    npcCollisionRadius = npc.radius * 0.6; // Tighter collision for dreadnaught hull
+                }
+                
+                if (distance < player.collisionRadius + npcCollisionRadius) {
+                    // Handle collision with NPC
+                    const damage = npc.type === 'dreadnaught' ? 25 : 15; // More damage from dreadnaught
+                    player.takeDamage(damage);
+                    
+                    // Create collision effect
+                    this.createProjectileHitEffect(player.x, player.y, player.collisionRadius, soundManager);
+                    
+                    // Push player away from NPC
+                    const pushForce = 100;
+                    const angle = Math.atan2(dy, dx);
+                    player.velocity.x += Math.cos(angle) * pushForce;
+                    player.velocity.y += Math.sin(angle) * pushForce;
+                    
+                    console.log(`Player collided with ${npc.type} for ${damage} damage!`);
                 }
             });
         }
