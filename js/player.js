@@ -1617,7 +1617,24 @@ export class Player {
                 }
             }
             
-            // Draw different ship based on the currentShip property
+            // Use ship skins system for consistent rendering with premium skins
+            if (window.game && window.game.shipSkins) {
+                // Create a temporary ship object for the skins system
+                const tempShip = {
+                    x: 0, // Already translated
+                    y: 0,
+                    rotation: 0, // Already rotated
+                    currentShip: this.currentShip,
+                    shipSkin: this.shipSkin,
+                    shipColor: this.shipColor,
+                    engineColor: this.engineColor,
+                    getShipColor: () => this.shipColor,
+                    getEngineColor: () => this.engineColor
+                };
+                
+                window.game.shipSkins.renderShipWithSkin(ctx, tempShip, window.game.premiumStore);
+            } else {
+                // Fallback: Draw different ship based on the currentShip property
             switch(this.currentShip) {
                 case 'fighter':
                     // Enhanced fighter ship design
@@ -2554,12 +2571,11 @@ export class Player {
             ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
             ctx.fill();
             ctx.globalCompositeOperation = 'source-over';
-        }
-        
-        ctx.restore();
-    }
-
-    updateMiningBeam(deltaTime, soundManager) {
+                }
+            }
+            
+            ctx.restore();
+        }    updateMiningBeam(deltaTime, soundManager) {
         // Get weapon stats
         let weaponStats = null;
         if (window.shopSystem && window.shopSystem.availableWeapons) {

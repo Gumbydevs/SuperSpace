@@ -255,23 +255,19 @@ export class ShipSkinSystem {
         let skinId = ship.shipSkin || this.getActiveSkin(ship.currentShip);
         const appearance = skinId ? this.getSkinAppearance(premiumStore, ship.currentShip, skinId) : null;
         
-        // If we have a skin, temporarily override the ship colors
+        // If we have a skin, temporarily override the ship colors BEFORE rendering
         const originalShipColor = ship.shipColor;
         const originalEngineColor = ship.engineColor;
         
         if (appearance) {
+            // Override ship colors with skin colors
             ship.shipColor = appearance.color;
             ship.engineColor = appearance.accent || appearance.color;
         }
         
         ctx.save();
         
-        // Apply any special skin effects
-        if (appearance) {
-            this.applySkinEffects(ctx, ship, appearance);
-        }
-        
-        // Call the original ship render method if available
+        // First render the ship with the new colors (if any)
         if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
@@ -279,9 +275,14 @@ export class ShipSkinSystem {
             this.renderShipHullOnly(ctx, ship);
         }
         
+        // THEN apply any special skin effects on top
+        if (appearance && appearance.effect) {
+            this.applySkinEffects(ctx, ship, appearance);
+        }
+        
         ctx.restore();
         
-        // Restore original colors
+        // Restore original colors after rendering
         if (appearance) {
             ship.shipColor = originalShipColor;
             ship.engineColor = originalEngineColor;
