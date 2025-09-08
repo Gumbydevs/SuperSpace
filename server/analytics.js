@@ -8,21 +8,21 @@ const path = require('path');
 class ServerAnalytics {
     constructor() {
         this.dataDir = path.join(__dirname, 'analytics_data');
-    this.sessions = new Map(); // Active sessions
-    this.dailyStats = new Map(); // Daily aggregated stats
-    this.playerProfiles = new Map(); // Player behavior profiles
-    this.events = []; // Recent events buffer
-    this.maxEventsBuffer = 10000; // Keep last 10k events in memory
-    this.globalPeak = 0; // all-time peak concurrent players
-    this.metaFile = path.join(this.dataDir, 'meta.json');
-    this.reaperIntervalMs = 60000; // check every 60s
-    this.sessionTimeoutMs = 180000; // 3 minutes inactivity => consider session ended
+        this.sessions = new Map(); // Active sessions
+        this.dailyStats = new Map(); // Daily aggregated stats
+        this.playerProfiles = new Map(); // Player behavior profiles
+        this.events = []; // Recent events buffer
+        this.maxEventsBuffer = 10000; // Keep last 10k events in memory
+        this.globalPeak = 0; // all-time peak concurrent players
+        this.metaFile = path.join(this.dataDir, 'meta.json');
+        this.reaperIntervalMs = 60000; // check every 60s
+        this.sessionTimeoutMs = 180000; // 3 minutes inactivity => consider session ended
         
         this.initializeStorage();
-    // load persisted meta (globalPeak)
-    this.loadMeta();
-    // start session reaper
-    this.startSessionReaper();
+        // load persisted meta (globalPeak)
+        this.loadMeta();
+        // start session reaper
+        this.startSessionReaper();
         this.startPeriodicSave();
         
         console.log('Server Analytics initialized');
