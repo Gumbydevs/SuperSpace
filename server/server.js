@@ -1,36 +1,4 @@
-
 // ...existing code...
-
-// GET endpoint for analytics reset (for browser use) - must come after app, fs, analyticsDataDir, analytics are defined
-app.get('/analytics/reset', async (req, res) => {
-  const secret = req.query.secret;
-  if (secret !== 'superspaceRESET_8f7c2b1e4d9a') {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-  try {
-    // Delete all files in analytics_data subfolders
-    const subdirs = ['daily', 'sessions', 'players'];
-    for (const sub of subdirs) {
-      const dir = require('path').join(analyticsDataDir, sub);
-      try {
-        const files = await fs.readdir(dir);
-        for (const file of files) {
-          await fs.unlink(require('path').join(dir, file));
-        }
-      } catch (e) { /* ignore if folder missing */ }
-    }
-    // Also clear in-memory analytics
-    if (analytics) {
-      analytics.sessions = new Map();
-      analytics.dailyStats = new Map();
-      analytics.playerProfiles = new Map();
-      analytics.events = [];
-    }
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 // TEMPORARY: Analytics reset endpoint (secure with secret key)
 const fs = require('fs').promises;
 const analyticsDataDir = require('path').join(__dirname, 'analytics_data');
