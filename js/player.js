@@ -22,6 +22,9 @@ export class Player {
         this.shipColor = localStorage.getItem('playerShipColor') || '#33f';
         this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
         this.color = this.shipColor; // Multiplayer color reference
+        
+        // Ship skin - load from localStorage
+        this.shipSkin = localStorage.getItem('selectedShipSkin') || 'none';
 
         // Add collision properties
         this.collisionRadius = 15; // Radius used for collision detection
@@ -2133,6 +2136,26 @@ export class Player {
         // If in multiplayer, notify others of the color change
         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
             window.game.multiplayer.sendEngineColorUpdate(color);
+        }
+    }
+    
+    // Getter methods for ship skin system compatibility
+    getShipColor() {
+        return this.shipColor;
+    }
+    
+    getEngineColor() {
+        return this.engineColor;
+    }
+    
+    // Set ship skin and notify multiplayer
+    setShipSkin(skinId) {
+        this.shipSkin = skinId;
+        localStorage.setItem('selectedShipSkin', skinId);
+        
+        // If in multiplayer, notify others of the skin change
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendShipSkinUpdate(skinId);
         }
     }
 

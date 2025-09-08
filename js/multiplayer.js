@@ -1415,6 +1415,10 @@ export class MultiplayerManager {
         this.socket.on('engineColorUpdate', (data) => {
             this.handleRemoteEngineColorUpdate(data.playerId, data.color);
         });
+        
+        this.socket.on('shipSkinUpdate', (data) => {
+            this.handleRemoteShipSkinUpdate(data.playerId, data.skinId);
+        });
 
         // Handle projectile explosions from other players
         this.socket.on('projectileExplosion', (data) => {
@@ -1508,6 +1512,7 @@ export class MultiplayerManager {
             color: this.game.player.color || '#0f0',
             shipColor: this.game.player.shipColor || '#33f',
             engineColor: this.game.player.engineColor || '#f66',
+            shipSkin: this.game.player.shipSkin || 'none',
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0,
@@ -1536,6 +1541,7 @@ export class MultiplayerManager {
                 color: this.game.player.color || '#0f0',
                 shipColor: this.game.player.shipColor || '#33f',
                 engineColor: this.game.player.engineColor || '#f66',
+                shipSkin: this.game.player.shipSkin || 'none',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
                 losses: this.game.player.losses || 0,
@@ -1857,6 +1863,15 @@ export class MultiplayerManager {
         });
     }
     
+    // Send ship skin update to server and other players
+    sendShipSkinUpdate(skinId) {
+        if (!this.connected) return;
+        
+        this.socket.emit('shipSkinUpdate', {
+            skinId: skinId
+        });
+    }
+    
     // Handle remote player's ship color update
     handleRemoteShipColorUpdate(playerId, color) {
         if (this.players[playerId]) {
@@ -1869,6 +1884,13 @@ export class MultiplayerManager {
     handleRemoteEngineColorUpdate(playerId, color) {
         if (this.players[playerId]) {
             this.players[playerId].engineColor = color;
+        }
+    }
+    
+    // Handle remote player's ship skin update
+    handleRemoteShipSkinUpdate(playerId, skinId) {
+        if (this.players[playerId]) {
+            this.players[playerId].shipSkin = skinId;
         }
     }
 
@@ -3659,6 +3681,23 @@ export class MultiplayerManager {
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
+            
+            // Check if player has a ship skin and game has ship skin system
+            if (player.shipSkin && player.shipSkin !== 'none' && this.game.shipSkins) {
+                // Use ship skin system to render with skin
+                const tempPlayer = {
+                    ...player,
+                    x: 0, // Already translated
+                    y: 0,
+                    angle: 0, // Already rotated
+                    getShipColor: () => player.shipColor || player.color || '#f00',
+                    getEngineColor: () => player.engineColor || '#6ff'
+                };
+                
+                this.game.shipSkins.renderShipWithSkin(ctx, tempPlayer, this.game.premiumStore);
+                ctx.restore();
+                return; // Early return since skin system handles the rendering
+            }
             
             // Get ship color - use player's color or fallback
             const shipColor = player.shipColor || player.color || '#f00';

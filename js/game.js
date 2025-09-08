@@ -13,6 +13,10 @@ import { AdminSystem } from './adminsystem.js';
 import { SkillSystem } from './skillSystem.js';
 import { ChallengeSystem } from './challenges.js';
 import { NPCManager } from './npc.js';
+import { PremiumStore } from './premiumstore.js';
+import { ShipSkinSystem } from './shipskins.js';
+import { AvatarManager } from './avatarmanager.js';
+import { PayPalIntegration } from './paypal-integration.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -38,6 +42,14 @@ class Game {
         
         this.soundManager = new SoundManager();  // Handles all game audio
         this.shop = new ShopSystem(this.player);  // In-game shop for upgrades
+        this.premiumStore = new PremiumStore(this.player);  // Premium monetization store
+        this.shipSkins = new ShipSkinSystem();  // Ship skin system
+        this.avatarManager = new AvatarManager(this.premiumStore);  // Avatar manager with premium support
+        this.paypalIntegration = new PayPalIntegration(this.premiumStore);  // PayPal payment system
+        
+        // Connect systems to premium store
+        this.premiumStore.setAvatarManager(this.avatarManager);
+        this.premiumStore.setPayPalIntegration(this.paypalIntegration);
         this.achievements = new AchievementSystem(this.player);  // Achievement tracking system
         this.playerProfile = new PlayerProfile(this.player);  // Player statistics and profile
         this.adminSystem = new AdminSystem();  // Admin tools and management
@@ -62,6 +74,18 @@ class Game {
         // Here we make the canvas fullscreen and respond to window resizing
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // Add mouse click handling for premium store
+        this.canvas.addEventListener('click', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Handle premium store clicks
+            if (this.premiumStore.handleClick(x, y, this.canvas)) {
+                return; // Click was handled by premium store
+            }
+        });
 
         // Set up event listeners for menu buttons
         document.getElementById('play-btn').addEventListener('click', () => {
@@ -86,6 +110,7 @@ class Game {
         this.createMuteButton();
         this.createMusicButton();
         this.createShopButton();
+        this.createPremiumStoreButton();
         this.createAdminButton();
         
         // Set up keyboard shortcuts
@@ -97,6 +122,9 @@ class Game {
         // GUARANTEED EXPLOSION SYSTEM
         // This uses a DOM-based approach as fallback to ensure explosions always appear
         this.setupGuaranteedExplosionSystem();
+        
+        // Check for pending PayPal payments
+        this.processPendingPayments();
     }
     
         // Helper function to track analytics events
@@ -296,13 +324,49 @@ class Game {
         document.body.appendChild(shopBtn);
     }
     
+    // Here we create a premium store button for cosmetic purchases
+    createPremiumStoreButton() {
+        const premiumBtn = document.createElement('button');
+        premiumBtn.textContent = '💎 Premium';
+        premiumBtn.id = 'premium-btn';
+        // Style the premium button with a special premium look
+        premiumBtn.style.position = 'absolute';
+        premiumBtn.style.top = '114px'; // Position below shop button
+        premiumBtn.style.right = '0px';
+        premiumBtn.style.zIndex = '1002';
+        premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
+        premiumBtn.style.color = 'white';
+        premiumBtn.style.border = '2px solid #ffd700';
+        premiumBtn.style.borderRadius = '8px';
+        premiumBtn.style.padding = '6px 12px';
+        premiumBtn.style.cursor = 'pointer';
+        premiumBtn.style.display = 'none';  // Initially hidden until game starts
+        premiumBtn.style.fontWeight = 'bold';
+        premiumBtn.style.textShadow = '0 0 5px rgba(255, 215, 0, 0.5)';
+        premiumBtn.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+        
+        // Add hover effect
+        premiumBtn.onmouseenter = () => {
+            premiumBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.6)';
+            premiumBtn.style.transform = 'scale(1.05)';
+        };
+        premiumBtn.onmouseleave = () => {
+            premiumBtn.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+            premiumBtn.style.transform = 'scale(1)';
+        };
+        
+        // Set up click handler to toggle premium store visibility
+        premiumBtn.onclick = () => this.togglePremiumStore();
+        document.body.appendChild(premiumBtn);
+    }
+    
     // Here we create an admin button for game management
     createAdminButton() {
         const adminBtn = document.createElement('button');
         adminBtn.textContent = '⚙️ Admin';
         adminBtn.id = 'admin-btn';
         adminBtn.style.position = 'absolute';
-        adminBtn.style.top = '114px'; // Position below shop button (no profile button anymore)
+        adminBtn.style.top = '152px'; // Position below premium button
         adminBtn.style.right = '0px';
         adminBtn.style.zIndex = '1002';
         adminBtn.style.background = 'rgba(50, 0, 0, 0.7)';
@@ -335,6 +399,37 @@ class Game {
         // Only allow shop access when playing
         if (this.gameState === 'playing') {
             this.shop.toggleShop();
+        }
+    }
+    
+    // Here we toggle the premium store interface on/off
+    togglePremiumStore() {
+        // Allow premium store access during menu or playing
+        if (this.gameState === 'menu' || this.gameState === 'playing') {
+            this.premiumStore.toggleStore();
+        }
+    }
+    
+    // Process pending PayPal payments
+    processPendingPayments() {
+        const pendingPayment = localStorage.getItem('pendingPayment');
+        if (pendingPayment) {
+            try {
+                const payment = JSON.parse(pendingPayment);
+                if (!payment.processed) {
+                    // Process the payment
+                    this.paypalIntegration.handlePaymentSuccess(payment.itemNumber, payment.transactionId);
+                    
+                    // Mark as processed
+                    payment.processed = true;
+                    localStorage.setItem('pendingPayment', JSON.stringify(payment));
+                    
+                    console.log('Processed pending PayPal payment:', payment);
+                }
+            } catch (e) {
+                console.error('Failed to process pending payment:', e);
+                localStorage.removeItem('pendingPayment'); // Remove invalid data
+            }
         }
     }
     
@@ -476,6 +571,9 @@ class Game {
         
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
+        
+        // Show premium store button 
+        document.getElementById('premium-btn').style.display = 'block';
         
         // Show gameplay UI elements
         this.ui.setGameplayUIVisibility(true);
@@ -685,7 +783,12 @@ class Game {
         
         // Render the player when actively playing
         if (this.gameState === 'playing') {
-            this.player.render(this.ctx);
+            // Use ship skin system if available
+            if (this.shipSkins) {
+                this.shipSkins.renderShipWithSkin(this.ctx, this.player, this.premiumStore);
+            } else {
+                this.player.render(this.ctx);
+            }
         }
         
         // Always render other players from multiplayer (even when dying)
@@ -705,6 +808,9 @@ class Game {
         if (this.gameState === 'playing') {
             this.ui.renderFireRateBoostTimer(this.ctx, this.player);
         }
+        
+        // Render premium store overlay (can be accessed from menu or playing)
+        this.premiumStore.render(this.ctx, this.canvas);
     }
 
     // Here we handle the game over state
@@ -784,6 +890,9 @@ class Game {
             
             // Hide shop button
             document.getElementById('shop-btn').style.display = 'none';
+            
+            // Hide premium store button
+            document.getElementById('premium-btn').style.display = 'none';
         }, 3000); // 3 second delay to see explosion and ship parts
     }
     
@@ -1208,6 +1317,9 @@ class Game {
         
         // Show shop button again
         document.getElementById('shop-btn').style.display = 'block';
+        
+        // Show premium store button again
+        document.getElementById('premium-btn').style.display = 'block';
         
         // Reset game state to playing
         this.gameState = 'playing';

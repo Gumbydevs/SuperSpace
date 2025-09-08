@@ -2,9 +2,11 @@
 // Handles pilot avatar selection and rendering retro-style portraits
 
 export class AvatarManager {
-    constructor() {
+    constructor(premiumStore = null) {
         this.selectedAvatar = localStorage.getItem('selectedAvatar') || 'han';
         this.avatarOptions = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
+        this.premiumAvatars = ['golden_astronaut', 'alien_commander', 'cyber_pilot', 'galaxy_explorer', 'neon_warrior'];
+        this.premiumStore = premiumStore;
         this.initialized = false;
         this.tempSelection = null; // For modal selection
         
@@ -17,9 +19,61 @@ export class AvatarManager {
         if (avatarOptions.length > 0) {
             this.setupAvatarSelection();
             this.setupModalControls();
+            this.setupPremiumAvatars();
             this.drawAllAvatars();
             this.drawProfileAvatar();
             this.initialized = true;
+        }
+    }
+
+    // Check if player owns a premium avatar
+    ownsAvatar(avatarId) {
+        const purchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+        return purchases.avatars && purchases.avatars.includes(avatarId);
+    }
+
+    // Setup premium avatars in the modal
+    setupPremiumAvatars() {
+        const disabledOptions = document.querySelectorAll('.avatar-option.disabled');
+        const premiumAvatarData = [
+            { id: 'golden_astronaut', name: 'Golden Ace' },
+            { id: 'alien_commander', name: 'Zorg Prime' }, 
+            { id: 'cyber_pilot', name: 'Cyber-X' },
+            { id: 'galaxy_explorer', name: 'Nova Star' },
+            { id: 'neon_warrior', name: 'Neon Ghost' }
+        ];
+
+        // Replace the first 5 disabled options with premium avatars
+        for (let i = 0; i < Math.min(5, disabledOptions.length); i++) {
+            const option = disabledOptions[i];
+            const premiumData = premiumAvatarData[i];
+            
+            if (this.ownsAvatar(premiumData.id)) {
+                // Player owns this avatar - enable it
+                option.classList.remove('disabled');
+                option.dataset.avatar = premiumData.id;
+                option.querySelector('.avatar-name').textContent = premiumData.name;
+                
+                // Add premium styling
+                option.style.border = '2px solid #FFD700';
+                option.style.background = 'linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 255, 255, 0.05))';
+            } else {
+                // Player doesn't own this avatar - show as premium locked
+                option.dataset.avatar = premiumData.id;
+                option.querySelector('.avatar-name').textContent = premiumData.name;
+                option.style.border = '2px solid #888';
+                option.style.background = 'linear-gradient(45deg, rgba(136, 136, 136, 0.1), rgba(0, 0, 0, 0.3))';
+                
+                // Add premium lock icon
+                const lockIcon = document.createElement('div');
+                lockIcon.innerHTML = '🔒';
+                lockIcon.style.position = 'absolute';
+                lockIcon.style.top = '5px';
+                lockIcon.style.right = '5px';
+                lockIcon.style.fontSize = '12px';
+                option.style.position = 'relative';
+                option.appendChild(lockIcon);
+            }
         }
     }
 
@@ -122,7 +176,27 @@ export class AvatarManager {
         modalAvatarOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const avatarType = option.dataset.avatar;
-                if (avatarType && !option.classList.contains('disabled')) {
+                
+                if (!avatarType) return;
+                
+                // Check if it's a premium avatar that the player doesn't own
+                if (this.premiumAvatars.includes(avatarType) && !this.ownsAvatar(avatarType)) {
+                    // Show message about needing to purchase
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.play('error', { volume: 0.5 });
+                    }
+                    
+                    // Flash the option to indicate it's locked
+                    option.style.animation = 'flash 0.5s ease-in-out';
+                    setTimeout(() => {
+                        option.style.animation = '';
+                    }, 500);
+                    
+                    return;
+                }
+                
+                // Allow selection if not disabled and avatar is available
+                if (!option.classList.contains('disabled')) {
                     this.tempSelection = avatarType;
                     this.updateModalSelection();
                 }
@@ -130,11 +204,56 @@ export class AvatarManager {
         });
     }
 
-    drawProfileAvatar() {
-        const profileCanvas = document.getElementById('profileAvatarCanvas');
-        if (profileCanvas) {
-            this.drawAvatar(profileCanvas, this.selectedAvatar, 64);
+    // Get all available avatars (free + premium owned)
+    getAllAvailableAvatars() {
+        let avatars = [...this.avatarOptions]; // Default free avatars
+        
+        if (this.premiumStore) {
+            const ownedPremium = this.premiumStore.getOwnedPremiumAvatars();
+            ownedPremium.forEach(avatar => {
+                avatars.push(avatar.id);
+            });
         }
+        
+        return avatars;
+    }
+    
+    // Check if an avatar is available to use
+    isAvatarAvailable(avatarId) {
+        // Free avatars are always available
+        if (this.avatarOptions.includes(avatarId)) {
+            return true;
+        }
+        
+        // Check if it's a premium avatar that's owned
+        if (this.premiumStore) {
+            return this.premiumStore.ownsItem('avatar', avatarId);
+        }
+        
+        return false;
+    }
+    
+    // Get avatar display name
+    getAvatarDisplayName(avatarId) {
+        // Check if it's a premium avatar
+        if (this.premiumStore) {
+            const premiumAvatar = this.premiumStore.premiumAvatars.find(a => a.id === avatarId);
+            if (premiumAvatar) {
+                return premiumAvatar.name;
+            }
+        }
+        
+        // Default avatar names
+        const defaultNames = {
+            'han': 'Han Solo',
+            'ripley': 'Ellen Ripley',
+            'robot': 'Android Pilot',
+            'alien': 'Alien Commander',
+            'longjohn': 'Long John',
+            'missy': 'Pilot Missy'
+        };
+        
+        return defaultNames[avatarId] || avatarId;
     }
 
     drawAllAvatars() {
@@ -157,6 +276,12 @@ export class AvatarManager {
         
         // Set crisp pixel rendering
         ctx.imageSmoothingEnabled = false;
+        
+        // Check if it's a premium avatar
+        if (this.premiumAvatars.includes(avatarType)) {
+            this.drawPremiumAvatar(ctx, avatarType, size);
+            return;
+        }
         
         switch (avatarType) {
             case 'han':
@@ -604,7 +729,245 @@ export class AvatarManager {
                 ctx.fillRect(2, 12, 12, 4);
                 break;
         }
+    }
+    
+    // Draw premium avatars
+    drawPremiumAvatar(ctx, avatarId, size) {
+        const scale = size / 24;
         
-        return canvas.toDataURL();
+        // Set background based on avatar type
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, size, size);
+        
+        switch (avatarId) {
+            case 'astronaut_gold':
+                this.drawGoldenAstronaut(ctx, size);
+                break;
+            case 'alien_commander':
+                this.drawAlienCommanderPremium(ctx, size);
+                break;
+            case 'cyber_pilot':
+                this.drawCyberPilot(ctx, size);
+                break;
+            case 'galaxy_explorer':
+                this.drawGalaxyExplorer(ctx, size);
+                break;
+            case 'neon_warrior':
+                this.drawNeonWarrior(ctx, size);
+                break;
+            default:
+                // Fallback to default avatar if unknown
+                this.drawAce(ctx, size);
+        }
+    }
+    
+    drawGoldenAstronaut(ctx, size) {
+        const scale = size / 24;
+        
+        // Dark space background
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Golden helmet (larger for premium look)
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(5*scale, 3*scale, 14*scale, 12*scale);
+        // Gold highlights
+        ctx.fillStyle = '#ffdd33';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 2*scale);
+        ctx.fillRect(7*scale, 5*scale, 10*scale, 1*scale);
+        
+        // Dark visor
+        ctx.fillStyle = '#001133';
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 8*scale);
+        // Visor reflection
+        ctx.fillStyle = '#0066cc';
+        ctx.fillRect(8*scale, 7*scale, 4*scale, 3*scale);
+        ctx.fillStyle = '#33aaff';
+        ctx.fillRect(9*scale, 8*scale, 2*scale, 1*scale);
+        
+        // Golden suit
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(6*scale, 15*scale, 12*scale, 9*scale);
+        // Suit highlights
+        ctx.fillStyle = '#ffdd33';
+        ctx.fillRect(7*scale, 16*scale, 10*scale, 1*scale);
+        ctx.fillRect(8*scale, 17*scale, 8*scale, 1*scale);
+        
+        // Control panel on chest
+        ctx.fillStyle = '#ff6666';
+        ctx.fillRect(10*scale, 18*scale, 4*scale, 2*scale);
+        ctx.fillStyle = '#ffaaaa';
+        ctx.fillRect(11*scale, 18*scale, 2*scale, 1*scale);
+    }
+    
+    drawAlienCommanderPremium(ctx, size) {
+        const scale = size / 24;
+        
+        // Dark space background
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Large alien head (green)
+        ctx.fillStyle = '#66aa66';
+        ctx.fillRect(4*scale, 2*scale, 16*scale, 16*scale);
+        // Head shading
+        ctx.fillStyle = '#55aa55';
+        ctx.fillRect(5*scale, 3*scale, 14*scale, 2*scale);
+        
+        // Large black eyes
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(6*scale, 6*scale, 4*scale, 5*scale);
+        ctx.fillRect(14*scale, 6*scale, 4*scale, 5*scale);
+        
+        // Eye pupils/reflections
+        ctx.fillStyle = '#444444';
+        ctx.fillRect(7*scale, 7*scale, 2*scale, 2*scale);
+        ctx.fillRect(15*scale, 7*scale, 2*scale, 2*scale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(8*scale, 8*scale, 1*scale, 1*scale);
+        ctx.fillRect(16*scale, 8*scale, 1*scale, 1*scale);
+        
+        // Command uniform
+        ctx.fillStyle = '#333366';
+        ctx.fillRect(6*scale, 18*scale, 12*scale, 6*scale);
+        // Uniform details
+        ctx.fillStyle = '#4444aa';
+        ctx.fillRect(7*scale, 19*scale, 10*scale, 1*scale);
+        
+        // Command insignia (gold stars)
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(10*scale, 21*scale, 1*scale, 1*scale);
+        ctx.fillRect(13*scale, 21*scale, 1*scale, 1*scale);
+    }
+    
+    drawCyberPilot(ctx, size) {
+        const scale = size / 24;
+        
+        // Dark tech background
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Cybernetic head (metal gray)
+        ctx.fillStyle = '#666677';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 12*scale);
+        // Tech panel lines
+        ctx.fillStyle = '#4444aa';
+        ctx.fillRect(7*scale, 5*scale, 10*scale, 1*scale);
+        ctx.fillRect(8*scale, 7*scale, 8*scale, 1*scale);
+        
+        // Red cyber eye (left)
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(8*scale, 8*scale, 3*scale, 3*scale);
+        ctx.fillStyle = '#ffaaaa';
+        ctx.fillRect(9*scale, 9*scale, 1*scale, 1*scale);
+        
+        // Normal eye (right)
+        ctx.fillStyle = '#0066cc';
+        ctx.fillRect(13*scale, 9*scale, 2*scale, 2*scale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(14*scale, 9*scale, 1*scale, 1*scale);
+        
+        // Cybernetic implants
+        ctx.fillStyle = '#999999';
+        ctx.fillRect(5*scale, 8*scale, 1*scale, 4*scale);
+        ctx.fillRect(18*scale, 7*scale, 1*scale, 5*scale);
+        
+        // High-tech suit
+        ctx.fillStyle = '#222244';
+        ctx.fillRect(5*scale, 16*scale, 14*scale, 8*scale);
+        // Neon circuit lines
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(7*scale, 18*scale, 10*scale, 1*scale);
+        ctx.fillRect(6*scale, 20*scale, 12*scale, 1*scale);
+        ctx.fillRect(11*scale, 17*scale, 2*scale, 6*scale);
+    }
+    
+    drawGalaxyExplorer(ctx, size) {
+        const scale = size / 24;
+        
+        // Space background with stars
+        ctx.fillStyle = '#000011';
+        ctx.fillRect(0, 0, size, size);
+        // Small stars
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(3*scale, 2*scale, 1*scale, 1*scale);
+        ctx.fillRect(18*scale, 3*scale, 1*scale, 1*scale);
+        ctx.fillRect(2*scale, 20*scale, 1*scale, 1*scale);
+        
+        // Explorer helmet (dark blue)
+        ctx.fillStyle = '#1a2266';
+        ctx.fillRect(5*scale, 3*scale, 14*scale, 14*scale);
+        
+        // Constellation pattern on helmet
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(7*scale, 5*scale, 1*scale, 1*scale);
+        ctx.fillRect(11*scale, 4*scale, 1*scale, 1*scale);
+        ctx.fillRect(15*scale, 6*scale, 1*scale, 1*scale);
+        ctx.fillRect(9*scale, 7*scale, 1*scale, 1*scale);
+        
+        // Face visible through visor
+        ctx.fillStyle = '#daa570';
+        ctx.fillRect(8*scale, 9*scale, 8*scale, 5*scale);
+        
+        // Eyes
+        ctx.fillStyle = '#4169e1';
+        ctx.fillRect(10*scale, 11*scale, 2*scale, 2*scale);
+        ctx.fillRect(12*scale, 11*scale, 2*scale, 2*scale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(11*scale, 11*scale, 1*scale, 1*scale);
+        ctx.fillRect(13*scale, 11*scale, 1*scale, 1*scale);
+        
+        // Explorer suit
+        ctx.fillStyle = '#2f4f4f';
+        ctx.fillRect(5*scale, 17*scale, 14*scale, 7*scale);
+        
+        // Galaxy mission patch
+        ctx.fillStyle = '#9370db';
+        ctx.fillRect(9*scale, 19*scale, 6*scale, 3*scale);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(11*scale, 20*scale, 2*scale, 1*scale);
+    }
+    
+    drawNeonWarrior(ctx, size) {
+        const scale = size / 24;
+        
+        // Dark void background
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, size, size);
+        
+        // Dark ninja mask
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 14*scale);
+        
+        // Glowing green eyes
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(8*scale, 8*scale, 3*scale, 3*scale);
+        ctx.fillRect(13*scale, 8*scale, 3*scale, 3*scale);
+        // Eye glow effect
+        ctx.fillStyle = '#66ff66';
+        ctx.fillRect(9*scale, 9*scale, 1*scale, 1*scale);
+        ctx.fillRect(14*scale, 9*scale, 1*scale, 1*scale);
+        
+        // Face mask details
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(7*scale, 6*scale, 10*scale, 1*scale);
+        
+        // Dark armor suit
+        ctx.fillStyle = '#000022';
+        ctx.fillRect(5*scale, 18*scale, 14*scale, 6*scale);
+        
+        // Neon circuit patterns
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(6*scale, 19*scale, 12*scale, 1*scale);
+        ctx.fillRect(7*scale, 21*scale, 10*scale, 1*scale);
+        ctx.fillRect(11*scale, 18*scale, 2*scale, 6*scale);
+        
+        // Shoulder pads with neon trim
+        ctx.fillStyle = '#001122';
+        ctx.fillRect(4*scale, 18*scale, 2*scale, 3*scale);
+        ctx.fillRect(18*scale, 18*scale, 2*scale, 3*scale);
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(4*scale, 18*scale, 2*scale, 1*scale);
+        ctx.fillRect(18*scale, 18*scale, 2*scale, 1*scale);
     }
 }

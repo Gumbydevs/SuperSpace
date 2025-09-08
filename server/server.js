@@ -415,6 +415,7 @@ io.on('connection', (socket) => {
       color: playerData.color || getRandomColor(),
       shipColor: playerData.shipColor || '#33f',
       engineColor: playerData.engineColor || '#f66',
+      shipSkin: playerData.shipSkin || 'none',
       avatar: playerData.avatar || 'han',
       projectiles: [],
       miningBeam: {
@@ -456,6 +457,7 @@ io.on('connection', (socket) => {
       player.color = data.color || player.color;
       player.shipColor = data.shipColor || player.shipColor;
       player.engineColor = data.engineColor || player.engineColor;
+      player.shipSkin = data.shipSkin || player.shipSkin;
       player.avatar = data.avatar || player.avatar; // Update avatar data
       
       // Update stats from client (since client calculates scores immediately)
@@ -506,6 +508,7 @@ io.on('connection', (socket) => {
         color: player.color,
         shipColor: player.shipColor,
         engineColor: player.engineColor,
+        shipSkin: player.shipSkin,
         avatar: player.avatar, // Include avatar data
         score: player.score,
         wins: player.wins,
@@ -997,6 +1000,25 @@ io.on('connection', (socket) => {
       });
       
       console.log(`Player ${gameState.players[socket.id].name} changed engine color to ${data.color}`);
+    }
+  });
+  
+  // Handle ship skin updates
+  socket.on('shipSkinUpdate', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+    
+    if (gameState.players[socket.id]) {
+      // Update player's ship skin
+      gameState.players[socket.id].shipSkin = data.skinId;
+      
+      // Broadcast the ship skin change to all other players
+      socket.broadcast.emit('shipSkinUpdate', {
+        playerId: socket.id,
+        skinId: data.skinId
+      });
+      
+      console.log(`Player ${gameState.players[socket.id].name} changed ship skin to ${data.skinId}`);
     }
   });
   

@@ -431,6 +431,12 @@ export class AdminSystem {
             <div style="margin: 10px 0;">
                 <input type="number" id="give-credits" placeholder="Credits amount" style="background: rgba(255,255,255,0.1); border: 1px solid #ccc; color: white; padding: 8px; border-radius: 4px; margin-right: 10px; width: 120px;">
                 <button id="give-credits-btn" style="background: #f84; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Give Credits</button>
+            </div>
+            <div style="margin: 10px 0;">
+                <input type="number" id="give-gems" placeholder="Gems amount" style="background: rgba(255,255,255,0.1); border: 1px solid #ccc; color: white; padding: 8px; border-radius: 4px; margin-right: 10px; width: 120px;">
+                <button id="give-gems-btn" style="background: #FFD700; border: none; color: black; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px; font-weight: bold;">💎 Give Space Gems</button>
+            </div>
+            <div style="margin: 10px 0;">
                 <button id="unlock-all-weapons" style="background: #8f4; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Unlock All Weapons</button>
                 <button id="max-upgrades" style="background: #48f; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Max All Upgrades</button>
             </div>
@@ -479,6 +485,9 @@ export class AdminSystem {
                     break;
                 case 'give-credits-btn':
                     this.giveCredits();
+                    break;
+                case 'give-gems-btn':
+                    this.giveGems();
                     break;
                 case 'unlock-all-weapons':
                     this.unlockAllWeapons();
@@ -787,6 +796,26 @@ export class AdminSystem {
         if (amount > 0 && window.game && window.game.player) {
             window.game.player.addCredits(amount);
             alert(`Gave ${amount} credits to player.`);
+        }
+    }
+    
+    giveGems() {
+        const amount = parseInt(document.getElementById('give-gems').value);
+        if (amount > 0 && window.game && window.game.premiumStore) {
+            window.game.premiumStore.addSpaceGems(amount, 'admin_grant');
+            alert(`Gave ${amount} Space Gems to player!`);
+            
+            // Clear the input field
+            document.getElementById('give-gems').value = '';
+            
+            // Update premium store display if it's open
+            if (window.game.premiumStore.isVisible) {
+                window.game.premiumStore.render();
+            }
+        } else if (amount <= 0) {
+            alert('Please enter a valid amount greater than 0');
+        } else {
+            alert('Premium store not available');
         }
     }
     

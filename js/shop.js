@@ -1523,7 +1523,26 @@ export class ShopSystem {
             ctx.translate(previewCanvas.width / 2, previewCanvas.height / 2);
             ctx.scale(2.0, 2.0); // Make it larger
             
-            // Draw ship based on current ship type
+            // Check if player has a ship skin selected
+            const selectedSkin = localStorage.getItem('selectedShipSkin');
+            if (selectedSkin && selectedSkin !== 'none' && window.game && window.game.shipSkins) {
+                // Use ship skin system to render with skin
+                const tempPlayer = {
+                    ...this.player,
+                    x: 0,
+                    y: 0,
+                    angle: 0,
+                    shipSkin: selectedSkin,
+                    getShipColor: () => this.player.shipColor || '#33f',
+                    getEngineColor: () => this.player.engineColor || '#f66'
+                };
+                
+                window.game.shipSkins.renderShipWithSkin(ctx, tempPlayer, window.game.premiumStore);
+                ctx.restore();
+                return;
+            }
+            
+            // Draw ship based on current ship type (default rendering)
             switch(this.player.currentShip) {
                 case 'fighter':
                     // Enhanced fighter ship design
@@ -1788,12 +1807,9 @@ export class ShopSystem {
         shipColorGrid.style.gap = '8px';
         shipColorGrid.style.marginBottom = '15px';
         
-        // Define ship colors
+        // Define ship colors - reduced to encourage skin purchases
         const shipColors = [
-            '#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff',
-            '#36a', '#3a6', '#a63', '#a36', '#63a', '#6a3',
-            '#249', '#924', '#492', '#942', '#294', '#429',
-            '#fff', '#aaa', '#555', '#000', '#fa0', '#0af'
+            '#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff'
         ];
         
         // Create color selection buttons
@@ -1834,7 +1850,157 @@ export class ShopSystem {
         });
         
         shipColorSection.appendChild(shipColorGrid);
+        
+        // Add note about premium skins
+        const premiumNote = document.createElement('div');
+        premiumNote.textContent = '✨ Want more styles? Check out Premium Skins below!';
+        premiumNote.style.fontSize = '12px';
+        premiumNote.style.color = '#FFD700';
+        premiumNote.style.textAlign = 'center';
+        premiumNote.style.marginTop = '5px';
+        premiumNote.style.fontStyle = 'italic';
+        shipColorSection.appendChild(premiumNote);
+        
         appearanceSection.appendChild(shipColorSection);
+
+        // Ship Skins Section (Premium)
+        const shipSkinsSection = document.createElement('div');
+        shipSkinsSection.style.marginBottom = '20px';
+        
+        const shipSkinsLabel = document.createElement('div');
+        shipSkinsLabel.textContent = '🌟 Premium Ship Skins';
+        shipSkinsLabel.style.fontWeight = 'bold';
+        shipSkinsLabel.style.marginBottom = '10px';
+        shipSkinsLabel.style.color = '#FFD700';
+        shipSkinsSection.appendChild(shipSkinsLabel);
+        
+        // Get owned ship skins
+        const purchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+        const ownedSkins = purchases.skins || [];
+        
+        if (ownedSkins.length > 0) {
+            // Create skins grid
+            const skinsGrid = document.createElement('div');
+            skinsGrid.style.display = 'grid';
+            skinsGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            skinsGrid.style.gap = '10px';
+            skinsGrid.style.marginBottom = '15px';
+            
+            // Current selected skin
+            const currentSkin = localStorage.getItem('selectedShipSkin') || 'none';
+            
+            // Add "No Skin" option
+            const noSkinButton = document.createElement('button');
+            noSkinButton.style.padding = '8px';
+            noSkinButton.style.border = currentSkin === 'none' ? '2px solid #FFD700' : '1px solid #555';
+            noSkinButton.style.borderRadius = '4px';
+            noSkinButton.style.backgroundColor = 'rgba(0, 20, 40, 0.8)';
+            noSkinButton.style.color = '#fff';
+            noSkinButton.style.cursor = 'pointer';
+            noSkinButton.style.fontSize = '12px';
+            noSkinButton.textContent = 'Default';
+            
+            noSkinButton.onclick = () => {
+                this.player.setShipSkin('none');
+                
+                // Update button styles
+                skinsGrid.querySelectorAll('button').forEach(btn => {
+                    btn.style.border = '1px solid #555';
+                });
+                noSkinButton.style.border = '2px solid #FFD700';
+                
+                drawShipPreview();
+                
+                if (window.game && window.game.soundManager) {
+                    window.game.soundManager.play('powerup', { volume: 0.3, playbackRate: 1.5 });
+                }
+            };
+            
+            skinsGrid.appendChild(noSkinButton);
+            
+            // Add owned skins
+            ownedSkins.forEach(skinId => {
+                const skinButton = document.createElement('button');
+                skinButton.style.padding = '8px';
+                skinButton.style.border = currentSkin === skinId ? '2px solid #FFD700' : '1px solid #555';
+                skinButton.style.borderRadius = '4px';
+                skinButton.style.backgroundColor = 'rgba(0, 20, 40, 0.8)';
+                skinButton.style.color = '#fff';
+                skinButton.style.cursor = 'pointer';
+                skinButton.style.fontSize = '12px';
+                
+                // Get skin name
+                const skinNames = {
+                    'scout_stealth': 'Scout Stealth',
+                    'scout_neon': 'Scout Neon',
+                    'fighter_plasma': 'Fighter Plasma',
+                    'fighter_carbon': 'Fighter Carbon',
+                    'heavy_titan': 'Heavy Titan',
+                    'heavy_void': 'Heavy Void',
+                    'stealth_ghost': 'Stealth Ghost',
+                    'stealth_shadow': 'Stealth Shadow'
+                };
+                
+                skinButton.textContent = skinNames[skinId] || skinId;
+                
+                skinButton.onclick = () => {
+                    this.player.setShipSkin(skinId);
+                    
+                    // Update button styles
+                    skinsGrid.querySelectorAll('button').forEach(btn => {
+                        btn.style.border = '1px solid #555';
+                    });
+                    skinButton.style.border = '2px solid #FFD700';
+                    
+                    drawShipPreview();
+                    
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.play('powerup', { volume: 0.3, playbackRate: 1.5 });
+                    }
+                };
+                
+                skinsGrid.appendChild(skinButton);
+            });
+            
+            shipSkinsSection.appendChild(skinsGrid);
+        } else {
+            // No skins owned - show link to premium store
+            const noSkinsMessage = document.createElement('div');
+            noSkinsMessage.style.textAlign = 'center';
+            noSkinsMessage.style.padding = '15px';
+            noSkinsMessage.style.border = '1px dashed #555';
+            noSkinsMessage.style.borderRadius = '4px';
+            noSkinsMessage.style.backgroundColor = 'rgba(0, 10, 30, 0.5)';
+            
+            const message = document.createElement('div');
+            message.textContent = 'No premium skins owned';
+            message.style.marginBottom = '10px';
+            message.style.color = '#aaa';
+            
+            const premiumButton = document.createElement('button');
+            premiumButton.textContent = '🛒 Visit Premium Store';
+            premiumButton.style.padding = '8px 16px';
+            premiumButton.style.border = '1px solid #FFD700';
+            premiumButton.style.borderRadius = '4px';
+            premiumButton.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
+            premiumButton.style.color = '#FFD700';
+            premiumButton.style.cursor = 'pointer';
+            premiumButton.style.fontSize = '12px';
+            
+            premiumButton.onclick = () => {
+                // Close shop and open premium store
+                this.hidePage();
+                if (window.game && window.game.premiumStore) {
+                    window.game.premiumStore.show();
+                }
+            };
+            
+            noSkinsMessage.appendChild(message);
+            noSkinsMessage.appendChild(premiumButton);
+            shipSkinsSection.appendChild(noSkinsMessage);
+        }
+        
+        appearanceSection.appendChild(shipSkinsSection);
         
         // Engine Color Section
         const engineColorSection = document.createElement('div');

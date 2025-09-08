@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - SuperSpace</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .success-container {
+            background: linear-gradient(45deg, #0a4a0a, #1a6a1a);
+            border: 2px solid #00ff00;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 30px #00ff0044;
+        }
+        
+        .success-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            margin: 0 0 20px 0;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff0088;
+        }
+        
+        .gem-display {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .gem-count {
+            font-size: 2em;
+            color: #00ffff;
+            font-weight: bold;
+        }
+        
+        .return-btn {
+            background: linear-gradient(45deg, #6a0dad, #9932cc);
+            color: white;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .return-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        
+        .transaction-info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">🎉✨</div>
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase! Your Space Gems have been added to your account.</p>
+        
+        <div class="gem-display">
+            <div>You received:</div>
+            <div class="gem-count">💎 <span id="gemAmount">Loading...</span> Space Gems</div>
+        </div>
+        
+        <p>You can now purchase premium avatars and ship skins in the SuperSpace Premium Store!</p>
+        
+        <a href="/" class="return-btn">Return to SuperSpace</a>
+        
+        <div class="transaction-info">
+            <p>Transaction ID: <span id="transactionId">Loading...</span></p>
+            <p>Your gems will be available immediately when you return to the game.</p>
+        </div>
+    </div>
+
+    <script>
+        // Parse URL parameters to get payment info
+        const urlParams = new URLSearchParams(window.location.search);
+        const transactionId = urlParams.get('tx') || urlParams.get('txn_id') || 'N/A';
+        const paymentAmount = urlParams.get('amt') || urlParams.get('payment_gross');
+        const itemName = urlParams.get('item_name') || 'Space Gem Package';
+        const itemNumber = urlParams.get('item_number');
+        
+        // Display transaction info
+        document.getElementById('transactionId').textContent = transactionId;
+        
+        // Calculate gems based on item number (you can customize this)
+        let gemAmount = 100; // Default
+        
+        if (itemNumber) {
+            switch (itemNumber) {
+                case 'starter_gems':
+                    gemAmount = 100;
+                    break;
+                case 'explorer_gems':
+                    gemAmount = 300; // 250 + 50 bonus
+                    break;
+                case 'commander_gems':
+                    gemAmount = 650; // 500 + 150 bonus
+                    break;
+                case 'legend_gems':
+                    gemAmount = 1600; // 1200 + 400 bonus
+                    break;
+            }
+        }
+        
+        document.getElementById('gemAmount').textContent = gemAmount;
+        
+        // Process the payment in the game
+        if (transactionId && transactionId !== 'N/A') {
+            // Store payment info for the game to process
+            localStorage.setItem('pendingPayment', JSON.stringify({
+                transactionId: transactionId,
+                itemNumber: itemNumber,
+                gemAmount: gemAmount,
+                timestamp: Date.now(),
+                processed: false
+            }));
+            
+            console.log('Payment info stored for game processing:', {
+                transactionId,
+                itemNumber,
+                gemAmount
+            });
+        }
+        
+        // Auto-redirect after 10 seconds
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 10000);
+    </script>
+</body>
+</html>
