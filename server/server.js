@@ -3,10 +3,14 @@ const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
 const cors = require('cors');
+const ServerAnalytics = require('./analytics');
 
 // Create the Express app and HTTP server
 const app = express();
 const server = http.createServer(app);
+
+// Initialize analytics
+const analytics = new ServerAnalytics();
 
 // Configure CORS to allow requests from specific domains
 app.use(cors({
@@ -42,6 +46,49 @@ app.get('/status', (req, res) => {
 app.get('/test', (req, res) => {
   console.log('Test endpoint hit from origin:', req.get('origin'));
   res.json({ message: 'CORS test successful', origin: req.get('origin') });
+});
+
+// Analytics endpoints
+app.get('/analytics', (req, res) => {
+  try {
+    const stats = analytics.getCurrentStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error getting analytics:', error);
+    res.status(500).json({ error: 'Failed to get analytics' });
+  }
+});
+
+app.get('/analytics/report', (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const report = analytics.generateReport(days);
+    res.json(report);
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
+app.get('/analytics/hourly', (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const hourlyData = analytics.getHourlyActivity(days);
+    res.json({ hourlyActivity: hourlyData, days });
+  } catch (error) {
+    console.error('Error getting hourly data:', error);
+    res.status(500).json({ error: 'Failed to get hourly data' });
+  }
+});
+
+app.get('/analytics/retention', (req, res) => {
+  try {
+    const retention = analytics.getPlayerRetention();
+    res.json(retention);
+  } catch (error) {
+    console.error('Error getting retention data:', error);
+    res.status(500).json({ error: 'Failed to get retention data' });
+  }
 });
 
 // Create Socket.IO server with CORS configuration
@@ -222,6 +269,18 @@ setInterval(() => {
 
 // Connection handling
 io.on('connection', (socket) => {
+  // Analytics event handler
+  socket.on('analytics_event', (eventData) => {
+    try {
+      const clientIp = socket.request.connection.remoteAddress || 
+                       socket.request.headers['x-forwarded-for'] || 
+                       'unknown';
+      analytics.processEvent(eventData, clientIp);
+    } catch (error) {
+      console.error('Error processing analytics event:', error);
+    }
+  });
+
   // Admin: Kick a player by socket ID
   socket.on('adminKickPlayer', (data) => {
     if (!data || !data.targetId) return;

@@ -1165,6 +1165,18 @@ export class MultiplayerManager {
             // Record this kill event
             this.recentKillEvents.set(killEventKey, now);
             
+            // Track analytics for kills and deaths
+            if (window.gameAnalytics) {
+                if (data.attackerId === this.playerId) {
+                    // Player got a kill
+                    window.gameAnalytics.trackKill(data.playerId, data.weapon || 'unknown');
+                }
+                if (data.playerId === this.playerId) {
+                    // Player died
+                    window.gameAnalytics.trackDeath(data.attackerId, data.weapon || 'unknown');
+                }
+            }
+            
             // Clean up old kill events (older than 5 seconds)
             for (const [key, timestamp] of this.recentKillEvents.entries()) {
                 if (now - timestamp > 5000) {

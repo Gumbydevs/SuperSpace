@@ -1926,6 +1926,11 @@ export class ShopSystem {
         // Deduct credits
         this.player.credits -= ship.price;
         
+        // Track purchase with our analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.trackPurchase(ship.name || shipId, ship.price, 'credits');
+        }
+        
         // Mark as owned
         ship.owned = true;
         
@@ -1956,6 +1961,14 @@ export class ShopSystem {
         
         this.player.currentShip = shipId;
         localStorage.setItem('currentShip', shipId);
+        
+        // Track ship change with our analytics system
+        if (window.gameAnalytics && this.player.shipType) {
+            window.gameAnalytics.trackShipChange(this.player.shipType, shipId);
+        }
+        
+        // Store the ship type for analytics
+        this.player.shipType = shipId;
         
         // Apply ship appearance
         if (ship.appearance && ship.appearance.color) {
@@ -2009,6 +2022,11 @@ export class ShopSystem {
         
         // Deduct credits
         this.player.credits -= weapon.price;
+        
+        // Track weapon purchase with our analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.trackPurchase(weapon.name || weaponId, weapon.price, 'credits');
+        }
         
         // Mark as owned
         weapon.owned = true;

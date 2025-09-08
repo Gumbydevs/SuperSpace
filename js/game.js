@@ -64,9 +64,19 @@ class Game {
         window.addEventListener('resize', () => this.resizeCanvas());
 
         // Set up event listeners for menu buttons
-        document.getElementById('play-btn').addEventListener('click', () => this.startGame());
+        document.getElementById('play-btn').addEventListener('click', () => {
+            // Track UI interaction
+            if (window.gameAnalytics) {
+                window.gameAnalytics.trackUIInteraction('play-btn', 'click');
+            }
+            this.startGame();
+        });
         // Use the new overlay logic for options
         document.getElementById('options-btn').addEventListener('click', () => {
+            // Track UI interaction
+            if (window.gameAnalytics) {
+                window.gameAnalytics.trackUIInteraction('options-btn', 'click');
+            }
             if (this.ui && this.ui.showOptionsOverlay) {
                 this.ui.showOptionsOverlay();
             }
@@ -445,11 +455,18 @@ class Game {
         // Start ambient music
         this.soundManager.startAmbientMusic();
         
-        // Track game start event
+        // Track game start event (Vercel Analytics)
         this.trackAnalyticsEvent('game_started', { 
             player_health: this.player.health,
             multiplayer_connected: this.multiplayerConnected 
         });
+        
+        // Track game start with our custom analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.setPlayerId(this.player.id || `player_${Date.now()}`);
+            window.gameAnalytics.trackGameStart();
+            window.gameAnalytics.trackShipChange(null, this.player.shipType || 'scout');
+        }
         
         // Record start time for survival tracking
         this.gameStartTime = Date.now();
@@ -709,13 +726,18 @@ class Game {
         setTimeout(() => {
             this.gameState = 'gameover';
             
-            // Track game over event
+            // Track game over event (Vercel Analytics)
             this.trackAnalyticsEvent('game_over', { 
                 final_score: this.player.score,
                 final_credits: this.player.credits,
                 survival_time: Date.now() - (this.gameStartTime || 0),
                 multiplayer_connected: this.multiplayerConnected 
             });
+            
+            // Track game end with our custom analytics system
+            if (window.gameAnalytics) {
+                window.gameAnalytics.trackGameEnd();
+            }
             
             // Here we create game over screen UI
             const gameOverScreen = document.createElement('div');

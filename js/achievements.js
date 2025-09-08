@@ -231,6 +231,11 @@ export class AchievementSystem {
         
         achievement.unlocked = true;
         
+        // Track achievement unlock with our analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.trackAchievement(achievementId);
+        }
+        
         // Add achievement points to player score (optional)
         if (this.player) {
             this.player.score += achievement.points;

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperSpace Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #444;
+        }
+        
+        .chart-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #fff;
+        }
+        
+        .tables-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .table-container {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #444;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        
+        th {
+            background-color: #444;
+            color: #fff;
+        }
+        
+        .refresh-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background: #45a049;
+        }
+        
+        .error {
+            color: #ff4444;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #ccc;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container,
+            .tables-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SuperSpace Analytics Dashboard</h1>
+        <button class="refresh-btn" onclick="loadAllData()">Refresh Data</button>
+        <p id="lastUpdated" class="stat-label">Loading...</p>
+    </div>
+    
+    <div id="loadingIndicator" class="loading">Loading analytics data...</div>
+    <div id="errorIndicator" class="error" style="display: none;"></div>
+    
+    <div id="dashboardContent" style="display: none;">
+        <!-- Key Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="activeSessions">-</div>
+                <div class="stat-label">Active Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalPlayers">-</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todaySessions">-</div>
+                <div class="stat-label">Today's Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayGames">-</div>
+                <div class="stat-label">Games Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgGameDuration">-</div>
+                <div class="stat-label">Avg Game Duration</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="completionRate">-</div>
+                <div class="stat-label">Game Completion Rate</div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="charts-container">
+            <div class="chart-container">
+                <div class="chart-title">Hourly Player Activity (Last 7 Days)</div>
+                <canvas id="hourlyChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Player Retention</div>
+                <canvas id="retentionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Tables -->
+        <div class="tables-container">
+            <div class="table-container">
+                <div class="chart-title">Most Popular Ships</div>
+                <table id="shipsTable">
+                    <thead>
+                        <tr>
+                            <th>Ship</th>
+                            <th>Usage Count</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="table-container">
+                <div class="chart-title">Most Used Weapons</div>
+                <table id="weaponsTable">
+                    <thead>
+                        <tr>
+                            <th>Weapon</th>
+                            <th>Usage Count</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let hourlyChart = null;
+        let retentionChart = null;
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            // Auto-refresh every 5 minutes
+            setInterval(loadAllData, 300000);
+        });
+        
+        async function loadAllData() {
+            try {
+                document.getElementById('loadingIndicator').style.display = 'block';
+                document.getElementById('errorIndicator').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'none';
+                
+                // Load main analytics data
+                const response = await fetch('/analytics');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Update key statistics
+                updateKeyStats(data);
+                
+                // Load hourly activity data
+                const hourlyResponse = await fetch('/analytics/hourly');
+                const hourlyData = await hourlyResponse.json();
+                updateHourlyChart(hourlyData.hourlyActivity);
+                
+                // Load retention data
+                const retentionResponse = await fetch('/analytics/retention');
+                const retentionData = await retentionResponse.json();
+                updateRetentionChart(retentionData);
+                
+                // Load report data for tables
+                const reportResponse = await fetch('/analytics/report');
+                const reportData = await reportResponse.json();
+                updateTables(reportData);
+                
+                // Update last updated timestamp
+                document.getElementById('lastUpdated').textContent = 
+                    `Last updated: ${new Date().toLocaleString()}`;
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('errorIndicator').textContent = 
+                    `Error loading data: ${error.message}`;
+                document.getElementById('errorIndicator').style.display = 'block';
+            }
+        }
+        
+        function updateKeyStats(data) {
+            document.getElementById('activeSessions').textContent = data.activeSessions || 0;
+            document.getElementById('totalPlayers').textContent = data.totalPlayers || 0;
+            document.getElementById('todaySessions').textContent = data.today.uniqueSessions || 0;
+            document.getElementById('todayGames').textContent = data.today.gamesCompleted || 0;
+            
+            const avgDuration = data.today.averageGameDuration || 0;
+            document.getElementById('avgGameDuration').textContent = 
+                formatDuration(avgDuration);
+            
+            const completionRate = (data.today.completionRate * 100) || 0;
+            document.getElementById('completionRate').textContent = 
+                completionRate.toFixed(1) + '%';
+        }
+        
+        function updateHourlyChart(hourlyData) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            
+            if (hourlyChart) {
+                hourlyChart.destroy();
+            }
+            
+            const hours = [];
+            for (let i = 0; i < 24; i++) {
+                hours.push(i + ':00');
+            }
+            
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Player Activity',
+                        data: hourlyData,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#ccc' }
+                        },
+                        x: {
+                            ticks: { color: '#ccc' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ccc' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateRetentionChart(retentionData) {
+            const ctx = document.getElementById('retentionChart').getContext('2d');
+            
+            if (retentionChart) {
+                retentionChart.destroy();
+            }
+            
+            retentionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active Today', 'Active This Week', 'Inactive'],
+                    datasets: [{
+                        data: [
+                            retentionData.activeToday || 0,
+                            (retentionData.activeWeek || 0) - (retentionData.activeToday || 0),
+                            (retentionData.totalPlayers || 0) - (retentionData.activeWeek || 0)
+                        ],
+                        backgroundColor: ['#4CAF50', '#FFC107', '#757575']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ccc' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateTables(reportData) {
+            // Update ships table
+            const shipsTableBody = document.querySelector('#shipsTable tbody');
+            shipsTableBody.innerHTML = '';
+            reportData.topShips.forEach(ship => {
+                const row = shipsTableBody.insertRow();
+                row.insertCell(0).textContent = ship.ship;
+                row.insertCell(1).textContent = ship.count;
+            });
+            
+            // Update weapons table
+            const weaponsTableBody = document.querySelector('#weaponsTable tbody');
+            weaponsTableBody.innerHTML = '';
+            reportData.topWeapons.forEach(weapon => {
+                const row = weaponsTableBody.insertRow();
+                row.insertCell(0).textContent = weapon.weapon;
+                row.insertCell(1).textContent = weapon.count;
+            });
+        }
+        
+        function formatDuration(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            
+            if (minutes > 0) {
+                return `${minutes}m ${remainingSeconds}s`;
+            } else {
+                return `${remainingSeconds}s`;
+            }
+        }
+    </script>
+</body>
+</html>

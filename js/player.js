@@ -973,6 +973,11 @@ export class Player {
     }
 
     die() {
+        // Track player death with our analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.trackDeath(null, null); // We'll get killer info from multiplayer events
+        }
+        
         // Set health to 0
         this.health = 0;
         
@@ -1109,6 +1114,11 @@ export class Player {
 
     fire(soundManager) {
         let projectiles = [];
+        
+        // Track weapon firing with our analytics system
+        if (window.gameAnalytics) {
+            window.gameAnalytics.trackWeaponFire(this.currentWeapon, null);
+        }
         
         // Trigger combat tension in ambient music when shooting
         if (soundManager && soundManager.triggerCombatTension) {
