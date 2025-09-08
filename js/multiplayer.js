@@ -13,6 +13,9 @@ export class MultiplayerManager {
         // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
         this.GAME_VERSION = "2025.09.07.003"; // Format: YYYY.MM.DD.increment
         
+        // Flag to track if a reset occurred during this session
+        this.resetOccurred = false;
+        
         // Check for version reset before loading any data
         this.checkAndHandleVersionReset();
         
@@ -74,6 +77,9 @@ export class MultiplayerManager {
             
             // Store old version for logging
             const oldVersion = storedVersion || 'Unknown';
+            
+            // Set reset flag
+            this.resetOccurred = true;
             
             // Reset all game progress
             this.resetPlayerProgress(oldVersion);
@@ -155,6 +161,23 @@ export class MultiplayerManager {
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             console.log(`  ${key}: ${localStorage.getItem(key)}`);
+        }
+        
+        // Immediately update the UI credits display, even before game starts
+        const creditsElement = document.getElementById('credits');
+        if (creditsElement) {
+            creditsElement.textContent = '0';
+            console.log('💰 UI credits display updated to 0 (before game start)');
+        } else {
+            // If the credits element doesn't exist yet, try again after a delay
+            console.log('💰 Credits element not found yet, will retry...');
+            setTimeout(() => {
+                const delayedCreditsElement = document.getElementById('credits');
+                if (delayedCreditsElement) {
+                    delayedCreditsElement.textContent = '0';
+                    console.log('💰 UI credits display updated to 0 (delayed)');
+                }
+            }, 100);
         }
         
         // Force reload the player's credits and stats if game player exists
@@ -341,11 +364,29 @@ export class MultiplayerManager {
         console.log('✅ Game state refresh complete');
     }
 
+    // Method to ensure credits display is properly reset after UI is created
+    ensureCreditsReset() {
+        if (this.resetOccurred) {
+            console.log('🔄 Ensuring credits are reset in UI after reset occurred...');
+            const creditsElement = document.getElementById('credits');
+            if (creditsElement) {
+                creditsElement.textContent = '0';
+                console.log('💰 Credits display confirmed reset to 0 after UI creation');
+            }
+        }
+    }
+
     // Manual method to force a progress reset (useful for testing)
     forceProgressReset() {
         const currentVersion = localStorage.getItem('gameVersion') || 'Unknown';
         console.log('🔄 Forcing progress reset...');
+        this.resetOccurred = true;
         this.resetPlayerProgress(currentVersion);
+        
+        // Immediately refresh the game state after manual reset
+        setTimeout(() => {
+            this.refreshGameStateAfterReset();
+        }, 100);
     }
 
     // Debug method to check current game state

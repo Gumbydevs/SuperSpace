@@ -245,6 +245,11 @@ export class UI {
     creditsDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
     topInfoPanel.appendChild(creditsDisplay);
+    
+    // Check if multiplayer reset occurred and ensure credits display is correct
+    if (this.game && this.game.multiplayer) {
+        this.game.multiplayer.ensureCreditsReset();
+    }
         
         // Bottom right - Minimap - positioned to avoid touch controls on mobile
         const minimapContainer = document.createElement('div');
