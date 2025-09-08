@@ -1897,8 +1897,13 @@ export class ShopSystem {
             // Current selected skin
             const currentSkin = localStorage.getItem('selectedShipSkin') || 'none';
             
+            // Clear any existing duplicate skin buttons first
+            const existingSkinButtons = document.querySelectorAll('.skin-selection-button');
+            existingSkinButtons.forEach(btn => btn.remove());
+            
             // Add "No Skin" option
             const noSkinButton = document.createElement('button');
+            noSkinButton.className = 'skin-selection-button';
             noSkinButton.style.padding = '8px';
             noSkinButton.style.border = currentSkin === 'none' ? '2px solid #FFD700' : '1px solid #555';
             noSkinButton.style.borderRadius = '4px';
@@ -1929,6 +1934,7 @@ export class ShopSystem {
             // Add owned skins
             ownedSkins.forEach(skinId => {
                 const skinButton = document.createElement('button');
+                skinButton.className = 'skin-selection-button';
                 skinButton.style.padding = '8px';
                 skinButton.style.border = currentSkin === skinId ? '2px solid #FFD700' : '1px solid #555';
                 skinButton.style.borderRadius = '4px';

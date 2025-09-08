@@ -256,28 +256,8 @@ export class ShipSkinSystem {
         if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
-            // For shop previews, use the actual player's render method
-            if (window.game && window.game.player && typeof window.game.player.render === 'function') {
-                // Temporarily override player position and rotation for preview
-                const originalX = window.game.player.x;
-                const originalY = window.game.player.y;
-                const originalRotation = window.game.player.rotation;
-                
-                window.game.player.x = 0;
-                window.game.player.y = 0;
-                window.game.player.rotation = 0;
-                
-                // Render using the actual player's render method
-                window.game.player.render(ctx);
-                
-                // Restore original position
-                window.game.player.x = originalX;
-                window.game.player.y = originalY;
-                window.game.player.rotation = originalRotation;
-            } else {
-                // Last resort fallback
-                this.renderProperShipForPreview(ctx, ship);
-            }
+            // For shop previews, render just the ship hull without UI elements
+            this.renderShipHullOnly(ctx, ship);
         }
         
         ctx.restore();
@@ -431,46 +411,77 @@ export class ShipSkinSystem {
         ctx.restore();
     }
     
-    // Proper ship rendering for shop previews
-    renderProperShipForPreview(ctx, ship) {
+    // Render just the ship hull for previews (no shields, UI, etc.)
+    renderShipHullOnly(ctx, ship) {
         const shipColor = ship.getShipColor ? ship.getShipColor() : '#33f';
         const engineColor = ship.getEngineColor ? ship.getEngineColor() : '#f66';
         
-        // Use the same ship rendering as the actual game
-        // This is based on the default ship design from player.js
+        // Render based on current ship type if available
+        const shipType = window.game?.player?.shipType || 'scout';
         
         ctx.fillStyle = shipColor;
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1;
         
-        // Main ship body (triangle with rounded edges)
-        ctx.beginPath();
-        ctx.moveTo(12, 0);    // Nose point
-        ctx.lineTo(-8, -6);   // Left wing
-        ctx.lineTo(-6, -3);   // Left inner
-        ctx.lineTo(-6, 3);    // Right inner  
-        ctx.lineTo(-8, 6);    // Right wing
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        
-        // Cockpit detail
-        ctx.fillStyle = '#444';
-        ctx.beginPath();
-        ctx.arc(2, 0, 2, 0, Math.PI * 2);
-        ctx.fill();
+        switch (shipType) {
+            case 'scout':
+                // Scout ship - sleek and fast
+                ctx.beginPath();
+                ctx.moveTo(15, 0);     // Nose
+                ctx.lineTo(-8, -4);    // Left wing
+                ctx.lineTo(-6, -2);    // Left inner
+                ctx.lineTo(-6, 2);     // Right inner
+                ctx.lineTo(-8, 4);     // Right wing
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+                
+            case 'fighter':
+                // Fighter ship - angular and aggressive
+                ctx.beginPath();
+                ctx.moveTo(12, 0);     // Nose
+                ctx.lineTo(-6, -6);    // Left wing
+                ctx.lineTo(-4, -3);    // Left inner
+                ctx.lineTo(-4, 3);     // Right inner
+                ctx.lineTo(-6, 6);     // Right wing
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+                
+            case 'cruiser':
+                // Cruiser ship - larger and bulkier
+                ctx.beginPath();
+                ctx.moveTo(10, 0);     // Nose
+                ctx.lineTo(-10, -8);   // Left wing
+                ctx.lineTo(-8, -4);    // Left inner
+                ctx.lineTo(-8, 4);     // Right inner
+                ctx.lineTo(-10, 8);    // Right wing
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+                
+            default:
+                // Default scout design
+                ctx.beginPath();
+                ctx.moveTo(15, 0);
+                ctx.lineTo(-8, -4);
+                ctx.lineTo(-6, -2);
+                ctx.lineTo(-6, 2);
+                ctx.lineTo(-8, 4);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+        }
         
         // Engine glow
         ctx.fillStyle = engineColor;
-        ctx.globalAlpha = 0.7;
+        ctx.globalAlpha = 0.6;
         ctx.beginPath();
         ctx.arc(-6, 0, 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1.0;
-        
-        // Wing tips
-        ctx.fillStyle = '#aaa';
-        ctx.fillRect(-8, -6, 2, 1);
-        ctx.fillRect(-8, 5, 2, 1);
     }
 }
