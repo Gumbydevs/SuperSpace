@@ -16,8 +16,15 @@ class ServerAnalytics {
         this.maxEventsBuffer = 10000; // Keep last 10k events in memory
     this.currentActive = 0; // number of currently active unique players (by playerId)
     this.globalPeak = 0; // all-time peak concurrent players
+    this.metaFile = path.join(this.dataDir, 'meta.json');
+    this.reaperIntervalMs = 60000; // check every 60s
+    this.sessionTimeoutMs = 180000; // 3 minutes inactivity => consider session ended
         
         this.initializeStorage();
+    // load persisted meta (globalPeak)
+    this.loadMeta();
+    // start session reaper
+    this.startSessionReaper();
         this.startPeriodicSave();
         
         console.log('Server Analytics initialized');
@@ -72,6 +79,17 @@ class ServerAnalytics {
             } catch (e) {
                 // File doesn't exist, create new daily stats
                 this.dailyStats.set(today, this.createEmptyDayStats());
+            }
+            // attempt to load meta (globalPeak) if present
+            try {
+                const metaPath = path.join(this.dataDir, 'meta.json');
+                const metaRaw = await fs.readFile(metaPath, 'utf8');
+                const meta = JSON.parse(metaRaw);
+                if (meta && typeof meta.globalPeak === 'number') {
+                    this.globalPeak = meta.globalPeak;
+                }
+            } catch (e) {
+                // ignore if missing
             }
             
         } catch (error) {
@@ -148,7 +166,12 @@ class ServerAnalytics {
             const stats = this.dailyStats.get(today);
             stats.currentConcurrent = (stats.currentConcurrent || 0) + 1;
             stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, stats.currentConcurrent);
-            this.globalPeak = Math.max(this.globalPeak, stats.peakConcurrent);
+            // update globalPeak and persist if increased
+            const newGlobal = Math.max(this.globalPeak || 0, stats.peakConcurrent || 0);
+            if (newGlobal > this.globalPeak) {
+                this.globalPeak = newGlobal;
+                this.saveMeta();
+            }
         } else {
             this.sessions.get(playerId).sessionIds.add(sessionId);
         }
@@ -509,8 +532,87 @@ class ServerAnalytics {
                 
                 await fs.writeFile(filepath, JSON.stringify(statsData, null, 2));
             }
+            // persist meta as well
+            await this.saveMeta();
         } catch (error) {
             console.error('Error saving daily stats:', error);
+        }
+    }
+
+    async saveMeta() {
+        try {
+            const meta = { globalPeak: this.globalPeak || 0 };
+            await fs.writeFile(this.metaFile, JSON.stringify(meta, null, 2));
+        } catch (e) {
+            console.error('Error saving analytics meta:', e);
+        }
+    }
+
+    async loadMeta() {
+        try {
+            const raw = await fs.readFile(this.metaFile, 'utf8');
+            const meta = JSON.parse(raw);
+            if (meta && typeof meta.globalPeak === 'number') this.globalPeak = meta.globalPeak;
+        } catch (e) {
+            // ignore missing meta
+        }
+    }
+
+    startSessionReaper() {
+        setInterval(() => {
+            try {
+                const now = Date.now();
+                for (const [playerId, session] of Array.from(this.sessions.entries())) {
+                    const last = session.lastActivity || session.startTime || 0;
+                    if (now - last > this.sessionTimeoutMs) {
+                        // Synthesize session_end and immediately finalize
+                        const duration = now - (session.startTime || last || now);
+                        const fakeEvent = {
+                            sessionId: Array.from(session.sessionIds || [])[0] || `session_${now}_${playerId}`,
+                            playerId,
+                            eventType: 'session_end',
+                            timestamp: now,
+                            data: { sessionDuration: duration }
+                        };
+                        // call handler to finalize and remove
+                        this.handleSessionEndImmediate(playerId, session, fakeEvent);
+                    }
+                }
+            } catch (e) {
+                console.error('Error in session reaper:', e);
+            }
+        }, this.reaperIntervalMs);
+    }
+
+    handleSessionEndImmediate(playerId, session, event) {
+        try {
+            if (!session) return;
+            // Update player profile
+            const profile = this.playerProfiles.get(playerId);
+            if (profile && event.data && event.data.sessionDuration) {
+                profile.totalPlayTime += event.data.sessionDuration;
+                profile.longestSession = Math.max(profile.longestSession, event.data.sessionDuration);
+            }
+
+            // Save session now
+            this.saveSessionData(session);
+
+            // Update daily stats counters
+            const day = this.getDateString(event.timestamp);
+            if (this.dailyStats.has(day)) {
+                const stats = this.dailyStats.get(day);
+                stats.sessionDurations = stats.sessionDurations || [];
+                stats.sessionDurations.push(event.data && event.data.sessionDuration ? event.data.sessionDuration : 0);
+                stats.totalSessionTime = (stats.totalSessionTime || 0) + (event.data && event.data.sessionDuration ? event.data.sessionDuration : 0);
+                // decrement concurrent
+                if (stats.currentConcurrent && stats.currentConcurrent > 0) stats.currentConcurrent--;
+            }
+
+            // Remove session and update active counter
+            this.sessions.delete(playerId);
+            if (this.currentActive && this.currentActive > 0) this.currentActive--;
+        } catch (e) {
+            console.error('Error handling immediate session end:', e);
         }
     }
     
