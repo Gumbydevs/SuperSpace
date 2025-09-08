@@ -452,19 +452,31 @@ export class NPCManager {
             }
         });
         
-        // Improved target selection - reduce target flipping
+        // Improved target selection - MUCH more sticky to current target
         if (dreadnaught.target && closestTarget) {
             const currentTargetDistance = Math.sqrt(
                 (dreadnaught.target.x - dreadnaught.x) ** 2 + 
                 (dreadnaught.target.y - dreadnaught.y) ** 2
             );
             
-            // Only switch targets if new target is significantly closer (25% closer)
-            if (closestDistance < currentTargetDistance * 0.75) {
+            // Only switch targets if:
+            // 1. New target is MUCH closer (50% closer) OR
+            // 2. Current target is very far away (>1000 units) OR  
+            // 3. Haven't switched targets in the last 10 seconds
+            const timeSinceLastSwitch = Date.now() - (dreadnaught.lastTargetSwitch || 0);
+            const shouldSwitch = (
+                closestDistance < currentTargetDistance * 0.5 || // Much closer target
+                currentTargetDistance > 1000 || // Current target too far
+                timeSinceLastSwitch > 10000 // Been targeting same for 10+ seconds
+            );
+            
+            if (shouldSwitch) {
                 dreadnaught.target = closestTarget;
+                dreadnaught.lastTargetSwitch = Date.now();
             }
         } else {
             dreadnaught.target = closestTarget;
+            dreadnaught.lastTargetSwitch = Date.now();
         }
         
         // Update last player contact time if any players are nearby

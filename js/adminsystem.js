@@ -898,6 +898,7 @@ export class AdminSystem {
     
     checkDreadnaughtSchedule() {
         if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            console.log('Requesting dreadnaught schedule from server...');
             window.game.multiplayer.socket.emit('getDreadnaughtSchedule');
         } else {
             alert('Not connected to server!');
