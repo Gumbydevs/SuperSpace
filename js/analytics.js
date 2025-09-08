@@ -11,24 +11,29 @@ class GameAnalytics {
         this.playerIp = null; // Server will track this
         this.events = [];
         this.isEnabled = true;
-        
+
+        // Always connect analytics socket to the correct server
+        if (!window.socket || !window.socket.io || window.socket.io.uri !== "https://superspace-server.onrender.com") {
+            window.socket = io("https://superspace-server.onrender.com");
+        }
+
         // Session tracking
         this.gameStartTime = null;
         this.gameEndTime = null;
         this.currentGameSession = null;
-        
+
         // Periodic stats
         this.statsInterval = null;
         this.lastStatsTime = Date.now();
-        
+
         // Track user interactions
         this.setupEventListeners();
-        
+
         // Send heartbeat every 30 seconds
         this.heartbeatInterval = setInterval(() => {
             this.sendHeartbeat();
         }, 30000);
-        
+
         // Send session start
         this.trackSessionStart();
     }
@@ -70,7 +75,7 @@ class GameAnalytics {
         };
         
         // Send immediately to server via socket
-        if (window.socket && window.socket.connected) {
+        if (window.socket) {
             window.socket.emit('analytics_event', event);
         }
         
