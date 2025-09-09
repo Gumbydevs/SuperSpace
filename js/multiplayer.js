@@ -65,15 +65,6 @@ export class MultiplayerManager {
                 }
             });
         }
-        // Handle remote skin effects toggle (optional broadcast from server)
-        this.socket.on('skinEffectsToggle', (data) => {
-            if (!data || !data.playerId) return;
-            const p = this.players[data.playerId];
-            if (p) {
-                p.skinEffectsEnabled = !!data.enabled;
-                this.updatePlayerList();
-            }
-        });
     }
 
     // Check if game version has changed and reset progress if needed
@@ -1429,6 +1420,16 @@ export class MultiplayerManager {
         
         this.socket.on('shipSkinUpdate', (data) => {
             this.handleRemoteShipSkinUpdate(data.playerId, data.skinId);
+        });
+
+        // Handle remote skin effects toggle (optional broadcast from server)
+        this.socket.on('skinEffectsToggle', (data) => {
+            if (!data || !data.playerId) return;
+            const p = this.players[data.playerId];
+            if (p) {
+                p.skinEffectsEnabled = !!data.enabled;
+                this.updatePlayerList();
+            }
         });
 
         // Handle projectile explosions from other players
