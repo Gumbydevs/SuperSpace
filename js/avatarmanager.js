@@ -381,6 +381,8 @@ export class AvatarManager {
 
             // CTA opens premium shop flow (closes all, opens shop, manages dimming)
             cta.addEventListener('click', () => {
+                // Remove the hint immediately so it never blocks the premium shop
+                if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
                 this.openPremiumShopFlow();
             });
 
