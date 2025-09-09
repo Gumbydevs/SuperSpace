@@ -37,9 +37,11 @@ export class ChallengeSystem {
     check(challengeType) {
         // Ensure profile stats are available
         if (!this.profile || !this.profile.stats) return;
-        const list = CHALLENGES[challengeType];
+        const list = CHALLENGES[challengeType] || [];
         list.forEach(ch => {
-            if (this.completed[challengeType].includes(ch.id)) return;
+            // Allow showing a popup this session even if the challenge was completed in a previous session.
+            const alreadyCompleted = (this.completed[challengeType] || []).includes(ch.id);
+
             let done = false;
             switch (ch.id) {
                 case 'survive_10':
@@ -61,33 +63,30 @@ export class ChallengeSystem {
                     done = this.profile.stats.gamesPlayed >= 20;
                     break;
             }
-            if (done && !this.completed[challengeType].includes(ch.id)) {
-                // Mark as completed but DO NOT auto-award the reward.
-                // Player must claim from the shop Challenges tab.
+
+            // If it became done in this run, mark completed (but don't auto-award)
+            if (done && !alreadyCompleted) {
                 this.completed[challengeType].push(ch.id);
-
-                // Show a notification at least once during this session when the challenge
-                // first transitions to completed. We also persist a 'notified' flag so it
-                // doesn't repeatedly show across reloads, but sessionNotified guarantees
-                // the player sees the popup this session for easier testing/visibility.
-                try {
-                    if (!this.sessionNotified[challengeType].includes(ch.id)) {
-                        this.sessionNotified[challengeType].push(ch.id);
-                        // Persist notified if not already persisted
-                        if (!this.notified[challengeType].includes(ch.id)) {
-                            this.notified[challengeType].push(ch.id);
-                        }
-                        // show a brief notification to inform the player (no reward is given here)
-                        // Add a debug log so it's easier to trace in tests if the popup appears.
-                        if (window && window.console) console.log('Challenge complete (showing popup):', ch.id, challengeType);
-                        this.showChallengeComplete(ch, challengeType);
-                    }
-                } catch (e) {
-                    // ignore errors but still ensure state saved
-                }
-
-                this.saveState();
             }
+
+            // Ensure a popup is displayed at least once per session for any completed challenge.
+            try {
+                this.sessionNotified[challengeType] = this.sessionNotified[challengeType] || [];
+                this.notified[challengeType] = this.notified[challengeType] || [];
+                if (done && !this.sessionNotified[challengeType].includes(ch.id)) {
+                    this.sessionNotified[challengeType].push(ch.id);
+                    if (!this.notified[challengeType].includes(ch.id)) {
+                        this.notified[challengeType].push(ch.id);
+                    }
+                    if (window && window.console) console.log('Challenge complete (showing popup):', ch.id, challengeType);
+                    this.showChallengeComplete(ch, challengeType);
+                }
+            } catch (e) {
+                // ignore DOM errors but attempt to continue
+            }
+
+            // Persist any changes to completed/notified state
+            this.saveState();
         });
     }
 
@@ -149,18 +148,19 @@ export class ChallengeSystem {
             notification.style.top = '20px';
             notification.style.left = '50%';
             notification.style.transform = 'translateX(-50%)';
-            notification.style.backgroundColor = 'rgba(0, 60, 30, 0.95)';
-            notification.style.color = '#3f3';
+            // Use a gold/yellow themed look for challenge notifications
+            notification.style.backgroundColor = 'rgba(30, 20, 0, 0.95)';
+            notification.style.color = '#ffd965';
             notification.style.padding = '12px 18px';
             notification.style.borderRadius = '6px';
-            notification.style.border = '2px solid #3f3';
+            notification.style.border = '3px solid #ffcf5c';
             notification.style.zIndex = '10000';
             notification.style.fontFamily = "'Orbitron', monospace";
             notification.style.fontSize = '14px';
-            notification.style.boxShadow = '0 6px 18px rgba(0,0,0,0.6)';
+            notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
             notification.innerHTML = `
-                <div style="font-weight:700; margin-bottom:4px;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
-                <div style="font-size:0.95em;">${challenge.description}</div>
+                <div style="font-weight:800; margin-bottom:6px; color:#fff">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
+                <div style="font-size:0.96em; color: #ffeaa7;">${challenge.description}</div>
             `;
 
             document.body.appendChild(notification);
