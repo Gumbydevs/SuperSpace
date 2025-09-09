@@ -26,6 +26,9 @@ export class ChallengeSystem {
     this.claimed = { daily: [], weekly: [] };
     // notified tracks whether we've shown the on-screen popup for a completed challenge
     this.notified = { daily: [], weekly: [] };
+    // sessionNotified ensures we show the popup at least once during the current page session
+    // even if persisted state (notified) may already contain values from earlier runs.
+    this.sessionNotified = { daily: [], weekly: [] };
 
     // load persisted state if available
     this.loadState();
@@ -62,12 +65,27 @@ export class ChallengeSystem {
                 // Mark as completed but DO NOT auto-award the reward.
                 // Player must claim from the shop Challenges tab.
                 this.completed[challengeType].push(ch.id);
-                // If we haven't shown a notification yet for this completion, show it once
-                if (!this.notified[challengeType].includes(ch.id)) {
-                    this.notified[challengeType].push(ch.id);
-                    // show a brief notification to inform the player (no reward is given here)
-                    this.showChallengeComplete(ch, challengeType);
+
+                // Show a notification at least once during this session when the challenge
+                // first transitions to completed. We also persist a 'notified' flag so it
+                // doesn't repeatedly show across reloads, but sessionNotified guarantees
+                // the player sees the popup this session for easier testing/visibility.
+                try {
+                    if (!this.sessionNotified[challengeType].includes(ch.id)) {
+                        this.sessionNotified[challengeType].push(ch.id);
+                        // Persist notified if not already persisted
+                        if (!this.notified[challengeType].includes(ch.id)) {
+                            this.notified[challengeType].push(ch.id);
+                        }
+                        // show a brief notification to inform the player (no reward is given here)
+                        // Add a debug log so it's easier to trace in tests if the popup appears.
+                        if (window && window.console) console.log('Challenge complete (showing popup):', ch.id, challengeType);
+                        this.showChallengeComplete(ch, challengeType);
+                    }
+                } catch (e) {
+                    // ignore errors but still ensure state saved
                 }
+
                 this.saveState();
             }
         });
@@ -125,6 +143,7 @@ export class ChallengeSystem {
     showChallengeComplete(challenge, type) {
         // Create a temporary notification at top-center (briefly visible)
         try {
+            if (window && window.console) console.log('showChallengeComplete called for', challenge.id, type);
             const notification = document.createElement('div');
             notification.style.position = 'fixed';
             notification.style.top = '20px';

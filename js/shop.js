@@ -1395,6 +1395,7 @@ export class ShopSystem {
         }
         
         const challengeSystem = window.game.challengeSystem;
+    if (window && window.console) console.log('Rendering Challenges tab. completed:', challengeSystem.completed, 'claimed:', challengeSystem.claimed, 'notified:', challengeSystem.notified);
     // ...existing code... (claim all button moved to bottom, small and muted)
         
         // Daily Challenges Section
