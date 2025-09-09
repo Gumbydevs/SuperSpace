@@ -402,16 +402,19 @@ export class ShipSkinSystem {
                 ctx.lineTo(8, -20); // Right front angled edge
                 ctx.closePath();
                 ctx.fill();
-                // Heavy armor plating
+                // Heavy armor plating - keep lines inside hull and subtle
                 ctx.strokeStyle = accent;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(-10, -15);
-                ctx.lineTo(-15, -5);
-                ctx.moveTo(10, -15);
-                ctx.lineTo(15, -5);
-                ctx.moveTo(-10, -5);
-                ctx.lineTo(10, -5);
+                // Left plating
+                ctx.moveTo(Math.max(-12, -10), Math.max(-15, -15));
+                ctx.lineTo(Math.max(-14, -15), Math.max(-5, -5));
+                // Right plating
+                ctx.moveTo(Math.min(10, 12), Math.max(-15, -15));
+                ctx.lineTo(Math.min(14, 15), Math.max(-5, -5));
+                // Center seam
+                ctx.moveTo(-9, -5);
+                ctx.lineTo(9, -5);
                 ctx.stroke();
                 // Cockpit
                 ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
@@ -749,6 +752,10 @@ export class ShipSkinSystem {
                 ctx.rect(-14, -1, 5, 2);
                 ctx.rect(9, -1, 5, 2);
                 ctx.fill();
+                break;
+            case 'stealth':
+                // Use the premium geometry for stealth previews so the appearance tab matches the store
+                this.renderPremiumGeometry(ctx, 'stealth', shipColor, accentColor);
                 break;
                 
             default:
