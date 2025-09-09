@@ -369,19 +369,9 @@ export class AvatarManager {
 
             document.body.appendChild(hint);
 
-            // CTA opens/pulses premium store
+            // CTA opens premium shop flow (closes all, opens shop, manages dimming)
             cta.addEventListener('click', () => {
-                // Close avatar/options UI and reduce backdrop so the store is visible
-                try { this.closeOptionAndAvatarWindows(); } catch (e) { /* ignore */ }
-                try { this.brightenBehindForPremium(); } catch (e) { /* ignore */ }
-
-                this.pulsePremiumButton();
-                // Also try to toggle immediately
-                if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
-                    try { this.premiumStore.toggleStore(); } catch (e) { console.warn('toggleStore failed', e); }
-                } else if (window.premiumStore && typeof window.premiumStore.toggleStore === 'function') {
-                    try { window.premiumStore.toggleStore(); } catch (e) { console.warn('window.premiumStore.toggleStore failed', e); }
-                }
+                this.openPremiumShopFlow();
             });
 
             // Auto-remove after 4s with fade
