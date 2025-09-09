@@ -806,7 +806,8 @@ export class ShipSkinSystem {
                 break;
             case 'stealth':
                 // Use the premium geometry for stealth previews so the appearance tab matches the store
-                this.renderPremiumGeometry(ctx, 'stealth', shipColor, accentColor);
+                // Use engineColor as fallback for accentColor which isn't defined in this scope
+                this.renderPremiumGeometry(ctx, 'stealth', shipColor, engineColor);
                 break;
                 
             default:
