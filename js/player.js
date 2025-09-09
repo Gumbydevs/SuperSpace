@@ -1997,6 +1997,7 @@ export class Player {
                             ctx.globalAlpha = 1.0;
                         }
                     }
+                }
             }
             
             // Draw upgrade attachments based on purchased upgrades
@@ -2132,6 +2133,8 @@ export class Player {
             ctx.restore();
         }
     }
+        // End of render method
+    // Removed extra brace that incorrectly closed the class
     
     // New method to set ship color and save it to localStorage
     setShipColor(color) {
@@ -2571,11 +2574,12 @@ export class Player {
             ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
             ctx.fill();
             ctx.globalCompositeOperation = 'source-over';
-                }
-            }
-            
-            ctx.restore();
-        }    updateMiningBeam(deltaTime, soundManager) {
+        }
+        
+        ctx.restore();
+    }
+
+    updateMiningBeam(deltaTime, soundManager) {
         // Get weapon stats
         let weaponStats = null;
         if (window.shopSystem && window.shopSystem.availableWeapons) {
