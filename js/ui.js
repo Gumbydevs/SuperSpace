@@ -229,50 +229,19 @@ export class UI {
         this.styleStatusItemSmall(placeholderDisplay, '#0af');
         topInfoPanel.appendChild(placeholderDisplay);
 
-        // Score display
-        const scoreDisplay = document.createElement('div');
-        scoreDisplay.className = 'status-item-small';
-        scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
-        scoreDisplay.style.marginLeft = '5ch'; // Add spacing equivalent to 5 capital characters
-        scoreDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
-        this.styleStatusItemSmall(scoreDisplay, '#fff');
+    // Score display
+    const scoreDisplay = document.createElement('div');
+    scoreDisplay.className = 'status-item-small';
+    scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
+    // keep original spacing
+    this.styleStatusItemSmall(scoreDisplay, '#fff');
 
-        // Credits display
-        const creditsDisplay = document.createElement('div');
-        creditsDisplay.className = 'status-item-small';
-        creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
-        creditsDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
-        this.styleStatusItemSmall(creditsDisplay, '#ff0');
-
-        // Space Gems display (right of credits)
-        const gemsDisplay = document.createElement('div');
-        gemsDisplay.className = 'status-item-small';
-        gemsDisplay.innerHTML = '<span class="status-label">GEMS:</span> <span id="space-gems" class="status-value">0</span> <span style="color:#00e0ff;font-size:1.2em;vertical-align:middle;">💎</span>';
-        gemsDisplay.style.marginTop = '0.5em';
-        this.styleStatusItemSmall(gemsDisplay, '#00e0ff');
-
-        // Add in correct order: score, credits, gems
-        topInfoPanel.appendChild(scoreDisplay);
-        topInfoPanel.appendChild(creditsDisplay);
-        topInfoPanel.appendChild(gemsDisplay);
-
-        // Helper to update gems display
-        function updateGemsDisplay() {
-            let gems = 0;
-            if (window.premiumStore && typeof window.premiumStore.loadSpaceGems === 'function') {
-                gems = window.premiumStore.loadSpaceGems();
-            } else {
-                const stored = localStorage.getItem('spaceGems');
-                gems = stored ? parseInt(stored) : 0;
-            }
-            const gemsElem = document.getElementById('space-gems');
-            if (gemsElem) gemsElem.textContent = gems;
-        }
-        updateGemsDisplay();
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'spaceGems') updateGemsDisplay();
-        });
-        setInterval(updateGemsDisplay, 2000);
+    // Credits display
+    const creditsDisplay = document.createElement('div');
+    creditsDisplay.className = 'status-item-small';
+    creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
+    // keep original spacing
+    this.styleStatusItemSmall(creditsDisplay, '#ff0');
     
     // Check if multiplayer reset occurred and ensure credits display is correct
     if (this.game && this.game.multiplayer) {
