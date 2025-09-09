@@ -425,13 +425,25 @@ class Game {
         }
     }
     
-    // Here we toggle the premium store interface on/off
     togglePremiumStore() {
         // Allow premium store access during menu or playing
         if (this.gameState === 'menu' || this.gameState === 'playing') {
+            // Close avatar modal if open
+            const avatarModal = document.getElementById('avatarModal');
+            if (avatarModal && !avatarModal.classList.contains('hidden')) {
+                avatarModal.classList.add('hidden');
+            }
+            // Close options overlay if open
+            const optionsOverlay = document.getElementById('options-overlay');
+            if (optionsOverlay && !optionsOverlay.classList.contains('hidden')) {
+                optionsOverlay.classList.add('hidden');
+            }
+            // Close any other top-level modals if needed (future-proof)
+            // Open the premium store
             this.premiumStore.toggleStore();
             // Premium store renders directly on canvas, no z-index changes needed
         }
+    }
     }
     
     // Process pending PayPal payments
