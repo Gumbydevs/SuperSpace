@@ -21,7 +21,12 @@ export class ChallengeSystem {
     constructor(player, profile) {
         this.player = player;
         this.profile = profile;
-        this.completed = { daily: [], weekly: [] };
+    // completed now means completed (may be unclaimed). claimed tracks those already claimed
+    this.completed = { daily: [], weekly: [] };
+    this.claimed = { daily: [], weekly: [] };
+
+    // load persisted state if available
+    this.loadState();
     }
 
     check(challengeType) {
@@ -52,42 +57,61 @@ export class ChallengeSystem {
                     break;
             }
             if (done && !this.completed[challengeType].includes(ch.id)) {
+                // Mark as completed but DO NOT auto-award the reward.
+                // Player must claim from the shop Challenges tab.
                 this.completed[challengeType].push(ch.id);
-                this.player.credits += ch.reward;
-                // Show notification
-                this.showChallengeComplete(ch, challengeType);
+                this.saveState();
             }
         });
     }
 
-    showChallengeComplete(challenge, type) {
-        // Create a temporary notification
-        const notification = document.createElement('div');
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-        notification.style.backgroundColor = 'rgba(0, 60, 30, 0.9)';
-        notification.style.color = '#3f3';
-        notification.style.padding = '15px';
-        notification.style.borderRadius = '5px';
-        notification.style.border = '2px solid #3f3';
-        notification.style.zIndex = '1000';
-        notification.style.fontFamily = "'Orbitron', monospace";
-        notification.style.fontSize = '14px';
-        notification.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 5px;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
-            <div>${challenge.description}</div>
-            <div style="color: #fc3; margin-top: 5px;">+${challenge.reward} Credits</div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Remove notification after 4 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+    // Claim a completed challenge's reward. Returns reward amount if successful, 0 otherwise.
+    claimChallenge(type, challengeId) {
+        const list = CHALLENGES[type] || [];
+        const ch = list.find(c => c.id === challengeId);
+        if (!ch) return 0;
+
+        // Only allow claim if completed and not already claimed
+        if (!this.completed[type].includes(challengeId)) return 0;
+        if (this.claimed[type].includes(challengeId)) return 0;
+
+        this.claimed[type].push(challengeId);
+        // Award credits
+        this.player.credits += ch.reward;
+        this.saveState();
+        return ch.reward;
+    }
+
+    saveState() {
+        try {
+            const data = {
+                completed: this.completed,
+                claimed: this.claimed
+            };
+            localStorage.setItem('challenge_state', JSON.stringify(data));
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
+    loadState() {
+        try {
+            const raw = localStorage.getItem('challenge_state');
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            if (data.completed) {
+                this.completed = data.completed;
             }
-        }, 4000);
+            if (data.claimed) {
+                this.claimed = data.claimed;
+            }
+        } catch (e) {
+            // ignore parse errors
+        }
+    }
+
+    showChallengeComplete(challenge, type) {
+    // Notifications for automatic completion are disabled.
+    // Rewards are awarded only when player claims them in the shop.
     }
 }

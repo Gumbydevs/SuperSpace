@@ -1396,7 +1396,8 @@ export class ShopSystem {
     }
     
     createChallengeCard(challenge, type, challengeSystem) {
-        const isCompleted = challengeSystem.completed[type].includes(challenge.id);
+    const isCompleted = challengeSystem.completed[type].includes(challenge.id);
+    const isClaimed = (challengeSystem.claimed && challengeSystem.claimed[type] && challengeSystem.claimed[type].includes(challenge.id));
         
         const challengeCard = document.createElement('div');
         challengeCard.style.display = 'flex';
@@ -1416,7 +1417,10 @@ export class ShopSystem {
         statusIcon.style.marginRight = '15px';
         statusIcon.style.fontSize = '24px';
         
-        if (isCompleted) {
+        if (isClaimed) {
+            statusIcon.textContent = '🏅';
+            statusIcon.style.color = '#ffd700';
+        } else if (isCompleted) {
             statusIcon.textContent = '✅';
             statusIcon.style.color = '#3f3';
         } else {
@@ -1446,7 +1450,7 @@ export class ShopSystem {
         progress.style.marginTop = '5px';
         
         // Add some basic progress indicators based on challenge type
-        if (!isCompleted) {
+    if (!isCompleted) {
             switch (challenge.id) {
                 case 'survive_10':
                     const currentSurvival = this.player.playerProfile?.stats?.longestSurvival || 0;
@@ -1473,16 +1477,66 @@ export class ShopSystem {
                     break;
             }
         } else {
-            progress.textContent = 'Completed!';
-            progress.style.color = '#3f3';
+            progress.textContent = isClaimed ? 'Claimed' : 'Completed - Unclaimed';
+            progress.style.color = isClaimed ? '#ffd700' : '#3f3';
         }
         
         info.appendChild(description);
         info.appendChild(reward);
         info.appendChild(progress);
         
+        // Action/claim area
+        const action = document.createElement('div');
+        action.style.width = '140px';
+        action.style.display = 'flex';
+        action.style.flexDirection = 'column';
+        action.style.justifyContent = 'center';
+        action.style.alignItems = 'center';
+
+        if (isClaimed) {
+            const claimedLabel = document.createElement('div');
+            claimedLabel.textContent = 'Reward Claimed';
+            claimedLabel.style.color = '#ffd700';
+            claimedLabel.style.fontWeight = '700';
+            action.appendChild(claimedLabel);
+        } else if (isCompleted) {
+            const claimBtn = document.createElement('button');
+            claimBtn.textContent = `Claim ${challenge.reward}`;
+            claimBtn.style.padding = '8px 12px';
+            claimBtn.style.backgroundColor = '#33c';
+            claimBtn.style.border = 'none';
+            claimBtn.style.color = 'white';
+            claimBtn.style.borderRadius = '6px';
+            claimBtn.style.cursor = 'pointer';
+            claimBtn.onclick = () => {
+                // attempt to claim via challenge system
+                const awarded = challengeSystem.claimChallenge(type, challenge.id);
+                if (awarded > 0) {
+                    // update credits display
+                    const creditsEl = document.getElementById('shop-credits');
+                    if (creditsEl) creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+                    // update this card visuals
+                    claimBtn.disabled = true;
+                    claimBtn.style.opacity = '0.6';
+                    // Refresh the shop content to reflect new state
+                    this.updateShopContent();
+                } else {
+                    // nothing awarded (race/edge case)
+                    claimBtn.textContent = 'Already claimed';
+                    claimBtn.disabled = true;
+                }
+            };
+            action.appendChild(claimBtn);
+        } else {
+            const lockedLabel = document.createElement('div');
+            lockedLabel.textContent = 'Locked';
+            lockedLabel.style.color = '#aaa';
+            action.appendChild(lockedLabel);
+        }
+
         challengeCard.appendChild(statusIcon);
         challengeCard.appendChild(info);
+        challengeCard.appendChild(action);
         
         return challengeCard;
     }
