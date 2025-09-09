@@ -359,22 +359,26 @@ class Game {
             premiumBtn.style.transform = 'scale(1)';
         };
         
-        // Set up click handler to toggle premium store visibility
-        // Try to match the shop button width at runtime. If shop button
-        // isn't available or has zero width, fall back to a sensible default.
+        // Click toggles the premium store
+        premiumBtn.onclick = () => this.togglePremiumStore();
+
+        // Try to match the shop button width at runtime but cap to a smaller max
+        // so the premium button is not overly wide. If shop button isn't
+        // available, fall back to a sensible default of 90px.
         try {
             const shopBtn = document.getElementById('shop-btn');
+            let width = 90; // sensible default
             if (shopBtn) {
-                // Use offsetWidth if available (preferred), otherwise computed width
                 const shopWidth = shopBtn.offsetWidth || parseInt(window.getComputedStyle(shopBtn).width, 10) || 120;
-                premiumBtn.style.width = shopWidth + 'px';
-            } else {
-                premiumBtn.style.width = '120px';
+                // Cap to max 100px to keep premium button compact
+                width = Math.min(shopWidth, 100);
             }
+            premiumBtn.style.width = width + 'px';
         } catch (e) {
-            premiumBtn.style.width = '120px';
+            premiumBtn.style.width = '90px';
         }
 
+        // Append the button once
         document.body.appendChild(premiumBtn);
         document.body.appendChild(premiumBtn);
     }
