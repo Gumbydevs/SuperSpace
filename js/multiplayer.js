@@ -3270,13 +3270,7 @@ export class MultiplayerManager {
         
         allPlayers.sort((a, b) => b.score - a.score);
 
-        // Header row
-        const header = document.createElement('div');
-        header.style.display = 'flex';
-        header.style.fontWeight = 'bold';
-        header.style.marginBottom = '4px';
-        header.innerHTML = `<span style="width:30px;text-align:center;">#</span><span style="width:16px;"></span><span style="width:20px;"></span><span style="flex:1;">Player</span><span style="width:60px;text-align:center;">Score</span><span style="width:50px;text-align:center;">Wins</span><span style="width:60px;text-align:center;">Losses</span>`;
-        listContainer.appendChild(header);
+    // Header row intentionally removed to hide column headings while preserving layout
 
         allPlayers.forEach((player, index) => {
             const playerItem = document.createElement('div');
