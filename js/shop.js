@@ -4,6 +4,8 @@ export class ShopSystem {
         // Removed MAX_LOADOUT - players can now equip unlimited weapons
         this.shopOpen = false;
         this.currentTab = 'ships'; // 'ships', 'weapons', 'upgrades'
+    // Keep references to tab DOM elements so we can highlight them (e.g. challenges badge)
+    this.tabElements = {};
         
         // Load ship ownership from localStorage
         this.availableShips = [
@@ -562,6 +564,10 @@ export class ShopSystem {
             });
             tab.style.borderBottom = '2px solid #33f';
         };
+    // store reference for later (badges/highlights)
+    tab.dataset.tabId = tabId;
+    this.tabElements = this.tabElements || {};
+    this.tabElements[tabId] = tab;
         return tab;
     }
     
@@ -591,6 +597,45 @@ export class ShopSystem {
             case 'appearance':
                 this.renderAppearanceTab(content);
                 break;
+        }
+
+        // Update challenges tab badge whenever content refreshes
+        this.updateChallengeTabBadge();
+    }
+
+    updateChallengeTabBadge() {
+        try {
+            if (!this.tabElements || !this.tabElements['challenges'] || !window.game || !window.game.challengeSystem) return;
+            const tab = this.tabElements['challenges'];
+            const cs = window.game.challengeSystem;
+            // count completed but unclaimed
+            const dailyUnclaimed = (cs.completed.daily || []).filter(id => !(cs.claimed.daily||[]).includes(id)).length;
+            const weeklyUnclaimed = (cs.completed.weekly || []).filter(id => !(cs.claimed.weekly||[]).includes(id)).length;
+            const total = dailyUnclaimed + weeklyUnclaimed;
+
+            // remove existing badge
+            const existing = tab.querySelector('.challenge-badge');
+            if (existing) existing.remove();
+
+            if (total > 0) {
+                const badge = document.createElement('div');
+                badge.className = 'challenge-badge';
+                badge.textContent = total;
+                badge.style.background = '#ffcc00';
+                badge.style.color = '#000';
+                badge.style.padding = '2px 6px';
+                badge.style.borderRadius = '10px';
+                badge.style.marginLeft = '8px';
+                badge.style.fontWeight = '700';
+                badge.style.fontSize = '0.9em';
+                tab.appendChild(badge);
+                // subtle highlight
+                tab.style.boxShadow = '0 0 8px rgba(255,204,0,0.45)';
+            } else {
+                tab.style.boxShadow = 'none';
+            }
+        } catch (e) {
+            // ignore
         }
     }
     
@@ -1350,6 +1395,48 @@ export class ShopSystem {
         }
         
         const challengeSystem = window.game.challengeSystem;
+        // Add a Claim All button if there are any completed but unclaimed challenges
+        const claimAllContainer = document.createElement('div');
+        claimAllContainer.style.display = 'flex';
+        claimAllContainer.style.justifyContent = 'flex-end';
+        claimAllContainer.style.marginBottom = '10px';
+
+        const claimAllBtn = document.createElement('button');
+        claimAllBtn.textContent = 'Claim All';
+        claimAllBtn.style.padding = '8px 12px';
+        claimAllBtn.style.backgroundColor = '#2a9';
+        claimAllBtn.style.border = 'none';
+        claimAllBtn.style.borderRadius = '6px';
+        claimAllBtn.style.cursor = 'pointer';
+        claimAllBtn.onclick = () => {
+            // import challenges and attempt to claim all completed/unclaimed
+            import('./challenges.js').then(({ CHALLENGES }) => {
+                let totalAwarded = 0;
+                CHALLENGES.daily.concat(CHALLENGES.weekly).forEach(ch => {
+                    const type = CHALLENGES.daily.find(d=>d.id===ch.id) ? 'daily' : 'weekly';
+                    // only claim if completed and not yet claimed
+                    if (challengeSystem.completed[type].includes(ch.id) && !(challengeSystem.claimed[type]||[]).includes(ch.id)) {
+                        const awarded = challengeSystem.claimChallenge(type, ch.id);
+                        totalAwarded += awarded;
+                    }
+                });
+                if (totalAwarded > 0) {
+                    // play a success sound if available
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.play('powerup', { volume: 1.0 });
+                    }
+                    // update credits display
+                    const creditsEl = document.getElementById('shop-credits');
+                    if (creditsEl) creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+                }
+                // Refresh UI and badge
+                this.updateShopContent();
+                this.updateChallengeTabBadge();
+            });
+        };
+
+        claimAllContainer.appendChild(claimAllBtn);
+        container.appendChild(claimAllContainer);
         
         // Daily Challenges Section
         const dailySection = document.createElement('div');
@@ -1370,6 +1457,8 @@ export class ShopSystem {
                 const challengeCard = this.createChallengeCard(challenge, 'daily', challengeSystem);
                 dailySection.appendChild(challengeCard);
             });
+            // after rendering, update tab badge
+            this.updateChallengeTabBadge();
         });
         
         // Weekly Challenges Section  
@@ -1389,6 +1478,8 @@ export class ShopSystem {
                 const challengeCard = this.createChallengeCard(challenge, 'weekly', challengeSystem);
                 weeklySection.appendChild(challengeCard);
             });
+            // after rendering, update tab badge
+            this.updateChallengeTabBadge();
         });
         
         container.appendChild(dailySection);
@@ -1512,6 +1603,10 @@ export class ShopSystem {
                 // attempt to claim via challenge system
                 const awarded = challengeSystem.claimChallenge(type, challenge.id);
                 if (awarded > 0) {
+                    // play a success sound if available
+                    if (window.game && window.game.soundManager) {
+                        window.game.soundManager.play('powerup', { volume: 1.0 });
+                    }
                     // update credits display
                     const creditsEl = document.getElementById('shop-credits');
                     if (creditsEl) creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
@@ -1520,6 +1615,7 @@ export class ShopSystem {
                     claimBtn.style.opacity = '0.6';
                     // Refresh the shop content to reflect new state
                     this.updateShopContent();
+                    this.updateChallengeTabBadge();
                 } else {
                     // nothing awarded (race/edge case)
                     claimBtn.textContent = 'Already claimed';
@@ -2201,6 +2297,7 @@ export class ShopSystem {
         if (this.shopOpen) {
             container.classList.remove('hidden');
             this.updateShopContent();
+            this.updateChallengeTabBadge();
         } else {
             container.classList.add('hidden');
         }
