@@ -569,18 +569,27 @@ export class PremiumStore {
     
     renderStoreContent(ctx, canvas, offsetX, offsetY, scale) {
         const items = this.getCurrentTabItems();
-        const startY = offsetY + 170; // Adjusted for scaled layout
-        const itemHeight = 100; // Smaller item height
-        const itemsPerRow = 2;
-        const itemWidth = 240; // Smaller item width
-        const spacing = 30; // Smaller spacing
-        
+        const startY = offsetY + 170;
+        // Responsive item sizing
+        const minItemWidth = 200;
+        const maxItemWidth = 320;
+        const availableWidth = Math.max(canvas.width * 0.85, 320);
+        let itemsPerRow = Math.floor(availableWidth / (minItemWidth + 24));
+        if (itemsPerRow < 1) itemsPerRow = 1;
+        if (itemsPerRow > 4) itemsPerRow = 4;
+        const itemWidth = Math.min(
+            Math.max(Math.floor((availableWidth - (itemsPerRow - 1) * 24) / itemsPerRow), minItemWidth),
+            maxItemWidth
+        );
+        const itemHeight = Math.floor(itemWidth * 0.45) + 40; // maintain aspect ratio
+        const spacing = 24;
+
         items.forEach((item, index) => {
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
-            const x = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
-            const y = startY + row * (itemHeight + 25); // Smaller row spacing
-            
+            const totalRowWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
+            const x = (canvas.width / 2) - (totalRowWidth / 2) + col * (itemWidth + spacing);
+            const y = startY + row * (itemHeight + 25);
             this.renderStoreItem(ctx, item, x, y, itemWidth, itemHeight);
         });
     }
@@ -1014,19 +1023,27 @@ export class PremiumStore {
         
         // Store items - updated positions (matches render method)
         const items = this.getCurrentTabItems();
-        const startY = offsetY + 170; // Adjusted for scaled layout
-        const itemHeight = 100; // Smaller item height
-        const itemsPerRow = 2;
-        const itemWidth = 240; // Smaller item width
-        const spacing = 30; // Smaller spacing
-        
+        const startY = offsetY + 170;
+        const minItemWidth = 200;
+        const maxItemWidth = 320;
+        const availableWidth = Math.max(canvas.width * 0.85, 320);
+        let itemsPerRow = Math.floor(availableWidth / (minItemWidth + 24));
+        if (itemsPerRow < 1) itemsPerRow = 1;
+        if (itemsPerRow > 4) itemsPerRow = 4;
+        const itemWidth = Math.min(
+            Math.max(Math.floor((availableWidth - (itemsPerRow - 1) * 24) / itemsPerRow), minItemWidth),
+            maxItemWidth
+        );
+        const itemHeight = Math.floor(itemWidth * 0.45) + 40;
+        const spacing = 24;
+
         for (let index = 0; index < items.length; index++) {
             const item = items[index];
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
-            const itemX = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
-            const itemY = startY + row * (itemHeight + 25); // Smaller row spacing
-            
+            const totalRowWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
+            const itemX = (canvas.width / 2) - (totalRowWidth / 2) + col * (itemWidth + spacing);
+            const itemY = startY + row * (itemHeight + 25);
             if (x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight) {
                 this.handleItemClick(item);
                 return true;
