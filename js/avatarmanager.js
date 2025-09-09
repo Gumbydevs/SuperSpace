@@ -328,34 +328,53 @@ export class AvatarManager {
             const hint = document.createElement('div');
             hint.className = 'premium-hint';
 
-            // Strong, concise message with arrow and instruction
+
+            // Strong, concise message with improved vertical layout
             const title = document.createElement('div');
             title.textContent = `Locked: ${this.getAvatarDisplayName(avatarId)}`;
             title.style.fontWeight = '700';
-            title.style.marginBottom = '6px';
+            title.style.marginBottom = '8px';
 
-            const msg = document.createElement('div');
-            msg.innerHTML = `To unlock this avatar, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u> button</span> <span style="font-size:18px;vertical-align:middle;">&rarr;</span> on the right side of the page.`;
-            msg.style.fontSize = '13px';
-            msg.style.marginBottom = '4px';
-            msg.style.display = 'flex';
-            msg.style.alignItems = 'center';
+            const line1 = document.createElement('div');
+            line1.textContent = 'This avatar is premium-only.';
+            line1.style.fontSize = '13px';
+            line1.style.marginBottom = '6px';
+
+            const line2 = document.createElement('div');
+            line2.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u> button</span>:`;
+            line2.style.fontSize = '13px';
+            line2.style.marginBottom = '6px';
+
+            const arrowRow = document.createElement('div');
+            arrowRow.style.display = 'flex';
+            arrowRow.style.alignItems = 'center';
+            arrowRow.style.gap = '8px';
+            arrowRow.style.marginBottom = '2px';
+            const arrow = document.createElement('span');
+            arrow.innerHTML = '&rarr;';
+            arrow.style.fontSize = '20px';
+            arrow.style.color = '#ffd700';
+            arrowRow.appendChild(arrow);
+            const rightText = document.createElement('span');
+            rightText.textContent = 'on the right side of the page';
+            rightText.style.fontSize = '13px';
+            arrowRow.appendChild(rightText);
 
             // Style the hint popup
             hint.style.position = 'absolute';
             hint.style.background = 'linear-gradient(90deg, rgba(0,0,0,0.95), rgba(20,20,30,0.95))';
             hint.style.color = '#fff';
-            hint.style.padding = '12px 14px';
-            hint.style.borderRadius = '8px';
+            hint.style.padding = '14px 16px';
+            hint.style.borderRadius = '10px';
             hint.style.fontSize = '14px';
             hint.style.zIndex = '10050'; // very high so it appears above dim overlays
-            hint.style.maxWidth = '300px';
+            hint.style.maxWidth = '320px';
             hint.style.boxShadow = '0 6px 24px rgba(0,0,0,0.6), 0 2px 6px rgba(255,215,0,0.08)';
 
             // Position the hint near the optionElement (to the right if space, otherwise above)
             const rect = optionElement.getBoundingClientRect();
             const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-            const preferRight = rect.right + 320 < viewportWidth;
+            const preferRight = rect.right + 340 < viewportWidth;
             if (preferRight) {
                 hint.style.left = `${rect.right + 12 + window.scrollX}px`;
                 hint.style.top = `${rect.top + window.scrollY}px`;
@@ -366,7 +385,9 @@ export class AvatarManager {
             }
 
             hint.appendChild(title);
-            hint.appendChild(msg);
+            hint.appendChild(line1);
+            hint.appendChild(line2);
+            hint.appendChild(arrowRow);
 
             document.body.appendChild(hint);
 
