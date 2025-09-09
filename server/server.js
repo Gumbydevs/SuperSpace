@@ -1488,17 +1488,24 @@ app.post('/analytics/reset', async (req, res) => {
       console.error('Error recreating analytics dirs:', e);
     }
 
-    // Reset in-memory analytics instance
+
+    // Reset in-memory analytics instance and forcibly clear all sessions
     try {
       analytics.dailyStats = new Map();
       analytics.playerProfiles = new Map();
       analytics.events = [];
+      // Explicitly clear all sessions (in case of lingering references)
+      if (analytics.sessions && typeof analytics.sessions.clear === 'function') {
+        analytics.sessions.clear();
+      }
       analytics.sessions = new Map();
       analytics.currentActive = 0;
       analytics.globalPeak = 0;
       await analytics.saveMeta();
       // create today's empty stats
       analytics.dailyStats.set(analytics.getDateString(), analytics.createEmptyDayStats());
+      // Log session count for verification
+      console.log('[Analytics Reset] Active sessions after reset:', analytics.sessions.size);
     } catch (e) {
       console.error('Error resetting analytics in memory:', e);
     }
