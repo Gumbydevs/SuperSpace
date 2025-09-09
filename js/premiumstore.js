@@ -457,8 +457,9 @@ export class PremiumStore {
     const gridHeight = rows * (itemHeight + 25) - 25; // total rows height (no extra gap after last)
 
     // Estimate header and footer heights used in render
-    const headerHeight = 120; // from top to where grid starts (approx offsetY + 170 minus offsetY)
-    const footerHeight = 120; // allow space for instructions, close button area etc.
+    // Increase header/footer to ensure outer border encloses tabs, header and instructions
+    const headerHeight = 200; // from top to where grid starts (approx offsetY + 170 minus offsetY)
+    const footerHeight = 140; // allow space for instructions, close button area etc.
 
     const neededHeight = headerHeight + gridHeight + footerHeight;
 
@@ -1025,8 +1026,8 @@ export class PremiumStore {
     const rowsBase = Math.max(1, Math.ceil(gridItemsForHeight.length / itemsPerRowBase));
     const gridHeight = rowsBase * (gridItemHeight + 25) - 25;
 
-    const headerHeight = 120;
-    const footerHeight = 120;
+    const headerHeight = 200;
+    const footerHeight = 140;
     const neededHeight = headerHeight + gridHeight + footerHeight;
 
     const scaledHeight = Math.min(canvas.height - 40, Math.max(scaledHeightBase, neededHeight));
