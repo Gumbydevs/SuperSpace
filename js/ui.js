@@ -233,8 +233,10 @@ export class UI {
     const scoreDisplay = document.createElement('div');
     scoreDisplay.className = 'status-item-small';
     scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
+    scoreDisplay.style.marginLeft = '5ch'; // Add spacing equivalent to 5 capital characters
     scoreDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(scoreDisplay, '#fff');
+    topInfoPanel.appendChild(scoreDisplay);
 
     // Credits display
     const creditsDisplay = document.createElement('div');
@@ -242,6 +244,7 @@ export class UI {
     creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
     creditsDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
+    topInfoPanel.appendChild(creditsDisplay);
 
     // Space Gems display
     const gemsDisplay = document.createElement('div');
@@ -249,6 +252,7 @@ export class UI {
     gemsDisplay.innerHTML = '<span class="status-label">GEMS:</span> <span id="space-gems" class="status-value">0</span> <span style="color:#00e0ff;font-size:1.2em;vertical-align:middle;">💎</span>';
     gemsDisplay.style.marginTop = '0.5em';
     this.styleStatusItemSmall(gemsDisplay, '#00e0ff');
+    topInfoPanel.appendChild(gemsDisplay);
 
     // Helper to update gems display
     function updateGemsDisplay() {
@@ -263,9 +267,11 @@ export class UI {
         if (gemsElem) gemsElem.textContent = gems;
     }
     updateGemsDisplay();
+    // Listen for storage changes (other tabs/windows)
     window.addEventListener('storage', (e) => {
         if (e.key === 'spaceGems') updateGemsDisplay();
     });
+    // Optionally, poll for changes if gems can change in this tab
     setInterval(updateGemsDisplay, 2000);
     
     // Check if multiplayer reset occurred and ensure credits display is correct
@@ -295,9 +301,8 @@ export class UI {
         minimapContainer.appendChild(minimapCanvas);
 
         // Add score and credits to info panel
-    topInfoPanel.appendChild(scoreDisplay);
-    topInfoPanel.appendChild(creditsDisplay);
-    topInfoPanel.appendChild(gemsDisplay);
+        topInfoPanel.appendChild(scoreDisplay);
+        topInfoPanel.appendChild(creditsDisplay);
         
         // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
         const statusPanel = document.createElement('div');
