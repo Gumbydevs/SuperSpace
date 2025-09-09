@@ -402,20 +402,42 @@ export class ShipSkinSystem {
                 ctx.lineTo(8, -20); // Right front angled edge
                 ctx.closePath();
                 ctx.fill();
-                // Heavy armor plating - keep lines inside hull and subtle
+                // Heavy armor plating - draw inside hull clip to avoid any overdraw
+                ctx.save();
+                // Create clipping path matching the hull
+                ctx.beginPath();
+                ctx.moveTo(0, -28);
+                ctx.lineTo(-8, -20);
+                ctx.lineTo(-12, -5);
+                ctx.lineTo(-25, 0);
+                ctx.lineTo(-25, 5);
+                ctx.lineTo(-18, 8);
+                ctx.lineTo(-10, 18);
+                ctx.lineTo(0, 15);
+                ctx.lineTo(10, 18);
+                ctx.lineTo(18, 8);
+                ctx.lineTo(25, 5);
+                ctx.lineTo(25, 0);
+                ctx.lineTo(12, -5);
+                ctx.lineTo(8, -20);
+                ctx.closePath();
+                ctx.clip();
+
                 ctx.strokeStyle = accent;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                // Left plating
-                ctx.moveTo(Math.max(-12, -10), Math.max(-15, -15));
-                ctx.lineTo(Math.max(-14, -15), Math.max(-5, -5));
-                // Right plating
-                ctx.moveTo(Math.min(10, 12), Math.max(-15, -15));
-                ctx.lineTo(Math.min(14, 15), Math.max(-5, -5));
+                // Left plating lines (subtle, inside the clip)
+                ctx.moveTo(-10, -15);
+                ctx.lineTo(-14, -6);
+                // Right plating lines
+                ctx.moveTo(10, -15);
+                ctx.lineTo(14, -6);
                 // Center seam
-                ctx.moveTo(-9, -5);
-                ctx.lineTo(9, -5);
+                ctx.moveTo(-8, -5);
+                ctx.lineTo(8, -5);
                 ctx.stroke();
+
+                ctx.restore();
                 // Cockpit
                 ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
                 ctx.beginPath();
