@@ -1139,17 +1139,14 @@ class Game {
                     );
                 }, i * 80); // Staggered timing
             }
-            
             // Create massive amounts of debris
             for (let i = 0; i < 50; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = 40 + Math.random() * 150;
                 const size = 1 + Math.random() * 4;
-                
-                // Create debris with mixed colors
-                const colors = ['#33f', '#66f', '#f66', '#999', '#ff0', '#f80'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                
+                const debrisColors = ['#7d7d7d', '#66f', '#f66', '#999', '#ff0', '#f80'];
+                const color = debrisColors[Math.floor(Math.random() * debrisColors.length)];
+
                 const debris = {
                     x: playerX + (Math.random() - 0.5) * 15,
                     y: playerY + (Math.random() - 0.5) * 15,
@@ -1174,10 +1171,11 @@ class Game {
                         this.rotation += this.rotationSpeed * deltaTime;
                     }
                 };
-                
+
                 this.world.particles.push(debris);
             }
         }
+        
         
         // Add extreme camera shake for dramatic effect
         if (this.multiplayer) {

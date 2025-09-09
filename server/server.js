@@ -413,7 +413,7 @@ io.on('connection', (socket) => {
       losses: playerData.losses || 0,
       credits: 0,
       color: playerData.color || getRandomColor(),
-      shipColor: playerData.shipColor || '#33f',
+  shipColor: playerData.shipColor || '#7d7d7d',
       engineColor: playerData.engineColor || '#f66',
       shipSkin: playerData.shipSkin || 'none',
       avatar: playerData.avatar || 'han',
@@ -964,9 +964,13 @@ io.on('connection', (socket) => {
       
       // Broadcast the upgrade to other players if relevant
       if (data.type === 'ship') {
+        // Keep both legacy 'ship' and new 'currentShip' in server state
+        gameState.players[socket.id].currentShip = data.id;
         socket.broadcast.emit('playerShipChanged', {
           id: socket.id,
-          ship: data.id
+          ship: data.id,
+          currentShip: data.id,
+          shipSkin: 'none'
         });
       }
     }
@@ -1008,6 +1012,28 @@ io.on('connection', (socket) => {
       
       console.log(`Player ${gameState.players[socket.id].name} changed ship color to ${data.color}`);
     }
+  });
+
+  // Handle explicit ship change events from client (e.g., selecting new ship in shop)
+  socket.on('playerShipChanged', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    if (!gameState.players[socket.id]) return;
+    const newShip = data.currentShip || data.ship;
+    if (newShip) {
+      gameState.players[socket.id].ship = newShip;
+      gameState.players[socket.id].currentShip = newShip;
+    }
+    if (data.shipSkin !== undefined) {
+      gameState.players[socket.id].shipSkin = data.shipSkin;
+    }
+
+    // Broadcast to others the updated ship and skin
+    socket.broadcast.emit('playerShipChanged', {
+      id: socket.id,
+      ship: gameState.players[socket.id].ship,
+      currentShip: gameState.players[socket.id].currentShip,
+      shipSkin: gameState.players[socket.id].shipSkin || 'none'
+    });
   });
   
   // Handle engine color updates

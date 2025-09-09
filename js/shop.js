@@ -20,8 +20,8 @@ export class ShopSystem {
                     handling: 4.0,
                     armor: 1.0
                 },
-                appearance: {
-                    color: '#33f',
+                    appearance: {
+                    color: '#7d7d7d',
                     shape: 'triangle'
                 }
             },
@@ -1535,9 +1535,9 @@ export class ShopSystem {
                     rotation: 0,
                     currentShip: this.player.currentShip || 'scout',
                     shipSkin: selectedSkin && selectedSkin !== 'none' ? selectedSkin : null,
-                    getShipColor: () => this.player.shipColor || '#33f',
+                    getShipColor: () => this.player.shipColor || '#7d7d7d',
                     getEngineColor: () => this.player.engineColor || '#f66',
-                    shipColor: this.player.shipColor || '#33f',
+                    shipColor: this.player.shipColor || '#7d7d7d',
                     engineColor: this.player.engineColor || '#f66'
                 };
                 
@@ -1551,7 +1551,7 @@ export class ShopSystem {
                 case 'fighter':
                     // Enhanced fighter ship design
                     // Main body
-                    ctx.fillStyle = this.player.shipColor || '#33f';
+                    ctx.fillStyle = this.player.shipColor || '#7d7d7d';
                     ctx.beginPath();
                     ctx.moveTo(0, -22); // Front nose tip
                     ctx.lineTo(-5, -15); // Left side of nose
@@ -1607,7 +1607,7 @@ export class ShopSystem {
                 case 'heavy':
                     // Enhanced heavy cruiser design
                     // Main body
-                    ctx.fillStyle = this.player.shipColor || '#33f';
+                    ctx.fillStyle = this.player.shipColor || '#7d7d7d';
                     ctx.beginPath();
                     ctx.moveTo(0, -28); // Nose tip
                     ctx.lineTo(-8, -20); // Left front angled edge
@@ -1677,7 +1677,7 @@ export class ShopSystem {
                     
                 case 'stealth':
                     // Stealth ship design - sleek and angular
-                    ctx.fillStyle = this.player.shipColor || '#33f';
+                    ctx.fillStyle = this.player.shipColor || '#7d7d7d';
                     ctx.beginPath();
                     ctx.moveTo(0, -20); // Nose tip
                     ctx.lineTo(-3, -15); // Narrow front section
@@ -1739,7 +1739,7 @@ export class ShopSystem {
                     
                 default: // 'scout' as default
                     // Default scout ship design - modernized
-                    ctx.fillStyle = this.player.shipColor || '#33f';
+                    ctx.fillStyle = this.player.shipColor || '#7d7d7d';
                     ctx.beginPath();
                     ctx.moveTo(0, -15); // front nose
                     ctx.lineTo(-4, -10); // left nose edge
@@ -2196,6 +2196,21 @@ export class ShopSystem {
         
         this.player.currentShip = shipId;
         localStorage.setItem('currentShip', shipId);
+        // When selecting a new ship, default to no skin selected to ensure canonical appearance
+        this.player.shipSkin = 'none';
+        localStorage.setItem('selectedShipSkin', 'none');
+        // Notify multiplayer about the ship/skin change if connected
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            try {
+                window.game.multiplayer.socket.emit('playerShipChanged', {
+                    id: window.game.multiplayer.playerId || window.game.multiplayer.playerId,
+                    ship: shipId,
+                    shipSkin: 'none'
+                });
+            } catch (e) {
+                // ignore if socket not available yet
+            }
+        }
         
         // Track ship change with our analytics system
         if (window.gameAnalytics && this.player.shipType) {

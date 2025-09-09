@@ -19,7 +19,7 @@ export class Player {
         this.visible = true; // Whether to render the ship (false when destroyed)
         
         // Ship color - load from localStorage or use default blue
-        this.shipColor = localStorage.getItem('playerShipColor') || '#33f';
+    this.shipColor = localStorage.getItem('playerShipColor') || '#7d7d7d';
         this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
         this.color = this.shipColor; // Multiplayer color reference
         
@@ -1048,7 +1048,7 @@ export class Player {
                 const size = 1 + Math.random() * 3;
                 
                 // Create debris with mixed colors
-                const colors = ['#33f', '#66f', '#f66', '#999'];
+                const colors = ['#7d7d7d', '#66f', '#f66', '#999'];
                 const color = colors[Math.floor(Math.random() * colors.length)];
                 
                 const debris = {

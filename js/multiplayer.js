@@ -175,7 +175,7 @@ export class MultiplayerManager {
             this.game.player.losses = 0;
             
             // Reset ship appearance to saved values or defaults
-            this.game.player.shipColor = localStorage.getItem('playerShipColor') || '#33f';
+            this.game.player.shipColor = localStorage.getItem('playerShipColor') || '#7d7d7d';
             this.game.player.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
             this.game.player.color = this.game.player.shipColor;
             
@@ -707,7 +707,7 @@ export class MultiplayerManager {
                 ship: this.game.player.currentShip || 'scout',
                 name: this.playerName,
                 color: this.game.player.color || '#0f0',
-                shipColor: this.game.player.shipColor || '#33f',
+                shipColor: this.game.player.shipColor || '#7d7d7d',
                 engineColor: this.game.player.engineColor || '#f66',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
@@ -1540,7 +1540,7 @@ export class MultiplayerManager {
                 maxShield: this.game.player.shieldCapacity || 0,
                 ship: this.game.player.currentShip || 'scout',
                 color: this.game.player.color || '#0f0',
-                shipColor: this.game.player.shipColor || '#33f',
+                shipColor: this.game.player.shipColor || '#7d7d7d',
                 engineColor: this.game.player.engineColor || '#f66',
                 shipSkin: this.game.player.shipSkin || 'none',
                 score: this.game.player.score || 0,
@@ -1914,11 +1914,11 @@ export class MultiplayerManager {
             health: playerData.health || 100,
             shield: playerData.shield || 0,
             maxShield: playerData.maxShield || 0,
-            ship: playerData.ship || 'scout',
-            currentShip: playerData.ship || playerData.currentShip || 'scout',
+            ship: playerData.ship || playerData.currentShip || 'scout',
+            currentShip: playerData.currentShip || playerData.ship || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
-            shipColor: playerData.shipColor || '#33f',
+            shipColor: playerData.shipColor || '#7d7d7d',
             engineColor: playerData.engineColor || '#f66',
             shipSkin: playerData.shipSkin || 'none',
             skinEffectsEnabled: (playerData.skinEffectsEnabled === undefined ? true : !!playerData.skinEffectsEnabled),
@@ -1973,15 +1973,20 @@ export class MultiplayerManager {
             player.shield = playerData.shield !== undefined ? playerData.shield : (player.shield || 0);
             player.maxShield = playerData.maxShield !== undefined ? playerData.maxShield : (player.maxShield || 0);
             // Keep legacy `ship` and newer `currentShip` properties in sync
-            const updatedShip = playerData.ship || playerData.currentShip || player.ship;
-            player.ship = updatedShip;
-            player.currentShip = updatedShip || player.currentShip;
+            const updatedShip = playerData.currentShip || playerData.ship || player.currentShip || player.ship || 'scout';
+            player.currentShip = updatedShip;
+            player.ship = updatedShip; // Keep legacy field updated for backward-compat
             player.color = playerData.color || player.color;
             player.shipColor = playerData.shipColor || player.shipColor;
             player.engineColor = playerData.engineColor || player.engineColor;
             player.avatar = playerData.avatar || player.avatar;
             if (playerData.shipSkin !== undefined) {
                 player.shipSkin = playerData.shipSkin;
+                // If a skin is provided but the ship type is missing, try to infer or keep currentShip
+                if (!player.currentShip || player.currentShip === 'scout') {
+                    // Prefer server-sent ship if available, otherwise leave as-is
+                    player.currentShip = playerData.currentShip || playerData.ship || player.currentShip;
+                }
             }
             if (playerData.skinEffectsEnabled !== undefined) {
                 player.skinEffectsEnabled = !!playerData.skinEffectsEnabled;

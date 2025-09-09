@@ -311,7 +311,7 @@ export class ShipSkinSystem {
 
     // Exact premium store geometry for consistency (centered at 0,0, no translation)
     renderPremiumGeometry(ctx, shipType, primaryColor, accentColor) {
-        const shipColor = primaryColor || '#33f';
+    const shipColor = primaryColor || '#7d7d7d';
         const accent = accentColor || '#f66';
         switch (shipType) {
             case 'scout':
@@ -429,18 +429,18 @@ export class ShipSkinSystem {
                 // Stealth ship - match player.js stealth sizing and subtle engine behavior
                 ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(0, -16);
-                ctx.lineTo(-5, -12);
-                ctx.lineTo(-12, -4);
-                ctx.lineTo(-6, 4);
-                ctx.lineTo(-9, 12);
-                ctx.lineTo(-4, 9);
-                ctx.lineTo(0, 8);
-                ctx.lineTo(4, 9);
-                ctx.lineTo(9, 12);
-                ctx.lineTo(6, 4);
-                ctx.lineTo(12, -4);
-                ctx.lineTo(5, -12);
+                ctx.moveTo(0, -20); // Nose tip
+                ctx.lineTo(-3, -15);
+                ctx.lineTo(-15, -5);
+                ctx.lineTo(-8, 5);
+                ctx.lineTo(-12, 15);
+                ctx.lineTo(-5, 12);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(5, 12);
+                ctx.lineTo(12, 15);
+                ctx.lineTo(8, 5);
+                ctx.lineTo(15, -5);
+                ctx.lineTo(3, -15);
                 ctx.closePath();
                 ctx.fill();
                 // Outline
@@ -612,7 +612,7 @@ export class ShipSkinSystem {
     
     // Render just the ship hull for previews (no shields, UI, etc.)
     renderShipHullOnly(ctx, ship) {
-        const shipColor = ship.getShipColor ? ship.getShipColor() : (ship.shipColor || '#33f');
+    const shipColor = ship.getShipColor ? ship.getShipColor() : (ship.shipColor || '#7d7d7d');
         const engineColor = ship.getEngineColor ? ship.getEngineColor() : (ship.engineColor || '#f66');
         
         // Render based on current ship type if available
