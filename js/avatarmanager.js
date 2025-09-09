@@ -242,8 +242,8 @@ export class AvatarManager {
                     // Show an inline hint to the player
                     this.showPremiumHint(option, avatarType);
 
-                    // Open the premium shop flow (closes other windows and opens shop)
-                    this.openPremiumShopFlow();
+                    // Visually pulse the premium button if present, then open the store if possible
+                    this.pulsePremiumButton();
 
                     return;
                 }
@@ -371,7 +371,17 @@ export class AvatarManager {
 
             // CTA opens/pulses premium store
             cta.addEventListener('click', () => {
-                this.openPremiumShopFlow();
+                // Close avatar/options UI and reduce backdrop so the store is visible
+                try { this.closeOptionAndAvatarWindows(); } catch (e) { /* ignore */ }
+                try { this.brightenBehindForPremium(); } catch (e) { /* ignore */ }
+
+                this.pulsePremiumButton();
+                // Also try to toggle immediately
+                if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
+                    try { this.premiumStore.toggleStore(); } catch (e) { console.warn('toggleStore failed', e); }
+                } else if (window.premiumStore && typeof window.premiumStore.toggleStore === 'function') {
+                    try { window.premiumStore.toggleStore(); } catch (e) { console.warn('window.premiumStore.toggleStore failed', e); }
+                }
             });
 
             // Auto-remove after 4s with fade
@@ -542,7 +552,6 @@ export class AvatarManager {
             const topLevelSelectors = [
                 '#avatarModal',
                 '#optionsPanel',
-                '#options-overlay',
                 '#playerOptions',
                 '#settingsModal',
                 '#shopModal',
@@ -651,15 +660,8 @@ export class AvatarManager {
     restoreBackdropIfNoWindowsOpen() {
         try {
             // Consider a window open if it is a modal dialog or panel without the 'hidden' class
-            // Look for known overlays and modals that indicate UI is open
-            const selectorsToCheck = ['#options-overlay', '#avatarModal', '#premiumModal', '#shopModal', '.modal', '.panel', '[role="dialog"]'];
-            const openWindows = [];
-            selectorsToCheck.forEach(sel => {
-                const els = Array.from(document.querySelectorAll(sel));
-                els.forEach(el => {
-                    if (!el.classList.contains('hidden') && el.offsetParent !== null) openWindows.push(el);
-                });
-            });
+            const openWindows = Array.from(document.querySelectorAll('.modal, .panel, [role="dialog"], .avatar-option'))
+                .filter(el => !el.classList.contains('hidden') && el.offsetParent !== null);
 
             if (openWindows.length === 0) {
                 // Restore common overlay elements
