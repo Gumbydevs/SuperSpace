@@ -161,9 +161,18 @@ export class ChallengeSystem {
             const raw = localStorage.getItem('challenge_state');
             if (!raw) return;
             const data = JSON.parse(raw);
-            if (data.completed) this.completed = data.completed;
-            if (data.claimed) this.claimed = data.claimed;
-            if (data.notified) this.notified = data.notified;
+            if (data.completed) this.completed = {
+                daily: Array.isArray(data.completed.daily) ? data.completed.daily : [],
+                weekly: Array.isArray(data.completed.weekly) ? data.completed.weekly : []
+            };
+            if (data.claimed) this.claimed = {
+                daily: Array.isArray(data.claimed.daily) ? data.claimed.daily : [],
+                weekly: Array.isArray(data.claimed.weekly) ? data.claimed.weekly : []
+            };
+            if (data.notified) this.notified = {
+                daily: Array.isArray(data.notified.daily) ? data.notified.daily : [],
+                weekly: Array.isArray(data.notified.weekly) ? data.notified.weekly : []
+            };
             if (data.lastDailyReset) this.lastDailyReset = data.lastDailyReset;
             if (data.lastWeeklyReset) this.lastWeeklyReset = data.lastWeeklyReset;
         } catch (e) {

@@ -1498,8 +1498,10 @@ export class ShopSystem {
     }
     
     createChallengeCard(challenge, type, challengeSystem) {
-    const isCompleted = challengeSystem.completed[type].includes(challenge.id);
-    const isClaimed = (challengeSystem.claimed && challengeSystem.claimed[type] && challengeSystem.claimed[type].includes(challenge.id));
+    const completedList = (challengeSystem && challengeSystem.completed && challengeSystem.completed[type]) ? challengeSystem.completed[type] : [];
+    const claimedList = (challengeSystem && challengeSystem.claimed && challengeSystem.claimed[type]) ? challengeSystem.claimed[type] : [];
+    const isCompleted = completedList.includes(challenge.id);
+    const isClaimed = claimedList.includes(challenge.id);
         
         const challengeCard = document.createElement('div');
         challengeCard.style.display = 'flex';
@@ -1552,31 +1554,44 @@ export class ShopSystem {
         progress.style.marginTop = '5px';
         
         // Add some basic progress indicators based on challenge type
-    if (!isCompleted) {
+        if (!isCompleted) {
+            // Prefer challengeSystem.profile.stats (created after Game startup). Fall back to player's attached profile or global game profile.
+            const stats = (challengeSystem && challengeSystem.profile && challengeSystem.profile.stats) ||
+                (this.player && this.player.playerProfile && this.player.playerProfile.stats) ||
+                (window && window.game && window.game.playerProfile && window.game.playerProfile.stats) || {};
+            const currentScore = (challengeSystem && challengeSystem.player && typeof challengeSystem.player.score === 'number') ?
+                challengeSystem.player.score : (this.player && this.player.score) || 0;
+
             switch (challenge.id) {
-                case 'survive_10':
-                    const currentSurvival = this.player.playerProfile?.stats?.longestSurvival || 0;
-                    progress.textContent = `Best survival: ${Math.floor(currentSurvival)} / 600 seconds`;
+                case 'survive_10': {
+                    const currentSurvival = Math.floor(stats.longestSurvival || 0);
+                    progress.textContent = `Best survival: ${currentSurvival} / 600 seconds`;
                     break;
-                case 'destroy_200_asteroids':
-                    const currentAsteroids = this.player.playerProfile?.stats?.asteroidsDestroyed || 0;
+                }
+                case 'destroy_200_asteroids': {
+                    const currentAsteroids = stats.asteroidsDestroyed || 0;
                     progress.textContent = `Asteroids destroyed: ${currentAsteroids} / 200`;
                     break;
-                case 'earn_1000_credits':
-                    const currentCreditsEarned = this.player.playerProfile?.stats?.totalCreditsEarned || 0;
+                }
+                case 'earn_1000_credits': {
+                    const currentCreditsEarned = stats.totalCreditsEarned || 0;
                     progress.textContent = `Credits earned: ${currentCreditsEarned} / 1,000`;
                     break;
-                case 'score_50000':
-                    progress.textContent = `Current score: ${this.player.score} / 50,000`;
+                }
+                case 'score_50000': {
+                    progress.textContent = `Current score: ${currentScore} / 50,000`;
                     break;
-                case 'kill_25_enemies':
-                    const currentKills = this.player.playerProfile?.stats?.totalKills || 0;
+                }
+                case 'kill_25_enemies': {
+                    const currentKills = stats.totalKills || 0;
                     progress.textContent = `Enemy kills: ${currentKills} / 25`;
                     break;
-                case 'play_20_games':
-                    const currentGames = this.player.playerProfile?.stats?.gamesPlayed || 0;
+                }
+                case 'play_20_games': {
+                    const currentGames = stats.gamesPlayed || 0;
                     progress.textContent = `Games played: ${currentGames} / 20`;
                     break;
+                }
             }
         } else {
             progress.textContent = isClaimed ? 'Claimed' : 'Completed - Unclaimed';
