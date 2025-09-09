@@ -276,7 +276,8 @@ export class ShipSkinSystem {
         
         // If a skin is active, draw the EXACT premium store preview geometry (no extra scribble overlays)
         if (appearance) {
-            this.renderPremiumGeometry(ctx, ship.currentShip || 'scout', appearance.color, appearance.accent);
+            // Pass accent fallback so skins without an explicit accent use their primary color
+            this.renderPremiumGeometry(ctx, ship.currentShip || 'scout', appearance.color, (appearance.accent || appearance.color));
         } else if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
