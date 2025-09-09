@@ -737,7 +737,10 @@ export class MultiplayerManager {
             // Update the player with the correct data from server
             if (this.players[playerData.id]) {
                 this.players[playerData.id].name = playerData.name || this.players[playerData.id].name;
-                this.players[playerData.id].ship = playerData.ship || this.players[playerData.id].ship;
+                // Normalize ship property: keep both `ship` (legacy) and `currentShip` in sync
+                const incomingShip = playerData.ship || this.players[playerData.id].ship;
+                this.players[playerData.id].ship = incomingShip;
+                this.players[playerData.id].currentShip = incomingShip || this.players[playerData.id].currentShip;
                 this.players[playerData.id].color = playerData.color || this.players[playerData.id].color;
                 this.players[playerData.id].avatar = playerData.avatar || this.players[playerData.id].avatar;
                 
@@ -1912,6 +1915,7 @@ export class MultiplayerManager {
             shield: playerData.shield || 0,
             maxShield: playerData.maxShield || 0,
             ship: playerData.ship || 'scout',
+            currentShip: playerData.ship || playerData.currentShip || 'scout',
             name: playerData.name || 'Unknown',
             color: playerData.color || '#f00',
             shipColor: playerData.shipColor || '#33f',
@@ -1968,7 +1972,10 @@ export class MultiplayerManager {
             player.health = playerData.health !== undefined ? playerData.health : player.health;
             player.shield = playerData.shield !== undefined ? playerData.shield : (player.shield || 0);
             player.maxShield = playerData.maxShield !== undefined ? playerData.maxShield : (player.maxShield || 0);
-            player.ship = playerData.ship || player.ship;
+            // Keep legacy `ship` and newer `currentShip` properties in sync
+            const updatedShip = playerData.ship || playerData.currentShip || player.ship;
+            player.ship = updatedShip;
+            player.currentShip = updatedShip || player.currentShip;
             player.color = playerData.color || player.color;
             player.shipColor = playerData.shipColor || player.shipColor;
             player.engineColor = playerData.engineColor || player.engineColor;
@@ -3716,7 +3723,10 @@ export class MultiplayerManager {
             ctx.save();
             ctx.translate(player.x, player.y);
             ctx.rotate(player.rotation);
-            
+
+            // Normalize: prefer currentShip when present, fall back to legacy `ship`
+            const remoteShipType = player.currentShip || player.ship || 'scout';
+
             // Check if player has a ship skin and game has ship skin system
             if (player.shipSkin && player.shipSkin !== 'none' && this.game.shipSkins) {
                 // Use ship skin system to render with skin
@@ -3728,7 +3738,9 @@ export class MultiplayerManager {
                     getShipColor: () => player.shipColor || player.color || '#f00',
                     getEngineColor: () => player.engineColor || '#6ff'
                 };
-                
+                // Ensure tempPlayer.currentShip exists for skin system lookup
+                tempPlayer.currentShip = tempPlayer.currentShip || remoteShipType;
+
                 this.game.shipSkins.renderShipWithSkin(ctx, tempPlayer, this.game.premiumStore);
                 ctx.restore();
                 return; // Early return since skin system handles the rendering
@@ -3748,8 +3760,8 @@ export class MultiplayerManager {
                 thrustLevel = Math.min(1.0, speed / 200); // Scale to 0-1 range
             }
             
-            // Draw ship based on type
-            if (player.ship === 'fighter') {
+            // Draw ship based on type (prefer currentShip)
+            if (remoteShipType === 'fighter') {
                 // Enhanced fighter ship design
                 // Main body
                 ctx.fillStyle = shipColor;
@@ -3833,7 +3845,7 @@ export class MultiplayerManager {
                     }
                 }
                 
-            } else if (player.ship === 'cruiser' || player.ship === 'heavy') {
+            } else if (remoteShipType === 'cruiser' || remoteShipType === 'heavy') {
                 // Enhanced heavy cruiser design
                 // Main body
                 ctx.fillStyle = shipColor;
@@ -3952,7 +3964,7 @@ export class MultiplayerManager {
                     }
                 }
                 
-            } else if (player.ship === 'stealth') {
+            } else if (remoteShipType === 'stealth') {
                 // Stealth ship design - sleek and angular
                 ctx.fillStyle = shipColor;
                 ctx.beginPath();

@@ -530,7 +530,7 @@ export class AdminSystem {
                         wins: player.wins || 0,
                         losses: player.losses || 0,
                         credits: 'N/A', // Can't see other players' credits
-                        ship: player.ship || 'scout',
+                        ship: player.currentShip || player.ship || 'scout',
                         weapon: 'N/A', // Can't see other players' weapons
                         health: player.health || 100,
                         isLocal: false
