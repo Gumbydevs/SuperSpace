@@ -267,20 +267,13 @@ export class ShipSkinSystem {
         
         ctx.save();
         
-        // First render the ship hull. If a premium skin is active we use our consistent hull geometry
-        // so the in-game look matches the Premium Store preview (player.render draws a larger, different shape).
-        const useUnifiedHull = !!appearance; // only unify when a skin is applied
-        if (useUnifiedHull) {
-            this.renderShipHullOnly(ctx, ship);
+        // If a skin is active, draw the EXACT premium store preview geometry (no extra scribble overlays)
+        if (appearance) {
+            this.renderPremiumGeometry(ctx, ship.currentShip || 'scout', appearance.color, appearance.accent);
         } else if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
             this.renderShipHullOnly(ctx, ship);
-        }
-        
-        // Draw additional hull patterns / accents specific to the skin so it isn't just a glow
-        if (appearance && skinId) {
-            this.drawSkinPattern(ctx, ship, skinId, appearance);
         }
 
         // THEN apply any special skin effects on top
@@ -299,167 +292,151 @@ export class ShipSkinSystem {
 
     // Add distinctive accent / pattern overlays per skin so visual change is obvious
     drawSkinPattern(ctx, ship, skinId, appearance) {
-        ctx.save();
-        // Match hull-only transform expectations
-        ctx.translate(ship.x || 0, ship.y || 0);
-        if (ship.rotation) ctx.rotate(ship.rotation);
+        // Patterns disabled: exact geometry already drawn; keep function for backward compatibility.
+        return; // Intentionally no-op now.
+    }
 
-        const accent = appearance.accent || appearance.color || '#fff';
-        const primary = appearance.color || '#666';
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-
-        // Helper for hazard stripes
-        const drawStripes = (w, h, step, angleDeg = 45) => {
-            ctx.save();
-            ctx.rotate(angleDeg * Math.PI/180);
-            for (let x = -w; x < w; x += step) {
+    // Exact premium store geometry for consistency (centered at 0,0, no translation)
+    renderPremiumGeometry(ctx, shipType, primaryColor, accentColor) {
+        const shipColor = primaryColor || '#33f';
+        const accent = accentColor || '#f66';
+        switch (shipType) {
+            case 'scout':
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = step * 0.6;
-                ctx.moveTo(x, -h);
-                ctx.lineTo(x, h);
-                ctx.stroke();
-            }
-            ctx.restore();
-        };
-
-        // Choose pattern style by effect first (gives broad distinction)
-        switch (appearance.effect) {
-            case 'glow':
-                // Bright side stripes
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.moveTo(-10, -6); ctx.lineTo(10, -2);
-                ctx.moveTo(-10, 6); ctx.lineTo(10, 2);
-                ctx.stroke();
-                break;
-            case 'stealth':
-            case 'ghost':
-                // Angular panel outlines (subtle)
-                ctx.strokeStyle = accent + '88';
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                ctx.moveTo(-8, -4); ctx.lineTo(-2, -10); ctx.lineTo(2, -10); ctx.lineTo(8, -4);
-                ctx.moveTo(-6, 2); ctx.lineTo(0, -4); ctx.lineTo(6, 2);
-                ctx.stroke();
-                break;
-            case 'metallic':
-                // Nose gradient highlight
-                const grad = ctx.createLinearGradient(0, -18, 0, 10);
-                grad.addColorStop(0, accent + 'aa');
-                grad.addColorStop(1, accent + '00');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(0, -18); ctx.lineTo(-6, -8); ctx.lineTo(6, -8); ctx.closePath();
+                ctx.moveTo(0, -15);
+                ctx.lineTo(-4, -10);
+                ctx.lineTo(-12, 0);
+                ctx.lineTo(-8, 8);
+                ctx.lineTo(-5, 5);
+                ctx.lineTo(0, 7);
+                ctx.lineTo(5, 5);
+                ctx.lineTo(8, 8);
+                ctx.lineTo(12, 0);
+                ctx.lineTo(4, -10);
+                ctx.closePath();
                 ctx.fill();
-                break;
-            case 'void':
-                // Orbital arc runes
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 1.5;
-                for (let r = 8; r <= 14; r += 3) {
-                    ctx.beginPath();
-                    ctx.arc(0, 0, r, Math.PI * 0.15, Math.PI * 0.85);
-                    ctx.stroke();
-                }
-                break;
-            case 'industrial':
-                // Hazard stripes body
-                ctx.save();
-                ctx.globalAlpha = 0.6;
-                drawStripes(18, 6, 6, 30);
-                ctx.restore();
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(-14, -6, 28, 12);
-                break;
-            case 'fire':
-                // Flame tongues at rear
-                ctx.fillStyle = accent;
-                for (let i = 0; i < 4; i++) {
-                    ctx.beginPath();
-                    const o = -6 + i * 4;
-                    ctx.moveTo(-4, 10 + o*0.1);
-                    ctx.quadraticCurveTo(0, 18 + Math.random()*2, 4, 10 + o*0.1);
-                    ctx.closePath();
-                    ctx.globalAlpha = 0.4 + 0.15 * Math.sin(Date.now()/150 + i);
-                    ctx.fill();
-                }
-                ctx.globalAlpha = 1;
-                break;
-        }
-
-        // Skin specific embellishments (override / additive)
-        switch (skinId) {
-            case 'scout_neon':
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 2;
+                // Cockpit
+                ctx.fillStyle = 'rgba(130, 200, 255, 0.7)';
                 ctx.beginPath();
-                ctx.moveTo(-12, 0); ctx.lineTo(-4, -8); ctx.lineTo(4, -8); ctx.lineTo(12, 0);
-                ctx.stroke();
-                break;
-            case 'scout_stealth':
-                ctx.strokeStyle = accent + '55';
+                ctx.ellipse(0, -5, 3, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Detail lines
+                ctx.strokeStyle = 'rgba(50, 50, 50, 0.7)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(-8, 8); ctx.lineTo(0, -4); ctx.lineTo(8, 8);
+                ctx.moveTo(-8, 0); ctx.lineTo(-4, -8);
+                ctx.moveTo(8, 0); ctx.lineTo(4, -8);
                 ctx.stroke();
                 break;
-            case 'fighter_crimson':
+            case 'fighter':
+                ctx.fillStyle = shipColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -16);
+                ctx.lineTo(-3, -11);
+                ctx.lineTo(-13, -3);
+                ctx.lineTo(-9, 0);
+                ctx.lineTo(-11, 9);
+                ctx.lineTo(-3, 6);
+                ctx.lineTo(0, 7);
+                ctx.lineTo(3, 6);
+                ctx.lineTo(11, 9);
+                ctx.lineTo(9, 0);
+                ctx.lineTo(13, -3);
+                ctx.lineTo(3, -11);
+                ctx.closePath();
+                ctx.fill();
+                // Cockpit
+                ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(0, -6, 3, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Wing markings
                 ctx.fillStyle = accent;
-                ctx.globalAlpha = 0.25;
                 ctx.beginPath();
-                ctx.ellipse(0, -6, 6, 10, 0, 0, Math.PI * 2);
+                ctx.moveTo(-11, -2); ctx.lineTo(-7, -1); ctx.lineTo(-7, 1); ctx.lineTo(-11, 0); ctx.closePath(); ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(11, -2); ctx.lineTo(7, -1); ctx.lineTo(7, 1); ctx.lineTo(11, 0); ctx.closePath(); ctx.fill();
+                break;
+            case 'heavy':
+                ctx.fillStyle = shipColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -18);
+                ctx.lineTo(-5, -13);
+                ctx.lineTo(-8, -3);
+                ctx.lineTo(-16, 0);
+                ctx.lineTo(-16, 3);
+                ctx.lineTo(-12, 5);
+                ctx.lineTo(-6, 11);
+                ctx.lineTo(0, 9);
+                ctx.lineTo(6, 11);
+                ctx.lineTo(12, 5);
+                ctx.lineTo(16, 3);
+                ctx.lineTo(16, 0);
+                ctx.lineTo(8, -3);
+                ctx.lineTo(5, -13);
+                ctx.closePath();
                 ctx.fill();
-                ctx.globalAlpha = 1;
-                break;
-            case 'fighter_void':
+                // Armor plating
                 ctx.strokeStyle = accent;
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(-13, -3); ctx.lineTo(0, -10); ctx.lineTo(13, -3);
-                ctx.moveTo(-9, 0); ctx.lineTo(0, -6); ctx.lineTo(9, 0);
+                ctx.moveTo(-6, -9); ctx.lineTo(-9, -3);
+                ctx.moveTo(6, -9); ctx.lineTo(9, -3);
+                ctx.moveTo(-6, -3); ctx.lineTo(6, -3);
                 ctx.stroke();
-                break;
-            case 'heavy_titan':
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 2;
+                // Cockpit
+                ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
                 ctx.beginPath();
-                ctx.moveTo(-16, 0); ctx.lineTo(16, 0);
-                ctx.moveTo(-10, -10); ctx.lineTo(-10, 10);
-                ctx.moveTo(10, -10); ctx.lineTo(10, 10);
-                ctx.stroke();
-                break;
-            case 'heavy_phoenix':
-                const fireGrad = ctx.createLinearGradient(0, -18, 0, 18);
-                fireGrad.addColorStop(0, accent + 'aa');
-                fireGrad.addColorStop(1, primary + '00');
-                ctx.fillStyle = fireGrad;
+                ctx.ellipse(0, -7, 3, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Weapon mounts
+                ctx.fillStyle = '#555';
                 ctx.beginPath();
-                ctx.moveTo(-8, 8); ctx.lineTo(0, -12); ctx.lineTo(8, 8); ctx.closePath();
+                ctx.rect(-14, -1, 5, 2);
+                ctx.rect(9, -1, 5, 2);
                 ctx.fill();
                 break;
-            case 'stealth_shadow':
-                ctx.strokeStyle = accent + 'aa';
-                ctx.lineWidth = 1.2;
+            case 'stealth':
+                ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(-12, -4); ctx.lineTo(0, -14); ctx.lineTo(12, -4);
-                ctx.stroke();
-                break;
-            case 'stealth_ghost':
+                ctx.moveTo(0, -16);
+                ctx.lineTo(-2, -12);
+                ctx.lineTo(-12, -4);
+                ctx.lineTo(-6, 4);
+                ctx.lineTo(-9, 12);
+                ctx.lineTo(-4, 9);
+                ctx.lineTo(0, 8);
+                ctx.lineTo(4, 9);
+                ctx.lineTo(9, 12);
+                ctx.lineTo(6, 4);
+                ctx.lineTo(12, -4);
+                ctx.lineTo(2, -12);
+                ctx.closePath();
+                ctx.fill();
+                // Outline
                 ctx.strokeStyle = accent;
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([3,2]);
-                ctx.beginPath();
-                ctx.moveTo(-10, -6); ctx.lineTo(0, -16); ctx.lineTo(10, -6);
+                ctx.lineWidth = 1;
                 ctx.stroke();
-                ctx.setLineDash([]);
+                // Panels (simplified)
+                const stealthGradient = ctx.createLinearGradient(0, -12, 0, 12);
+                stealthGradient.addColorStop(0, shipColor);
+                stealthGradient.addColorStop(0.5, accent);
+                stealthGradient.addColorStop(1, shipColor);
+                ctx.fillStyle = stealthGradient;
+                ctx.beginPath();
+                ctx.moveTo(-8, -2); ctx.lineTo(-5, 0); ctx.lineTo(-6, 6); ctx.lineTo(-9, 9); ctx.closePath(); ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(8, -2); ctx.lineTo(5, 0); ctx.lineTo(6, 6); ctx.lineTo(9, 9); ctx.closePath(); ctx.fill();
+                // Cockpit
+                ctx.fillStyle = accent;
+                ctx.beginPath(); ctx.ellipse(0, -6, 2, 4, 0, 0, Math.PI * 2); ctx.fill();
                 break;
+            default:
+                // Fallback simple circle
+                ctx.fillStyle = shipColor;
+                ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fill();
         }
-
-        ctx.restore();
     }
     
     renderShipGeometry(ctx, ship, primaryColor, accentColor) {
