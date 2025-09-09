@@ -328,28 +328,20 @@ export class AvatarManager {
             const hint = document.createElement('div');
             hint.className = 'premium-hint';
 
-            // Strong, concise message with CTA
+            // Strong, concise message with arrow and instruction
             const title = document.createElement('div');
             title.textContent = `Locked: ${this.getAvatarDisplayName(avatarId)}`;
             title.style.fontWeight = '700';
             title.style.marginBottom = '6px';
 
             const msg = document.createElement('div');
-            msg.textContent = 'Head to the Premium Shop to unlock this avatar.';
+            msg.innerHTML = `To unlock this avatar, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u> button</span> <span style="font-size:18px;vertical-align:middle;">&rarr;</span> on the right side of the page.`;
             msg.style.fontSize = '13px';
-            msg.style.marginBottom = '8px';
+            msg.style.marginBottom = '4px';
+            msg.style.display = 'flex';
+            msg.style.alignItems = 'center';
 
-            const cta = document.createElement('button');
-            cta.textContent = 'Open Premium Shop';
-            cta.className = 'premium-hint-cta';
-            cta.style.cursor = 'pointer';
-            cta.style.padding = '6px 10px';
-            cta.style.border = 'none';
-            cta.style.background = '#ffd700';
-            cta.style.color = '#111';
-            cta.style.borderRadius = '4px';
-            cta.style.fontWeight = '700';
-
+            // Style the hint popup
             hint.style.position = 'absolute';
             hint.style.background = 'linear-gradient(90deg, rgba(0,0,0,0.95), rgba(20,20,30,0.95))';
             hint.style.color = '#fff';
@@ -357,13 +349,13 @@ export class AvatarManager {
             hint.style.borderRadius = '8px';
             hint.style.fontSize = '14px';
             hint.style.zIndex = '10050'; // very high so it appears above dim overlays
-            hint.style.maxWidth = '260px';
+            hint.style.maxWidth = '300px';
             hint.style.boxShadow = '0 6px 24px rgba(0,0,0,0.6), 0 2px 6px rgba(255,215,0,0.08)';
 
             // Position the hint near the optionElement (to the right if space, otherwise above)
             const rect = optionElement.getBoundingClientRect();
             const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-            const preferRight = rect.right + 280 < viewportWidth;
+            const preferRight = rect.right + 320 < viewportWidth;
             if (preferRight) {
                 hint.style.left = `${rect.right + 12 + window.scrollX}px`;
                 hint.style.top = `${rect.top + window.scrollY}px`;
@@ -375,16 +367,11 @@ export class AvatarManager {
 
             hint.appendChild(title);
             hint.appendChild(msg);
-            hint.appendChild(cta);
 
             document.body.appendChild(hint);
 
-            // CTA opens premium shop flow (closes all, opens shop, manages dimming)
-            cta.addEventListener('click', () => {
-                // Remove the hint immediately so it never blocks the premium shop
-                if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
-                this.openPremiumShopFlow();
-            });
+            // Pulse the premium button to draw attention
+            this.pulsePremiumButton();
 
             // Auto-remove after 4s with fade
             setTimeout(() => {
