@@ -477,7 +477,7 @@ export class ShipSkinSystem {
                 ctx.rect(14, -2, 8, 4);
                 ctx.fill();
                 break;
-            case 'stealth':
+            case 'stealth': {
                 // Stealth ship - match player.js stealth sizing and subtle engine behavior
                 ctx.fillStyle = shipColor;
                 ctx.beginPath();
@@ -495,8 +495,12 @@ export class ShipSkinSystem {
                 ctx.lineTo(3, -15);
                 ctx.closePath();
                 ctx.fill();
-                // Outline
-                ctx.strokeStyle = accent;
+                // Outline: only use accent if it's different from main color, else transparent
+                let outlineColor = accent;
+                if (accent === shipColor) {
+                    outlineColor = 'rgba(0,0,0,0)';
+                }
+                ctx.strokeStyle = outlineColor;
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 // Panels (simplified)
@@ -513,6 +517,7 @@ export class ShipSkinSystem {
                 ctx.fillStyle = accent;
                 ctx.beginPath(); ctx.ellipse(0, -6, 2, 4, 0, 0, Math.PI * 2); ctx.fill();
                 break;
+            }
             default:
                 // Fallback simple circle
                 ctx.fillStyle = shipColor;
