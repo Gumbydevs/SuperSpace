@@ -267,11 +267,14 @@ export class ShipSkinSystem {
         
         ctx.save();
         
-        // First render the ship with the new colors (if any)
-        if (typeof ship.render === 'function') {
+        // First render the ship hull. If a premium skin is active we use our consistent hull geometry
+        // so the in-game look matches the Premium Store preview (player.render draws a larger, different shape).
+        const useUnifiedHull = !!appearance; // only unify when a skin is applied
+        if (useUnifiedHull) {
+            this.renderShipHullOnly(ctx, ship);
+        } else if (typeof ship.render === 'function') {
             ship.render(ctx);
         } else {
-            // For shop previews, render just the ship hull without UI elements
             this.renderShipHullOnly(ctx, ship);
         }
         
