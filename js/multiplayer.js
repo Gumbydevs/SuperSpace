@@ -1947,8 +1947,9 @@ export class MultiplayerManager {
             avatar: playerData.avatar || 'han', // Add avatar information
             projectiles: [],
             destroyed: false, // Add destroyed flag
-            thrustLevel: 0,
-            afterburnerActive: false,
+            // Initialize thrust/afterburner from provided data for instant visual sync
+            thrustLevel: playerData.thrustLevel !== undefined ? playerData.thrustLevel : 0,
+            afterburnerActive: playerData.afterburnerActive !== undefined ? !!playerData.afterburnerActive : false,
             // Initialize electric shock effect
             electricShockEffect: {
                 active: false,
