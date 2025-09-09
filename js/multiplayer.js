@@ -1516,7 +1516,8 @@ export class MultiplayerManager {
             score: this.game.player.score || 0,
             wins: this.game.player.wins || 0,
             losses: this.game.player.losses || 0,
-            avatar: localStorage.getItem('selectedAvatar') || 'han'
+            avatar: localStorage.getItem('selectedAvatar') || 'han',
+            skinEffectsEnabled: (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true'
         };
         
         this.socket.emit('playerJoin', playerData);
@@ -1551,7 +1552,8 @@ export class MultiplayerManager {
                     targetX: this.game.player.miningBeam.targetX,
                     targetY: this.game.player.miningBeam.targetY,
                     intensity: this.game.player.miningBeam.intensity
-                } : null
+                } : null,
+                skinEffectsEnabled: (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true'
             };
 
             // Debug: Log when sending significant stat changes
@@ -3222,6 +3224,8 @@ export class MultiplayerManager {
             wins: p.wins || 0,
             losses: p.losses || 0,
             avatar: p.avatar || 'han',
+            shipSkin: p.shipSkin || 'none',
+            skinEffectsEnabled: (p.skinEffectsEnabled === undefined ? true : p.skinEffectsEnabled),
             isSelf: false
         }));
         
@@ -3234,6 +3238,8 @@ export class MultiplayerManager {
             wins: this.game.player?.wins || 0,
             losses: this.game.player?.losses || 0,
             avatar: localStorage.getItem('selectedAvatar') || 'han',
+            shipSkin: this.game.player?.shipSkin || 'none',
+            skinEffectsEnabled: (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true',
             isSelf: true
         };
         
@@ -3312,6 +3318,26 @@ export class MultiplayerManager {
             playerName.style.textOverflow = 'ellipsis';
             playerName.style.whiteSpace = 'nowrap';
             playerName.style.fontSize = '11px';
+
+            // Skin / effects badges
+            if (player.shipSkin && player.shipSkin !== 'none') {
+                const skinBadge = document.createElement('span');
+                skinBadge.textContent = '★';
+                skinBadge.title = `Skin: ${player.shipSkin}${player.skinEffectsEnabled ? ' (effects)' : ''}`;
+                skinBadge.style.marginLeft = '4px';
+                skinBadge.style.color = '#ffd700';
+                skinBadge.style.fontSize = '10px';
+                playerName.appendChild(skinBadge);
+                if (!player.skinEffectsEnabled) {
+                    const fxOff = document.createElement('span');
+                    fxOff.textContent = '✕';
+                    fxOff.title = 'Effects Off';
+                    fxOff.style.marginLeft = '2px';
+                    fxOff.style.color = '#ccc';
+                    fxOff.style.fontSize = '10px';
+                    playerName.appendChild(fxOff);
+                }
+            }
 
             const score = document.createElement('span');
             score.textContent = player.score;

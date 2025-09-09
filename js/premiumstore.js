@@ -437,12 +437,16 @@ export class PremiumStore {
     render(ctx, canvas) {
         if (!this.storeOpen) return;
         
-        // Calculate 70% scaled dimensions centered on screen
-        const scale = 0.7;
-        const scaledWidth = canvas.width * scale;
-        const scaledHeight = canvas.height * scale;
-        const offsetX = (canvas.width - scaledWidth) / 2;
-        const offsetY = (canvas.height - scaledHeight) / 2;
+    // Responsive scale relative to min dimension so it fits various window sizes
+    const baseScale = 0.75; // slightly larger base
+    const minDim = Math.min(canvas.width, canvas.height);
+    // If screen small shrink more
+    const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
+    const scale = baseScale * dynamicFactor;
+    const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+    const scaledHeight = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+    const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
+    const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
         
         // Store background - match game style
         ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
@@ -487,6 +491,28 @@ export class PremiumStore {
         
         // Store content
         this.renderStoreContent(ctx, canvas, offsetX, offsetY, scale);
+
+        // Small skin effects toggle (bottom-left inside window when on skins tab)
+        if (this.currentTab === 'skins') {
+            const effectsEnabled = (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true';
+            const toggleW = 130;
+            const toggleH = 22;
+            const toggleX = offsetX + 30;
+            const toggleY = offsetY + scaledHeight - toggleH - 50;
+            ctx.fillStyle = effectsEnabled ? '#062' : '#222';
+            ctx.fillRect(toggleX, toggleY, toggleW, toggleH);
+            ctx.strokeStyle = effectsEnabled ? '#0f8' : '#555';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(toggleX, toggleY, toggleW, toggleH);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Orbitron, Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(effectsEnabled ? 'Effects: ON' : 'Effects: OFF', toggleX + toggleW/2, toggleY + 15);
+            // Cache toggle bounds for click handling
+            this._effectsToggleBounds = {x: toggleX, y: toggleY, w: toggleW, h: toggleH};
+        } else {
+            this._effectsToggleBounds = null;
+        }
         
         // Close button - sci-fi style (scaled and repositioned)
         const closeButtonWidth = 50;
@@ -1004,6 +1030,20 @@ export class PremiumStore {
             if (x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight) {
                 this.handleItemClick(item);
                 return true;
+            }
+        }
+
+        // Effects toggle click (if visible)
+        if (this.currentTab === 'skins' && this._effectsToggleBounds) {
+            const b = this._effectsToggleBounds;
+            if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+                const current = localStorage.getItem('shipSkinEffectsEnabled') === 'true';
+                const next = !current;
+                localStorage.setItem('shipSkinEffectsEnabled', next ? 'true' : 'false');
+                if (window.game && window.game.shipSkins) {
+                    window.game.shipSkins.setEffectsEnabled(next);
+                }
+                return true; // Will re-render next frame
             }
         }
         

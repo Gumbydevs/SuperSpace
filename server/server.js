@@ -417,6 +417,7 @@ io.on('connection', (socket) => {
       engineColor: playerData.engineColor || '#f66',
       shipSkin: playerData.shipSkin || 'none',
       avatar: playerData.avatar || 'han',
+  skinEffectsEnabled: (playerData.skinEffectsEnabled === undefined ? true : !!playerData.skinEffectsEnabled),
       projectiles: [],
       miningBeam: {
         active: false,
@@ -459,6 +460,9 @@ io.on('connection', (socket) => {
       player.engineColor = data.engineColor || player.engineColor;
       player.shipSkin = data.shipSkin || player.shipSkin;
       player.avatar = data.avatar || player.avatar; // Update avatar data
+      if (data.skinEffectsEnabled !== undefined) {
+        player.skinEffectsEnabled = !!data.skinEffectsEnabled;
+      }
       
       // Update stats from client (since client calculates scores immediately)
       if (data.score !== undefined) {
@@ -510,11 +514,33 @@ io.on('connection', (socket) => {
         engineColor: player.engineColor,
         shipSkin: player.shipSkin,
         avatar: player.avatar, // Include avatar data
+        skinEffectsEnabled: player.skinEffectsEnabled,
         score: player.score,
         wins: player.wins,
         losses: player.losses,
         miningBeam: player.miningBeam
       });
+    }
+  });
+
+  // Ship skin immediate update event
+  socket.on('shipSkinUpdate', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    const player = gameState.players[socket.id];
+    if (!player) return;
+    const newSkin = (data && typeof data.skinId === 'string') ? data.skinId : 'none';
+    player.shipSkin = newSkin;
+    socket.broadcast.emit('shipSkinUpdate', { playerId: socket.id, skinId: newSkin });
+  });
+
+  // Optional: skin effects toggle immediate broadcast (client can implement listener if desired)
+  socket.on('skinEffectsToggle', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    const player = gameState.players[socket.id];
+    if (!player) return;
+    if (data && data.enabled !== undefined) {
+      player.skinEffectsEnabled = !!data.enabled;
+      socket.broadcast.emit('skinEffectsToggle', { playerId: socket.id, enabled: player.skinEffectsEnabled });
     }
   });
   
