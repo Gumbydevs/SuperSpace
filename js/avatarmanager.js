@@ -315,32 +315,78 @@ export class AvatarManager {
             // Remove any existing hint
             const existing = document.querySelector('.premium-hint');
             if (existing) existing.remove();
-
             const hint = document.createElement('div');
             hint.className = 'premium-hint';
-            hint.textContent = `Locked: ${this.getAvatarDisplayName(avatarId)} — Visit the Premium Store to purchase.`;
-            hint.style.position = 'absolute';
-            hint.style.background = 'rgba(0,0,0,0.85)';
-            hint.style.color = '#fff';
-            hint.style.padding = '6px 8px';
-            hint.style.borderRadius = '6px';
-            hint.style.fontSize = '12px';
-            hint.style.zIndex = '1000';
-            hint.style.maxWidth = '220px';
 
-            // Position the hint near the optionElement
+            // Strong, concise message with CTA
+            const title = document.createElement('div');
+            title.textContent = `Locked: ${this.getAvatarDisplayName(avatarId)}`;
+            title.style.fontWeight = '700';
+            title.style.marginBottom = '6px';
+
+            const msg = document.createElement('div');
+            msg.textContent = 'Head to the Premium Shop to unlock this avatar.';
+            msg.style.fontSize = '13px';
+            msg.style.marginBottom = '8px';
+
+            const cta = document.createElement('button');
+            cta.textContent = 'Open Premium Shop';
+            cta.className = 'premium-hint-cta';
+            cta.style.cursor = 'pointer';
+            cta.style.padding = '6px 10px';
+            cta.style.border = 'none';
+            cta.style.background = '#ffd700';
+            cta.style.color = '#111';
+            cta.style.borderRadius = '4px';
+            cta.style.fontWeight = '700';
+
+            hint.style.position = 'absolute';
+            hint.style.background = 'linear-gradient(90deg, rgba(0,0,0,0.95), rgba(20,20,30,0.95))';
+            hint.style.color = '#fff';
+            hint.style.padding = '12px 14px';
+            hint.style.borderRadius = '8px';
+            hint.style.fontSize = '14px';
+            hint.style.zIndex = '10050'; // very high so it appears above dim overlays
+            hint.style.maxWidth = '260px';
+            hint.style.boxShadow = '0 6px 24px rgba(0,0,0,0.6), 0 2px 6px rgba(255,215,0,0.08)';
+
+            // Position the hint near the optionElement (to the right if space, otherwise above)
             const rect = optionElement.getBoundingClientRect();
-            hint.style.left = `${rect.right + 8 + window.scrollX}px`;
-            hint.style.top = `${rect.top + window.scrollY}px`;
+            const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+            const preferRight = rect.right + 280 < viewportWidth;
+            if (preferRight) {
+                hint.style.left = `${rect.right + 12 + window.scrollX}px`;
+                hint.style.top = `${rect.top + window.scrollY}px`;
+            } else {
+                // position above the clicked element, centered
+                hint.style.left = `${Math.max(8, rect.left + window.scrollX - 120 + rect.width / 2)}px`;
+                hint.style.top = `${Math.max(8, rect.top + window.scrollY - 60)}px`;
+            }
+
+            hint.appendChild(title);
+            hint.appendChild(msg);
+            hint.appendChild(cta);
 
             document.body.appendChild(hint);
 
-            // Auto-remove after 3.2s
+            // CTA opens/pulses premium store
+            cta.addEventListener('click', () => {
+                this.pulsePremiumButton();
+                // Also try to toggle immediately
+                if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
+                    try { this.premiumStore.toggleStore(); } catch (e) { console.warn('toggleStore failed', e); }
+                } else if (window.premiumStore && typeof window.premiumStore.toggleStore === 'function') {
+                    try { window.premiumStore.toggleStore(); } catch (e) { console.warn('window.premiumStore.toggleStore failed', e); }
+                }
+            });
+
+            // Auto-remove after 4s with fade
             setTimeout(() => {
-                hint.style.transition = 'opacity 300ms ease';
+                hint.style.transition = 'opacity 300ms ease, transform 300ms ease';
                 hint.style.opacity = '0';
-                setTimeout(() => hint.remove(), 350);
-            }, 3200);
+                hint.style.transform = 'translateY(-6px)';
+                setTimeout(() => hint.remove(), 360);
+            }, 4000);
         } catch (e) {
             console.warn('Failed to show premium hint', e);
         }
@@ -369,6 +415,20 @@ export class AvatarManager {
             }
 
             if (btn) {
+                // Ensure button is above modal dim overlay
+                try {
+                    const computed = window.getComputedStyle(btn);
+                    if (computed.position === 'static' || !computed.position) {
+                        btn.dataset._oldPosition = btn.style.position || '';
+                        btn.style.position = 'relative';
+                    }
+                    // Save and bump z-index
+                    btn.dataset._oldZ = btn.style.zIndex || '';
+                    btn.style.zIndex = '10051';
+                } catch (e) {
+                    // ignore
+                }
+
                 // Add pulse animation class
                 btn.classList.add('premium-pulse');
                 // Ensure the style exists (inject minimal style if not present)
@@ -376,15 +436,28 @@ export class AvatarManager {
                     const style = document.createElement('style');
                     style.id = 'premium-pulse-style';
                     style.innerHTML = `
-                    .premium-pulse { animation: premiumPulse 1s ease-in-out 0s 3; box-shadow: 0 0 12px rgba(255,215,0,0.8); }
-                    @keyframes premiumPulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+                    .premium-pulse { animation: premiumPulse 0.9s ease-in-out 0s 4; box-shadow: 0 0 18px rgba(255,215,0,0.95); transform-origin: center; }
+                    @keyframes premiumPulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 80% { transform: scale(0.99); } 100% { transform: scale(1); } }
                     .premium-hint { transition: opacity 300ms ease; }
                     `;
                     document.head.appendChild(style);
                 }
 
-                // Remove the class after animation cycles (approx 3200ms)
-                setTimeout(() => btn.classList.remove('premium-pulse'), 3400);
+                // Remove the class after animation cycles (approx 3500ms)
+                setTimeout(() => {
+                    btn.classList.remove('premium-pulse');
+                    // restore old position/z-index
+                    try {
+                        if (btn.dataset._oldPosition !== undefined) {
+                            btn.style.position = btn.dataset._oldPosition || '';
+                            delete btn.dataset._oldPosition;
+                        }
+                        if (btn.dataset._oldZ !== undefined) {
+                            btn.style.zIndex = btn.dataset._oldZ || '';
+                            delete btn.dataset._oldZ;
+                        }
+                    } catch (e) { /* ignore */ }
+                }, 3600);
 
                 // If PremiumStore instance is available on window or via this.premiumStore, toggle/open it
                 setTimeout(() => {
