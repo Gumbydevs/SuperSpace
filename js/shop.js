@@ -1949,14 +1949,14 @@ export class ShopSystem {
                 
                 // Get skin name
                 const skinNames = {
-                    'scout_stealth': 'Scout Stealth',
-                    'scout_neon': 'Scout Neon',
-                    'fighter_plasma': 'Fighter Plasma',
-                    'fighter_carbon': 'Fighter Carbon',
-                    'heavy_titan': 'Heavy Titan',
-                    'heavy_void': 'Heavy Void',
-                    'stealth_ghost': 'Stealth Ghost',
-                    'stealth_shadow': 'Stealth Shadow'
+                    'scout_stealth': 'Stealth Scout',
+                    'scout_neon': 'Neon Scout',
+                    'fighter_crimson': 'Crimson Fighter',
+                    'fighter_void': 'Void Fighter',
+                    'heavy_titan': 'Titan Heavy',
+                    'heavy_phoenix': 'Phoenix Heavy',
+                    'stealth_shadow': 'Shadow Stealth',
+                    'stealth_ghost': 'Ghost Stealth'
                 };
                 
                 skinButton.textContent = skinNames[skinId] || skinId;

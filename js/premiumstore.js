@@ -903,7 +903,7 @@ export class PremiumStore {
             ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller rarity text
             ctx.fillText(item.rarity.toUpperCase(), x + 80, textY + 15); // Smaller spacing
             
-            // Price or owned status
+            // Price / equip logic
             if (!isOwned) {
                 ctx.fillStyle = '#00ffff';
                 ctx.font = 'bold 12px Orbitron, Arial, sans-serif'; // Smaller price
@@ -925,23 +925,27 @@ export class PremiumStore {
                 ctx.font = 'bold 12px Orbitron, Arial, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText('PURCHASE', btnX + 40, btnY + 16);
-            } else {
-                ctx.fillStyle = '#00ff00';
-                ctx.font = 'bold 16px Orbitron, Arial, sans-serif';
-                ctx.fillText('OWNED', x + 100, textY + 45); // Position relative to description end
-                
-                // Equipped button if applicable
+            } else {                
+                // Determine if this skin is currently equipped
+                const equippedSkin = localStorage.getItem('selectedShipSkin') || 'none';
+                const isEquipped = equippedSkin === item.id;
+
+                ctx.fillStyle = isEquipped ? '#00ff00' : '#339933';
+                ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
+                ctx.fillText(isEquipped ? 'EQUIPPED' : 'OWNED', x + 90, textY + 45);
+
+                // Equip / Unequip button
                 const btnX = x + width - 100;
                 const btnY = y + height - 35;
-                ctx.fillStyle = '#004400';
+                ctx.fillStyle = isEquipped ? '#440000' : '#004400';
                 ctx.fillRect(btnX, btnY, 80, 25);
-                ctx.strokeStyle = '#00ff00';
+                ctx.strokeStyle = isEquipped ? '#ff6666' : '#00ff00';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(btnX, btnY, 80, 25);
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px Orbitron, Arial, sans-serif';
+                ctx.font = 'bold 11px Orbitron, Arial, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('EQUIPPED', btnX + 40, btnY + 16);
+                ctx.fillText(isEquipped ? 'UNEQUIP' : 'EQUIP', btnX + 40, btnY + 16);
             }
         }
     }
@@ -1022,10 +1026,28 @@ export class PremiumStore {
             const itemType = this.premiumAvatars.includes(item) ? 'avatar' : 'skin';
             if (this.purchaseWithGems(itemType, item.id)) {
                 console.log(`Successfully purchased ${item.name}!`);
-                // Could trigger particle effects, sound, etc.
             } else {
                 console.log(`Cannot purchase ${item.name}. Need ${item.gemPrice - this.spaceGems} more Space Gems.`);
                 this.showInsufficientGemsMessage(item);
+            }
+        } else if (item.owned) {
+            // Toggle equip for skins only
+            const isSkin = this.shipSkins.includes(item);
+            if (isSkin) {
+                const equippedSkin = localStorage.getItem('selectedShipSkin') || 'none';
+                if (equippedSkin === item.id) {
+                    // Unequip
+                    localStorage.setItem('selectedShipSkin', 'none');
+                    if (window.game && window.game.player) {
+                        window.game.player.setShipSkin('none');
+                    }
+                } else {
+                    // Equip
+                    localStorage.setItem('selectedShipSkin', item.id);
+                    if (window.game && window.game.player) {
+                        window.game.player.setShipSkin(item.id);
+                    }
+                }
             }
         }
     }
