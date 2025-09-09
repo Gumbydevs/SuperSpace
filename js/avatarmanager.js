@@ -699,7 +699,7 @@ export class AvatarManager {
                 ctx.fillStyle = '#8b4513';
                 ctx.fillRect(2, 12, 12, 4);
                 break;
-            case 'ripley': // Riley
+            case 'ripley': // 
                 ctx.fillStyle = '#f2c2a1';
                 ctx.fillRect(4, 4, 8, 8);
                 ctx.fillStyle = '#d4af37'; // Blonde

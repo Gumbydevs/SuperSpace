@@ -343,78 +343,94 @@ export class ShipSkinSystem {
                 ctx.stroke();
                 break;
             case 'fighter':
+                // Match player.js fighter geometry (larger, consistent size)
                 ctx.fillStyle = shipColor;
                 ctx.beginPath();
-                ctx.moveTo(0, -16);
-                ctx.lineTo(-3, -11);
-                ctx.lineTo(-13, -3);
-                ctx.lineTo(-9, 0);
-                ctx.lineTo(-11, 9);
-                ctx.lineTo(-3, 6);
-                ctx.lineTo(0, 7);
-                ctx.lineTo(3, 6);
-                ctx.lineTo(11, 9);
-                ctx.lineTo(9, 0);
-                ctx.lineTo(13, -3);
-                ctx.lineTo(3, -11);
+                ctx.moveTo(0, -22); // Front nose tip (larger than old premium preview)
+                ctx.lineTo(-5, -15); // Left side of nose
+                ctx.lineTo(-18, -5); // Left wing tip
+                ctx.lineTo(-12, 0); // Left wing inner edge
+                ctx.lineTo(-15, 12); // Left rear wing
+                ctx.lineTo(-5, 8); // Left engine mount
+                ctx.lineTo(0, 10); // Center bottom
+                ctx.lineTo(5, 8); // Right engine mount
+                ctx.lineTo(15, 12); // Right rear wing
+                ctx.lineTo(12, 0); // Right wing inner edge
+                ctx.lineTo(18, -5); // Right wing tip
+                ctx.lineTo(5, -15); // Right side of nose
                 ctx.closePath();
                 ctx.fill();
                 // Cockpit
                 ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
                 ctx.beginPath();
-                ctx.ellipse(0, -6, 3, 5, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, -8, 4, 7, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Wing markings
+                // Wing markings/details
                 ctx.fillStyle = accent;
                 ctx.beginPath();
-                ctx.moveTo(-11, -2); ctx.lineTo(-7, -1); ctx.lineTo(-7, 1); ctx.lineTo(-11, 0); ctx.closePath(); ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(11, -2); ctx.lineTo(7, -1); ctx.lineTo(7, 1); ctx.lineTo(11, 0); ctx.closePath(); ctx.fill();
-                break;
-            case 'heavy':
-                ctx.fillStyle = shipColor;
-                ctx.beginPath();
-                ctx.moveTo(0, -18);
-                ctx.lineTo(-5, -13);
-                ctx.lineTo(-8, -3);
-                ctx.lineTo(-16, 0);
-                ctx.lineTo(-16, 3);
-                ctx.lineTo(-12, 5);
-                ctx.lineTo(-6, 11);
-                ctx.lineTo(0, 9);
-                ctx.lineTo(6, 11);
-                ctx.lineTo(12, 5);
-                ctx.lineTo(16, 3);
-                ctx.lineTo(16, 0);
-                ctx.lineTo(8, -3);
-                ctx.lineTo(5, -13);
+                ctx.moveTo(-15, -4);
+                ctx.lineTo(-10, -2);
+                ctx.lineTo(-10, 0);
+                ctx.lineTo(-15, -2);
                 ctx.closePath();
                 ctx.fill();
-                // Armor plating
-                ctx.strokeStyle = accent;
-                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(-6, -9); ctx.lineTo(-9, -3);
-                ctx.moveTo(6, -9); ctx.lineTo(9, -3);
-                ctx.moveTo(-6, -3); ctx.lineTo(6, -3);
+                ctx.moveTo(15, -4);
+                ctx.lineTo(10, -2);
+                ctx.lineTo(10, 0);
+                ctx.lineTo(15, -2);
+                ctx.closePath();
+                ctx.fill();
+                break;
+            case 'heavy':
+                // Match player.js heavy/cruiser geometry (larger hull)
+                ctx.fillStyle = shipColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -28); // Nose tip
+                ctx.lineTo(-8, -20); // Left front angled edge
+                ctx.lineTo(-12, -5); // Left mid-hull
+                ctx.lineTo(-25, 0); // Left wing tip
+                ctx.lineTo(-25, 5); // Left wing corner
+                ctx.lineTo(-18, 8); // Left wing inner
+                ctx.lineTo(-10, 18); // Left engine mount
+                ctx.lineTo(0, 15); // Bottom center
+                ctx.lineTo(10, 18); // Right engine mount
+                ctx.lineTo(18, 8); // Right wing inner 
+                ctx.lineTo(25, 5); // Right wing corner
+                ctx.lineTo(25, 0); // Right wing tip
+                ctx.lineTo(12, -5); // Right mid-hull
+                ctx.lineTo(8, -20); // Right front angled edge
+                ctx.closePath();
+                ctx.fill();
+                // Heavy armor plating
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-10, -15);
+                ctx.lineTo(-15, -5);
+                ctx.moveTo(10, -15);
+                ctx.lineTo(15, -5);
+                ctx.moveTo(-10, -5);
+                ctx.lineTo(10, -5);
                 ctx.stroke();
                 // Cockpit
                 ctx.fillStyle = 'rgba(150, 200, 255, 0.8)';
                 ctx.beginPath();
-                ctx.ellipse(0, -7, 3, 5, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, -12, 5, 8, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Weapon mounts
+                // Side weapon mounts
                 ctx.fillStyle = '#555';
                 ctx.beginPath();
-                ctx.rect(-14, -1, 5, 2);
-                ctx.rect(9, -1, 5, 2);
+                ctx.rect(-22, -2, 8, 4);
+                ctx.rect(14, -2, 8, 4);
                 ctx.fill();
                 break;
             case 'stealth':
+                // Stealth ship - match player.js stealth sizing and subtle engine behavior
                 ctx.fillStyle = shipColor;
                 ctx.beginPath();
                 ctx.moveTo(0, -16);
-                ctx.lineTo(-2, -12);
+                ctx.lineTo(-5, -12);
                 ctx.lineTo(-12, -4);
                 ctx.lineTo(-6, 4);
                 ctx.lineTo(-9, 12);
@@ -424,7 +440,7 @@ export class ShipSkinSystem {
                 ctx.lineTo(9, 12);
                 ctx.lineTo(6, 4);
                 ctx.lineTo(12, -4);
-                ctx.lineTo(2, -12);
+                ctx.lineTo(5, -12);
                 ctx.closePath();
                 ctx.fill();
                 // Outline
@@ -432,11 +448,11 @@ export class ShipSkinSystem {
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 // Panels (simplified)
-                const stealthGradient = ctx.createLinearGradient(0, -12, 0, 12);
-                stealthGradient.addColorStop(0, shipColor);
-                stealthGradient.addColorStop(0.5, accent);
-                stealthGradient.addColorStop(1, shipColor);
-                ctx.fillStyle = stealthGradient;
+                const stealthGradient2 = ctx.createLinearGradient(0, -12, 0, 12);
+                stealthGradient2.addColorStop(0, shipColor);
+                stealthGradient2.addColorStop(0.5, accent);
+                stealthGradient2.addColorStop(1, shipColor);
+                ctx.fillStyle = stealthGradient2;
                 ctx.beginPath();
                 ctx.moveTo(-8, -2); ctx.lineTo(-5, 0); ctx.lineTo(-6, 6); ctx.lineTo(-9, 9); ctx.closePath(); ctx.fill();
                 ctx.beginPath();
