@@ -14,6 +14,26 @@ export class PremiumStore {
         // Premium avatar collection
         this.premiumAvatars = [
             {
+                id: 'robot',
+                name: 'Marvin',
+                description: 'Iconic AI pilot with glowing eyes',
+                gemPrice: 100,
+                realPrice: 0.99,
+                owned: false,
+                rarity: 'rare',
+                drawMethod: 'drawMarvin'
+            },
+            {
+                id: 'alien',
+                name: 'Jeff',
+                description: 'Mysterious green alien pilot',
+                gemPrice: 110,
+                realPrice: 1.49,
+                owned: false,
+                rarity: 'rare',
+                drawMethod: 'drawGorf'
+            },
+            {
                 id: 'astronaut_gold',
                 name: 'Golden Astronaut',
                 description: 'Luxurious golden space suit for elite pilots',
