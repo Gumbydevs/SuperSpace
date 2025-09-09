@@ -335,10 +335,10 @@ export class AvatarManager {
             title.style.fontWeight = '700';
             title.style.marginBottom = '8px';
 
-            const line1 = document.createElement('div');
-            line1.textContent = 'This avatar is premium-only.';
-            line1.style.fontSize = '13px';
-            line1.style.marginBottom = '6px';
+            const unlockLine = document.createElement('div');
+            unlockLine.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u></span> <span style="font-weight:700;">button</span>:`;
+            unlockLine.style.fontSize = '13px';
+            unlockLine.style.marginBottom = '6px';
 
             const line2 = document.createElement('div');
             line2.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u></span> <span style="color:#fff;font-weight:700;">button</span>:`;
@@ -369,8 +369,8 @@ export class AvatarManager {
             hint.style.fontSize = '14px';
             hint.style.zIndex = '10050'; // very high so it appears above dim overlays
             hint.style.maxWidth = '320px';
-            hint.style.boxShadow = '0 6px 24px rgba(0,0,0,0.6), 0 2px 6px rgba(255,215,0,0.08)';
-
+                const line2 = document.createElement('div');
+                line2.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u></span> <span style="font-weight:700;">button</span>:`;
             // Position the hint near the optionElement (to the right if space, otherwise above)
             const rect = optionElement.getBoundingClientRect();
             const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
@@ -386,7 +386,7 @@ export class AvatarManager {
 
             hint.appendChild(title);
             hint.appendChild(line1);
-            hint.appendChild(line2);
+            hint.appendChild(unlockLine);
             hint.appendChild(arrowRow);
 
             document.body.appendChild(hint);
