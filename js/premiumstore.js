@@ -543,7 +543,9 @@ export class PremiumStore {
         ];
         
         const tabWidth = 120; // Smaller tabs
-        const startX = (canvas.width - (tabs.length * tabWidth)) / 2;
+    // Center tabs inside the scaled store area so tabs align with store content
+    const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+    const startX = offsetX + Math.floor((scaledWidth - (tabs.length * tabWidth)) / 2);
         
         tabs.forEach((tab, index) => {
             const x = startX + (index * tabWidth);
@@ -571,14 +573,21 @@ export class PremiumStore {
         const items = this.getCurrentTabItems();
         const startY = offsetY + 170; // Adjusted for scaled layout
         const itemHeight = 100; // Smaller item height
-        const itemsPerRow = 2;
-        const itemWidth = 240; // Smaller item width
-        const spacing = 30; // Smaller spacing
+        const itemWidth = 240; // Base item width
+        const spacing = 30; // Base spacing
+
+        // Compute scaled store area and derive how many items fit per row dynamically
+        const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+        const availableInner = scaledWidth - 40; // padding inside scaled area
+        const itemsPerRow = Math.max(1, Math.floor((availableInner + spacing) / (itemWidth + spacing)));
         
         items.forEach((item, index) => {
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
-            const x = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
+            // Center the grid inside the scaled area using offsetX
+            const gridWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
+            const startX = offsetX + 20 + Math.floor((scaledWidth - 40 - gridWidth) / 2);
+            const x = startX + col * (itemWidth + spacing);
             const y = startY + row * (itemHeight + 25); // Smaller row spacing
             
             this.renderStoreItem(ctx, item, x, y, itemWidth, itemHeight);
@@ -979,19 +988,21 @@ export class PremiumStore {
     // Handle clicks on store items
     handleClick(x, y, canvas) {
         if (!this.storeOpen) return false;
-        
-        // Calculate 70% scaled dimensions centered on screen (same as render method)
-        const scale = 0.7;
-        const scaledWidth = canvas.width * scale;
-        const scaledHeight = canvas.height * scale;
-        const offsetX = (canvas.width - scaledWidth) / 2;
-        const offsetY = (canvas.height - scaledHeight) / 2;
+    // Recompute the same dynamic scale and offsets used by render so hitboxes align
+    const baseScale = 0.75; // must match render's baseScale
+    const minDim = Math.min(canvas.width, canvas.height);
+    const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
+    const scale = baseScale * dynamicFactor;
+    const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+    const scaledHeight = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+    const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
+    const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
         
         // Close button - updated position (matches render method)
-        const closeButtonWidth = 50;
-        const closeButtonHeight = 28;
-        const closeX = offsetX + scaledWidth - closeButtonWidth - 20;
-        const closeY = offsetY + 25;
+    const closeButtonWidth = 50;
+    const closeButtonHeight = 28;
+    const closeX = offsetX + scaledWidth - closeButtonWidth - 20;
+    const closeY = offsetY + 25;
         if (x >= closeX && x <= closeX + closeButtonWidth && y >= closeY && y <= closeY + closeButtonHeight) {
             this.toggleStore();
             return true;
@@ -1000,12 +1011,12 @@ export class PremiumStore {
         // Tab buttons - updated positions (matches render method)
         const tabs = ['avatars', 'skins', 'gems'];
         const tabWidth = 120; // Smaller tabs
-        const startX = (canvas.width - (tabs.length * tabWidth)) / 2;
-        
+        const tabStartX = offsetX + Math.floor((scaledWidth - (tabs.length * tabWidth)) / 2);
+
         for (let i = 0; i < tabs.length; i++) {
-            const tabX = startX + (i * tabWidth);
+            const tabX = tabStartX + (i * tabWidth);
             const tabY = offsetY + 120; // Adjusted for scaled layout
-            
+
             if (x >= tabX && x <= tabX + tabWidth - 10 && y >= tabY && y <= tabY + 32) { // Smaller tab height
                 this.setTab(tabs[i]);
                 return true;
@@ -1014,19 +1025,24 @@ export class PremiumStore {
         
         // Store items - updated positions (matches render method)
         const items = this.getCurrentTabItems();
-        const startY = offsetY + 170; // Adjusted for scaled layout
-        const itemHeight = 100; // Smaller item height
-        const itemsPerRow = 2;
-        const itemWidth = 240; // Smaller item width
-        const spacing = 30; // Smaller spacing
-        
+        const startYItems = offsetY + 170; // Adjusted for scaled layout
+        const itemHeight = 100; // Base item height
+        const itemWidth = 240; // Base item width
+        const spacing = 30; // Base spacing
+
+        // Compute how many items per row using same logic as renderStoreContent
+        const availableInner = scaledWidth - 40;
+        const itemsPerRow = Math.max(1, Math.floor((availableInner + spacing) / (itemWidth + spacing)));
+        const gridWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
+        const startXItems = offsetX + 20 + Math.floor((scaledWidth - 40 - gridWidth) / 2);
+
         for (let index = 0; index < items.length; index++) {
             const item = items[index];
             const row = Math.floor(index / itemsPerRow);
             const col = index % itemsPerRow;
-            const itemX = (canvas.width / 2) - (itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing) / 2 + col * (itemWidth + spacing);
-            const itemY = startY + row * (itemHeight + 25); // Smaller row spacing
-            
+            const itemX = startXItems + col * (itemWidth + spacing);
+            const itemY = startYItems + row * (itemHeight + 25);
+
             if (x >= itemX && x <= itemX + itemWidth && y >= itemY && y <= itemY + itemHeight) {
                 this.handleItemClick(item);
                 return true;
