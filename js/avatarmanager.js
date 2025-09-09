@@ -228,16 +228,26 @@ export class AvatarManager {
         modalAvatarOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const avatarType = option.dataset.avatar;
-                
                 if (!avatarType) return;
-                
+
                 // Check if it's a premium avatar that the player doesn't own
                 if (this.premiumAvatars.includes(avatarType) && !this.ownsAvatar(avatarType)) {
-                    // Provide a clearer UX path: hint and highlight/open the premium shop
-                    // Play error sound if available
-                    if (window.game && window.game.soundManager) {
-                        window.game.soundManager.play('error', { volume: 0.5 });
-                    }
+                    // Always synthesize a retro error sound using Web Audio API
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'square';
+                        o.frequency.value = 220;
+                        g.gain.value = 0.18;
+                        o.connect(g).connect(ctx.destination);
+                        o.start();
+                        // quick retro chirp
+                        o.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.09);
+                        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.13);
+                        o.stop(ctx.currentTime + 0.13);
+                        o.onended = () => ctx.close();
+                    } catch (e) { /* ignore */ }
 
                     // Show an inline hint to the player
                     this.showPremiumHint(option, avatarType);
@@ -247,7 +257,7 @@ export class AvatarManager {
 
                     return;
                 }
-                
+
                 // Allow selection if not disabled and avatar is available
                 if (!option.classList.contains('disabled')) {
                     this.tempSelection = avatarType;
@@ -519,11 +529,14 @@ export class AvatarManager {
                 // Save original values to restore later if needed
                 if (!el.dataset._oldOpacity) el.dataset._oldOpacity = el.style.opacity || '';
                 if (!el.dataset._oldZ) el.dataset._oldZ = el.style.zIndex || '';
+                if (!el.dataset._oldPointerEvents) el.dataset._oldPointerEvents = el.style.pointerEvents || '';
 
                 el.style.transition = 'opacity 220ms ease, background-color 220ms ease';
                 el.style.opacity = '0.18';
                 // put it behind the premium button area
                 el.style.zIndex = '10040';
+                // Prevent overlay from blocking clicks
+                el.style.pointerEvents = 'none';
             });
 
             // Do NOT set avatarModal opacity to 0 here, as it will block pointer events if not hidden.
@@ -672,6 +685,12 @@ export class AvatarManager {
                             delete el.dataset._oldZ;
                         } else {
                             el.style.zIndex = '';
+                        }
+                        if (el.dataset._oldPointerEvents !== undefined) {
+                            el.style.pointerEvents = el.dataset._oldPointerEvents || '';
+                            delete el.dataset._oldPointerEvents;
+                        } else {
+                            el.style.pointerEvents = '';
                         }
                     } catch (e) { /* ignore */ }
                 });
