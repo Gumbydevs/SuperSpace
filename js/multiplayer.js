@@ -53,6 +53,10 @@ export class MultiplayerManager {
         // Preload the font for kill announcements
         this.killAnnouncer.preloadFont();
 
+    // Track last sent thrust state to send low-latency updates when it changes
+    this.lastSentThrustLevel = 0;
+    this.lastSentAfterburner = false;
+
     }
 
     // Check if game version has changed and reset progress if needed
@@ -967,6 +971,15 @@ export class MultiplayerManager {
             this.updateRemotePlayer(playerData);
         });
 
+        // Low-latency thrust change - immediate visual update
+        this.socket.on('thrustChanged', (data) => {
+            const p = this.players[data.playerId];
+            if (p) {
+                p.thrustLevel = data.thrustLevel;
+                p.afterburnerActive = !!data.afterburnerActive;
+            }
+        });
+
         // Handle player general updates (stats, etc.)
         this.socket.on('playerUpdate', (playerData) => {
             this.updateRemotePlayer(playerData);
@@ -1586,6 +1599,21 @@ export class MultiplayerManager {
 
             this.socket.emit('playerUpdate', playerData);
             this.lastUpdate = 0;
+        }
+
+        // Low-latency thrust change emitter: if thrust or afterburner changed noticeably, send immediate event
+        if (this.game && this.game.player && this.socket && this.connected) {
+            const currentThrust = typeof this.game.player.thrustLevel !== 'undefined' ? this.game.player.thrustLevel : 0;
+            const currentAfterburner = !!this.game.player.afterburnerActive;
+            const thrustDelta = Math.abs((this.lastSentThrustLevel || 0) - currentThrust);
+            if (thrustDelta > 0.08 || currentAfterburner !== this.lastSentAfterburner) {
+                this.socket.emit('thrustChanged', {
+                    thrustLevel: currentThrust,
+                    afterburnerActive: currentAfterburner
+                });
+                this.lastSentThrustLevel = currentThrust;
+                this.lastSentAfterburner = currentAfterburner;
+            }
         }
 
         // Real-time leaderboard update: only update if player stats changed

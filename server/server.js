@@ -418,6 +418,9 @@ io.on('connection', (socket) => {
       shipSkin: playerData.shipSkin || 'none',
       avatar: playerData.avatar || 'han',
   skinEffectsEnabled: (playerData.skinEffectsEnabled === undefined ? true : !!playerData.skinEffectsEnabled),
+  // Visual engine state for client rendering
+  thrustLevel: playerData.thrustLevel !== undefined ? playerData.thrustLevel : 0,
+  afterburnerActive: playerData.afterburnerActive !== undefined ? !!playerData.afterburnerActive : false,
       projectiles: [],
       miningBeam: {
         active: false,
@@ -496,6 +499,14 @@ io.on('connection', (socket) => {
           intensity: data.miningBeam.intensity
         };
       }
+
+      // Update visual engine state if provided
+      if (data.thrustLevel !== undefined) {
+        player.thrustLevel = data.thrustLevel;
+      }
+      if (data.afterburnerActive !== undefined) {
+        player.afterburnerActive = !!data.afterburnerActive;
+      }
       
       // Broadcast the updated position to all other players
       socket.broadcast.emit('playerMoved', {
@@ -512,6 +523,8 @@ io.on('connection', (socket) => {
         color: player.color,
         shipColor: player.shipColor,
         engineColor: player.engineColor,
+  thrustLevel: player.thrustLevel || 0,
+  afterburnerActive: !!player.afterburnerActive,
         shipSkin: player.shipSkin,
         avatar: player.avatar, // Include avatar data
         skinEffectsEnabled: player.skinEffectsEnabled,
@@ -519,6 +532,24 @@ io.on('connection', (socket) => {
         wins: player.wins,
         losses: player.losses,
         miningBeam: player.miningBeam
+      });
+    }
+  });
+
+  // Low-latency thrust change relay
+  socket.on('thrustChanged', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+    const player = gameState.players[socket.id];
+    if (player) {
+      // Update server copy if provided
+      if (data.thrustLevel !== undefined) player.thrustLevel = data.thrustLevel;
+      if (data.afterburnerActive !== undefined) player.afterburnerActive = !!data.afterburnerActive;
+
+      // Relay to other clients immediately
+      socket.broadcast.emit('thrustChanged', {
+        playerId: socket.id,
+        thrustLevel: player.thrustLevel || 0,
+        afterburnerActive: !!player.afterburnerActive
       });
     }
   });
