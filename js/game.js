@@ -332,10 +332,11 @@ class Game {
         const premiumBtn = document.createElement('button');
         premiumBtn.textContent = '💎 Premium';
         premiumBtn.id = 'premium-btn';
-        // Style the premium button to match shop button size and positioning
-        premiumBtn.style.position = 'absolute';
-        premiumBtn.style.top = '114px'; // Position below shop button (76px + 38px gap)
-        premiumBtn.style.right = '0px';
+    premiumBtn.style.position = 'absolute';
+    // Lower the premium button so it doesn't overlap the shop button
+    premiumBtn.style.top = '132px'; // moved down from 114px
+    premiumBtn.style.right = '0px';
+    premiumBtn.style.zIndex = '1002';
         premiumBtn.style.zIndex = '1002';
         premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
         premiumBtn.style.color = 'white';
@@ -359,7 +360,22 @@ class Game {
         };
         
         // Set up click handler to toggle premium store visibility
-        premiumBtn.onclick = () => this.togglePremiumStore();
+        // Try to match the shop button width at runtime. If shop button
+        // isn't available or has zero width, fall back to a sensible default.
+        try {
+            const shopBtn = document.getElementById('shop-btn');
+            if (shopBtn) {
+                // Use offsetWidth if available (preferred), otherwise computed width
+                const shopWidth = shopBtn.offsetWidth || parseInt(window.getComputedStyle(shopBtn).width, 10) || 120;
+                premiumBtn.style.width = shopWidth + 'px';
+            } else {
+                premiumBtn.style.width = '120px';
+            }
+        } catch (e) {
+            premiumBtn.style.width = '120px';
+        }
+
+        document.body.appendChild(premiumBtn);
         document.body.appendChild(premiumBtn);
     }
     
