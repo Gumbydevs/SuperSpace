@@ -245,6 +245,34 @@ export class UI {
     creditsDisplay.style.marginTop = '0.5em'; // Move down by about half the element height
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
     topInfoPanel.appendChild(creditsDisplay);
+
+    // Space Gems display
+    const gemsDisplay = document.createElement('div');
+    gemsDisplay.className = 'status-item-small';
+    gemsDisplay.innerHTML = '<span class="status-label">GEMS:</span> <span id="space-gems" class="status-value">0</span> <span style="color:#00e0ff;font-size:1.2em;vertical-align:middle;">💎</span>';
+    gemsDisplay.style.marginTop = '0.5em';
+    this.styleStatusItemSmall(gemsDisplay, '#00e0ff');
+    topInfoPanel.appendChild(gemsDisplay);
+
+    // Helper to update gems display
+    function updateGemsDisplay() {
+        let gems = 0;
+        if (window.premiumStore && typeof window.premiumStore.loadSpaceGems === 'function') {
+            gems = window.premiumStore.loadSpaceGems();
+        } else {
+            const stored = localStorage.getItem('spaceGems');
+            gems = stored ? parseInt(stored) : 0;
+        }
+        const gemsElem = document.getElementById('space-gems');
+        if (gemsElem) gemsElem.textContent = gems;
+    }
+    updateGemsDisplay();
+    // Listen for storage changes (other tabs/windows)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'spaceGems') updateGemsDisplay();
+    });
+    // Optionally, poll for changes if gems can change in this tab
+    setInterval(updateGemsDisplay, 2000);
     
     // Check if multiplayer reset occurred and ensure credits display is correct
     if (this.game && this.game.multiplayer) {
