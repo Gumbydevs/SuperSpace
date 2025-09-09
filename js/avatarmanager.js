@@ -289,12 +289,12 @@ export class AvatarManager {
         
         // Default avatar names
         const defaultNames = {
-            'han': 'Han Solo',
-            'ripley': 'Ellen Ripley',
-            'robot': 'Android Pilot',
-            'alien': 'Alien Commander',
+            'han': 'Ace',
+            'ripley': 'Ripley',
+            'robot': 'Marvin',
+            'alien': 'Jeff',
             'longjohn': 'Long John',
-            'missy': 'Pilot Missy'
+            'missy': 'Missy'
         };
         
         return defaultNames[avatarId] || avatarId;
