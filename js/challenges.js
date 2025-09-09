@@ -24,6 +24,8 @@ export class ChallengeSystem {
     // completed now means completed (may be unclaimed). claimed tracks those already claimed
     this.completed = { daily: [], weekly: [] };
     this.claimed = { daily: [], weekly: [] };
+    // notified tracks whether we've shown the on-screen popup for a completed challenge
+    this.notified = { daily: [], weekly: [] };
 
     // load persisted state if available
     this.loadState();
@@ -60,6 +62,12 @@ export class ChallengeSystem {
                 // Mark as completed but DO NOT auto-award the reward.
                 // Player must claim from the shop Challenges tab.
                 this.completed[challengeType].push(ch.id);
+                // If we haven't shown a notification yet for this completion, show it once
+                if (!this.notified[challengeType].includes(ch.id)) {
+                    this.notified[challengeType].push(ch.id);
+                    // show a brief notification to inform the player (no reward is given here)
+                    this.showChallengeComplete(ch, challengeType);
+                }
                 this.saveState();
             }
         });
@@ -87,6 +95,7 @@ export class ChallengeSystem {
             const data = {
                 completed: this.completed,
                 claimed: this.claimed
+                ,notified: this.notified
             };
             localStorage.setItem('challenge_state', JSON.stringify(data));
         } catch (e) {
@@ -105,13 +114,46 @@ export class ChallengeSystem {
             if (data.claimed) {
                 this.claimed = data.claimed;
             }
+            if (data.notified) {
+                this.notified = data.notified;
+            }
         } catch (e) {
             // ignore parse errors
         }
     }
 
     showChallengeComplete(challenge, type) {
-    // Notifications for automatic completion are disabled.
-    // Rewards are awarded only when player claims them in the shop.
+        // Create a temporary notification at top-center (briefly visible)
+        try {
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = 'rgba(0, 60, 30, 0.95)';
+            notification.style.color = '#3f3';
+            notification.style.padding = '12px 18px';
+            notification.style.borderRadius = '6px';
+            notification.style.border = '2px solid #3f3';
+            notification.style.zIndex = '10000';
+            notification.style.fontFamily = "'Orbitron', monospace";
+            notification.style.fontSize = '14px';
+            notification.style.boxShadow = '0 6px 18px rgba(0,0,0,0.6)';
+            notification.innerHTML = `
+                <div style="font-weight:700; margin-bottom:4px;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
+                <div style="font-size:0.95em;">${challenge.description}</div>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Remove notification after 3.5 seconds
+            setTimeout(() => {
+                try {
+                    if (notification.parentNode) notification.parentNode.removeChild(notification);
+                } catch (e) {}
+            }, 3500);
+        } catch (e) {
+            // ignore DOM errors in non-browser contexts
+        }
     }
 }
