@@ -4,8 +4,10 @@
 export class AvatarManager {
     constructor(premiumStore = null) {
         this.selectedAvatar = localStorage.getItem('selectedAvatar') || 'han';
-        this.avatarOptions = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
-        this.premiumAvatars = ['astronaut_gold', 'alien_commander', 'cyber_pilot', 'galaxy_explorer', 'neon_warrior'];
+    // Keep only the three non-premium (free) avatars here: Ace, Ripley, Missy.
+    this.avatarOptions = ['han', 'ripley', 'missy'];
+    // Add 'robot', 'alien' and 'longjohn' to the premium list so they are treated as premium-only
+    this.premiumAvatars = ['robot', 'alien', 'longjohn', 'astronaut_gold', 'alien_commander', 'cyber_pilot', 'galaxy_explorer', 'neon_warrior'];
         this.premiumStore = premiumStore;
         this.initialized = false;
         this.tempSelection = null; // For modal selection
@@ -42,6 +44,10 @@ export class AvatarManager {
     setupPremiumAvatars() {
         console.log('Setting up premium avatars...');
         const premiumAvatarData = [
+            // Include robot and alien early so they occupy premium slots on the right
+            { id: 'robot', name: 'Marvin' },
+            { id: 'alien', name: 'Jeff' },
+            { id: 'longjohn', name: 'Long John' },
             { id: 'astronaut_gold', name: 'Golden Ace' },
             { id: 'alien_commander', name: 'Zorg Prime' }, 
             { id: 'cyber_pilot', name: 'Cyber-X' },
@@ -53,8 +59,10 @@ export class AvatarManager {
         
         // Step 1: First, reset ALL avatar options completely to prevent duplicates
         const allOptions = document.querySelectorAll('.avatar-option');
-        const freeAvatars = ['han', 'ripley', 'robot', 'alien', 'longjohn', 'missy'];
-        const freeAvatarNames = ['Han Solo', 'Ellen Ripley', 'Android Pilot', 'Alien Commander', 'Long John', 'Pilot Missy'];
+    // Only show the free (non-premium) avatars in the main left slots.
+    // Desired order: Ace, Ripley, Missy
+    const freeAvatars = ['han', 'ripley', 'missy'];
+    const freeAvatarNames = ['Ace', 'Ripley', 'Missy'];
         
         // Reset all options to their default free avatars first
         allOptions.forEach((option, index) => {
@@ -787,6 +795,18 @@ export class AvatarManager {
         ctx.fillRect(0, 0, size, size);
         
         switch (avatarId) {
+            case 'robot':
+                // Treat robot as premium Marvin
+                this.drawMarvin(ctx, size);
+                return;
+            case 'alien':
+                // Treat alien as premium Gorf/Jeff
+                this.drawGorf(ctx, size);
+                return;
+            case 'longjohn':
+                // Treat Long John as premium Long John
+                this.drawLongJohn(ctx, size);
+                return;
             case 'astronaut_gold':
                 this.drawGoldenAstronaut(ctx, size);
                 break;

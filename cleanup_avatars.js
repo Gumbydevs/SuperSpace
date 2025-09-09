@@ -6,9 +6,10 @@ console.log("Step 1: Cleaning up duplicate premium slots...");
 const allOptions = document.querySelectorAll('.avatar-option');
 const seenAvatars = new Set();
 
+// Allowed free avatars: han, ripley, missy
 allOptions.forEach(option => {
     const avatarId = option.dataset.avatar;
-    if (avatarId && avatarId !== 'han' && avatarId !== 'ripley' && avatarId !== 'robot' && avatarId !== 'alien' && avatarId !== 'longjohn' && avatarId !== 'missy') {
+    if (avatarId && avatarId !== 'han' && avatarId !== 'ripley' && avatarId !== 'missy') {
         if (seenAvatars.has(avatarId)) {
             // This is a duplicate - remove it
             console.log('Removing duplicate:', avatarId);
