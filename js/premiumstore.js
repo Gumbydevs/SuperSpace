@@ -443,8 +443,27 @@ export class PremiumStore {
     // If screen small shrink more
     const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
     const scale = baseScale * dynamicFactor;
-    const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
-    const scaledHeight = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+    const scaledWidthBase = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+    const scaledHeightBase = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+
+    // Determine required height to fit tabs + grid + footers so outer box always encloses items
+    const items = this.getCurrentTabItems();
+    const itemHeight = 100; // must match renderStoreContent's itemHeight
+    const itemWidth = 240;
+    const spacing = 30;
+    const availableInner = scaledWidthBase - 40;
+    const itemsPerRow = Math.max(1, Math.floor((availableInner + spacing) / (itemWidth + spacing)));
+    const rows = Math.max(1, Math.ceil(items.length / itemsPerRow));
+    const gridHeight = rows * (itemHeight + 25) - 25; // total rows height (no extra gap after last)
+
+    // Estimate header and footer heights used in render
+    const headerHeight = 120; // from top to where grid starts (approx offsetY + 170 minus offsetY)
+    const footerHeight = 120; // allow space for instructions, close button area etc.
+
+    const neededHeight = headerHeight + gridHeight + footerHeight;
+
+    const scaledHeight = Math.min(canvas.height - 40, Math.max(scaledHeightBase, neededHeight));
+    const scaledWidth = scaledWidthBase;
     const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
     const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
         
@@ -993,8 +1012,25 @@ export class PremiumStore {
     const minDim = Math.min(canvas.width, canvas.height);
     const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
     const scale = baseScale * dynamicFactor;
-    const scaledWidth = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
-    const scaledHeight = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+    const scaledWidthBase = Math.min(Math.floor(canvas.width * scale), canvas.width - 40);
+    const scaledHeightBase = Math.min(Math.floor(canvas.height * scale), canvas.height - 40);
+
+    // Recompute grid metrics used in render for consistent height
+    const gridItemsForHeight = this.getCurrentTabItems();
+    const gridItemHeight = 100; // must match renderStoreContent's itemHeight
+    const gridItemWidth = 240;
+    const gridSpacing = 30;
+    const availableInnerBase = scaledWidthBase - 40;
+    const itemsPerRowBase = Math.max(1, Math.floor((availableInnerBase + gridSpacing) / (gridItemWidth + gridSpacing)));
+    const rowsBase = Math.max(1, Math.ceil(gridItemsForHeight.length / itemsPerRowBase));
+    const gridHeight = rowsBase * (gridItemHeight + 25) - 25;
+
+    const headerHeight = 120;
+    const footerHeight = 120;
+    const neededHeight = headerHeight + gridHeight + footerHeight;
+
+    const scaledHeight = Math.min(canvas.height - 40, Math.max(scaledHeightBase, neededHeight));
+    const scaledWidth = scaledWidthBase;
     const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
     const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
         
