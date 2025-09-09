@@ -501,18 +501,21 @@ export class AvatarManager {
         try {
             // Find common dim overlay elements and reduce their opacity / z-index
             const overlays = Array.from(document.querySelectorAll('.modal-backdrop, .overlay, .dim-overlay, #modalBackdrop'));
-            if (overlays.length === 0) {
-                // Try guessing by modality: elements with high z-index and semi-transparent background
-                const all = Array.from(document.body.children);
-                all.forEach(el => {
-                    const s = window.getComputedStyle(el);
-                    if ((s.position === 'fixed' || s.position === 'absolute') && s.backgroundColor && /rgba/.test(s.backgroundColor) && parseFloat(s.opacity || '1') > 0.1) {
-                        overlays.push(el);
-                    }
-                });
+            // Identify premium shop modal and its backdrop (if any)
+            const premiumSelectors = ['#premiumModal', '#shopModal', '.premium-modal', '#premiumShopModal'];
+            const premiumModals = premiumSelectors.map(s => document.querySelector(s)).filter(Boolean);
+            // Also try to find a backdrop inside the premium modal
+            let premiumBackdrop = null;
+            for (const modal of premiumModals) {
+                if (!modal) continue;
+                // Look for a child with class modal-backdrop, overlay, or dim-overlay
+                premiumBackdrop = modal.querySelector('.modal-backdrop, .overlay, .dim-overlay, #modalBackdrop');
+                if (premiumBackdrop) break;
             }
 
             overlays.forEach((el, idx) => {
+                // Skip premium shop modal and its backdrop
+                if (premiumModals.includes(el) || el === premiumBackdrop) return;
                 // Save original values to restore later if needed
                 if (!el.dataset._oldOpacity) el.dataset._oldOpacity = el.style.opacity || '';
                 if (!el.dataset._oldZ) el.dataset._oldZ = el.style.zIndex || '';
@@ -523,7 +526,7 @@ export class AvatarManager {
                 el.style.zIndex = '10040';
             });
 
-            // Also dim the modal itself less (if present)
+            // Also dim the avatar modal itself less (if present)
             const avatarModal = document.getElementById('avatarModal');
             if (avatarModal) {
                 avatarModal.style.transition = 'opacity 220ms ease';
