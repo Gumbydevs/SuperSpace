@@ -341,7 +341,7 @@ export class AvatarManager {
             line1.style.marginBottom = '6px';
 
             const line2 = document.createElement('div');
-            line2.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u> button</span>:`;
+            line2.innerHTML = `To unlock it, <span style="color:#ffd700;font-weight:700;">click the <u>Premium Store</u></span> <span style="color:#fff;font-weight:700;">button</span>:`;
             line2.style.fontSize = '13px';
             line2.style.marginBottom = '6px';
 
@@ -441,6 +441,27 @@ export class AvatarManager {
                     btn.style.zIndex = '10051';
                 } catch (e) {
                     // ignore
+                }
+
+                // Highlight the word 'Premium' in the button text
+                // Only do this if not already styled
+                if (!btn.dataset._premiumStyled) {
+                    // Try to find the text node containing 'Premium'
+                    let found = false;
+                    btn.childNodes.forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE && /premium/i.test(node.textContent)) {
+                            // Replace with span
+                            const replaced = document.createElement('span');
+                            replaced.innerHTML = node.textContent.replace(/(premium)/i, '<span style="color:#ffd700;font-weight:700;">$1</span>');
+                            btn.replaceChild(replaced, node);
+                            found = true;
+                        }
+                    });
+                    // Fallback: innerHTML replace if not found
+                    if (!found && /premium/i.test(btn.innerHTML)) {
+                        btn.innerHTML = btn.innerHTML.replace(/(premium)/i, '<span style="color:#ffd700;font-weight:700;">$1</span>');
+                    }
+                    btn.dataset._premiumStyled = '1';
                 }
 
                 // Add pulse animation class
