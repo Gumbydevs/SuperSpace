@@ -494,20 +494,13 @@ export class AvatarManager {
     // Close option and avatar modal windows (if open)
     closeOptionAndAvatarWindows() {
         try {
-            const avatarModal = document.getElementById('avatarModal');
-            if (avatarModal && !avatarModal.classList.contains('hidden')) {
-                avatarModal.classList.add('hidden');
-            }
-
-            // If you have an options panel or pilot options, try common ids
-            const optionsPanel = document.getElementById('optionsPanel') || document.getElementById('playerOptions');
-            if (optionsPanel && !optionsPanel.classList.contains('hidden')) {
-                optionsPanel.classList.add('hidden');
-            }
-
+            // Close all top-level modals (not nested dialogs)
+            this.closeAllTopLevelModals();
             // Clear any temp selection
             this.tempSelection = null;
             this.clearModalSelection();
+            // If no windows remain open, restore backdrop
+            this.restoreBackdropIfNoWindowsOpen();
         } catch (e) {
             console.warn('closeOptionAndAvatarWindows failed', e);
         }
@@ -548,6 +541,76 @@ export class AvatarManager {
             }
         } catch (e) {
             console.warn('brightenBehindForPremium failed', e);
+        }
+    }
+
+    // Close all top-level modals except nested child modals
+    closeAllTopLevelModals() {
+        try {
+            // Define known top-level modal selectors used in the app
+            const topLevelSelectors = [
+                '#avatarModal',
+                '#optionsPanel',
+                '#playerOptions',
+                '#settingsModal',
+                '#shopModal',
+                '#premiumModal'
+            ];
+
+            topLevelSelectors.forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el && !el.classList.contains('nested') && !el.classList.contains('hidden')) {
+                    el.classList.add('hidden');
+                }
+            });
+
+            // Also close generic modal elements with role=dialog that are not nested
+            const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
+            dialogs.forEach(d => {
+                if (!d.classList.contains('nested') && !d.classList.contains('hidden')) {
+                    d.classList.add('hidden');
+                }
+            });
+        } catch (e) {
+            console.warn('closeAllTopLevelModals failed', e);
+        }
+    }
+
+    // If no visible windows remain, restore modal backdrop/overlays to normal
+    restoreBackdropIfNoWindowsOpen() {
+        try {
+            // Consider a window open if it is a modal dialog or panel without the 'hidden' class
+            const openWindows = Array.from(document.querySelectorAll('.modal, .panel, [role="dialog"], .avatar-option'))
+                .filter(el => !el.classList.contains('hidden') && el.offsetParent !== null);
+
+            if (openWindows.length === 0) {
+                // Restore common overlay elements
+                const overlays = Array.from(document.querySelectorAll('.modal-backdrop, .overlay, .dim-overlay, #modalBackdrop'));
+                overlays.forEach(el => {
+                    try {
+                        if (el.dataset._oldOpacity !== undefined) {
+                            el.style.opacity = el.dataset._oldOpacity || '';
+                            delete el.dataset._oldOpacity;
+                        } else {
+                            el.style.opacity = '';
+                        }
+                        if (el.dataset._oldZ !== undefined) {
+                            el.style.zIndex = el.dataset._oldZ || '';
+                            delete el.dataset._oldZ;
+                        } else {
+                            el.style.zIndex = '';
+                        }
+                    } catch (e) { /* ignore */ }
+                });
+
+                // Restore avatarModal opacity if it was altered
+                const avatarModal = document.getElementById('avatarModal');
+                if (avatarModal && avatarModal.style.opacity !== '') {
+                    avatarModal.style.opacity = '';
+                }
+            }
+        } catch (e) {
+            console.warn('restoreBackdropIfNoWindowsOpen failed', e);
         }
     }
 
