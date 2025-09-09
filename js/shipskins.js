@@ -295,6 +295,32 @@ export class ShipSkinSystem {
             ship.shipColor = originalShipColor;
             ship.engineColor = originalEngineColor;
         }
+        
+        // If a skin was used, also draw dynamic engine trail/flame based on ship visual state
+        try {
+            const thrust = (ship.thrustLevel !== undefined) ? ship.thrustLevel : (ship.speed ? Math.min(1, ship.speed * 0.01) : 0);
+            if (thrust > 0) {
+                // Choose engine color from appearance accent if available
+                const engineColor = (appearance && appearance.accent) ? appearance.accent : (ship.engineColor || '#f66');
+                // Render a simple engine trail behind the ship using existing helper
+                // Provide a temporary object with x,y,rotation,vx,vy expected by renderEngineTrail
+                const trailShip = {
+                    x: ship.x || 0,
+                    y: ship.y || 0,
+                    rotation: ship.rotation || 0,
+                    vx: ship.vx || 0,
+                    vy: ship.vy || 0,
+                    speed: ship.speed || 0
+                };
+                ctx.save();
+                ctx.globalAlpha = appearance && this.effectsEnabled ? 1.0 : 0.9;
+                this.renderEngineTrail(ctx, trailShip, engineColor);
+                ctx.restore();
+            }
+        } catch (e) {
+            // Non-fatal - if skins system doesn't have expected fields just skip engine trail
+            // console.warn('shipskins: engine trail render skipped', e);
+        }
     }
 
     // Toggle effects preference

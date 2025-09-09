@@ -1628,6 +1628,13 @@ export class Player {
                     shipSkin: this.shipSkin,
                     shipColor: this.shipColor,
                     engineColor: this.engineColor,
+                    // Provide visual state so skins system can render dynamic flames
+                    thrustLevel: this.thrustLevel || 0,
+                    afterburnerActive: !!this.afterburnerActive,
+                    // Provide speed/velocity so skin effects that rely on motion can work
+                    speed: Math.sqrt((this.velocity.x || 0) * (this.velocity.x || 0) + (this.velocity.y || 0) * (this.velocity.y || 0)),
+                    vx: this.velocity.x || 0,
+                    vy: this.velocity.y || 0,
                     getShipColor: () => this.shipColor,
                     getEngineColor: () => this.engineColor
                 };
