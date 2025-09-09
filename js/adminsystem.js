@@ -663,6 +663,11 @@ export class AdminSystem {
             // Clear all upgrades
             const upgradeKeys = Object.keys(localStorage).filter(key => key.startsWith('upgrade_'));
             upgradeKeys.forEach(key => localStorage.removeItem(key));
+
+            // Clear challenge state explicitly
+            if (localStorage.getItem('challenge_state')) {
+                localStorage.removeItem('challenge_state');
+            }
             
             // Restore name and avatar
             if (playerName) localStorage.setItem('playerName', playerName);
@@ -744,6 +749,11 @@ export class AdminSystem {
                     console.log('Removing:', key);
                     localStorage.removeItem(key);
                 });
+
+                // Also remove challenge_state if present
+                if (localStorage.getItem('challenge_state')) {
+                    localStorage.removeItem('challenge_state');
+                }
                 
                 alert('Nuclear reset complete! All player data has been wiped. The page will now reload.');
                 window.location.reload();

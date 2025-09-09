@@ -2646,5 +2646,10 @@ export class ShopSystem {
         
         // Update shop display
         this.updateShopContent();
+
+        // Remove challenge state to fully reset progress related to challenges
+        if (localStorage.getItem('challenge_state')) {
+            localStorage.removeItem('challenge_state');
+        }
     }
 }

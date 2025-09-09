@@ -600,6 +600,12 @@ export class PlayerProfile {
                 console.log(`Removed localStorage key: ${key}`);
             });
 
+            // Also remove challenge_state explicitly to ensure challenges reset
+            if (localStorage.getItem('challenge_state')) {
+                localStorage.removeItem('challenge_state');
+                console.log('Removed localStorage key: challenge_state');
+            }
+
             // Reset the player profile stats
             this.stats = {
                 totalPlayTime: 0,
