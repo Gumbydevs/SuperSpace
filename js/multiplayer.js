@@ -65,6 +65,15 @@ export class MultiplayerManager {
                 }
             });
         }
+        // Handle remote skin effects toggle (optional broadcast from server)
+        this.socket.on('skinEffectsToggle', (data) => {
+            if (!data || !data.playerId) return;
+            const p = this.players[data.playerId];
+            if (p) {
+                p.skinEffectsEnabled = !!data.enabled;
+                this.updatePlayerList();
+            }
+        });
     }
 
     // Check if game version has changed and reset progress if needed
@@ -727,7 +736,9 @@ export class MultiplayerManager {
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
                 losses: this.game.player.losses || 0,
-                avatar: localStorage.getItem('selectedAvatar') || 'han'
+                avatar: localStorage.getItem('selectedAvatar') || 'han',
+                shipSkin: (this.game.player.shipSkin && this.game.player.shipSkin !== 'none') ? this.game.player.shipSkin : (localStorage.getItem('selectedShipSkin') || 'none'),
+                skinEffectsEnabled: (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true'
             });
             
             // Show connection indicator
@@ -1893,6 +1904,8 @@ export class MultiplayerManager {
     handleRemoteShipSkinUpdate(playerId, skinId) {
         if (this.players[playerId]) {
             this.players[playerId].shipSkin = skinId;
+            // Refresh player list to show skin badge
+            this.updatePlayerList();
         }
     }
 
@@ -1917,6 +1930,8 @@ export class MultiplayerManager {
             color: playerData.color || '#f00',
             shipColor: playerData.shipColor || '#33f',
             engineColor: playerData.engineColor || '#f66',
+            shipSkin: playerData.shipSkin || 'none',
+            skinEffectsEnabled: (playerData.skinEffectsEnabled === undefined ? true : !!playerData.skinEffectsEnabled),
             score: playerData.score || 0,
             wins: playerData.wins || 0,
             losses: playerData.losses || 0,
@@ -1972,6 +1987,12 @@ export class MultiplayerManager {
             player.shipColor = playerData.shipColor || player.shipColor;
             player.engineColor = playerData.engineColor || player.engineColor;
             player.avatar = playerData.avatar || player.avatar;
+            if (playerData.shipSkin !== undefined) {
+                player.shipSkin = playerData.shipSkin;
+            }
+            if (playerData.skinEffectsEnabled !== undefined) {
+                player.skinEffectsEnabled = !!playerData.skinEffectsEnabled;
+            }
             
             // Debug: Log stat updates
             const oldScore = player.score;
