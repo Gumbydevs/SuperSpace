@@ -526,12 +526,8 @@ export class AvatarManager {
                 el.style.zIndex = '10040';
             });
 
-            // Also dim the avatar modal itself less (if present)
-            const avatarModal = document.getElementById('avatarModal');
-            if (avatarModal) {
-                avatarModal.style.transition = 'opacity 220ms ease';
-                avatarModal.style.opacity = '0.0';
-            }
+            // Do NOT set avatarModal opacity to 0 here, as it will block pointer events if not hidden.
+            // The avatar modal should be hidden via classList.add('hidden') in openPremiumShopFlow.
         } catch (e) {
             console.warn('brightenBehindForPremium failed', e);
         }
