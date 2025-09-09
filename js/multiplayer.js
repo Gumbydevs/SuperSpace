@@ -3840,7 +3840,7 @@ export class MultiplayerManager {
                 ctx.fill();
                 
                 // Dynamic engine flame based on thrust level
-                if (thrustLevel > 0) {
+                    if (thrustLevel > 0) {
                     // Base engine flame shape grows with thrust level
                     ctx.fillStyle = engineColor;
                     ctx.beginPath();
@@ -3853,12 +3853,14 @@ export class MultiplayerManager {
                     ctx.fill();
                     
                     // Engine glow effect - intensity increases with thrust
-                    const engineGlowSize = 8 + (10 * thrustLevel);
+                        // If afterburner is active, boost glow size and intensity immediately
+                        const afterburnerBoost = player.afterburnerActive ? 1.5 : 1.0;
+                        const engineGlowSize = 8 + (10 * thrustLevel * afterburnerBoost);
                     const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, engineGlowSize);
                     fighterEngineGradient.addColorStop(0, engineColor);
                     fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = fighterEngineGradient;
-                    ctx.fillRect(-8, 10, 16, 8 + (12 * thrustLevel));
+                        ctx.fillRect(-8, 10, 16, 8 + (12 * thrustLevel * afterburnerBoost));
                     
                     // Add animated flickering for more realistic flame
                     if (thrustLevel > 0.7) {
@@ -3954,21 +3956,22 @@ export class MultiplayerManager {
                     ctx.fill();
                     
                     // Engine glow effects - intensity increases with thrust
-                    const engineGlowSize = 6 + (8 * thrustLevel);
+                    const afterburnerBoost = player.afterburnerActive ? 1.4 : 1.0;
+                    const engineGlowSize = 6 + (8 * thrustLevel * afterburnerBoost);
                     
                     // Left engine glow
                     const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, engineGlowSize);
                     leftEngineGlow.addColorStop(0, engineColor);
                     leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = leftEngineGlow;
-                    ctx.fillRect(-16, 20, 12, 6 + (10 * thrustLevel));
+                    ctx.fillRect(-16, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
                     
                     // Right engine glow
                     const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, engineGlowSize);
                     rightEngineGlow.addColorStop(0, engineColor);
                     rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = rightEngineGlow;
-                    ctx.fillRect(4, 20, 12, 6 + (10 * thrustLevel));
+                    ctx.fillRect(4, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
                     
                     // Add animated flickering for more realistic flame
                     if (thrustLevel > 0.6) {
