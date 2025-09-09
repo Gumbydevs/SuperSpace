@@ -233,17 +233,18 @@ export class AvatarManager {
                 
                 // Check if it's a premium avatar that the player doesn't own
                 if (this.premiumAvatars.includes(avatarType) && !this.ownsAvatar(avatarType)) {
-                    // Show message about needing to purchase
+                    // Provide a clearer UX path: hint and highlight/open the premium shop
+                    // Play error sound if available
                     if (window.game && window.game.soundManager) {
                         window.game.soundManager.play('error', { volume: 0.5 });
                     }
-                    
-                    // Flash the option to indicate it's locked
-                    option.style.animation = 'flash 0.5s ease-in-out';
-                    setTimeout(() => {
-                        option.style.animation = '';
-                    }, 500);
-                    
+
+                    // Show an inline hint to the player
+                    this.showPremiumHint(option, avatarType);
+
+                    // Visually pulse the premium button if present, then open the store if possible
+                    this.pulsePremiumButton();
+
                     return;
                 }
                 
@@ -306,6 +307,111 @@ export class AvatarManager {
         };
         
         return defaultNames[avatarId] || avatarId;
+    }
+
+    // Show a transient hint near the locked avatar option telling the user how to get it
+    showPremiumHint(optionElement, avatarId) {
+        try {
+            // Remove any existing hint
+            const existing = document.querySelector('.premium-hint');
+            if (existing) existing.remove();
+
+            const hint = document.createElement('div');
+            hint.className = 'premium-hint';
+            hint.textContent = `Locked: ${this.getAvatarDisplayName(avatarId)} — Visit the Premium Store to purchase.`;
+            hint.style.position = 'absolute';
+            hint.style.background = 'rgba(0,0,0,0.85)';
+            hint.style.color = '#fff';
+            hint.style.padding = '6px 8px';
+            hint.style.borderRadius = '6px';
+            hint.style.fontSize = '12px';
+            hint.style.zIndex = '1000';
+            hint.style.maxWidth = '220px';
+
+            // Position the hint near the optionElement
+            const rect = optionElement.getBoundingClientRect();
+            hint.style.left = `${rect.right + 8 + window.scrollX}px`;
+            hint.style.top = `${rect.top + window.scrollY}px`;
+
+            document.body.appendChild(hint);
+
+            // Auto-remove after 3.2s
+            setTimeout(() => {
+                hint.style.transition = 'opacity 300ms ease';
+                hint.style.opacity = '0';
+                setTimeout(() => hint.remove(), 350);
+            }, 3200);
+        } catch (e) {
+            console.warn('Failed to show premium hint', e);
+        }
+    }
+
+    // Find and pulse the premium store button; if store API exists, open/toggle it after pulse
+    pulsePremiumButton() {
+        try {
+            // Candidate selectors/labels for the premium button
+            const candidates = [
+                '#premiumBtn',
+                '.premium-btn',
+                "button[id*='premium']",
+                "button:contains('Premium')",
+                "button:contains('\uD83D\uDC8E')",
+                "button:contains('💎')"
+            ];
+
+            // Try to find by id/class/text
+            let btn = document.querySelector('#premiumBtn') || document.querySelector('.premium-btn');
+
+            if (!btn) {
+                // Fallback: search buttons by text content
+                const buttons = Array.from(document.querySelectorAll('button'));
+                btn = buttons.find(b => /premium/i.test(b.textContent) || /\uD83D\uDC8E|💎/.test(b.textContent));
+            }
+
+            if (btn) {
+                // Add pulse animation class
+                btn.classList.add('premium-pulse');
+                // Ensure the style exists (inject minimal style if not present)
+                if (!document.getElementById('premium-pulse-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'premium-pulse-style';
+                    style.innerHTML = `
+                    .premium-pulse { animation: premiumPulse 1s ease-in-out 0s 3; box-shadow: 0 0 12px rgba(255,215,0,0.8); }
+                    @keyframes premiumPulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+                    .premium-hint { transition: opacity 300ms ease; }
+                    `;
+                    document.head.appendChild(style);
+                }
+
+                // Remove the class after animation cycles (approx 3200ms)
+                setTimeout(() => btn.classList.remove('premium-pulse'), 3400);
+
+                // If PremiumStore instance is available on window or via this.premiumStore, toggle/open it
+                setTimeout(() => {
+                    if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
+                        try { this.premiumStore.toggleStore(); } catch (e) { console.warn('toggleStore failed', e); }
+                        return;
+                    }
+
+                    // Global fallback: try common global premium store references
+                    if (window.premiumStore && typeof window.premiumStore.toggleStore === 'function') {
+                        try { window.premiumStore.toggleStore(); } catch (e) { console.warn('window.premiumStore.toggleStore failed', e); }
+                        return;
+                    }
+
+                    // If no toggle available, try clicking the button to open any attached handler
+                    try { btn.click(); } catch (e) { /* ignore */ }
+                }, 700);
+            } else {
+                // No button found: fallback to opening premium page if available
+                if (typeof window.open === 'function') {
+                    // Do not auto-navigate in case user prefers in-game UI. Skip automatic open.
+                    console.log('Premium button not found; user hint shown but store not opened automatically.');
+                }
+            }
+        } catch (e) {
+            console.warn('pulsePremiumButton error', e);
+        }
     }
 
     drawAllAvatars() {
