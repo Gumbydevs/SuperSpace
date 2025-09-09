@@ -40,6 +40,9 @@ export class MultiplayerManager {
         // Track recent kill events to prevent duplicates
         this.recentKillEvents = new Map(); // key: "attackerId-playerId", value: timestamp
         
+    // Track pending "left" timeouts so we can delay announcements and cancel if player rejoins/respawns
+    this.pendingLeftTimeouts = new Map(); // key: playerId, value: timeoutId
+        
         // Show offline status immediately
         this.addConnectionIndicator();
         this.createPlayerListUI();
@@ -84,7 +87,7 @@ export class MultiplayerManager {
             const key = localStorage.key(i);
             console.log(`  ${key}: ${localStorage.getItem(key)}`);
         }
-        
+
         // List of localStorage keys to preserve (keep player name and basic settings)
         const keysToPreserve = [
             'playerName',
@@ -92,8 +95,7 @@ export class MultiplayerManager {
             'gameVersion',
             'soundEnabled',
             'musicEnabled',
-            'selectedAvatar'  // Keep avatar selection
-        ];
+            'selectedAvatar'        ];
         
         // Get all keys that should be preserved
         const preservedData = {};
@@ -103,7 +105,7 @@ export class MultiplayerManager {
                 preservedData[key] = value;
             }
         });
-        
+
         console.log('💾 Preserving data:', preservedData);
         
         // Clear all localStorage
@@ -943,9 +945,18 @@ export class MultiplayerManager {
         this.socket.on('playerJoined', (playerData) => {
             // Don't add ourselves as a remote player
             if (playerData.id !== this.playerId) {
-                this.addRemotePlayer(playerData);
-                this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
-                
+                // If we had a pending "left" timeout for this player (they rejoined quickly), cancel it
+                if (this.pendingLeftTimeouts.has(playerData.id)) {
+                    clearTimeout(this.pendingLeftTimeouts.get(playerData.id));
+                    this.pendingLeftTimeouts.delete(playerData.id);
+                    // Add player and show a rejoin message
+                    this.addRemotePlayer(playerData);
+                    this.showGameMessage(`${playerData.name} rejoined the game`, '#6f6');
+                } else {
+                    this.addRemotePlayer(playerData);
+                    this.showGameMessage(`${playerData.name} joined the game`, '#4ff');
+                }
+
                 // Update the player count display
                 this.updatePlayerCount();
             }
@@ -1332,6 +1343,11 @@ export class MultiplayerManager {
         this.socket.on('playerRespawned', (data) => {
             // Don't process respawn events for our own player - we handle that locally
             if (data.id !== this.playerId) {
+                // If there was a pending "left" timeout for this player, cancel it (they're back)
+                if (this.pendingLeftTimeouts.has(data.id)) {
+                    clearTimeout(this.pendingLeftTimeouts.get(data.id));
+                    this.pendingLeftTimeouts.delete(data.id);
+                }
                 this.handleRemotePlayerRespawn(data.id, data.x, data.y);
             }
         });
