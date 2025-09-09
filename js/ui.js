@@ -233,14 +233,18 @@ export class UI {
     const scoreDisplay = document.createElement('div');
     scoreDisplay.className = 'status-item-small';
     scoreDisplay.innerHTML = '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
-    // keep original spacing
+    // restore horizontal spacing to avoid overlapping the Online indicator
+    scoreDisplay.style.marginLeft = '5ch'; // add spacing to the left
+    scoreDisplay.style.marginTop = '0.5em';
     this.styleStatusItemSmall(scoreDisplay, '#fff');
 
     // Credits display
     const creditsDisplay = document.createElement('div');
     creditsDisplay.className = 'status-item-small';
     creditsDisplay.innerHTML = '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
-    // keep original spacing
+    // vertical offset to align with score
+    creditsDisplay.style.marginTop = '0.5em';
+    creditsDisplay.style.marginLeft = '0.5ch';
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
     
     // Check if multiplayer reset occurred and ensure credits display is correct
