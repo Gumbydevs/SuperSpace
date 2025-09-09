@@ -545,7 +545,8 @@ export class AvatarManager {
     }
 
     // Close all top-level modals except nested child modals
-    closeAllTopLevelModals() {
+    // excludeSelectors: array of selectors to skip when closing (optional)
+    closeAllTopLevelModals(excludeSelectors = []) {
         try {
             // Define known top-level modal selectors used in the app
             const topLevelSelectors = [
@@ -556,8 +557,8 @@ export class AvatarManager {
                 '#shopModal',
                 '#premiumModal'
             ];
-
             topLevelSelectors.forEach(sel => {
+                if (excludeSelectors.includes(sel)) return;
                 const el = document.querySelector(sel);
                 if (el && !el.classList.contains('nested') && !el.classList.contains('hidden')) {
                     el.classList.add('hidden');
@@ -567,12 +568,91 @@ export class AvatarManager {
             // Also close generic modal elements with role=dialog that are not nested
             const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
             dialogs.forEach(d => {
+                // skip if element matches any exclude selector
+                const shouldSkip = excludeSelectors.some(sel => {
+                    try { return d.matches && d.matches(sel); } catch (e) { return false; }
+                });
+                if (shouldSkip) return;
                 if (!d.classList.contains('nested') && !d.classList.contains('hidden')) {
                     d.classList.add('hidden');
                 }
             });
         } catch (e) {
             console.warn('closeAllTopLevelModals failed', e);
+        }
+    }
+
+    // Open the premium shop with controlled flow:
+    // - close other top-level windows
+    // - reduce backdrop tint so shop is visible
+    // - open the shop (via PremiumStore API or by clicking the button/modal)
+    // - attach an observer to restore backdrop when the shop closes
+    openPremiumShopFlow() {
+        try {
+            // Close other top-level modals but don't close the premium modal itself
+            this.closeAllTopLevelModals(['#premiumModal', '#shopModal', '.premium-modal']);
+
+            // Make sure backdrop is reduced so shop is visible
+            this.brightenBehindForPremium();
+
+            const openShop = () => {
+                // Prefer store API
+                if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
+                    try { this.premiumStore.toggleStore(); } catch (e) { console.warn('toggleStore failed', e); }
+                } else if (window.premiumStore && typeof window.premiumStore.toggleStore === 'function') {
+                    try { window.premiumStore.toggleStore(); } catch (e) { console.warn('window.premiumStore.toggleStore failed', e); }
+                } else {
+                    // Try to click any premium button
+                    let btn = document.querySelector('#premiumBtn') || document.querySelector('.premium-btn');
+                    if (!btn) {
+                        const buttons = Array.from(document.querySelectorAll('button'));
+                        btn = buttons.find(b => /premium/i.test(b.textContent) || /\uD83D\uDC8E|💎/.test(b.textContent));
+                    }
+                    if (btn) try { btn.click(); } catch (e) { /* ignore */ }
+                    // As a last resort, try to un-hide a known modal id
+                    const pm = document.querySelector('#premiumModal') || document.querySelector('#shopModal') || document.querySelector('.premium-modal');
+                    if (pm) {
+                        pm.classList.remove('hidden');
+                    }
+                }
+            };
+
+            // Open shop immediately
+            openShop();
+
+            // Attempt to find the premium shop modal element and attach a close observer
+            const findAndObserve = (attempts = 0) => {
+                const selectors = ['#premiumModal', '#shopModal', '.premium-modal', '#premiumShopModal'];
+                let el = null;
+                for (const s of selectors) {
+                    el = document.querySelector(s);
+                    if (el) break;
+                }
+                if (el) {
+                    // Attach observer to restore backdrop when hidden
+                    const observer = new MutationObserver(() => {
+                        try {
+                            const hidden = el.classList.contains('hidden') || (el.style.display === 'none');
+                            if (hidden) {
+                                this.restoreBackdropIfNoWindowsOpen();
+                                observer.disconnect();
+                            }
+                        } catch (e) { /* ignore */ }
+                    });
+                    observer.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+                } else if (attempts < 8) {
+                    // retry shortly — some store implementations create the modal asynchronously
+                    setTimeout(() => findAndObserve(attempts + 1), 200);
+                } else {
+                    // If no modal found, rely on global store events or manual restore
+                    // As a fallback, restoreBackdropIfNoWindowsOpen after some timeout (safe cleanup)
+                    setTimeout(() => this.restoreBackdropIfNoWindowsOpen(), 6000);
+                }
+            };
+
+            findAndObserve();
+        } catch (e) {
+            console.warn('openPremiumShopFlow failed', e);
         }
     }
 
