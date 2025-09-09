@@ -326,17 +326,15 @@ class Game {
         shopBtn.onclick = () => this.toggleShop();
         document.body.appendChild(shopBtn);
     }
-    
     // Here we create a premium store button for cosmetic purchases
     createPremiumStoreButton() {
         const premiumBtn = document.createElement('button');
         premiumBtn.textContent = '💎 Premium';
         premiumBtn.id = 'premium-btn';
-    premiumBtn.style.position = 'absolute';
-    // Lower the premium button so it doesn't overlap the shop button
-    premiumBtn.style.top = '132px'; // moved down from 114px
-    premiumBtn.style.right = '0px';
-    premiumBtn.style.zIndex = '1002';
+        premiumBtn.style.position = 'absolute';
+        // Lower the premium button so it doesn't overlap the shop button
+        premiumBtn.style.top = '132px'; // moved down from 114px
+        premiumBtn.style.right = '0px';
         premiumBtn.style.zIndex = '1002';
         premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
         premiumBtn.style.color = 'white';
@@ -347,8 +345,7 @@ class Game {
         premiumBtn.style.display = 'none';  // Initially hidden until game starts
         premiumBtn.style.fontWeight = 'normal'; // Match shop button font weight
         premiumBtn.style.fontSize = '14px'; // Match standard button size
-        premiumBtn.style.fontSize = '14px'; // Match standard button size
-        
+
         // Add subtle hover effect
         premiumBtn.onmouseenter = () => {
             premiumBtn.style.background = 'linear-gradient(45deg, #7b1fa2, #ab47bc)';
@@ -358,7 +355,7 @@ class Game {
             premiumBtn.style.background = 'linear-gradient(45deg, #6a0dad, #9932cc)';
             premiumBtn.style.transform = 'scale(1)';
         };
-        
+
         // Click toggles the premium store
         premiumBtn.onclick = () => this.togglePremiumStore();
 
@@ -380,9 +377,9 @@ class Game {
 
         // Append the button once
         document.body.appendChild(premiumBtn);
-        document.body.appendChild(premiumBtn);
     }
-    
+
+    // Here we create an admin button for game management
     // Here we create an admin button for game management
     createAdminButton() {
         const adminBtn = document.createElement('button');
@@ -424,7 +421,6 @@ class Game {
             this.shop.toggleShop();
         }
     }
-    
     togglePremiumStore() {
         // Allow premium store access during menu or playing
         if (this.gameState === 'menu' || this.gameState === 'playing') {
@@ -438,14 +434,12 @@ class Game {
             if (optionsOverlay && !optionsOverlay.classList.contains('hidden')) {
                 optionsOverlay.classList.add('hidden');
             }
-            // Close any other top-level modals if needed (future-proof)
             // Open the premium store
             this.premiumStore.toggleStore();
-            // Premium store renders directly on canvas, no z-index changes needed
         }
     }
-    }
-    
+
+    // Process pending PayPal payments
     // Process pending PayPal payments
     processPendingPayments() {
         const pendingPayment = localStorage.getItem('pendingPayment');
