@@ -371,6 +371,10 @@ export class AvatarManager {
 
             // CTA opens/pulses premium store
             cta.addEventListener('click', () => {
+                // Close avatar/options UI and reduce backdrop so the store is visible
+                try { this.closeOptionAndAvatarWindows(); } catch (e) { /* ignore */ }
+                try { this.brightenBehindForPremium(); } catch (e) { /* ignore */ }
+
                 this.pulsePremiumButton();
                 // Also try to toggle immediately
                 if (this.premiumStore && typeof this.premiumStore.toggleStore === 'function') {
@@ -484,6 +488,66 @@ export class AvatarManager {
             }
         } catch (e) {
             console.warn('pulsePremiumButton error', e);
+        }
+    }
+
+    // Close option and avatar modal windows (if open)
+    closeOptionAndAvatarWindows() {
+        try {
+            const avatarModal = document.getElementById('avatarModal');
+            if (avatarModal && !avatarModal.classList.contains('hidden')) {
+                avatarModal.classList.add('hidden');
+            }
+
+            // If you have an options panel or pilot options, try common ids
+            const optionsPanel = document.getElementById('optionsPanel') || document.getElementById('playerOptions');
+            if (optionsPanel && !optionsPanel.classList.contains('hidden')) {
+                optionsPanel.classList.add('hidden');
+            }
+
+            // Clear any temp selection
+            this.tempSelection = null;
+            this.clearModalSelection();
+        } catch (e) {
+            console.warn('closeOptionAndAvatarWindows failed', e);
+        }
+    }
+
+    // Reduce the modal tint so the premium shop behind it is visible
+    brightenBehindForPremium() {
+        try {
+            // Find common dim overlay elements and reduce their opacity / z-index
+            const overlays = Array.from(document.querySelectorAll('.modal-backdrop, .overlay, .dim-overlay, #modalBackdrop'));
+            if (overlays.length === 0) {
+                // Try guessing by modality: elements with high z-index and semi-transparent background
+                const all = Array.from(document.body.children);
+                all.forEach(el => {
+                    const s = window.getComputedStyle(el);
+                    if ((s.position === 'fixed' || s.position === 'absolute') && s.backgroundColor && /rgba/.test(s.backgroundColor) && parseFloat(s.opacity || '1') > 0.1) {
+                        overlays.push(el);
+                    }
+                });
+            }
+
+            overlays.forEach((el, idx) => {
+                // Save original values to restore later if needed
+                if (!el.dataset._oldOpacity) el.dataset._oldOpacity = el.style.opacity || '';
+                if (!el.dataset._oldZ) el.dataset._oldZ = el.style.zIndex || '';
+
+                el.style.transition = 'opacity 220ms ease, background-color 220ms ease';
+                el.style.opacity = '0.18';
+                // put it behind the premium button area
+                el.style.zIndex = '10040';
+            });
+
+            // Also dim the modal itself less (if present)
+            const avatarModal = document.getElementById('avatarModal');
+            if (avatarModal) {
+                avatarModal.style.transition = 'opacity 220ms ease';
+                avatarModal.style.opacity = '0.0';
+            }
+        } catch (e) {
+            console.warn('brightenBehindForPremium failed', e);
         }
     }
 
