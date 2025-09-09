@@ -1558,6 +1558,9 @@ export class MultiplayerManager {
                 color: this.game.player.color || '#0f0',
                 shipColor: this.game.player.shipColor || '#7d7d7d',
                 engineColor: this.game.player.engineColor || '#f66',
+                // Visual thrust state for engine flame rendering
+                thrustLevel: typeof this.game.player.thrustLevel !== 'undefined' ? this.game.player.thrustLevel : 0,
+                afterburnerActive: !!this.game.player.afterburnerActive,
                 shipSkin: this.game.player.shipSkin || 'none',
                 score: this.game.player.score || 0,
                 wins: this.game.player.wins || 0,
@@ -1944,6 +1947,8 @@ export class MultiplayerManager {
             avatar: playerData.avatar || 'han', // Add avatar information
             projectiles: [],
             destroyed: false, // Add destroyed flag
+            thrustLevel: 0,
+            afterburnerActive: false,
             // Initialize electric shock effect
             electricShockEffect: {
                 active: false,
@@ -1996,6 +2001,13 @@ export class MultiplayerManager {
             player.shipColor = playerData.shipColor || player.shipColor;
             player.engineColor = playerData.engineColor || player.engineColor;
             player.avatar = playerData.avatar || player.avatar;
+            // Keep visual thrust/afterburner state in sync if provided by server/client
+            if (playerData.thrustLevel !== undefined) {
+                player.thrustLevel = playerData.thrustLevel;
+            }
+            if (playerData.afterburnerActive !== undefined) {
+                player.afterburnerActive = !!playerData.afterburnerActive;
+            }
             if (playerData.shipSkin !== undefined) {
                 player.shipSkin = playerData.shipSkin;
                 // If a skin is provided but the ship type is missing, try to infer or keep currentShip
