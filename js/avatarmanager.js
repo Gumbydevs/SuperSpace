@@ -583,6 +583,9 @@ export class AvatarManager {
             const toClose = [
                 '#avatarModal',
                 '#optionsPanel',
+                '#optionsMenu',
+                '.options-menu',
+                '.options-panel',
                 '#playerOptions',
                 '.panel',
                 '[role="dialog"]'
