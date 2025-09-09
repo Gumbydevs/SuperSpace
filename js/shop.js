@@ -1395,48 +1395,7 @@ export class ShopSystem {
         }
         
         const challengeSystem = window.game.challengeSystem;
-        // Add a Claim All button if there are any completed but unclaimed challenges
-        const claimAllContainer = document.createElement('div');
-        claimAllContainer.style.display = 'flex';
-        claimAllContainer.style.justifyContent = 'flex-end';
-        claimAllContainer.style.marginBottom = '10px';
-
-        const claimAllBtn = document.createElement('button');
-        claimAllBtn.textContent = 'Claim All';
-        claimAllBtn.style.padding = '8px 12px';
-        claimAllBtn.style.backgroundColor = '#2a9';
-        claimAllBtn.style.border = 'none';
-        claimAllBtn.style.borderRadius = '6px';
-        claimAllBtn.style.cursor = 'pointer';
-        claimAllBtn.onclick = () => {
-            // import challenges and attempt to claim all completed/unclaimed
-            import('./challenges.js').then(({ CHALLENGES }) => {
-                let totalAwarded = 0;
-                CHALLENGES.daily.concat(CHALLENGES.weekly).forEach(ch => {
-                    const type = CHALLENGES.daily.find(d=>d.id===ch.id) ? 'daily' : 'weekly';
-                    // only claim if completed and not yet claimed
-                    if (challengeSystem.completed[type].includes(ch.id) && !(challengeSystem.claimed[type]||[]).includes(ch.id)) {
-                        const awarded = challengeSystem.claimChallenge(type, ch.id);
-                        totalAwarded += awarded;
-                    }
-                });
-                if (totalAwarded > 0) {
-                    // play a success sound if available
-                    if (window.game && window.game.soundManager) {
-                        window.game.soundManager.play('powerup', { volume: 1.0 });
-                    }
-                    // update credits display
-                    const creditsEl = document.getElementById('shop-credits');
-                    if (creditsEl) creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
-                }
-                // Refresh UI and badge
-                this.updateShopContent();
-                this.updateChallengeTabBadge();
-            });
-        };
-
-        claimAllContainer.appendChild(claimAllBtn);
-        container.appendChild(claimAllContainer);
+    // ...existing code... (claim all button moved to bottom, small and muted)
         
         // Daily Challenges Section
         const dailySection = document.createElement('div');
@@ -1484,6 +1443,57 @@ export class ShopSystem {
         
         container.appendChild(dailySection);
         container.appendChild(weeklySection);
+
+        // Small, muted Claim All button placed at bottom so it's less in-your-face
+        const claimAllBottom = document.createElement('div');
+        claimAllBottom.style.display = 'flex';
+        claimAllBottom.style.justifyContent = 'center';
+        claimAllBottom.style.marginTop = '12px';
+
+        const claimAllSmall = document.createElement('button');
+        claimAllSmall.textContent = 'Claim All Unclaimed';
+        claimAllSmall.style.padding = '6px 10px';
+        claimAllSmall.style.backgroundColor = 'rgba(80,120,100,0.12)';
+        claimAllSmall.style.color = '#cfe';
+        claimAllSmall.style.border = '1px solid rgba(100,120,100,0.12)';
+        claimAllSmall.style.borderRadius = '6px';
+        claimAllSmall.style.fontSize = '0.9em';
+        claimAllSmall.style.cursor = 'pointer';
+        claimAllSmall.style.opacity = '0.85';
+        claimAllSmall.onclick = () => {
+            import('./challenges.js').then(({ CHALLENGES }) => {
+                let totalAwarded = 0;
+                CHALLENGES.daily.concat(CHALLENGES.weekly).forEach(ch => {
+                    const type = CHALLENGES.daily.find(d=>d.id===ch.id) ? 'daily' : 'weekly';
+                    if (challengeSystem.completed[type].includes(ch.id) && !(challengeSystem.claimed[type]||[]).includes(ch.id)) {
+                        const awarded = challengeSystem.claimChallenge(type, ch.id);
+                        totalAwarded += awarded;
+                    }
+                });
+                if (totalAwarded > 0) {
+                    if (window.game && window.game.soundManager) window.game.soundManager.play('powerup', { volume: 1.0 });
+                    const creditsEl = document.getElementById('shop-credits');
+                    if (creditsEl) creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+                }
+                this.updateShopContent();
+                this.updateChallengeTabBadge();
+            });
+        };
+
+        // Hide by default and only show if there are any unclaimed
+        claimAllSmall.style.display = 'none';
+        claimAllBottom.appendChild(claimAllSmall);
+        container.appendChild(claimAllBottom);
+
+        // Determine visibility after content is rendered
+        setTimeout(() => {
+            try {
+                const dailyUnclaimed = (challengeSystem.completed.daily || []).filter(id => !(challengeSystem.claimed.daily||[]).includes(id)).length;
+                const weeklyUnclaimed = (challengeSystem.completed.weekly || []).filter(id => !(challengeSystem.claimed.weekly||[]).includes(id)).length;
+                const total = dailyUnclaimed + weeklyUnclaimed;
+                if (total > 0) claimAllSmall.style.display = 'inline-block';
+            } catch (e) {}
+        }, 30);
     }
     
     createChallengeCard(challenge, type, challengeSystem) {
