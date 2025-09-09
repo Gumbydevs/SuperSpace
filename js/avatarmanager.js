@@ -625,26 +625,9 @@ export class AvatarManager {
     // - attach an observer to restore backdrop when the shop closes
     openPremiumShopFlow() {
         try {
-            // Explicitly close all known modals/panels except premium shop
-            const toClose = [
-                '#avatarModal',
-                '#optionsPanel',
-                '#optionsMenu',
-                '.options-menu',
-                '.options-panel',
-                '#playerOptions',
-                '.panel',
-                '[role="dialog"]'
-            ];
+            // Close all top-level modals except premium shop modals
             const premiumSelectors = ['#premiumModal', '#shopModal', '.premium-modal', '#premiumShopModal'];
-            toClose.forEach(sel => {
-                const els = Array.from(document.querySelectorAll(sel));
-                els.forEach(el => {
-                    // Don't close premium shop modals
-                    if (premiumSelectors.some(p => el.matches && el.matches(p))) return;
-                    if (!el.classList.contains('hidden')) el.classList.add('hidden');
-                });
-            });
+            this.closeAllTopLevelModals(premiumSelectors);
 
             // Make sure backdrop is reduced so shop is visible
             this.brightenBehindForPremium();
