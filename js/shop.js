@@ -2019,6 +2019,57 @@ export class ShopSystem {
         }
         
         appearanceSection.appendChild(shipSkinsSection);
+
+        // Skin Effects Toggle Section
+        const effectsSection = document.createElement('div');
+        effectsSection.style.marginBottom = '15px';
+        effectsSection.style.padding = '10px';
+        effectsSection.style.background = 'rgba(0,20,40,0.5)';
+        effectsSection.style.border = '1px solid #224';
+        effectsSection.style.borderRadius = '6px';
+
+        const effectsLabel = document.createElement('div');
+        effectsLabel.textContent = '✨ Skin Visual Effects';
+        effectsLabel.style.fontWeight = 'bold';
+        effectsLabel.style.marginBottom = '6px';
+        effectsSection.appendChild(effectsLabel);
+
+        const effectsToggle = document.createElement('button');
+        const effectsEnabled = (localStorage.getItem('shipSkinEffectsEnabled') === null) ? true : localStorage.getItem('shipSkinEffectsEnabled') === 'true';
+        const setBtnState = () => {
+            const enabled = (localStorage.getItem('shipSkinEffectsEnabled') === 'true');
+            effectsToggle.textContent = enabled ? 'Effects: ON' : 'Effects: OFF';
+            effectsToggle.style.background = enabled ? '#054' : '#333';
+            effectsToggle.style.color = enabled ? '#bfffd0' : '#ccc';
+            effectsToggle.style.border = enabled ? '1px solid #3f8' : '1px solid #666';
+        };
+        effectsToggle.style.padding = '8px 12px';
+        effectsToggle.style.cursor = 'pointer';
+        effectsToggle.style.borderRadius = '4px';
+        setBtnState();
+        effectsToggle.onclick = () => {
+            const current = localStorage.getItem('shipSkinEffectsEnabled') === 'true';
+            const next = !current;
+            localStorage.setItem('shipSkinEffectsEnabled', next ? 'true' : 'false');
+            if (window.game && window.game.shipSkins) {
+                window.game.shipSkins.setEffectsEnabled(next);
+            }
+            setBtnState();
+            drawShipPreview();
+            if (window.game && window.game.soundManager) {
+                window.game.soundManager.play('powerup', { volume: 0.25, playbackRate: 1.2 });
+            }
+        };
+        effectsSection.appendChild(effectsToggle);
+
+        const effectsHint = document.createElement('div');
+        effectsHint.textContent = 'Toggle animated glows, fire, stealth flicker, etc.';
+        effectsHint.style.fontSize = '11px';
+        effectsHint.style.marginTop = '6px';
+        effectsHint.style.color = '#aaa';
+        effectsSection.appendChild(effectsHint);
+
+        appearanceSection.appendChild(effectsSection);
         
         // Engine Color Section
         const engineColorSection = document.createElement('div');

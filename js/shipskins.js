@@ -5,6 +5,13 @@ export class ShipSkinSystem {
     constructor() {
         this.activeSkins = this.loadActiveSkins();
         this.skinEffects = new Map();
+        // Load effects enabled preference (default true)
+        try {
+            const stored = localStorage.getItem('shipSkinEffectsEnabled');
+            this.effectsEnabled = stored === null ? true : stored === 'true';
+        } catch(e) {
+            this.effectsEnabled = true;
+        }
     }
     
     loadActiveSkins() {
@@ -276,8 +283,8 @@ export class ShipSkinSystem {
             this.renderShipHullOnly(ctx, ship);
         }
 
-        // THEN apply any special skin effects on top
-        if (appearance && appearance.effect) {
+    // THEN apply any special skin effects on top (respect user toggle)
+    if (appearance && appearance.effect && this.effectsEnabled) {
             this.applySkinEffects(ctx, ship, appearance);
         }
         
@@ -288,6 +295,12 @@ export class ShipSkinSystem {
             ship.shipColor = originalShipColor;
             ship.engineColor = originalEngineColor;
         }
+    }
+
+    // Toggle effects preference
+    setEffectsEnabled(enabled) {
+        this.effectsEnabled = !!enabled;
+        try { localStorage.setItem('shipSkinEffectsEnabled', this.effectsEnabled ? 'true' : 'false'); } catch(e) {}
     }
 
     // Add distinctive accent / pattern overlays per skin so visual change is obvious
