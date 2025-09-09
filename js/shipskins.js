@@ -645,14 +645,17 @@ export class ShipSkinSystem {
         ctx.rotate(ship.rotation);
         
         // Engine trail particles
-        const trailLength = Math.min(ship.speed * 0.1, 20);
-        ctx.fillStyle = engineColor + '77';
-        
-        for (let i = 0; i < 3; i++) {
-            const x = -15 - i * 3;
-            const y = (Math.random() - 0.5) * 6;
-            const size = 2 - i * 0.5;
-            
+        const trailLength = Math.min((ship.speed || 0) * 0.1, 30);
+        ctx.fillStyle = (engineColor || '#f66') + '77';
+
+        // Draw particles behind the ship along local +Y (ship faces up in geometry)
+        const baseOffset = 8 + (trailLength * 0.5);
+        for (let i = 0; i < 4; i++) {
+            // Slight horizontal spread and vertical offset to create a central trail
+            const x = (Math.random() - 0.5) * 6; // small left/right jitter
+            const y = baseOffset + i * (2 + trailLength * 0.15) + (Math.random() * 2 - 1);
+            const size = Math.max(0.8, 3 - i * 0.6 + (trailLength * 0.03));
+
             ctx.beginPath();
             ctx.arc(x, y, size, 0, Math.PI * 2);
             ctx.fill();
