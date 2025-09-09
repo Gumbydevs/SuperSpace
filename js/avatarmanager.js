@@ -443,7 +443,8 @@ export class AvatarManager {
                     // ignore
                 }
 
-                // Highlight the word 'Premium' in the button text
+
+                // Highlight the word 'Premium' in the button text (always yellow)
                 // Only do this if not already styled
                 if (!btn.dataset._premiumStyled) {
                     // Try to find the text node containing 'Premium'
@@ -452,14 +453,14 @@ export class AvatarManager {
                         if (node.nodeType === Node.TEXT_NODE && /premium/i.test(node.textContent)) {
                             // Replace with span
                             const replaced = document.createElement('span');
-                            replaced.innerHTML = node.textContent.replace(/(premium)/i, '<span style="color:#ffd700;font-weight:700;">$1</span>');
+                            replaced.innerHTML = node.textContent.replace(/(premium)/i, '<span class="premium-word" style="color:#ffd700;font-weight:700;">$1</span>');
                             btn.replaceChild(replaced, node);
                             found = true;
                         }
                     });
                     // Fallback: innerHTML replace if not found
                     if (!found && /premium/i.test(btn.innerHTML)) {
-                        btn.innerHTML = btn.innerHTML.replace(/(premium)/i, '<span style="color:#ffd700;font-weight:700;">$1</span>');
+                        btn.innerHTML = btn.innerHTML.replace(/(premium)/i, '<span class="premium-word" style="color:#ffd700;font-weight:700;">$1</span>');
                     }
                     btn.dataset._premiumStyled = '1';
                 }
@@ -471,6 +472,8 @@ export class AvatarManager {
                     const style = document.createElement('style');
                     style.id = 'premium-pulse-style';
                     style.innerHTML = `
+                    .premium-pulse .premium-word { color: #fff !important; transition: color 0.18s; }
+                    .premium-word { color: #ffd700 !important; font-weight: 700; transition: color 0.18s; }
                     .premium-pulse { animation: premiumPulse 0.9s ease-in-out 0s 4; box-shadow: 0 0 18px rgba(255,215,0,0.95); transform-origin: center; }
                     @keyframes premiumPulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 80% { transform: scale(0.99); } 100% { transform: scale(1); } }
                     .premium-hint { transition: opacity 300ms ease; }
