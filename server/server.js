@@ -80,8 +80,8 @@ app.get('/analytics/report', (req, res) => {
 app.get('/analytics/hourly', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
-    const hourlyData = analytics.getHourlyActivity(days);
-    res.json({ hourlyActivity: hourlyData, days });
+    const hourlyPeak = analytics.getHourlyPeakConcurrent(days);
+    res.json({ hourlyPeakConcurrent: hourlyPeak, days });
   } catch (error) {
     console.error('Error getting hourly data:', error);
     res.status(500).json({ error: 'Failed to get hourly data' });

@@ -210,8 +210,12 @@ class ServerAnalytics {
         
         const stats = this.dailyStats.get(day);
         
-        // Update hourly activity
-        stats.hourlyActivity[hour]++;
+    // Update hourly activity
+    stats.hourlyActivity[hour]++;
+    // Update hourly peak concurrent
+    const concurrent = this.sessions.size;
+    if (!stats.hourlyPeakConcurrent) stats.hourlyPeakConcurrent = Array(24).fill(0);
+    stats.hourlyPeakConcurrent[hour] = Math.max(stats.hourlyPeakConcurrent[hour], concurrent);
 
         // Track unique players (by playerId) and unique sessions (by playerId+sessionId)
         if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
@@ -482,6 +486,7 @@ class ServerAnalytics {
             totalSpent: 0,
             totalAchievements: 0,
             hourlyActivity: Array(24).fill(0),
+            hourlyPeakConcurrent: Array(24).fill(0),
             shipUsage: {},
             weaponUsage: {},
             weaponKills: {},
@@ -716,23 +721,21 @@ class ServerAnalytics {
         };
     }
     
-    getHourlyActivity(days = 7) {
+    // Returns the max concurrent players seen in each hour over the last N days
+    getHourlyPeakConcurrent(days = 7) {
         const hourlyData = Array(24).fill(0);
         const today = new Date();
-        
         for (let i = 0; i < days; i++) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
             const dateString = this.getDateString(date);
-            
             const dayStats = this.dailyStats.get(dateString);
-            if (dayStats) {
-                dayStats.hourlyActivity.forEach((count, hour) => {
-                    hourlyData[hour] += count;
+            if (dayStats && dayStats.hourlyPeakConcurrent) {
+                dayStats.hourlyPeakConcurrent.forEach((peak, hour) => {
+                    hourlyData[hour] = Math.max(hourlyData[hour], peak);
                 });
             }
         }
-        
         return hourlyData;
     }
     
