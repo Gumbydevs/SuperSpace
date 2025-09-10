@@ -529,18 +529,6 @@
             // Always rotate asteroids for visual appeal
             asteroid.rotation += asteroid.rotationSpeed * deltaTime;
 
-                // Check for collision with player if not in safe zone
-                // --- Player collision handling ---
-                for (let i = 0; i < this.players.length; i++) {
-                    for (let j = i + 1; j < this.players.length; j++) {
-                        const playerA = this.players[i];
-                        const playerB = this.players[j];
-                        if (playerA.collidesWith(playerB)) {
-                            playerA.handlePlayerCollision(playerB);
-                            playerB.handlePlayerCollision(playerA);
-                        }
-                    }
-                }
             if (!this.isInSafeZone(player)) {
                 const dx = player.x - asteroid.x;
                 const dy = player.y - asteroid.y;
@@ -782,6 +770,7 @@
                 
                 // Use the player's collidesWith helper (handles remote-player fallbacks)
                 if (player.collidesWith(otherPlayer)) {
+                    console.log('Player collision detected!', player.x, player.y, otherPlayer.x, otherPlayer.y);
                     // Apply collision response locally
                     player.handlePlayerCollision(otherPlayer, soundManager);
 
