@@ -547,11 +547,12 @@ class Game {
                 this.toggleShop();
             }
 
-            // Chat hotkey (T key) - only if not typing in any input/textarea/contentEditable
+            // Chat hotkey (T key) - only if not typing in any input/textarea/contentEditable and not renaming
             if (e.code === 'KeyT' && this.gameState === 'playing') {
                 const activeElement = document.activeElement;
                 const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
-                if (!isTyping) {
+                const isRenaming = window.isRenaming;
+                if (!isTyping && !isRenaming) {
                     e.preventDefault(); // Prevent the 'T' from being typed
                     this.chat.toggleChat();
                 }

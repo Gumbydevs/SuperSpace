@@ -484,6 +484,9 @@ export class MultiplayerManager {
     // Show dialog to let player set their name
     showPlayerNameDialog() {
         return new Promise((resolve) => {
+            // Set flag to prevent chat hotkey
+            window.isRenaming = true;
+            
             // Create modal backdrop
             const backdrop = document.createElement('div');
             backdrop.style.position = 'fixed';
@@ -600,6 +603,9 @@ export class MultiplayerManager {
                 
                 // Remove modal
                 document.body.removeChild(backdrop);
+                
+                // Clear flag
+                window.isRenaming = false;
                 
                 // Resolve the promise
                 resolve();
