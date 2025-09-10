@@ -784,17 +784,20 @@
                         // Calculate impact force based on relative velocity
                         const impactForce = Math.sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y);
                         
-                        // Calculate impulse (how strongly we bounce) - same as asteroid collision
-                        const impulseStrength = (1 + (player.bounceStrength || 0.5)) * impactForce * 0.3;
+                        // Calculate impulse (how strongly we bounce) - same as asteroid collision  
+                        const baseKnockback = Math.max(50, impactForce * 0.2); // Minimum 50, scales with speed
+                        const impulseStrength = baseKnockback * (1 + (player.bounceStrength || 0.5));
                         
                         // Apply impulse in the direction away from collision
-                        player.velocity.x = nx * Math.max(impulseStrength, 50);
-                        player.velocity.y = ny * Math.max(impulseStrength, 50);
+                        player.velocity.x = nx * impulseStrength;
+                        player.velocity.y = ny * impulseStrength;
                         
                         // Apply equal and opposite force to the other player (if they have velocity)
                         if (otherPlayer.velocity) {
-                            otherPlayer.velocity.x = -nx * Math.max(impulseStrength, 50);
-                            otherPlayer.velocity.y = -ny * Math.max(impulseStrength, 50);
+                            // Apply immediate visual feedback locally for responsiveness
+                            const immediateKnockback = Math.max(impulseStrength, 50) * 0.7; // Slightly less than full force
+                            otherPlayer.velocity.x = -nx * immediateKnockback;
+                            otherPlayer.velocity.y = -ny * immediateKnockback;
                         }
                         
                         // Play collision sound - same as asteroid
@@ -819,8 +822,8 @@
                         // Notify server with collision force data
                         if (window.game.multiplayer.connected) {
                             const knockbackForce = {
-                                x: -nx * Math.max(impulseStrength, 50),
-                                y: -ny * Math.max(impulseStrength, 50)
+                                x: -nx * impulseStrength,
+                                y: -ny * impulseStrength
                             };
                             window.game.multiplayer.sendPlayerCollision(otherPlayer.id, knockbackForce);
                         }
