@@ -1,3 +1,12 @@
+/* Controls menu color distinction */
+.controls-list .control-action {
+    color: #ffb347;
+    font-weight: bold;
+}
+.controls-list .control-key {
+    color: #4fc3f7;
+    font-weight: bold;
+}
 body {
     margin: 0;
     padding: 0;
