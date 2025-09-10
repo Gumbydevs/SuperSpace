@@ -46,81 +46,66 @@ export class Player {
         }
         return false; // No new collision
     }
-    // --- Player collision methods ---
+    // Add method to handle collisions with other players
     handlePlayerCollision(otherPlayer, soundManager) {
-        // Prevent rapid repeated collisions
-        if (this.collisionCooldown > 0 || !otherPlayer) return;
-
-        // Ensure both players have positions
-        if (typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') return;
-
-        // Basic alive check
-        if (!this.isAlive || !otherPlayer.isAlive) return;
-
-        // Calculate collision vector from otherPlayer to this
-        let dx = this.x - otherPlayer.x;
-        let dy = this.y - otherPlayer.y;
-        let distance = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-
-        // Determine collision radii (remote players may not have collisionRadius set)
-        const rA = this.collisionRadius || 15;
-        const rB = (otherPlayer.collisionRadius || otherPlayer.radius) || 15;
-
-        const overlap = (rA + rB) - distance;
-        if (overlap <= 0) return; // no physical overlap
-
-        // Normalized collision normal pointing from other to this
-        const nx = dx / distance;
-        const ny = dy / distance;
-
-        // Relative velocity along normal
-        const relVelX = this.velocity.x - (otherPlayer.velocity ? otherPlayer.velocity.x : 0);
-        const relVelY = this.velocity.y - (otherPlayer.velocity ? otherPlayer.velocity.y : 0);
-        const relSpeedAlongNormal = relVelX * nx + relVelY * ny;
-
-        // Compute impulse based on overlap and relative speed
-        const pushFromOverlap = Math.max(0, overlap) * 8; // tuneable constant
-        const pushFromSpeed = Math.max(0, -relSpeedAlongNormal) * 20; // if they're moving into each other
-        const baseImpulse = pushFromOverlap + pushFromSpeed;
-
-        // Factor in bounce strengths (0-1) to reduce or increase resulting velocities
-        const totalBounce = (this.bounceStrength || 0.5) + (otherPlayer.bounceStrength || 0.5);
-        const impulse = baseImpulse * (1 + totalBounce * 0.5);
-
-        // Apply equal and opposite impulses (split by mass if available)
-        const massA = this.mass || 1;
-        const massB = otherPlayer.mass || 1;
-        const totalMass = massA + massB;
-
-        const impulseA = impulse * (massB / totalMass);
-        const impulseB = impulse * (massA / totalMass);
-
-        this.velocity.x += nx * impulseA;
-        this.velocity.y += ny * impulseA;
-
-        if (otherPlayer.velocity) {
-            otherPlayer.velocity.x -= nx * impulseB;
-            otherPlayer.velocity.y -= ny * impulseB;
+        // Check if otherPlayer is valid
+        if (!otherPlayer || typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') {
+            console.warn('handlePlayerCollision called with invalid otherPlayer:', otherPlayer);
+            return;
         }
-
-        // Minor damage on collision depending on impulse
-        const damage = Math.floor(Math.max(0, baseImpulse * 0.02));
-        if (damage > 0) this.takeDamage && this.takeDamage(damage);
-        if (damage > 0 && otherPlayer.takeDamage) otherPlayer.takeDamage(damage);
-
-        // Play collision sound and visual effect if available
-        if (soundManager) {
-            soundManager.play && soundManager.play('hit', { volume: 0.3, playbackRate: 1 });
+        
+        if (this.collisionCooldown <= 0) {
+            // Calculate collision vector between players
+            const dx = this.x - otherPlayer.x;
+            const dy = this.y - otherPlayer.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalize collision vector
+            const nx = dx / distance;
+            const ny = dy / distance;
+            
+            // Calculate relative velocity
+            const relVelX = this.velocity.x - (otherPlayer.velocity ? otherPlayer.velocity.x : 0);
+            const relVelY = this.velocity.y - (otherPlayer.velocity ? otherPlayer.velocity.y : 0);
+            
+            // Calculate impulse (how strongly we bounce)
+            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
+            
+            // Apply impulse in the direction away from collision
+            this.velocity.x += nx * impulseStrength * 0.5;
+            this.velocity.y += ny * impulseStrength * 0.5;
+            
+            // Take minimal damage from player collision
+            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            if (impactForce > 200) { // Only deal damage for high-speed collisions
+                const damageFactor = 0.05; // Less damage for player-player collisions
+                const damage = Math.max(1, impactForce * damageFactor);
+                this.takeDamage(damage);
+            }
+            
+            // Play collision sound
+            if (soundManager) {
+                soundManager.play('hit', {
+                    volume: 0.4,
+                    playbackRate: 1.2,
+                    position: { x: this.x, y: this.y }
+                });
+            }
+            
+            // Create visual impact effect
+            if (window.game && window.game.world) {
+                const impactX = this.x - nx * this.collisionRadius / 2;
+                const impactY = this.y - ny * this.collisionRadius / 2;
+                window.game.world.createCollisionEffect(impactX, impactY);
+            }
+            
+            // Set cooldown to prevent multiple collisions
+            this.collisionCooldown = this.collisionCooldownTime;
+            
+            return true; // Collision occurred
         }
-        if (window.game && window.game.world && typeof window.game.world.createCollisionEffect === 'function') {
-            const impactX = this.x - nx * (rA / 2);
-            const impactY = this.y - ny * (rA / 2);
-            window.game.world.createCollisionEffect(impactX, impactY);
-        }
-
-        // Set short cooldown on both players to avoid jitter
-        this.collisionCooldown = this.collisionCooldownTime;
-        if (otherPlayer.collisionCooldown !== undefined) otherPlayer.collisionCooldown = otherPlayer.collisionCooldownTime || this.collisionCooldownTime;
+        
+        return false; // No new collision
     }
 
     collidesWith(otherPlayer) {
