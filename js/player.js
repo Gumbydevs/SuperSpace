@@ -536,7 +536,7 @@ export class Player {
         // Debug logging to see what's happening
         const hasNumberKeyPressed = input.keys.some(key => key.startsWith('Digit'));
         if (hasNumberKeyPressed) {
-            console.log(`Number key detected, cooldown: ${this.weaponSwitchCooldown}, soundManager: ${!!soundManager}`);
+            // console.log(`Number key detected, cooldown: ${this.weaponSwitchCooldown}, soundManager: ${!!soundManager}`);
         }
         
         if (soundManager && this.weaponSwitchCooldown <= 0) {
