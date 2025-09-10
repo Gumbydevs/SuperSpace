@@ -1640,82 +1640,29 @@ export class Player {
                 };
                 
                 window.game.shipSkins.renderShipWithSkin(ctx, tempShip, window.game.premiumStore);
-            } else {
-                // Fallback: Draw different ship based on the currentShip property
-                switch(this.currentShip) {
+            } // End of ship rendering
+
+            // --- Dynamic engine flame rendering for all ships/skins ---
+
+            // Always render original dynamic engine flame/afterburner after ship geometry (for all ships/skins)
+            switch(this.currentShip) {
                 case 'fighter':
-                    // Enhanced fighter ship design
-                    // Main body
-                    ctx.fillStyle = this.shipColor;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -22); // Front nose tip
-                    ctx.lineTo(-5, -15); // Left side of nose
-                    ctx.lineTo(-18, -5); // Left wing tip
-                    ctx.lineTo(-12, 0); // Left wing inner edge
-                    ctx.lineTo(-15, 12); // Left rear wing
-                    ctx.lineTo(-5, 8); // Left engine mount
-                    ctx.lineTo(0, 10); // Center bottom
-                    ctx.lineTo(5, 8); // Right engine mount
-                    ctx.lineTo(15, 12); // Right rear wing
-                    ctx.lineTo(12, 0); // Right wing inner edge
-                    ctx.lineTo(18, -5); // Right wing tip
-                    ctx.lineTo(5, -15); // Right side of nose
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Add white outline for black ships
-                    if (this.shipColor === '#000') {
-                        ctx.strokeStyle = '#ddd';
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                    }
-                    
-                    // Cockpit
-                    ctx.fillStyle = 'rgba(180, 230, 255, 0.7)';
-                    ctx.beginPath();
-                    ctx.ellipse(0, -8, 4, 7, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Wing markings/details
-                    ctx.fillStyle = '#333';
-                    ctx.beginPath();
-                    ctx.moveTo(-15, -4);
-                    ctx.lineTo(-10, -2);
-                    ctx.lineTo(-10, 0);
-                    ctx.lineTo(-15, -2);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(15, -4);
-                    ctx.lineTo(10, -2);
-                    ctx.lineTo(10, 0);
-                    ctx.lineTo(15, -2);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Dynamic engine flame based on thrust level
                     if (this.thrustLevel > 0) {
-                        // Base engine flame shape grows with thrust level
                         ctx.fillStyle = this.engineColor;
                         ctx.beginPath();
                         ctx.moveTo(-7, 8);
-                        ctx.lineTo(-4, 8 + (10 * this.thrustLevel)); // Left side extends with thrust
-                        ctx.lineTo(0, 8 + (6 * this.thrustLevel)); // Center point
-                        ctx.lineTo(4, 8 + (10 * this.thrustLevel)); // Right side extends with thrust
+                        ctx.lineTo(-4, 8 + (10 * this.thrustLevel));
+                        ctx.lineTo(0, 8 + (6 * this.thrustLevel));
+                        ctx.lineTo(4, 8 + (10 * this.thrustLevel));
                         ctx.lineTo(7, 8);
                         ctx.closePath();
                         ctx.fill();
-                        
-                        // Engine glow effect - intensity increases with thrust
                         const engineGlowSize = 8 + (10 * this.thrustLevel);
                         const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, engineGlowSize);
                         fighterEngineGradient.addColorStop(0, this.engineColor);
                         fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
                         ctx.fillStyle = fighterEngineGradient;
                         ctx.fillRect(-8, 10, 16, 8 + (12 * this.thrustLevel));
-                        
-                        // Add animated flickering for more realistic flame
                         if (this.thrustLevel > 0.7) {
                             const flickerIntensity = (Math.random() * 0.2) * this.thrustLevel;
                             ctx.globalAlpha = 0.5 * flickerIntensity;
@@ -1727,35 +1674,77 @@ export class Player {
                         }
                     }
                     break;
-                    
                 case 'heavy':
-                    // Enhanced heavy cruiser design
-                    // Main body
-                    ctx.fillStyle = this.shipColor;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -28); // Nose tip
-                    ctx.lineTo(-8, -20); // Left front angled edge
-                    ctx.lineTo(-12, -5); // Left mid-hull
-                    ctx.lineTo(-25, 0); // Left wing tip
-                    ctx.lineTo(-25, 5); // Left wing corner
-                    ctx.lineTo(-18, 8); // Left wing inner
-                    ctx.lineTo(-10, 18); // Left engine mount
-                    ctx.lineTo(0, 15); // Bottom center
-                    ctx.lineTo(10, 18); // Right engine mount
-                    ctx.lineTo(18, 8); // Right wing inner 
-                    ctx.lineTo(25, 5); // Right wing corner
-                    ctx.lineTo(25, 0); // Right wing tip
-                    ctx.lineTo(12, -5); // Right mid-hull
-                    ctx.lineTo(8, -20); // Right front angled edge
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Add white outline for black ships
-                    if (this.shipColor === '#000') {
-                        ctx.strokeStyle = '#ddd';
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
+                    if (this.thrustLevel > 0) {
+                        ctx.fillStyle = this.engineColor;
+                        // Left engine
+                        ctx.beginPath();
+                        ctx.moveTo(-10, 18);
+                        ctx.lineTo(-14, 18 + (10 * this.thrustLevel));
+                        ctx.lineTo(-8, 18 + (8 * this.thrustLevel));
+                        ctx.closePath();
+                        ctx.fill();
+                        // Right engine
+                        ctx.beginPath();
+                        ctx.moveTo(10, 18);
+                        ctx.lineTo(14, 18 + (10 * this.thrustLevel));
+                        ctx.lineTo(8, 18 + (8 * this.thrustLevel));
+                        ctx.closePath();
+                        ctx.fill();
+                        const engineGlowSize = 6 + (8 * this.thrustLevel);
+                        // Left engine glow
+                        const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, engineGlowSize);
+                        leftEngineGlow.addColorStop(0, this.engineColor);
+                        leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = leftEngineGlow;
+                        ctx.fillRect(-16, 20, 12, 6 + (10 * this.thrustLevel));
+                        // Right engine glow
+                        const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, engineGlowSize);
+                        rightEngineGlow.addColorStop(0, this.engineColor);
+                        rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = rightEngineGlow;
+                        ctx.fillRect(4, 20, 12, 6 + (10 * this.thrustLevel));
+                        if (this.thrustLevel > 0.6) {
+                            // Left engine flicker
+                            const leftFlickerIntensity = (Math.random() * 0.3) * this.thrustLevel;
+                            ctx.globalAlpha = 0.5 * leftFlickerIntensity;
+                            ctx.beginPath();
+                            ctx.arc(-10, 22 + (6 * this.thrustLevel), 4 * this.thrustLevel, 0, Math.PI * 2);
+                            ctx.fillStyle = '#fff';
+                            ctx.fill();
+                            // Right engine flicker
+                            const rightFlickerIntensity = (Math.random() * 0.3) * this.thrustLevel;
+                            ctx.globalAlpha = 0.5 * rightFlickerIntensity;
+                            ctx.beginPath();
+                            ctx.arc(10, 22 + (6 * this.thrustLevel), 4 * this.thrustLevel, 0, Math.PI * 2);
+                            ctx.fillStyle = '#fff';
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                        }
                     }
+                    break;
+                case 'stealth':
+                    if (this.thrustLevel > 0) {
+                        ctx.globalAlpha = 0.3 + (0.4 * this.thrustLevel);
+                        ctx.fillStyle = this.engineColor;
+                        ctx.beginPath();
+                        ctx.moveTo(-5, 12);
+                        ctx.lineTo(-3, 12 + (8 * this.thrustLevel));
+                        ctx.lineTo(0, 12 + (4 * this.thrustLevel));
+                        ctx.lineTo(3, 12 + (8 * this.thrustLevel));
+                        ctx.lineTo(5, 12);
+                        ctx.closePath();
+                        ctx.fill();
+                        const pulseIntensity = (Math.sin(Date.now() / 200) * 0.2 + 0.8) * this.thrustLevel;
+                        ctx.globalAlpha = 0.2 * pulseIntensity;
+                        ctx.beginPath();
+                        ctx.arc(0, 14 + (4 * this.thrustLevel), 4 * this.thrustLevel, 0, Math.PI * 2);
+                        ctx.fillStyle = this.engineColor;
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
+                    break;
+
                     
                     // Heavy armor plating
                     ctx.strokeStyle = 'rgba(60, 60, 60, 0.8)';
@@ -2137,231 +2126,9 @@ export class Player {
                 }
             }
             
-            ctx.restore();
+        ctx.restore();
     }
-}
-        // End of render method
-    // Removed extra brace that incorrectly closed the class
-    
-    // New method to set ship color and save it to localStorage
-    setShipColor(color) {
-        this.shipColor = color;
-        this.color = color; // Update main color to match ship color
-        localStorage.setItem('playerShipColor', color);
-        
-        // If in multiplayer, notify others of the color change
-        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-            window.game.multiplayer.sendShipColorUpdate(color);
-        }
-    }
-    
-    // New method to set engine color and save it to localStorage
-    setEngineColor(color) {
-        this.engineColor = color;
-        localStorage.setItem('playerEngineColor', color);
-        
-        // If in multiplayer, notify others of the color change
-        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-            window.game.multiplayer.sendEngineColorUpdate(color);
-        }
-    }
-    
-    // Getter methods for ship skin system compatibility
-    getShipColor() {
-        return this.shipColor;
-    }
-    
-    getEngineColor() {
-        return this.engineColor;
-    }
-    
-    // Set ship skin and notify multiplayer
-    setShipSkin(skinId) {
-        this.shipSkin = skinId;
-        localStorage.setItem('selectedShipSkin', skinId);
-        
-        // If in multiplayer, notify others of the skin change
-        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
-            window.game.multiplayer.sendShipSkinUpdate(skinId);
-        }
-    }
-
-    // Add method to handle collisions with asteroids
-    handleAsteroidCollision(asteroid, soundManager) {
-        if (this.collisionCooldown <= 0) {
-            // Calculate collision vector from asteroid center to player
-            const dx = this.x - asteroid.x;
-            const dy = this.y - asteroid.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // Normalize collision vector
-            const nx = dx / distance;
-            const ny = dy / distance;
-            
-            // Calculate relative velocity
-            const relVelX = this.velocity.x;
-            const relVelY = this.velocity.y;
-            
-            // Calculate impact force
-            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
-            
-            // Calculate impulse (how strongly we bounce)
-            const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
-            
-            // Apply impulse in the direction away from collision
-            this.velocity.x = nx * impulseStrength;
-            this.velocity.y = ny * impulseStrength;
-            
-            // Create visual impact effect at the collision point
-            if (window.game && window.game.world) {
-                // Calculate impact position at the collision point
-                const impactX = asteroid.x + nx * asteroid.radius;
-                const impactY = asteroid.y + ny * asteroid.radius;
-                
-                // Create basic collision effect for all impacts
-                window.game.world.createCollisionEffect(impactX, impactY);
-                
-                // For high-velocity impacts, create a more dramatic effect
-                if (impactForce > 150) {
-                    // Create a small explosion based on impact force
-                    const explosionSize = Math.min(25, 10 + impactForce * 0.1);
-                    window.game.world.createExplosion(
-                        impactX, 
-                        impactY,
-                        explosionSize,
-                        soundManager
-                    );
-                    
-                    // Add camera shake proportional to impact force
-                    if (window.game.multiplayer) {
-                        window.game.multiplayer.addCameraShake(Math.min(15, impactForce * 0.05));
-                    }
-                }
-            }
-            
-            // Play collision sound
-            if (soundManager) {
-                soundManager.play('hit', {
-                    volume: Math.min(0.8, 0.3 + (impactForce * 0.001)),
-                    playbackRate: 0.7,
-                    position: { x: this.x, y: this.y }
-                });
-                
-                // For really hard impacts, also play a crash sound
-                if (impactForce > 200) {
-                    soundManager.play('explosion', {
-                        volume: Math.min(0.5, impactForce * 0.001),
-                        playbackRate: 1.2,
-                        position: { x: this.x, y: this.y }
-                    });
-                }
-            }
-            
-            // Calculate damage based on impact force
-            const damageFactor = 0.1; // Controls how much damage is taken per unit of speed
-            const damage = Math.max(5, impactForce * damageFactor);
-            
-            // Apply damage to health
-            this.health -= damage;
-            
-            // Update the health display in the UI
-            if (window.game && window.game.ui) {
-                window.game.ui.updateHealthBar(this.health, this.maxHealth);
-            }
-            
-            // Check if player is now dead (health <= 0)
-            if (this.health <= 0) {
-                // THIS IS THE KEY CHANGE: Use our guaranteed explosion method
-                if (window.game) {
-                    // Use our direct explosion method instead of regular die()
-                    window.game.forcePlayerExplosion();
-                    
-                    // Set game state to dying
-                    window.game.gameState = 'dying';
-                    
-                    // Hide the player ship
-                    this.visible = false;
-                    
-                    // Mark death as triggered
-                    this.deathTriggered = true;
-                    
-                    // Notify multiplayer if available - this was an asteroid death
-                    if (window.game.multiplayer && window.game.multiplayer.handleDeath) {
-                        window.game.multiplayer.handleDeath('asteroid');
-                    }
-                }
-            }
-            
-            // Set cooldown to prevent multiple collisions
-            this.collisionCooldown = this.collisionCooldownTime;
-            
-            return true; // Collision occurred
-        }
-        
-        return false; // No new collision
-    }
-    
-    // Add method to handle collisions with other players
-    handlePlayerCollision(otherPlayer, soundManager) {
-        // Check if otherPlayer is valid
-        if (!otherPlayer || typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') {
-            console.warn('handlePlayerCollision called with invalid otherPlayer:', otherPlayer);
-            return;
-        }
-        
-        if (this.collisionCooldown <= 0) {
-            // Calculate collision vector between players
-            const dx = this.x - otherPlayer.x;
-            const dy = this.y - otherPlayer.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // Normalize collision vector
-            const nx = dx / distance;
-            const ny = dy / distance;
-            
-            // Calculate relative velocity
-            const relVelX = this.velocity.x - otherPlayer.velocity.x;
-            const relVelY = this.velocity.y - otherPlayer.velocity.y;
-            
-            // Calculate impulse (how strongly we bounce)
-            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
-            
-            // Apply impulse in the direction away from collision
-            this.velocity.x += nx * impulseStrength * 0.5;
-            this.velocity.y += ny * impulseStrength * 0.5;
-            
-            // Take minimal damage from player collision
-            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
-            if (impactForce > 200) { // Only deal damage for high-speed collisions
-                const damageFactor = 0.05; // Less damage for player-player collisions
-                const damage = Math.max(1, impactForce * damageFactor);
-                this.takeDamage(damage);
-            }
-            
-            // Play collision sound
-            if (soundManager) {
-                soundManager.play('hit', {
-                    volume: 0.4,
-                    playbackRate: 1.2,
-                    position: { x: this.x, y: this.y }
-                });
-            }
-            
-            // Create visual impact effect
-            if (window.game && window.game.world) {
-                const impactX = this.x - nx * this.collisionRadius / 2;
-                const impactY = this.y - ny * this.collisionRadius / 2;
-                window.game.world.createCollisionEffect(impactX, impactY);
-            }
-            
-            // Set cooldown to prevent multiple collisions
-            this.collisionCooldown = this.collisionCooldownTime;
-            
-            return true; // Collision occurred
-        }
-        
-        return false; // No new collision
-    }
+    // Removed stray collision code after render method
 
     // Create shield hit effect when projectiles hit shields
     createShieldHitEffect(hitX, hitY, playerX, playerY) {
