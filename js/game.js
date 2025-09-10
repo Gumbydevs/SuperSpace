@@ -51,7 +51,6 @@ class Game {
         this.shipSkins = new ShipSkinSystem();  // Ship skin system
         this.avatarManager = new AvatarManager(this.premiumStore);  // Avatar manager with premium support
         this.marvinAssistant = new MarvinAssistant(); // Marvin the Robot assistant for notifications
-        this.chat = new Chat(this.input);
         this.paypalIntegration = new PayPalIntegration(this.premiumStore);  // PayPal payment system
         
         // Connect systems to premium store
@@ -73,6 +72,7 @@ class Game {
         
         // Initialize multiplayer system (but don't connect yet)
         this.multiplayer = new MultiplayerManager(this);
+        this.chat = new Chat(this.multiplayer.socket, this.input);
         this.multiplayerConnected = false;
 
         // Store a reference to the UI for other classes to access
@@ -633,7 +633,6 @@ class Game {
                 .then(() => {
                     console.log('Connected to multiplayer server at', serverUrl);
                     this.multiplayerConnected = true;
-                    this.chat.setSocket(this.multiplayer.socket);
                     
                     // Track multiplayer connection
                     this.trackAnalyticsEvent('multiplayer_connected', { 

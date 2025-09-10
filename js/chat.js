@@ -1,8 +1,8 @@
 // js/chat.js
 
 export default class Chat {
-    constructor(inputManager) {
-        this.socket = null;
+    constructor(socket, inputManager) {
+        this.socket = socket;
         this.inputManager = inputManager;
         this.chatContainer = document.getElementById('chat-container');
         this.chatMessages = document.getElementById('chat-messages');
@@ -14,27 +14,24 @@ export default class Chat {
     }
 
     init() {
-        // The input manager will handle the 'T' key to toggle chat
         this.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.sendMessage();
-                // Do not hide chat on enter, just clear the input
-                this.chatInput.value = '';
             } else if (e.key === 'Escape') {
                 this.hideChat();
             }
-            e.stopPropagation(); // Prevent game keybindings from firing while typing
+            e.stopPropagation();
         });
-    }
 
-    setSocket(socket) {
-        this.socket = socket;
-        this.socket.on('chatMessage', (data) => {
-            this.addMessage(data.name, data.message, data.isSystem);
-            if (!this.isVisible) {
-                this.showToast(data.name, data.message);
-            }
-        });
+        if (this.socket) {
+            this.socket.on('chatMessage', (data) => {
+                this.addMessage(data.name, data.message, data.isSystem);
+                // Only show toast if the chat window is not visible
+                if (!this.isVisible) {
+                    this.showToast(data.name, data.message);
+                }
+            });
+        }
     }
 
     isChatInputFocused() {
@@ -77,7 +74,7 @@ export default class Chat {
         messageElement.classList.add('chat-message');
         
         const nameSpan = document.createElement('span');
-        nameSpan.style.color = isSystem ? '#8cf' : '#fff'; // System messages in blue
+        nameSpan.style.color = isSystem ? '#8cf' : '#fff';
         nameSpan.style.fontWeight = 'bold';
         nameSpan.textContent = name ? `${name}: ` : '';
 
@@ -110,7 +107,7 @@ export default class Chat {
 
         setTimeout(() => {
             toastElement.remove();
-        }, 5000); // Remove the toast after 5 seconds
+        }, 5000);
     }
 }
 
