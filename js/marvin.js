@@ -131,10 +131,22 @@ export class MarvinAssistant {
         ctx.fillRect(13*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
         
-        // Add arms
-        ctx.fillStyle = '#666';
-        ctx.fillRect(5*scale, 18*scale, 2*scale, 5*scale);
-        ctx.fillRect(17*scale, 18*scale, 2*scale, 5*scale);
+    // Add arms - angled upwards and outwards at 45 degrees
+    ctx.save();
+    ctx.fillStyle = '#666';
+    // Left arm
+    ctx.translate(6*scale, 19*scale); // Move to left shoulder
+    ctx.rotate(-Math.PI/4); // Rotate -45 degrees (up and out)
+    ctx.fillRect(-1*scale, 0, 2*scale, 7*scale); // Draw arm
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = '#666';
+    // Right arm
+    ctx.translate(18*scale, 19*scale); // Move to right shoulder
+    ctx.rotate(Math.PI/4); // Rotate +45 degrees (up and out)
+    ctx.fillRect(-1*scale, 0, 2*scale, 7*scale); // Draw arm
+    ctx.restore();
     }
     
     attachToNotification(notificationElement) {
