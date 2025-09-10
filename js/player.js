@@ -47,19 +47,90 @@ export class Player {
         return false; // No new collision
     }
     // --- Player collision methods ---
-    handlePlayerCollision(otherPlayer) {
-        // Example: reduce health for both players on collision
-        if (this.isAlive && otherPlayer.isAlive) {
-            this.health -= 10;
-            otherPlayer.health -= 10;
+    handlePlayerCollision(otherPlayer, soundManager) {
+        // Prevent rapid repeated collisions
+        if (this.collisionCooldown > 0 || !otherPlayer) return;
+
+        // Ensure both players have positions
+        if (typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') return;
+
+        // Basic alive check
+        if (!this.isAlive || !otherPlayer.isAlive) return;
+
+        // Calculate collision vector from otherPlayer to this
+        let dx = this.x - otherPlayer.x;
+        let dy = this.y - otherPlayer.y;
+        let distance = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+
+        // Determine collision radii (remote players may not have collisionRadius set)
+        const rA = this.collisionRadius || 15;
+        const rB = (otherPlayer.collisionRadius || otherPlayer.radius) || 15;
+
+        const overlap = (rA + rB) - distance;
+        if (overlap <= 0) return; // no physical overlap
+
+        // Normalized collision normal pointing from other to this
+        const nx = dx / distance;
+        const ny = dy / distance;
+
+        // Relative velocity along normal
+        const relVelX = this.velocity.x - (otherPlayer.velocity ? otherPlayer.velocity.x : 0);
+        const relVelY = this.velocity.y - (otherPlayer.velocity ? otherPlayer.velocity.y : 0);
+        const relSpeedAlongNormal = relVelX * nx + relVelY * ny;
+
+        // Compute impulse based on overlap and relative speed
+        const pushFromOverlap = Math.max(0, overlap) * 8; // tuneable constant
+        const pushFromSpeed = Math.max(0, -relSpeedAlongNormal) * 20; // if they're moving into each other
+        const baseImpulse = pushFromOverlap + pushFromSpeed;
+
+        // Factor in bounce strengths (0-1) to reduce or increase resulting velocities
+        const totalBounce = (this.bounceStrength || 0.5) + (otherPlayer.bounceStrength || 0.5);
+        const impulse = baseImpulse * (1 + totalBounce * 0.5);
+
+        // Apply equal and opposite impulses (split by mass if available)
+        const massA = this.mass || 1;
+        const massB = otherPlayer.mass || 1;
+        const totalMass = massA + massB;
+
+        const impulseA = impulse * (massB / totalMass);
+        const impulseB = impulse * (massA / totalMass);
+
+        this.velocity.x += nx * impulseA;
+        this.velocity.y += ny * impulseA;
+
+        if (otherPlayer.velocity) {
+            otherPlayer.velocity.x -= nx * impulseB;
+            otherPlayer.velocity.y -= ny * impulseB;
         }
+
+        // Minor damage on collision depending on impulse
+        const damage = Math.floor(Math.max(0, baseImpulse * 0.02));
+        if (damage > 0) this.takeDamage && this.takeDamage(damage);
+        if (damage > 0 && otherPlayer.takeDamage) otherPlayer.takeDamage(damage);
+
+        // Play collision sound and visual effect if available
+        if (soundManager) {
+            soundManager.play && soundManager.play('hit', { volume: 0.3, playbackRate: 1 });
+        }
+        if (window.game && window.game.world && typeof window.game.world.createCollisionEffect === 'function') {
+            const impactX = this.x - nx * (rA / 2);
+            const impactY = this.y - ny * (rA / 2);
+            window.game.world.createCollisionEffect(impactX, impactY);
+        }
+
+        // Set short cooldown on both players to avoid jitter
+        this.collisionCooldown = this.collisionCooldownTime;
+        if (otherPlayer.collisionCooldown !== undefined) otherPlayer.collisionCooldown = otherPlayer.collisionCooldownTime || this.collisionCooldownTime;
     }
 
     collidesWith(otherPlayer) {
+        if (!otherPlayer || typeof otherPlayer.x === 'undefined' || typeof otherPlayer.y === 'undefined') return false;
         const dx = this.x - otherPlayer.x;
         const dy = this.y - otherPlayer.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < (this.radius + otherPlayer.radius);
+        const rA = this.collisionRadius || 15;
+        const rB = (otherPlayer.collisionRadius || otherPlayer.radius) || 15;
+        return distance < (rA + rB);
     }
     // Set ship skin and notify multiplayer
     setShipSkin(skinId) {
