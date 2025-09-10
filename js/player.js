@@ -1,6 +1,33 @@
 import { Projectile } from './projectile.js';
 
 export class Player {
+    // Set ship skin and notify multiplayer
+    setShipSkin(skinId) {
+        this.shipSkin = skinId;
+        localStorage.setItem('selectedShipSkin', skinId);
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendShipSkinUpdate(skinId);
+        }
+    }
+
+    // Set ship color and save to localStorage
+    setShipColor(color) {
+        this.shipColor = color;
+        this.color = color;
+        localStorage.setItem('playerShipColor', color);
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendShipColorUpdate(color);
+        }
+    }
+
+    // Set engine color and save to localStorage
+    setEngineColor(color) {
+        this.engineColor = color;
+        localStorage.setItem('playerEngineColor', color);
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            window.game.multiplayer.sendEngineColorUpdate(color);
+        }
+    }
     constructor(x, y) {
         // Here we set the initial position of the player's ship
         this.x = x;
