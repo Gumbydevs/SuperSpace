@@ -526,7 +526,18 @@
             // Always rotate asteroids for visual appeal
             asteroid.rotation += asteroid.rotationSpeed * deltaTime;
 
-            // Check for collision with player if not in safe zone
+                // Check for collision with player if not in safe zone
+                // --- Player collision handling ---
+                for (let i = 0; i < this.players.length; i++) {
+                    for (let j = i + 1; j < this.players.length; j++) {
+                        const playerA = this.players[i];
+                        const playerB = this.players[j];
+                        if (playerA.collidesWith(playerB)) {
+                            playerA.handlePlayerCollision(playerB);
+                            playerB.handlePlayerCollision(playerA);
+                        }
+                    }
+                }
             if (!this.isInSafeZone(player)) {
                 const dx = player.x - asteroid.x;
                 const dy = player.y - asteroid.y;
