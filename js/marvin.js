@@ -16,134 +16,41 @@ export class MarvinAssistant {
                 75% { transform: rotate(15deg); }
             }
             
-            @keyframes marvinBounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-10px); }
+            @keyframes marvinLightBlink {
+                0%, 50%, 100% { opacity: 1; }
+                25%, 75% { opacity: 0.5; }
             }
             
             @keyframes marvinAppear {
-                0% { transform: translateX(50px); opacity: 0; }
+                0% { transform: translateX(30px); opacity: 0; }
                 100% { transform: translateX(0); opacity: 1; }
             }
             
             .marvin-container {
                 position: absolute;
-                top: -20px;
+                top: 0px;
                 left: 100%;
-                width: 80px;
-                height: 120px;
+                width: 48px;
+                height: 48px;
                 pointer-events: none;
                 animation: marvinAppear 0.5s ease-out forwards;
                 z-index: 10001; /* Ensure Marvin appears above other elements */
             }
             
-            .marvin-body {
-                position: relative;
-                width: 60px;
-                height: 90px;
-                background: #555;
-                border-radius: 30px;
-                margin: 0 auto;
-                box-shadow: inset 0 -10px 20px rgba(0,0,0,0.3), 0 5px 10px rgba(0,0,0,0.2);
-            }
-            
-            .marvin-head {
-                position: absolute;
-                top: -25px;
-                left: 10px;
-                width: 40px;
-                height: 40px;
-                background: #777;
-                border-radius: 50%;
-                box-shadow: inset 0 -5px 10px rgba(0,0,0,0.3);
-            }
-            
-            .marvin-eye {
-                position: absolute;
-                width: 10px;
-                height: 10px;
-                background: #0af;
-                border-radius: 50%;
-                top: 12px;
-                box-shadow: 0 0 8px #0af;
-            }
-            
-            .marvin-eye.left {
-                left: 8px;
-            }
-            
-            .marvin-eye.right {
-                right: 8px;
-            }
-            
-            .marvin-antenna {
-                position: absolute;
-                top: -15px;
-                left: 18px;
-                width: 4px;
-                height: 15px;
-                background: #999;
-                border-radius: 2px;
-            }
-            
-            .marvin-antenna::after {
-                content: '';
-                position: absolute;
-                top: -5px;
-                left: -3px;
-                width: 10px;
-                height: 5px;
-                background: #0af;
-                border-radius: 50%;
-                box-shadow: 0 0 8px #0af;
+            .marvin-canvas {
+                width: 48px;
+                height: 48px;
             }
             
             .marvin-arm {
                 position: absolute;
-                width: 12px;
-                height: 40px;
+                width: 6px;
+                height: 16px;
                 background: #666;
-                border-radius: 6px;
-            }
-            
-            .marvin-arm.left {
-                top: 15px;
-                left: -5px;
-                transform-origin: top center;
-            }
-            
-            .marvin-arm.right {
-                top: 15px;
-                right: -5px;
+                top: 30px;
+                right: 10px;
                 transform-origin: top center;
                 animation: marvinWave 2s ease-in-out infinite;
-            }
-            
-            .marvin-leg {
-                position: absolute;
-                bottom: -20px;
-                width: 15px;
-                height: 25px;
-                background: #555;
-                border-radius: 7px;
-            }
-            
-            .marvin-leg.left {
-                left: 10px;
-            }
-            
-            .marvin-leg.right {
-                right: 10px;
-            }
-            
-            .marvin-mouth {
-                position: absolute;
-                bottom: 10px;
-                left: 15px;
-                width: 30px;
-                height: 5px;
-                background: #333;
-                border-radius: 5px;
             }
         `;
         document.head.appendChild(style);
@@ -153,50 +60,81 @@ export class MarvinAssistant {
         const container = document.createElement('div');
         container.className = 'marvin-container';
         
-        const body = document.createElement('div');
-        body.className = 'marvin-body';
+        // Create arm that waves
+        const arm = document.createElement('div');
+        arm.className = 'marvin-arm';
+        container.appendChild(arm);
         
-        const head = document.createElement('div');
-        head.className = 'marvin-head';
+        // Create canvas for pixel art
+        const canvas = document.createElement('canvas');
+        canvas.className = 'marvin-canvas';
+        canvas.width = 48;
+        canvas.height = 48;
+        container.appendChild(canvas);
         
-        const leftEye = document.createElement('div');
-        leftEye.className = 'marvin-eye left';
-        
-        const rightEye = document.createElement('div');
-        rightEye.className = 'marvin-eye right';
-        
-        const antenna = document.createElement('div');
-        antenna.className = 'marvin-antenna';
-        
-        const leftArm = document.createElement('div');
-        leftArm.className = 'marvin-arm left';
-        
-        const rightArm = document.createElement('div');
-        rightArm.className = 'marvin-arm right';
-        
-        const leftLeg = document.createElement('div');
-        leftLeg.className = 'marvin-leg left';
-        
-        const rightLeg = document.createElement('div');
-        rightLeg.className = 'marvin-leg right';
-        
-        const mouth = document.createElement('div');
-        mouth.className = 'marvin-mouth';
-        
-        head.appendChild(leftEye);
-        head.appendChild(rightEye);
-        head.appendChild(antenna);
-        
-        body.appendChild(head);
-        body.appendChild(leftArm);
-        body.appendChild(rightArm);
-        body.appendChild(mouth);
-        body.appendChild(leftLeg);
-        body.appendChild(rightLeg);
-        
-        container.appendChild(body);
+        // Draw Marvin on the canvas
+        this.drawMarvin(canvas.getContext('2d'), 48);
         
         return container;
+    }
+    
+    drawMarvin(ctx, size) {
+        // AI Unit - Marvin (scalable)
+        // This matches the pixel art style from avatarmanager.js
+        const scale = size / 24;
+        
+        // Clear canvas with transparent background
+        ctx.clearRect(0, 0, size, size);
+        
+        // Head (metallic)
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(6*scale, 4*scale, 12*scale, 14*scale);
+        ctx.fillStyle = '#a0a0a0';
+        ctx.fillRect(7*scale, 5*scale, 10*scale, 12*scale);
+        
+        // Visor
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(8*scale, 6*scale, 8*scale, 6*scale);
+        
+        // Eyes (glowing red)
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(9*scale, 7*scale, 2*scale, 2*scale);
+        ctx.fillRect(13*scale, 7*scale, 2*scale, 2*scale);
+        
+        // Mouth grille
+        ctx.fillStyle = '#666';
+        ctx.fillRect(9*scale, 11*scale, 6*scale, 2*scale);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(10*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(12*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(14*scale, 11*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Antenna
+        ctx.fillStyle = '#888';
+        ctx.fillRect(11*scale, 2*scale, 2*scale, 3*scale);
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(11*scale, 2*scale, 2*scale, Math.max(1, 1*scale));
+        
+        // Body
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(5*scale, 17*scale, 14*scale, 7*scale);
+        ctx.fillStyle = '#696969';
+        ctx.fillRect(6*scale, 18*scale, 12*scale, 6*scale);
+        
+        // Control lights
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(7*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(9*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(11*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(13*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        ctx.fillRect(15*scale, 20*scale, Math.max(1, 1*scale), Math.max(1, 1*scale));
+        
+        // Add arms
+        ctx.fillStyle = '#666';
+        ctx.fillRect(5*scale, 18*scale, 2*scale, 5*scale);
+        ctx.fillRect(17*scale, 18*scale, 2*scale, 5*scale);
     }
     
     attachToNotification(notificationElement) {

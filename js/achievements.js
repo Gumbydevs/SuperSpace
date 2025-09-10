@@ -318,6 +318,7 @@ export class AchievementSystem {
                 max-width: 300px;
                 animation: slideIn 0.3s ease-out;
                 position: relative; /* Required for positioning Marvin */
+                padding-right: 55px; /* Make space for Marvin */
             `;
             
             const icon = document.createElement('span');

@@ -309,6 +309,7 @@ export class ChallengeSystem {
             notification.style.fontSize = '14px';
             notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
             notification.style.position = 'relative'; // Required for positioning Marvin
+            notification.style.paddingRight = '55px'; // Make space for Marvin
             notification.innerHTML = `
                 <div style="font-weight:800; margin-bottom:6px; color:#fff">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
                 <div style="font-size:0.96em; color: #ffeaa7;">${challenge.description}</div>
