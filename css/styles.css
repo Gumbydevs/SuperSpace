@@ -1715,6 +1715,22 @@ input[type="range"] {
     transition: opacity 0.3s, transform 0.3s;
 }
 
+/* Mobile chat adjustments */
+@media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+    #chat-container {
+        width: 95vw;
+        max-width: 350px;
+        height: 200px;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    #chat-input {
+        font-size: 16px !important; /* Prevent iOS zoom on focus */
+    }
+}
+
 #chat-container.hidden {
     opacity: 0;
     transform: translateY(20px);
@@ -1792,4 +1808,20 @@ input[type="range"] {
     10% { opacity: 1; transform: translateY(0); }
     90% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Mobile adjustments for chat toast */
+@media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+    #chat-toast-container {
+        bottom: 220px; /* Adjust for smaller mobile chat */
+        width: 95vw;
+        max-width: 350px;
+    }
+    
+    .chat-toast-message {
+        font-size: 12px;
+        padding: 6px 12px;
+        max-width: 90vw;
+        word-wrap: break-word;
+    }
 }
