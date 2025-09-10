@@ -133,7 +133,10 @@ class ServerAnalytics {
     updateSession(event) {
         const { sessionId, playerId } = event;
         // Use playerId as the main key for presence and stats
+        // Only add a new session if this playerId+sessionId combo is truly new
+        let isNewPlayer = false;
         if (!this.sessions.has(playerId)) {
+            isNewPlayer = true;
             this.sessions.set(playerId, {
                 playerId,
                 sessionIds: new Set([sessionId]),
@@ -158,20 +161,8 @@ class ServerAnalytics {
                     challengesCompleted: new Set()
                 }
             });
-            // New unique active player connected — compute current concurrent from sessions size
-            const today = this.getDateString();
-            if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
-            const stats = this.dailyStats.get(today);
-            const concurrent = this.sessions.size; // after adding
-            stats.currentConcurrent = concurrent;
-            stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, concurrent);
-            // update globalPeak and persist if increased
-            const newGlobal = Math.max(this.globalPeak || 0, stats.peakConcurrent || 0);
-            if (newGlobal > this.globalPeak) {
-                this.globalPeak = newGlobal;
-                this.saveMeta();
-            }
         } else {
+            // Only add sessionId if not already present
             this.sessions.get(playerId).sessionIds.add(sessionId);
         }
         const session = this.sessions.get(playerId);
@@ -180,6 +171,32 @@ class ServerAnalytics {
         // Keep only last 100 events per session to manage memory
         if (session.events.length > 100) {
             session.events = session.events.slice(-100);
+        }
+        // Only update dailyStats for new unique player or session
+        const today = this.getDateString();
+        if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
+        const stats = this.dailyStats.get(today);
+        if (isNewPlayer) {
+            // Only count unique player once per day
+            if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
+            stats.uniquePlayers.add(playerId);
+        }
+        // Only count unique sessionId per player per day
+        if (!stats.playerSessionMap) stats.playerSessionMap = {};
+        if (!stats.playerSessionMap[playerId]) stats.playerSessionMap[playerId] = new Set();
+        if (!stats.playerSessionMap[playerId].has(sessionId)) {
+            stats.playerSessionMap[playerId].add(sessionId);
+            stats.uniqueSessions.add(sessionId);
+        }
+        // Always update current/peak concurrent
+        const concurrent = this.sessions.size;
+        stats.currentConcurrent = concurrent;
+        stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, concurrent);
+        // update globalPeak and persist if increased
+        const newGlobal = Math.max(this.globalPeak || 0, stats.peakConcurrent || 0);
+        if (newGlobal > this.globalPeak) {
+            this.globalPeak = newGlobal;
+            this.saveMeta();
         }
     }
     
