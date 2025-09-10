@@ -779,8 +779,16 @@ class Game {
                 }
             }
         } else if (this.gameState === 'dying') {
-            // Update world particles for ship destruction effect
-            this.world.updateParticles(deltaTime);
+            // When player is dying, keep the world alive
+            this.world.update(deltaTime, this.player, this.soundManager);
+            this.npcManager.update(deltaTime, this.player);
+            if (this.multiplayer && this.multiplayer.connected) {
+                this.multiplayer.update(deltaTime);
+            }
+            // Gently float the player's wreckage
+            if (this.player.updatePosition) {
+                this.player.updatePosition(deltaTime);
+            }
         }
         
         // Update skill points based on current score
