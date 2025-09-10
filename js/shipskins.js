@@ -206,18 +206,16 @@ export class ShipSkinSystem {
         const flash = Math.floor(time * 4) % 2;
         if (flash) {
             ctx.fillStyle = appearance.accent + '88';
-            ctx.fillRect(ship.x - 15, ship.y - 2, 30, 4);
-            ctx.fillRect(ship.x - 2, ship.y - 15, 4, 30);
+            ctx.fillRect(-15, -2, 30, 4);
+            ctx.fillRect(-2, -15, 4, 30);
         }
-        
         // Industrial panel lines
         ctx.strokeStyle = appearance.accent + '66';
         ctx.lineWidth = 1;
-        
         for (let i = -2; i <= 2; i++) {
             ctx.beginPath();
-            ctx.moveTo(ship.x - 20, ship.y + i * 8);
-            ctx.lineTo(ship.x + 20, ship.y + i * 8);
+            ctx.moveTo(-20, i * 8);
+            ctx.lineTo(20, i * 8);
             ctx.stroke();
         }
     }
@@ -225,33 +223,29 @@ export class ShipSkinSystem {
     applyFireEffect(ctx, ship, appearance, time) {
         // Flame trail particles
         ctx.fillStyle = appearance.color + '88';
-        
         for (let i = 0; i < 12; i++) {
             const age = (time * 3 + i) % 1;
-            const trailX = ship.x - ship.vx * age * 0.1 + (Math.random() - 0.5) * 10 * age;
-            const trailY = ship.y - ship.vy * age * 0.1 + (Math.random() - 0.5) * 10 * age;
+            const trailX = -ship.vx * age * 0.1 + (Math.random() - 0.5) * 10 * age;
+            const trailY = -ship.vy * age * 0.1 + (Math.random() - 0.5) * 10 * age;
             const size = (1 - age) * 3;
-            
             if (size > 0.5) {
                 ctx.beginPath();
                 ctx.arc(trailX, trailY, size, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
-        
         // Phoenix glow
         const phoenixGlow = ctx.createRadialGradient(
-            ship.x, ship.y, 0,
-            ship.x, ship.y, 35
+            0, 0, 0,
+            0, 0, 35
         );
         phoenixGlow.addColorStop(0, appearance.accent + '44');
         phoenixGlow.addColorStop(0.7, appearance.color + '22');
         phoenixGlow.addColorStop(1, appearance.color + '00');
-        
         ctx.globalCompositeOperation = 'screen';
         ctx.fillStyle = phoenixGlow;
         ctx.beginPath();
-        ctx.arc(ship.x, ship.y, 35, 0, Math.PI * 2);
+        ctx.arc(0, 0, 35, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
     }
