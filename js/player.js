@@ -46,22 +46,21 @@ export class Player {
         }
         return false; // No new collision
     }
-// --- Player collision methods ---
-
-Player.prototype.handlePlayerCollision = function(otherPlayer) {
-    // Example: reduce health for both players on collision
-    if (this.isAlive && otherPlayer.isAlive) {
-        this.health -= 10;
-        otherPlayer.health -= 10;
+    // --- Player collision methods ---
+    handlePlayerCollision(otherPlayer) {
+        // Example: reduce health for both players on collision
+        if (this.isAlive && otherPlayer.isAlive) {
+            this.health -= 10;
+            otherPlayer.health -= 10;
+        }
     }
-};
 
-Player.prototype.collidesWith = function(otherPlayer) {
-    const dx = this.x - otherPlayer.x;
-    const dy = this.y - otherPlayer.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    return distance < (this.radius + otherPlayer.radius);
-};
+    collidesWith(otherPlayer) {
+        const dx = this.x - otherPlayer.x;
+        const dy = this.y - otherPlayer.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < (this.radius + otherPlayer.radius);
+    }
     // Set ship skin and notify multiplayer
     setShipSkin(skinId) {
         this.shipSkin = skinId;
