@@ -18,6 +18,7 @@ import { ShipSkinSystem } from './shipskins.js';
 import { AvatarManager } from './avatarmanager.js';
 import { PayPalIntegration } from './paypal-integration.js';
 import { MarvinAssistant } from './marvin.js';
+import Chat from './chat.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -50,6 +51,7 @@ class Game {
         this.shipSkins = new ShipSkinSystem();  // Ship skin system
         this.avatarManager = new AvatarManager(this.premiumStore);  // Avatar manager with premium support
         this.marvinAssistant = new MarvinAssistant(); // Marvin the Robot assistant for notifications
+        this.chat = new Chat(this.input);
         this.paypalIntegration = new PayPalIntegration(this.premiumStore);  // PayPal payment system
         
         // Connect systems to premium store
@@ -490,8 +492,13 @@ class Game {
             // Admin panel access removed from F12 - use secret key sequence instead (F+T+G)
             
             // Shop hotkey (B key)
-            if (e.code === 'KeyB' && this.gameState === 'playing') {
+            if (e.code === 'KeyB' && this.gameState === 'playing' && !this.input.isChatting) {
                 this.toggleShop();
+            }
+
+            // Chat hotkey (T key)
+            if (e.code === 'KeyT' && this.gameState === 'playing' && !this.input.isChatting) {
+                this.chat.toggleChat();
             }
             
             // Profile hotkey (P key) - show profile directly (only if not typing)
@@ -626,6 +633,7 @@ class Game {
                 .then(() => {
                     console.log('Connected to multiplayer server at', serverUrl);
                     this.multiplayerConnected = true;
+                    this.chat.setSocket(this.multiplayer.socket);
                     
                     // Track multiplayer connection
                     this.trackAnalyticsEvent('multiplayer_connected', { 

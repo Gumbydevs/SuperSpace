@@ -1328,6 +1328,20 @@ io.on('connection', (socket) => {
     });
   });
   
+  // Handle chat messages
+  socket.on('chatMessage', (data) => {
+    const player = gameState.players[socket.id];
+    if (player && data.message) {
+      const message = data.message.substring(0, 100); // Limit message length
+      console.log(`[CHAT] ${player.name}: ${message}`);
+      io.emit('chatMessage', {
+        name: player.name,
+        message: message,
+        isSystem: false
+      });
+    }
+  });
+  
   // Player disconnect
   socket.on('disconnect', () => {
     // Synthesize session_end for analytics when possible

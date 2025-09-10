@@ -2,6 +2,7 @@ export class InputHandler {
     constructor() {
         this.keys = [];
         this.isTouchDevice = false;
+        this.isChatting = false; // Add this line
         this.touchJoystick = { 
             active: false, 
             startX: 0, 
@@ -15,6 +16,8 @@ export class InputHandler {
         this.touchButtons = {};
         
         window.addEventListener('keydown', (e) => {
+            if (this.isChatting) return; // Ignore game input when chatting
+
             // Don't capture keys if user is typing in an input field
             const activeElement = document.activeElement;
             const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
@@ -752,6 +755,13 @@ export class InputHandler {
         const index = this.keys.indexOf(key);
         if (index > -1) {
             this.keys.splice(index, 1);
+        }
+    }
+    
+    setChatting(isChatting) {
+        this.isChatting = isChatting;
+        if (isChatting) {
+            this.keys = []; // Clear all keys when entering chat mode
         }
     }
 }
