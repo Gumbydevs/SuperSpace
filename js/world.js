@@ -58,6 +58,9 @@
         // Initialize empty asteroid array - will be populated by server in multiplayer mode
         // or by generateAsteroids in single player mode
         this.asteroids = [];
+
+    // Initialize players array to prevent undefined errors
+    this.players = [];
         
         // ONLY multiplayer mode - asteroids come from server via setupServerAsteroidField
         console.log('Multiplayer mode - waiting for server asteroids, NO local generation');
