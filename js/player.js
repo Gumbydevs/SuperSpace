@@ -1,6 +1,51 @@
 import { Projectile } from './projectile.js';
 
 export class Player {
+    // Handle collisions with asteroids
+    handleAsteroidCollision(asteroid, soundManager) {
+        if (this.collisionCooldown <= 0) {
+            // Calculate collision vector from asteroid center to player
+            const dx = this.x - asteroid.x;
+            const dy = this.y - asteroid.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            // Normalize collision vector
+            const nx = dx / distance;
+            const ny = dy / distance;
+            // Calculate relative velocity
+            const relVelX = this.velocity.x;
+            const relVelY = this.velocity.y;
+            // Calculate impact force
+            const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            // Calculate impulse (how strongly we bounce)
+            const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
+            // Apply impulse in the direction away from collision
+            this.velocity.x = nx * impulseStrength;
+            this.velocity.y = ny * impulseStrength;
+            // Take damage based on impact force
+            if (impactForce > 100) {
+                const damage = Math.max(5, impactForce * 0.1);
+                this.takeDamage(damage);
+            }
+            // Play collision sound
+            if (soundManager) {
+                soundManager.play('hit', {
+                    volume: 0.4,
+                    playbackRate: 1.2,
+                    position: { x: this.x, y: this.y }
+                });
+            }
+            // Create visual impact effect
+            if (window.game && window.game.world) {
+                const impactX = this.x - nx * this.collisionRadius / 2;
+                const impactY = this.y - ny * this.collisionRadius / 2;
+                window.game.world.createCollisionEffect(impactX, impactY);
+            }
+            // Set cooldown to prevent multiple collisions
+            this.collisionCooldown = this.collisionCooldownTime;
+            return true; // Collision occurred
+        }
+        return false; // No new collision
+    }
     // Set ship skin and notify multiplayer
     setShipSkin(skinId) {
         this.shipSkin = skinId;
