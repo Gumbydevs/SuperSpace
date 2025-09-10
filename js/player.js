@@ -616,6 +616,14 @@ export class Player {
                     
                     // Only play sound and update UI if weapon actually changed
                     if (previousWeapon !== this.currentWeapon) {
+                        // If switching away from Mining Laser, deactivate it
+                        if (previousWeapon === 'Mining Laser') {
+                            if (this.miningBeam && this.miningBeam.active) {
+                                this.miningBeam.active = false;
+                                this.miningBeam.fragments = [];
+                            }
+                        }
+
                         soundManager.play('weaponswitch', { volume: 0.3, playbackRate: 1.0 });
                         
                         // Update weapon display in UI
@@ -2543,7 +2551,7 @@ export class Player {
                         // Skip damage for players in safe zone - no effects either
                     } else {
                         // Reduced damage to players
-                        const playerDamage = beamDamage * (weaponStats?.playerDamageMultiplier || 0.5);
+                        const playerDamage = beamDamage * (weaponStats?.playerDamageMultiplier || 0.01);
                         
                         // Send player hit to server
                         if (window.game && window.game.multiplayer) {
