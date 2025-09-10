@@ -497,8 +497,20 @@ class Game {
             }
 
             // Chat hotkey (T key)
-            if (e.code === 'KeyT' && this.gameState === 'playing' && !this.input.isChatting) {
+            if (e.code === 'KeyT' && this.gameState === 'playing') {
                 this.chat.toggleChat();
+            }
+
+            // Escape key to close chat or open options
+            if (e.code === 'Escape') {
+                if (this.chat.isVisible) {
+                    this.chat.hideChat();
+                    e.preventDefault(); // Prevent options menu from opening
+                } else if (this.ui && this.ui.optionsOverlay.classList.contains('hidden')) {
+                    // Original functionality to open options if not already open
+                    // this.ui.showOptionsOverlay(); 
+                    // The default behavior of Esc is handled elsewhere for the menu, so we might not need this.
+                }
             }
             
             // Profile hotkey (P key) - show profile directly (only if not typing)

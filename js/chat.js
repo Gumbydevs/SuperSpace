@@ -16,6 +16,7 @@ export default class Chat {
     init() {
         this.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default form submission
                 this.sendMessage();
             } else if (e.key === 'Escape') {
                 this.hideChat();
@@ -27,7 +28,7 @@ export default class Chat {
             this.socket.on('chatMessage', (data) => {
                 this.addMessage(data.name, data.message, data.isSystem);
                 // Only show toast if the chat window is not visible
-                if (!this.isVisible) {
+                if (!this.isVisible && document.hidden) { // Also check if tab is in background
                     this.showToast(data.name, data.message);
                 }
             });
