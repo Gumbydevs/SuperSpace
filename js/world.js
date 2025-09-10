@@ -791,6 +791,12 @@
                         player.velocity.x = nx * Math.max(impulseStrength, 50);
                         player.velocity.y = ny * Math.max(impulseStrength, 50);
                         
+                        // Apply equal and opposite force to the other player (if they have velocity)
+                        if (otherPlayer.velocity) {
+                            otherPlayer.velocity.x = -nx * Math.max(impulseStrength, 50);
+                            otherPlayer.velocity.y = -ny * Math.max(impulseStrength, 50);
+                        }
+                        
                         // Play collision sound - same as asteroid
                         if (soundManager) {
                             soundManager.play('hit', {
