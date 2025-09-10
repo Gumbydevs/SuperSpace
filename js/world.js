@@ -768,31 +768,23 @@
                     return;
                 }
                 
-                // Use the player's collidesWith helper (handles remote-player fallbacks)
-                if (player.collidesWith(otherPlayer)) {
-                    // Apply collision response locally
-                    player.handlePlayerCollision(otherPlayer, soundManager);
-
-                    // If the remote player object on this client has a handler (visual copy), call it too
-                    if (typeof otherPlayer.handlePlayerCollision === 'function') {
-                        try {
-                            otherPlayer.handlePlayerCollision(player, soundManager);
-                        } catch (e) {
-                            // ignore if remote representation cannot be modified
-                        }
-                    } else if (otherPlayer.velocity) {
-                        // Fallback: nudge the remote visual copy away for immediate feedback
-                        const nx = (otherPlayer.x - player.x) || 0.0001;
-                        const ny = (otherPlayer.y - player.y) || 0.0001;
-                        const dist = Math.sqrt(nx * nx + ny * ny) || 0.0001;
-                        const ux = nx / dist;
-                        const uy = ny / dist;
-                        // small visual impulse
-                        otherPlayer.velocity.x = (otherPlayer.velocity.x || 0) + ux * 50;
-                        otherPlayer.velocity.y = (otherPlayer.velocity.y || 0) + uy * 50;
-                    }
-
-                    // Notify server so authoritative collision resolution can occur
+                // Calculate distance between players
+                const dx = player.x - otherPlayer.x;
+                const dy = player.y - otherPlayer.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Check collision with simple distance check
+                if (distance < (player.collisionRadius || 15) + 15) {
+                    // Calculate collision normal
+                    const nx = distance > 0 ? dx / distance : 1;
+                    const ny = distance > 0 ? dy / distance : 0;
+                    
+                    // Apply simple knockback
+                    const knockback = 100;
+                    player.velocity.x += nx * knockback;
+                    player.velocity.y += ny * knockback;
+                    
+                    // Notify server
                     if (window.game.multiplayer.connected) {
                         window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
                     }
