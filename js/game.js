@@ -498,6 +498,7 @@ class Game {
 
             // Chat hotkey (T key)
             if (e.code === 'KeyT' && this.gameState === 'playing') {
+                e.preventDefault(); // Prevent the 'T' from being typed
                 this.chat.toggleChat();
             }
 
