@@ -1868,7 +1868,7 @@ export class MultiplayerManager {
     }
 
     // Send player collision data when ships collide with each other
-    sendPlayerCollision(targetId) {
+    sendPlayerCollision(targetId, knockbackForce) {
         if (!this.connected || !this.socket) return;
         
         this.socket.emit('playerCollision', {
@@ -1878,7 +1878,8 @@ export class MultiplayerManager {
                 x: this.game.player.x,
                 y: this.game.player.y
             },
-            velocity: this.game.player.velocity
+            velocity: this.game.player.velocity,
+            knockbackForce: knockbackForce
         });
     }
 

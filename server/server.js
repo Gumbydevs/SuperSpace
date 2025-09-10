@@ -907,12 +907,22 @@ io.on('connection', (socket) => {
     // Update activity timestamp
     playerLastActivity[socket.id] = Date.now();
     
+    // Apply knockback to target player if they exist
+    if (data.targetId && gameState.players[data.targetId] && data.knockbackForce) {
+      const targetPlayer = gameState.players[data.targetId];
+      if (targetPlayer.velocity) {
+        targetPlayer.velocity.x += data.knockbackForce.x;
+        targetPlayer.velocity.y += data.knockbackForce.y;
+      }
+    }
+    
     // Broadcast the collision to other players
     socket.broadcast.emit('playerCollision', {
       sourceId: data.sourceId,
       targetId: data.targetId,
       position: data.position,
-      velocity: data.velocity
+      velocity: data.velocity,
+      knockbackForce: data.knockbackForce
     });
     
     console.log(`Player collision: ${data.sourceId} collided with ${data.targetId}`);

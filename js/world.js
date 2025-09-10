@@ -817,9 +817,13 @@
                         player.collisionCooldown = player.collisionCooldownTime || 0.1;
                     }
                     
-                    // Notify server
+                    // Notify server with collision force data
                     if (window.game.multiplayer.connected) {
-                        window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
+                        const knockbackForce = {
+                            x: -nx * Math.max(impulseStrength, 50),
+                            y: -ny * Math.max(impulseStrength, 50)
+                        };
+                        window.game.multiplayer.sendPlayerCollision(otherPlayer.id, knockbackForce);
                     }
                 }
             });
