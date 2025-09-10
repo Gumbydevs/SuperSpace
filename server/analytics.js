@@ -525,8 +525,8 @@ class ServerAnalytics {
                     shipsUsed: Array.from(session.gameStats.shipsUsed || []),
                     weaponsUsed: Array.from(session.gameStats.weaponsUsed || []),
                     achievementsUnlocked: Array.from(session.gameStats.achievementsUnlocked || []),
-                    challengesCompleted: Array.from(session.gameStats.challengesCompleted || [])
-                }
+                    challengesCompleted: Array.from(session.gameStats.challengesCompleted || []),
+                },
             };
             
             await fs.writeFile(filepath, JSON.stringify(sessionData, null, 2));
@@ -568,7 +568,7 @@ class ServerAnalytics {
                 const statsData = {
                     ...stats,
                     uniqueSessions: Array.from(stats.uniqueSessions),
-                    uniqueIPs: Array.from(stats.uniqueIPs)
+                    uniqueIPs: Array.from(stats.uniqueIPs),
                 };
                 
                 await fs.writeFile(filepath, JSON.stringify(statsData, null, 2));
@@ -613,7 +613,7 @@ class ServerAnalytics {
                             playerId,
                             eventType: 'session_end',
                             timestamp: now,
-                            data: { sessionDuration: duration }
+                            data: { sessionDuration: duration },
                         };
                         // call handler to finalize and remove
                         this.handleSessionEndImmediate(playerId, session, fakeEvent);
@@ -667,7 +667,7 @@ class ServerAnalytics {
                 // Convert sets to arrays for JSON serialization
                 const profileData = {
                     ...profile,
-                    achievements: Array.from(profile.achievements)
+                    achievements: Array.from(profile.achievements),
                 };
                 
                 await fs.writeFile(filepath, JSON.stringify(profileData, null, 2));
