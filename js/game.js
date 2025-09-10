@@ -17,6 +17,7 @@ import { PremiumStore } from './premiumstore.js';
 import { ShipSkinSystem } from './shipskins.js';
 import { AvatarManager } from './avatarmanager.js';
 import { PayPalIntegration } from './paypal-integration.js';
+import { MarvinAssistant } from './marvin.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -48,6 +49,7 @@ class Game {
         this.premiumStore = new PremiumStore(this.player);  // Premium monetization store
         this.shipSkins = new ShipSkinSystem();  // Ship skin system
         this.avatarManager = new AvatarManager(this.premiumStore);  // Avatar manager with premium support
+        this.marvinAssistant = new MarvinAssistant(); // Marvin the Robot assistant for notifications
         this.paypalIntegration = new PayPalIntegration(this.premiumStore);  // PayPal payment system
         
         // Connect systems to premium store
@@ -1507,5 +1509,7 @@ window.addEventListener('load', () => {
     const game = new Game();
     // Store a global reference to the game for multiplayer access
     window.game = game;
+    // Store a global reference to Marvin for notification access
+    window.marvinAssistant = game.marvinAssistant;
     game.start();
 });

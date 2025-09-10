@@ -1,5 +1,6 @@
 // Achievement System for SuperSpace
 // Tracks player achievements and milestones
+import { MarvinAssistant } from './marvin.js';
 
 export class AchievementSystem {
     constructor(player) {
@@ -15,6 +16,11 @@ export class AchievementSystem {
         
         // Create achievement notification UI
         this.createNotificationUI();
+        
+        // Make sure Marvin is available
+        if (!window.marvinAssistant) {
+            window.marvinAssistant = new MarvinAssistant();
+        }
     }
     
     initializeAchievements() {
@@ -311,6 +317,7 @@ export class AchievementSystem {
                 font-size: 14px;
                 max-width: 300px;
                 animation: slideIn 0.3s ease-out;
+                position: relative; /* Required for positioning Marvin */
             `;
             
             const icon = document.createElement('span');
@@ -328,6 +335,11 @@ export class AchievementSystem {
             element.appendChild(icon);
             element.appendChild(content);
             container.appendChild(element);
+            
+            // Add Marvin to the notification
+            if (window.marvinAssistant) {
+                window.marvinAssistant.attachToNotification(element);
+            }
         });
     }
     

@@ -1,4 +1,6 @@
 // Defines daily and weekly challenges - REBALANCED for slower progression
+import { MarvinAssistant } from './marvin.js';
+
 export const CHALLENGES = {
     daily: [
         { id: 'survive_10', description: 'Survive for 10 minutes', reward: 500 },
@@ -36,6 +38,11 @@ export class ChallengeSystem {
 
         // Timer to periodically re-evaluate reset boundaries
         this._resetTimer = null;
+        
+        // Make sure Marvin is available
+        if (!window.marvinAssistant) {
+            window.marvinAssistant = new MarvinAssistant();
+        }
 
         // load persisted state if available
         this.loadState();
@@ -301,12 +308,19 @@ export class ChallengeSystem {
             notification.style.fontFamily = "'Orbitron', monospace";
             notification.style.fontSize = '14px';
             notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
+            notification.style.position = 'relative'; // Required for positioning Marvin
             notification.innerHTML = `
                 <div style="font-weight:800; margin-bottom:6px; color:#fff">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
                 <div style="font-size:0.96em; color: #ffeaa7;">${challenge.description}</div>
             `;
 
             document.body.appendChild(notification);
+            
+            // Add Marvin to the notification
+            if (!window.marvinAssistant) {
+                window.marvinAssistant = new MarvinAssistant();
+            }
+            window.marvinAssistant.attachToNotification(notification);
 
             // Remove notification after 3.5 seconds
             setTimeout(() => {
