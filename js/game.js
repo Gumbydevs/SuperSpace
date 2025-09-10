@@ -522,16 +522,11 @@ class Game {
             }
         }
     }
-    
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
         // Track key sequence for cheat codes
         let keySequence = [];
-        const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY']; // "MONEY" cheat code
-        
-        // Track currently pressed keys for admin combination
         let keysPressed = new Set();
-        
         window.addEventListener('keydown', e => {
             // Track pressed keys for admin combination
             keysPressed.add(e.code);
@@ -547,15 +542,19 @@ class Game {
             
             // Admin panel access removed from F12 - use secret key sequence instead (F+T+G)
             
-            // Shop hotkey (B key)
+
             if (e.code === 'KeyB' && this.gameState === 'playing' && !this.input.isChatting) {
                 this.toggleShop();
             }
 
-            // Chat hotkey (T key)
+            // Chat hotkey (T key) - only if not typing in any input/textarea/contentEditable
             if (e.code === 'KeyT' && this.gameState === 'playing') {
-                e.preventDefault(); // Prevent the 'T' from being typed
-                this.chat.toggleChat();
+                const activeElement = document.activeElement;
+                const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+                if (!isTyping) {
+                    e.preventDefault(); // Prevent the 'T' from being typed
+                    this.chat.toggleChat();
+                }
             }
 
             // Escape key to close chat or open options
