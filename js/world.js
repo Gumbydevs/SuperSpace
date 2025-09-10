@@ -773,40 +773,12 @@
                 const dy = player.y - otherPlayer.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Check collision with simple distance check
-                if (distance < 30) {
-                    // Calculate collision normal
-                    const nx = distance > 0 ? dx / distance : 1;
-                    const ny = distance > 0 ? dy / distance : 0;
+                // Collision occurs when distance is less than combined collision radii
+                if (distance < player.collisionRadius + 15) { // Using 15 as approximate collision radius for other players
+                    // Handle collision with other player
+                    player.handlePlayerCollision(otherPlayer, soundManager);
                     
-                    // Apply simple knockback to local player
-                    const knockback = 80;
-                    player.velocity.x += nx * knockback;
-                    player.velocity.y += ny * knockback;
-                    
-                    // Apply equal and opposite knockback to other player immediately
-                    if (otherPlayer.velocity) {
-                        otherPlayer.velocity.x += -nx * knockback;
-                        otherPlayer.velocity.y += -ny * knockback;
-                    }
-                    
-                    // Play collision sound
-                    if (soundManager) {
-                        soundManager.play('hit', {
-                            volume: 0.4,
-                            playbackRate: 1.2,
-                            position: { x: player.x, y: player.y }
-                        });
-                    }
-                    
-                    // Create visual impact effect
-                    if (window.game && window.game.world) {
-                        const impactX = player.x - nx * 15;
-                        const impactY = player.y - ny * 15;
-                        window.game.world.createCollisionEffect(impactX, impactY);
-                    }
-                    
-                    // Notify server
+                    // Send collision event to server
                     if (window.game.multiplayer.connected) {
                         window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
                     }
