@@ -1384,7 +1384,7 @@ export class SoundManager {
             }
             
             this.ambientMusic.lastTensionHit = Date.now();
-            console.log('Combat tension hit triggered');
+            // console.log('Combat tension hit triggered');
         }
     }
 
