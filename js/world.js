@@ -774,13 +774,13 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
                 // Check collision with simple distance check
-                if (distance < (player.collisionRadius || 15) + 15) {
+                if (distance < 50) {
                     // Calculate collision normal
                     const nx = distance > 0 ? dx / distance : 1;
                     const ny = distance > 0 ? dy / distance : 0;
                     
                     // Apply simple knockback
-                    const knockback = 100;
+                    const knockback = 200;
                     player.velocity.x += nx * knockback;
                     player.velocity.y += ny * knockback;
                     
