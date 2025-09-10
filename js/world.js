@@ -792,13 +792,8 @@
                         player.velocity.x = nx * impulseStrength;
                         player.velocity.y = ny * impulseStrength;
                         
-                        // Apply equal and opposite force to the other player (if they have velocity)
-                        if (otherPlayer.velocity) {
-                            // Apply immediate visual feedback locally for responsiveness
-                            const immediateKnockback = Math.max(impulseStrength, 50) * 0.7; // Slightly less than full force
-                            otherPlayer.velocity.x = -nx * immediateKnockback;
-                            otherPlayer.velocity.y = -ny * immediateKnockback;
-                        }
+                        // Don't apply local force to remote player - let server handle it
+                        // This prevents desync issues
                         
                         // Play collision sound - same as asteroid
                         if (soundManager) {
