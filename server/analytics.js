@@ -805,13 +805,12 @@ class ServerAnalytics {
     generateReport(days = 7) {
         const report = {
             overview: this.getCurrentStats(),
-            hourlyActivity: this.getHourlyActivity(days),
+            hourlyActivity: this.getHourlyPeakConcurrent(days),
             topShips: this.getTopShips(),
             topWeapons: this.getTopWeapons(),
             playerRetention: this.getPlayerRetention(),
             generatedAt: new Date().toISOString()
         };
-        
         return report;
     }
 }
