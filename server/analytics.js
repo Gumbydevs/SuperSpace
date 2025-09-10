@@ -195,9 +195,23 @@ class ServerAnalytics {
         
         // Update hourly activity
         stats.hourlyActivity[hour]++;
-        
-        // Track unique sessions and IPs
-        stats.uniqueSessions.add(event.sessionId);
+
+        // Track unique players (by playerId) and unique sessions (by playerId+sessionId)
+        if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
+        if (!stats.playerSessionMap) stats.playerSessionMap = {};
+        if (event.playerId) {
+            stats.uniquePlayers.add(event.playerId);
+            if (!stats.playerSessionMap[event.playerId]) {
+                stats.playerSessionMap[event.playerId] = new Set();
+            }
+            if (!stats.playerSessionMap[event.playerId].has(event.sessionId)) {
+                stats.playerSessionMap[event.playerId].add(event.sessionId);
+                stats.uniqueSessions.add(event.sessionId);
+            }
+        } else {
+            // fallback: just add sessionId
+            stats.uniqueSessions.add(event.sessionId);
+        }
         stats.uniqueIPs.add(event.clientIp);
         
         // Event type counters
