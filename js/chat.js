@@ -7,6 +7,7 @@ export default class Chat {
         this.chatContainer = document.getElementById('chat-container');
         this.chatMessages = document.getElementById('chat-messages');
         this.chatInput = document.getElementById('chat-input');
+        this.chatToastContainer = document.getElementById('chat-toast-container');
         this.isVisible = false;
 
         this.init();
@@ -17,7 +18,8 @@ export default class Chat {
         this.chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 this.sendMessage();
-                this.hideChat();
+                // Do not hide chat on enter, just clear the input
+                this.chatInput.value = '';
             } else if (e.key === 'Escape') {
                 this.hideChat();
             }
@@ -29,6 +31,9 @@ export default class Chat {
         this.socket = socket;
         this.socket.on('chatMessage', (data) => {
             this.addMessage(data.name, data.message, data.isSystem);
+            if (!this.isVisible) {
+                this.showToast(data.name, data.message);
+            }
         });
     }
 
@@ -85,6 +90,27 @@ export default class Chat {
 
         this.chatMessages.appendChild(messageElement);
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    showToast(name, message) {
+        const toastElement = document.createElement('div');
+        toastElement.classList.add('chat-toast-message');
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.style.fontWeight = 'bold';
+        nameSpan.textContent = name ? `${name}: ` : '';
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+
+        toastElement.appendChild(nameSpan);
+        toastElement.appendChild(messageSpan);
+
+        this.chatToastContainer.appendChild(toastElement);
+
+        setTimeout(() => {
+            toastElement.remove();
+        }, 5000); // Remove the toast after 5 seconds
     }
 }
 
