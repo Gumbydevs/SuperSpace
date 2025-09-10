@@ -13,8 +13,8 @@ export class NPCManager {
         this.dreadnaughtWarningSent = false;
         this.dreadnaughtAnnounceTimer = 0;
         
-        // Alien spawn chances (high for testing)
-        this.alienSpawnChance = 0.8; // 80% chance for testing (normally would be 0.1-0.2)
+    // Alien spawn chance (set to 12% for balanced gameplay)
+    this.alienSpawnChance = 0.12; // 12% chance per asteroid
         
         // Timeout timers for NPCs
         this.alienLifespan = 120000; // 2 minutes before aliens fly away
