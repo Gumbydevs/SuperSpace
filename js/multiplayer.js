@@ -83,6 +83,11 @@ export class MultiplayerManager {
 
     // Reset all player progress and show notification
     resetPlayerProgress(oldVersion) {
+        // Reset all achievements if available
+        if (window.game && window.game.achievements && typeof window.game.achievements.resetAllAchievements === 'function') {
+            window.game.achievements.resetAllAchievements();
+            console.log('🏆 All achievements reset');
+        }
         console.log('🔄 Starting progress reset...');
         
         // Log current localStorage before reset

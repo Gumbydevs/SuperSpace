@@ -7,6 +7,35 @@ export class AchievementSystem {
         this.player = player;
         this.achievements = new Map();
         this.notifications = [];
+        // Initialize achievements
+        this.initializeAchievements();
+        // Load progress from localStorage
+        this.loadProgress();
+        // Create achievement notification UI
+        this.createNotificationUI();
+        // Make sure Marvin is available
+        if (!window.marvinAssistant) {
+            window.marvinAssistant = new MarvinAssistant();
+        }
+    }
+
+    // Reset all achievements to locked and zero progress
+    resetAllAchievements() {
+        for (const [id, achievement] of this.achievements) {
+            achievement.progress = 0;
+            achievement.unlocked = false;
+        }
+        this.saveProgress();
+    }
+// Achievement System for SuperSpace
+// Tracks player achievements and milestones
+import { MarvinAssistant } from './marvin.js';
+
+export class AchievementSystem {
+    constructor(player) {
+        this.player = player;
+        this.achievements = new Map();
+        this.notifications = [];
         
         // Initialize achievements
         this.initializeAchievements();
