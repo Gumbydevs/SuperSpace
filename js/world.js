@@ -780,17 +780,31 @@
                     return;
                 }
                 
-                // Calculate distance between players
-                const dx = player.x - otherPlayer.x;
-                const dy = player.y - otherPlayer.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // Collision occurs when distance is less than combined collision radii
-                if (distance < player.collisionRadius + 15) { // Using 15 as approximate collision radius for other players
-                    // Handle collision with other player
+                // Use the player's collidesWith helper (handles remote-player fallbacks)
+                if (player.collidesWith(otherPlayer)) {
+                    // Apply collision response locally
                     player.handlePlayerCollision(otherPlayer, soundManager);
-                    
-                    // Send collision event to server
+
+                    // If the remote player object on this client has a handler (visual copy), call it too
+                    if (typeof otherPlayer.handlePlayerCollision === 'function') {
+                        try {
+                            otherPlayer.handlePlayerCollision(player, soundManager);
+                        } catch (e) {
+                            // ignore if remote representation cannot be modified
+                        }
+                    } else if (otherPlayer.velocity) {
+                        // Fallback: nudge the remote visual copy away for immediate feedback
+                        const nx = (otherPlayer.x - player.x) || 0.0001;
+                        const ny = (otherPlayer.y - player.y) || 0.0001;
+                        const dist = Math.sqrt(nx * nx + ny * ny) || 0.0001;
+                        const ux = nx / dist;
+                        const uy = ny / dist;
+                        // small visual impulse
+                        otherPlayer.velocity.x = (otherPlayer.velocity.x || 0) + ux * 50;
+                        otherPlayer.velocity.y = (otherPlayer.velocity.y || 0) + uy * 50;
+                    }
+
+                    // Notify server so authoritative collision resolution can occur
                     if (window.game.multiplayer.connected) {
                         window.game.multiplayer.sendPlayerCollision(otherPlayer.id);
                     }
