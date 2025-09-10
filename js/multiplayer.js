@@ -1780,7 +1780,7 @@ export class MultiplayerManager {
     sendProjectileImpact(impactData) {
         if (!this.connected) return;
         
-        console.log('Sending projectile impact to server:', impactData);
+        // console.log('Sending projectile impact to server:', impactData);
         this.socket.emit('projectileImpact', impactData);
     }
 
