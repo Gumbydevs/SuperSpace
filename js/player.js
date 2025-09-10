@@ -22,8 +22,8 @@ export class Player {
             this.velocity.x = nx * impulseStrength;
             this.velocity.y = ny * impulseStrength;
             // Take damage based on impact force
-            if (impactForce > 50) { // Lowered threshold for damage
-                const damage = Math.max(10, impactForce * 0.15); // Increased base and scaling
+            if (impactForce > 100) {
+                const damage = Math.max(5, impactForce * 0.1);
                 this.takeDamage(damage);
             } else if (impactForce > 10) {
                 // Apply at least minimal damage for smaller bumps
