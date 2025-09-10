@@ -1,3 +1,24 @@
+/* Premium button custom styles */
+#premium-btn {
+    display: flex;
+    align-items: center;
+    color: #FFD700 !important; /* Classic gold */
+    font-weight: bold;
+    font-family: inherit;
+    font-size: 14px;
+}
+#premium-btn .premium-emoji {
+    font-size: 18px;
+    margin-right: 6px;
+    vertical-align: middle;
+    line-height: 1;
+}
+#premium-btn .premium-text {
+    color: #FFD700;
+    font-weight: bold;
+    font-family: inherit;
+    font-size: 14px;
+}
 /* Controls menu color distinction */
 .controls-list .control-action {
     color: #ffb347;
