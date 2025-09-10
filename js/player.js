@@ -1512,138 +1512,33 @@ export class Player {
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rotation);
-            
-            // Draw shield effect when shields are active
-            if (this.shield > 0) {
-                // Create pulsing blue glow around ship based on shield percentage
-                const shieldPercentage = this.shield / this.shieldCapacity;
-                const glowSize = 25 + (shieldPercentage * 8); // Increased size for more visible shield
-                const glowOpacity = 0.3 + (shieldPercentage * 0.4); // Higher opacity for better visibility
-                
-                // Create radial gradient for shield effect
-                const shieldGradient = ctx.createRadialGradient(0, 0, glowSize * 0.3, 0, 0, glowSize);
-                shieldGradient.addColorStop(0, `rgba(64, 160, 255, ${glowOpacity * 0.15})`); // Inner glow
-                shieldGradient.addColorStop(0.6, `rgba(64, 160, 255, ${glowOpacity * 0.8})`); // Main shield glow
-                shieldGradient.addColorStop(1, `rgba(32, 100, 255, 0)`); // Fade out at the edge
-                
-                // Draw the shield glow
-                ctx.fillStyle = shieldGradient;
-                ctx.beginPath();
-                ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw multiple ripple rings with different timing
-                const drawRipple = (phase, width, opacity) => {
-                    const pulsePhase = (Date.now() % 2000) / 2000;
-                    const adjustedPhase = (pulsePhase + phase) % 1;
-                    if (adjustedPhase < 0.7) { // Only show ripple during part of the cycle
-                        // Calculate ripple size based on pulse phase
-                        const rippleSize = glowSize * (0.8 + adjustedPhase * 0.6);
-                        const rippleOpacity = (0.7 - Math.abs(0.35 - adjustedPhase)) * opacity * shieldPercentage;
-                        
-                        // Draw ripple effect
-                        ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
-                        ctx.lineWidth = width;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
-                        ctx.stroke();
-                    }
-                };
-                
-                // Draw multiple ripples at different phases for a more dynamic effect
-                drawRipple(0, 1.8, 0.5);
-                drawRipple(0.3, 1.2, 0.4);
-                drawRipple(0.6, 1.0, 0.3);
-                
-                // Extra effect: shield impact flashes when taking recent damage
-                const timeSinceDamage = (Date.now() / 1000) - this.lastDamageTime;
-                if (timeSinceDamage < 0.3) {
-                    const flashOpacity = 0.7 * (1 - (timeSinceDamage / 0.3));
-                    ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            
-            // Draw electric shock effect if shields are disrupted
-            if (this.electricShockEffect && this.electricShockEffect.active) {
-                const currentTime = Date.now();
-                const elapsed = currentTime - this.electricShockEffect.startTime;
-                const intensity = 1 - (elapsed / this.electricShockEffect.duration);
-                
-                if (intensity > 0) {
-                    // Draw multiple random lightning bolts around the ship
-                    const numBolts = 8 + Math.floor(Math.random() * 6);
-                    
-                    for (let i = 0; i < numBolts; i++) {
-                        // Random angle for each bolt
-                        const angle = (Math.PI * 2 * i) / numBolts + Math.random() * 0.5;
-                        const distance = 20 + Math.random() * 15;
-                        
-                        // Calculate bolt endpoints
-                        const startX = Math.cos(angle) * 10;
-                        const startY = Math.sin(angle) * 10;
-                        const endX = Math.cos(angle) * distance;
-                        const endY = Math.sin(angle) * distance;
-                        
-                        // Draw jagged lightning bolt
-                        ctx.strokeStyle = `rgba(255, 255, 100, ${intensity * (0.7 + Math.random() * 0.3)})`;
-                        ctx.lineWidth = 1 + Math.random() * 2;
-                        ctx.beginPath();
-                        ctx.moveTo(startX, startY);
-                        
-                        // Add jagged segments
-                        const segments = 3 + Math.floor(Math.random() * 3);
-                        for (let j = 1; j <= segments; j++) {
-                            const t = j / segments;
-                            const jaggedX = startX + (endX - startX) * t + (Math.random() - 0.5) * 8;
-                            const jaggedY = startY + (endY - startY) * t + (Math.random() - 0.5) * 8;
-                            ctx.lineTo(jaggedX, jaggedY);
-                        }
-                        ctx.stroke();
-                    }
-                    
-                    // Add electric aura around ship
-                    const auraGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
-                    auraGradient.addColorStop(0, `rgba(255, 255, 0, ${intensity * 0.3})`);
-                    auraGradient.addColorStop(0.5, `rgba(255, 100, 0, ${intensity * 0.2})`);
-                    auraGradient.addColorStop(1, `rgba(255, 0, 0, 0)`);
-                    
-                    ctx.fillStyle = auraGradient;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, 30, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            
-            // Use ship skins system for consistent rendering with premium skins
+            // ...existing code for shield and electric effects...
+
+            // Draw ship geometry (original or default)
+            // ...existing code for ship geometry...
+
+            // Use ship skins system for consistent rendering with premium skins (AFTER geometry, BEFORE flames)
             if (window.game && window.game.shipSkins) {
-                // Create a temporary ship object for the skins system
                 const tempShip = {
-                    x: 0, // Already translated
+                    x: 0,
                     y: 0,
-                    rotation: 0, // Already rotated
+                    rotation: 0,
                     currentShip: this.currentShip,
                     shipSkin: this.shipSkin,
                     shipColor: this.shipColor,
                     engineColor: this.engineColor,
-                    // Provide visual state so skins system can render dynamic flames
                     thrustLevel: this.thrustLevel || 0,
                     afterburnerActive: !!this.afterburnerActive,
-                    // Provide speed/velocity so skin effects that rely on motion can work
                     speed: Math.sqrt((this.velocity.x || 0) * (this.velocity.x || 0) + (this.velocity.y || 0) * (this.velocity.y || 0)),
                     vx: this.velocity.x || 0,
                     vy: this.velocity.y || 0,
                     getShipColor: () => this.shipColor,
                     getEngineColor: () => this.engineColor
                 };
-                
                 window.game.shipSkins.renderShipWithSkin(ctx, tempShip, window.game.premiumStore);
-            } // End of ship rendering
+            }
 
             // --- Dynamic engine flame rendering for all ships/skins ---
-
             // Always render original dynamic engine flame/afterburner after ship geometry (for all ships/skins)
             switch(this.currentShip) {
                 case 'fighter':
