@@ -2513,6 +2513,11 @@ export class Player {
                         if (hitTarget.object.size !== 'small' && window.game.world) {
                             window.game.world.splitAsteroid(hitTarget.object, soundManager);
                         }
+
+                        // Check for alien spawn
+                        if (window.game && window.game.npcManager) {
+                            window.game.npcManager.spawnAlienFromAsteroid(hitTarget.object.x, hitTarget.object.y);
+                        }
                         
                         // Track achievements
                         if (window.game && window.game.achievements) {
