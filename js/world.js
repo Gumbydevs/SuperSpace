@@ -755,9 +755,11 @@
 
         // Check collisions with other players
         const otherPlayers = window.game.multiplayer.players;
+        console.log('Checking collisions, otherPlayers:', otherPlayers ? Object.keys(otherPlayers).length : 'null');
         if (otherPlayers) {
             // Fix: Use Object.values to convert the players object into an array that we can iterate
             Object.values(otherPlayers).forEach(otherPlayer => {
+                console.log('Checking player:', otherPlayer.id, 'at', otherPlayer.x, otherPlayer.y);
                 // Skip collision with self, invalid players, or players in safe zone
                 if (!otherPlayer || 
                     typeof otherPlayer.x === 'undefined' || 
