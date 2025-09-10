@@ -3488,11 +3488,11 @@ export class MultiplayerManager {
             messagesContainer.style.bottom = '100px';
             messagesContainer.style.left = '50%';
             messagesContainer.style.transform = 'translateX(-50%)';
-            messagesContainer.style.width = '60%';
             messagesContainer.style.maxHeight = '150px';
             messagesContainer.style.overflowY = 'hidden';
             messagesContainer.style.display = 'flex';
             messagesContainer.style.flexDirection = 'column-reverse';
+            messagesContainer.style.alignItems = 'center'; // Center the items
             messagesContainer.style.zIndex = '100';
             document.body.appendChild(messagesContainer);
         }
@@ -3500,6 +3500,7 @@ export class MultiplayerManager {
         // Create message element
         const messageElement = document.createElement('div');
         messageElement.textContent = message;
+        messageElement.style.display = 'inline-block'; // Wrap background to content
         messageElement.style.color = color;
         messageElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
         messageElement.style.borderRadius = '5px';
