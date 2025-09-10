@@ -825,7 +825,7 @@ export class MultiplayerManager {
                 const asteroid = this.game.world.asteroids.find(a => a.id === data.asteroidId);
                 if (asteroid) {
                     asteroid.health = data.remainingHealth;
-                    console.log(`Asteroid ${data.asteroidId} health synchronized to ${data.remainingHealth}`);
+                    // console.log(`Asteroid ${data.asteroidId} health synchronized to ${data.remainingHealth}`);
                 }
             }
         });
@@ -1593,7 +1593,7 @@ export class MultiplayerManager {
                 this.lastSentStats.score !== playerData.score ||
                 this.lastSentStats.wins !== playerData.wins ||
                 this.lastSentStats.losses !== playerData.losses) {
-                console.log('SENDING PLAYER UPDATE:', { score: playerData.score, wins: playerData.wins, losses: playerData.losses });
+                // console.log('SENDING PLAYER UPDATE:', { score: playerData.score, wins: playerData.wins, losses: playerData.losses });
                 this.lastSentStats = { score: playerData.score, wins: playerData.wins, losses: playerData.losses };
             }
 
@@ -3066,7 +3066,7 @@ export class MultiplayerManager {
         
         // Add any fragments from the server
         if (data.fragments && data.fragments.length > 0) {
-            console.log(`Adding ${data.fragments.length} fragments:`, data.fragments);
+            // console.log(`Adding ${data.fragments.length} fragments:`, data.fragments);
             data.fragments.forEach(fragment => {
                 const size = fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small';
                 const scoreValue = size === 'large' ? 50 : size === 'medium' ? 20 : 10;
@@ -3093,7 +3093,7 @@ export class MultiplayerManager {
                     scoreValue: scoreValue,
                     vertices: vertices
                 });
-                console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
+                // console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
             });
             // console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
         } else {
