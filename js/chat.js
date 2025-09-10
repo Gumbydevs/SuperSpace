@@ -1,8 +1,8 @@
 // js/chat.js
 
 export default class Chat {
-    constructor(socket, inputManager) {
-        this.socket = socket;
+    constructor(inputManager) {
+        this.socket = null;
         this.inputManager = inputManager;
         this.chatContainer = document.getElementById('chat-container');
         this.chatMessages = document.getElementById('chat-messages');
@@ -23,12 +23,15 @@ export default class Chat {
             }
             e.stopPropagation();
         });
+    }
 
+    setSocket(socket) {
+        this.socket = socket;
         if (this.socket) {
             this.socket.on('chatMessage', (data) => {
                 this.addMessage(data.name, data.message, data.isSystem);
                 // Only show toast if the chat window is not visible
-                if (!this.isVisible && document.hidden) { // Also check if tab is in background
+                if (!this.isVisible) {
                     this.showToast(data.name, data.message);
                 }
             });
