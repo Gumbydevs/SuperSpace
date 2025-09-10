@@ -249,10 +249,10 @@
                 // Update key statistics
                 updateKeyStats(data);
                 
-                // Load hourly activity data
+                // Load hourly peak concurrent data
                 const hourlyResponse = await fetch(`${API_BASE}/analytics/hourly`);
                 const hourlyData = await hourlyResponse.json();
-                updateHourlyChart(hourlyData.hourlyActivity);
+                updateHourlyChart(hourlyData.hourlyPeakConcurrent);
                 
                 // Load retention data
                 const retentionResponse = await fetch(`${API_BASE}/analytics/retention`);
@@ -297,22 +297,19 @@
         
         function updateHourlyChart(hourlyData) {
             const ctx = document.getElementById('hourlyChart').getContext('2d');
-            
             if (hourlyChart) {
                 hourlyChart.destroy();
             }
-            
             const hours = [];
             for (let i = 0; i < 24; i++) {
                 hours.push(i + ':00');
             }
-            
             hourlyChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: hours,
                     datasets: [{
-                        label: 'Player Activity',
+                        label: 'Peak Players Online',
                         data: hourlyData,
                         borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.1)',
