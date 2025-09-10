@@ -475,7 +475,7 @@ class Game {
         window.addEventListener('keydown', e => {
             // Track pressed keys for admin combination
             keysPressed.add(e.code);
-            console.log('Key pressed:', e.code, 'Current keys:', Array.from(keysPressed));
+            // console.log('Key pressed:', e.code, 'Current keys:', Array.from(keysPressed));
             
             // Check for admin combination F+T+G (must be pressed together)
             if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {

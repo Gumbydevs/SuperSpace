@@ -560,9 +560,9 @@ export class Player {
             for (const [key, weaponName] of Object.entries(numberKeyWeapons)) {
                 if (input.keys.includes(key)) {
                     selectedWeapon = weaponName;
-                    console.log(`Number key pressed: ${key} -> ${weaponName}`);
-                    console.log(`Available weapons:`, this.weapons);
-                    console.log(`Weapon owned?`, this.weapons.includes(selectedWeapon));
+                    // console.log(`Number key pressed: ${key} -> ${weaponName}`);
+                    // console.log(`Available weapons:`, this.weapons);
+                    // console.log(`Weapon owned?`, this.weapons.includes(selectedWeapon));
                     break;
                 }
             }

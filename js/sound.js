@@ -843,7 +843,7 @@ export class SoundManager {
     startAmbientMusic() {
         if (!this.audioContext || this.isMuted || this.ambientMusic.active) return;
 
-        console.log('Starting ambient music system...');
+        // console.log('Starting ambient music system...');
         this.ambientMusic.active = true;
         this.ambientMusic.nextChordTime = this.audioContext.currentTime;
         
@@ -853,7 +853,7 @@ export class SoundManager {
         // Start the ambient music loop
         this.scheduleNextAmbientLayer();
         
-        console.log('Ambient music started successfully');
+        // console.log('Ambient music started successfully');
     }
 
     stopAmbientMusic() {
@@ -874,7 +874,7 @@ export class SoundManager {
         });
         
         this.ambientMusic.layers = [];
-        console.log('Ambient music stopped');
+        // console.log('Ambient music stopped');
     }
 
     scheduleNextAmbientLayer() {
@@ -911,7 +911,7 @@ export class SoundManager {
         let selectedTypes = this.selectCohesiveLayers(activeLayers);
 
         selectedTypes.forEach(layerType => {
-            console.log(`Creating ambient layer: ${layerType}, chord: ${this.ambientMusic.currentChord}`);
+            // console.log(`Creating ambient layer: ${layerType}, chord: ${this.ambientMusic.currentChord}`);
             
             switch (layerType) {
                 case 'pad':
