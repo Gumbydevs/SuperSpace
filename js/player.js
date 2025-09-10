@@ -17,67 +17,55 @@ export class Player {
         this.height = 30; // Ship collision height
         this.velocity = { x: 0, y: 0 }; // Current movement vector
         this.visible = true; // Whether to render the ship (false when destroyed)
-        
         // Ship color - load from localStorage or use default blue
-    this.shipColor = localStorage.getItem('playerShipColor') || '#7d7d7d';
+        this.shipColor = localStorage.getItem('playerShipColor') || '#7d7d7d';
         this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
         this.color = this.shipColor; // Multiplayer color reference
-        
         // Ship skin - load from localStorage
         this.shipSkin = localStorage.getItem('selectedShipSkin') || 'none';
-
         // Add collision properties
         this.collisionRadius = 15; // Radius used for collision detection
         this.collisionCooldown = 0; // Time remaining before next collision can occur
         this.collisionCooldownTime = 0.1; // Time between collision processing to prevent multiple hits
         this.bounceStrength = 0.5; // How strongly ships bounce off obstacles (0-1)
-
         // Here we define the player's health and defense stats
         this.maxHealth = 100;
         this.health = 100;
         this.armor = 1.0; // Damage multiplier (lower values mean better protection)
         this.damageReduction = 0; // Flat damage reduction percentage
-
         // Here we track the player's current ship and equipment
         this.currentShip = 'scout'; // Default starting ship
         this.currentWeaponId = 'disengaged'; // Track weapon by ID for shop integration
-
         // Here we define the player's economy and score
         // Load persisted credits from localStorage or default to 0
-    this._credits = parseInt(localStorage.getItem('playerCredits') || 0);
-
+        this._credits = parseInt(localStorage.getItem('playerCredits') || 0);
         this.score = 0;   // Points for game score
         this.wins = 0;    // Player wins count
         this.losses = 0;  // Player losses count
-
-    // Here we set up the weapon systems
-    this.weapons = ['Disengaged', 'Basic Laser', 'Burst Cannon', 'Seeker Missile'];
-    this.currentWeapon = this.weapons[0];
-    this.weaponIndex = 0;
-    this.projectiles = []; // Active projectiles fired by player
-    this.fireCooldown = 0; // Current cooldown time before can fire again
-    this.fireCooldownTime = 0.12; // Default, will be set by weapon
-    this.fireCooldownPenalty = 0; // Extra penalty when energy is 0
-    this.weaponSwitchCooldown = 0; // Prevents rapid cycling
-
+        // Here we set up the weapon systems
+        this.weapons = ['Disengaged', 'Basic Laser', 'Burst Cannon', 'Seeker Missile'];
+        this.currentWeapon = this.weapons[0];
+        this.weaponIndex = 0;
+        this.projectiles = []; // Active projectiles fired by player
+        this.fireCooldown = 0; // Current cooldown time before can fire again
+        this.fireCooldownTime = 0.12; // Default, will be set by weapon
+        this.fireCooldownPenalty = 0; // Extra penalty when energy is 0
+        this.weaponSwitchCooldown = 0; // Prevents rapid cycling
         // Here we define the energy system (optional until upgraded)
         this.maxEnergy = 100;
         this.energy = 100;
         this.energyRegen = 5; // Energy points regenerated per second
-
         // Here we set up the afterburner system
         this.afterburnerActive = false;
         this.afterburnerEnergyDrain = 25; // Energy per second when active
         this.afterburnerSpeedMultiplier = 2.0; // Speed boost when active
         this.afterburnerFlameMultiplier = 2.5; // Engine flame size multiplier
         this.afterburnerMinEnergy = 10; // Minimum energy required to activate
-
         // Here we set up the shield system (requires upgrade)
         this.shieldCapacity = 0; // No shields by default until upgraded
         this.shield = 0;
         this.shieldRechargeRate = 10; // Shield points per second when recharging
         this.shieldRechargeDelay = 3; // Seconds to wait after damage before recharging
-        
         // Shield disruption tracking
         this.shieldDisrupted = false;
         this.disruptionEndTime = null;
@@ -87,16 +75,13 @@ export class Player {
             duration: 3000 // 3 seconds
         };
         this.lastDamageTime = 0;
-
         // Here we define the cargo system
         this.cargoCapacity = 100;
         this.cargo = 0; // Resource units collected
-
         // Track the last player who damaged us
         this.lastDamageFrom = null;
         this.damageAttributionTimeout = null;
         this.deathTriggered = false;
-
         // Mining laser beam system
         this.miningBeam = {
             active: false,
@@ -107,11 +92,9 @@ export class Player {
             hitTarget: null, // What the beam is currently hitting
             fragments: [] // Mining fragments created
         };
-
         // Engine flame animation variables
         this.thrustLevel = 0; // Current visual size of engine flame (0-1)
         this.targetThrustLevel = 0; // Target size based on throttle input
-
         this.thrustTransitionSpeed = 2.0; // How quickly flame grows/shrinks
     }
 
