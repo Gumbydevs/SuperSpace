@@ -1994,26 +1994,7 @@ export class Player {
                     }
                 }
                 
-                // Check for engine upgrades
-                const engineUpgrade = shop.availableUpgrades.find(u => u.id === 'engine');
-                if (engineUpgrade && engineUpgrade.level > 0) {
-                    // Enhanced engine exhaust
-                    ctx.globalAlpha = 0.7;
-                    const engineLevelGlow = ctx.createRadialGradient(0, 15, 0, 0, 15, 10 + (engineUpgrade.level * 5));
-                    engineLevelGlow.addColorStop(0, this.engineColor);
-                    engineLevelGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = engineLevelGlow;
-                    
-                    if (this.currentShip === 'heavy') {
-                        // Dual engine trails
-                        ctx.fillRect(-16, 18, 12, 15 + engineUpgrade.level * 5);
-                        ctx.fillRect(4, 18, 12, 15 + engineUpgrade.level * 5);
-                    } else {
-                        // Single engine trail
-                        ctx.fillRect(-8, 12, 16, 15 + engineUpgrade.level * 5);
-                    }
-                    ctx.globalAlpha = 1.0;
-                }
+                // Engine upgrade gameplay effects are still applied elsewhere; visual static flame is disabled for now.
                 
                 // Check for armor upgrades
                 const armorUpgrade = shop.availableUpgrades.find(u => u.id === 'armor');
