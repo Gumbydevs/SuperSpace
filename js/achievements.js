@@ -308,7 +308,7 @@ export class AchievementSystem {
             element.style.cssText = `
                 background: linear-gradient(135deg, #4CAF50, #45a049);
                 color: white;
-                padding: 12px 16px;
+                padding: 12px 16px 18px 16px;
                 border-radius: 8px;
                 margin-bottom: 10px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -319,7 +319,7 @@ export class AchievementSystem {
                 max-width: 300px;
                 animation: slideIn 0.3s ease-out;
                 position: relative; /* Required for positioning Marvin */
-                padding-right: 55px; /* Make space for Marvin */
+                padding-right: 65px; /* Make space for larger Marvin */
             `;
             
             const icon = document.createElement('span');

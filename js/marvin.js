@@ -18,15 +18,15 @@ export class MarvinAssistant {
                 position: absolute;
                 top: 0px;
                 left: 100%;
-                width: 48px;
-                height: 48px;
+                width: 58px;
+                height: 58px;
                 pointer-events: none;
                 animation: marvinAppear 0.5s ease-out forwards;
                 z-index: 10001;
             }
             .marvin-canvas {
-                width: 48px;
-                height: 48px;
+                width: 58px;
+                height: 58px;
             }
         `;
         document.head.appendChild(style);
@@ -39,11 +39,11 @@ export class MarvinAssistant {
     // No arms, just Marvin's body
         
         // Create canvas for pixel art
-        const canvas = document.createElement('canvas');
-        canvas.className = 'marvin-canvas';
-        canvas.width = 48;
-        canvas.height = 48;
-        container.appendChild(canvas);
+    const canvas = document.createElement('canvas');
+    canvas.className = 'marvin-canvas';
+    canvas.width = 58;
+    canvas.height = 58;
+    container.appendChild(canvas);
         
     // Animate Marvin's body wiggle
     this.animateMarvinWiggle(canvas);
