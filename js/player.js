@@ -256,6 +256,10 @@ export class Player {
     }
 
     update(deltaTime, input, soundManager) {
+        if (this.health <= 0) {
+            // If player is dead, don't process any updates
+            return;
+        }
         // Ensure input.keys is always an array to prevent "includes is not a function" error
         if (!input.keys || !Array.isArray(input.keys)) {
             input.keys = [];
