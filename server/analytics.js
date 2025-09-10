@@ -97,13 +97,14 @@ class ServerAnalytics {
     
     processEvent(eventData, clientIp) {
         try {
-            // Add server-side data
+            // Add server-side data (all date/hour in EST)
+            const now = Date.now();
             const enrichedEvent = {
                 ...eventData,
-                serverTimestamp: Date.now(),
+                serverTimestamp: now,
                 clientIp: clientIp,
-                day: this.getDateString(),
-                hour: new Date().getHours()
+                day: this.getDateString(now),
+                hour: this.getESTHour(now)
             };
 
             // Add to events buffer
@@ -457,9 +458,19 @@ class ServerAnalytics {
         };
     }
     
+    // Returns YYYY-MM-DD string in EST (America/New_York)
     getDateString(date = null) {
         const d = date ? new Date(date) : new Date();
-        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Convert to EST (handles DST)
+        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        return est.getFullYear() + '-' + String(est.getMonth() + 1).padStart(2, '0') + '-' + String(est.getDate()).padStart(2, '0');
+    }
+
+    // Returns hour (0-23) in EST
+    getESTHour(date = null) {
+        const d = date ? new Date(date) : new Date();
+        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        return est.getHours();
     }
     
     async saveSessionData(session) {
@@ -494,21 +505,21 @@ class ServerAnalytics {
             this.saveDailyStats();
             this.savePlayerProfiles();
         }, 300000);
-        
-        // Save at the end of each day
+
+        // Save at EST midnight
         const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-        
-        const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+        // Get EST time
+        const estNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const estMidnight = new Date(estNow);
+        estMidnight.setHours(24, 0, 0, 0); // next EST midnight
+        const msUntilMidnight = estMidnight - estNow;
         setTimeout(() => {
             this.saveDailyStats();
-            // Then set up daily saves
+            // Then set up daily saves every 24h from EST midnight
             setInterval(() => {
                 this.saveDailyStats();
-            }, 24 * 60 * 60 * 1000); // Every 24 hours
-        }, timeUntilMidnight);
+            }, 24 * 60 * 60 * 1000);
+        }, msUntilMidnight);
     }
     
     async saveDailyStats() {
@@ -728,35 +739,32 @@ class ServerAnalytics {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
         const oneWeek = 7 * oneDay;
-        
         let activeToday = 0;
         let activeWeek = 0;
         let returningPlayers = 0;
-        
+        let inactive = 0;
+        let total = 0;
         for (const profile of this.playerProfiles.values()) {
+            total++;
             const daysSinceLastSeen = (now - profile.lastSeen) / oneDay;
-            
             if (daysSinceLastSeen <= 1) {
                 activeToday++;
-            }
-            
-            if (daysSinceLastSeen <= 7) {
+            } else if (daysSinceLastSeen <= 7) {
                 activeWeek++;
+            } else {
+                inactive++;
             }
-            
             if (profile.totalSessions > 1) {
                 returningPlayers++;
             }
         }
-        
         return {
             activeToday,
             activeWeek,
+            inactive,
             returningPlayers,
-            totalPlayers: this.playerProfiles.size,
-            retentionRate: this.playerProfiles.size > 0 
-                ? returningPlayers / this.playerProfiles.size 
-                : 0
+            totalPlayers: total,
+            retentionRate: total > 0 ? returningPlayers / total : 0
         };
     }
     
