@@ -775,14 +775,18 @@
                 
                 // Check collision with simple distance check
                 if (distance < 50) {
+                    console.log('COLLISION DETECTED! Distance:', distance);
                     // Calculate collision normal
                     const nx = distance > 0 ? dx / distance : 1;
                     const ny = distance > 0 ? dy / distance : 0;
                     
-                    // Apply simple knockback
+                    // Apply simple knockback (ignore cooldowns)
                     const knockback = 200;
                     player.velocity.x += nx * knockback;
                     player.velocity.y += ny * knockback;
+                    
+                    // Reset collision cooldown to allow immediate collision
+                    player.collisionCooldown = 0;
                     
                     // Notify server
                     if (window.game.multiplayer.connected) {
