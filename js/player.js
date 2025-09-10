@@ -2138,8 +2138,8 @@ export class Player {
             }
             
             ctx.restore();
-        }
     }
+}
         // End of render method
     // Removed extra brace that incorrectly closed the class
     
