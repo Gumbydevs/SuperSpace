@@ -69,11 +69,12 @@ export class Player {
             const relVelY = this.velocity.y - (otherPlayer.velocity ? otherPlayer.velocity.y : 0);
             
             // Calculate impulse (how strongly we bounce)
-            const impulseStrength = (1 + this.bounceStrength) * Math.sqrt(relVelX * relVelX + relVelY * relVelY) * 0.5;
+            const baseImpulse = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
+            const impulseStrength = Math.max(100, (1 + this.bounceStrength) * baseImpulse);
             
-            // Apply impulse in the direction away from collision
-            this.velocity.x += nx * impulseStrength * 0.5;
-            this.velocity.y += ny * impulseStrength * 0.5;
+            // Apply stronger impulse in the direction away from collision
+            this.velocity.x = nx * impulseStrength;
+            this.velocity.y = ny * impulseStrength;
             
             // Take minimal damage from player collision
             const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
@@ -100,7 +101,7 @@ export class Player {
             }
             
             // Set cooldown to prevent multiple collisions
-            this.collisionCooldown = this.collisionCooldownTime;
+            this.collisionCooldown = 0.05; // Shorter cooldown for better separation
             
             return true; // Collision occurred
         }
