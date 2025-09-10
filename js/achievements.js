@@ -308,7 +308,7 @@ export class AchievementSystem {
             element.style.cssText = `
                 background: linear-gradient(135deg, #4CAF50, #45a049);
                 color: white;
-                padding: 12px 16px 18px 16px;
+                padding: 12px 16px 32px 16px;
                 border-radius: 8px;
                 margin-bottom: 10px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3);
