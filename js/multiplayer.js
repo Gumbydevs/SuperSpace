@@ -3380,7 +3380,7 @@ export class MultiplayerManager {
             }
 
             const playerName = document.createElement('span');
-            playerName.textContent = player.isSelf ? `${player.name} (You)` : player.name;
+            playerName.textContent = player.name;
             playerName.style.flex = '1';
             playerName.style.color = player.isSelf ? '#0f0' : '#fff';
             playerName.style.textDecoration = 'none';

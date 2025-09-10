@@ -578,7 +578,7 @@ export class AdminSystem {
                 actionsHtml = `<button onclick=\"window.admin.kickPlayer('${player.id}')\" style=\"background: #f44; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;\">Kick</button>`;
             }
             row.innerHTML = `
-                <td style="padding: 8px; ${nameStyle}">${player.name} ${player.isLocal ? '(You)' : ''}</td>
+                <td style="padding: 8px; ${nameStyle}">${player.name}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.score.toLocaleString()}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.wins}/${player.losses}</td>
                 <td style="padding: 8px; text-align: center; color: #ccc;">${player.ship}</td>
