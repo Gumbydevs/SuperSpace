@@ -580,7 +580,7 @@ export class UI {
 
     const minimapCtx = minimapCanvas.getContext('2d');
     // Increase scale by 1.5x to zoom in minimap items, centered on world
-    const ZOOM = 1.5;
+    const ZOOM = 1.2;
     const baseScale = minimapCanvas.width / world.width;
     const scale = baseScale * ZOOM;
 
