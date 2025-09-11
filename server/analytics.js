@@ -134,6 +134,8 @@ class ServerAnalytics {
         const { sessionId, playerId } = event;
         const now = event.timestamp || Date.now();
         
+        console.log(`Analytics: Processing session update for player ${playerId}, session ${sessionId}, active sessions: ${this.sessions.size}`);
+        
         // Use playerId as the main key for presence and stats
         let isNewPlayer = false;
         let isNewSessionForToday = false;
@@ -141,6 +143,7 @@ class ServerAnalytics {
         // Check if this is a truly new player or just a page refresh
         if (!this.sessions.has(playerId)) {
             isNewPlayer = true;
+            console.log(`Analytics: New player ${playerId} starting first session`);
             this.sessions.set(playerId, {
                 playerId,
                 sessionIds: new Set([sessionId]),
@@ -171,13 +174,17 @@ class ServerAnalytics {
             const session = this.sessions.get(playerId);
             const timeSinceLastActivity = now - (session.lastActivity || session.startTime || 0);
             
+            console.log(`Analytics: Existing player ${playerId}, time since last activity: ${timeSinceLastActivity}ms`);
+            
             // If less than 30 seconds since last activity, treat as continuation
             if (timeSinceLastActivity < 30000) {
                 // Just update the session ID set but don't count as new session
+                console.log(`Analytics: Treating as session continuation for player ${playerId}`);
                 session.sessionIds.add(sessionId);
                 session.lastActivity = now;
             } else {
                 // Longer gap - treat as new session
+                console.log(`Analytics: Treating as new session for existing player ${playerId}`);
                 session.sessionIds.add(sessionId);
                 session.lastActivity = now;
                 session.lastSessionStart = now;
@@ -408,6 +415,8 @@ class ServerAnalytics {
     handleSessionEnd(event) {
         const playerId = event.playerId || event.sessionId;
         const session = this.sessions.get(playerId);
+        console.log(`Analytics: Handling session end for player ${playerId}, session exists: ${!!session}`);
+        
         if (session && event.data && event.data.sessionDuration) {
             // Update player profile with session data
             const profile = this.playerProfiles.get(playerId);
@@ -421,12 +430,16 @@ class ServerAnalytics {
 
             // Clean up session from memory immediately
             this.sessions.delete(playerId);
+            console.log(`Analytics: Session ended for player ${playerId}, ${this.sessions.size} active sessions remaining`);
+            
             // refresh today's concurrent counter
             const day = this.getDateString();
             if (this.dailyStats.has(day)) {
                 const stats = this.dailyStats.get(day);
                 stats.currentConcurrent = this.sessions.size;
             }
+        } else {
+            console.log(`Analytics: Warning - session end called for player ${playerId} but no session found or no duration data`);
         }
     }
 
@@ -720,34 +733,25 @@ class ServerAnalytics {
         const today = this.getDateString();
         const todayStats = this.dailyStats.get(today) || this.createEmptyDayStats();
         
-        // Count only unique playerIds for active sessions
-        const activePlayerIds = Array.from(this.sessions.keys());
-        const actualCurrentSessions = this.sessions.size;
+        // Count active sessions (unique players currently connected)
+        const activeSessions = this.sessions.size;
         
-        // Get today's unique players count (Set size)
-        const todayUniquePlayersCount = todayStats.uniquePlayers ? todayStats.uniquePlayers.size : 0;
+        // Update peak if current exceeds today's peak
+        if (activeSessions > (todayStats.peakConcurrent || 0)) {
+            todayStats.peakConcurrent = activeSessions;
+        }
         
-        // Count today's total sessions more accurately - don't double count quick refreshes
-        const todaySessionsCount = todayStats.uniqueSessions ? todayStats.uniqueSessions.size : 0;
-        
-        // Compute average session duration for today
-        const avgSession = todayStats.sessionDurations && todayStats.sessionDurations.length > 0
-            ? (todayStats.sessionDurations.reduce((a, b) => a + b, 0) / todayStats.sessionDurations.length)
-            : 0;
-
-        // Compute average life duration for today
-        const avgLife = todayStats.lifeDurations && todayStats.lifeDurations.length > 0
-            ? (todayStats.lifeDurations.reduce((a, b) => a + b, 0) / todayStats.lifeDurations.length)
-            : 0;
-
-        // Update current concurrent to match actual active sessions
-        todayStats.currentConcurrent = actualCurrentSessions;
+        // Update global peak
+        if (activeSessions > this.globalPeak) {
+            this.globalPeak = activeSessions;
+            this.saveMeta(); // Persist the new global peak
+        }
         
         return {
             today: {
                 ...todayStats,
-                uniquePlayers: todayUniquePlayersCount,
-                uniqueSessions: todaySessionsCount,
+                uniquePlayers: todayStats.uniquePlayers.size,
+                uniqueSessions: todayStats.uniqueSessions.size,
                 uniqueIPs: todayStats.uniqueIPs.size,
                 averageGameDuration: todayStats.gameDurations.length > 0 
                     ? todayStats.gameDurations.reduce((a, b) => a + b, 0) / todayStats.gameDurations.length 
@@ -755,15 +759,19 @@ class ServerAnalytics {
                 completionRate: todayStats.gamesStarted > 0 
                     ? todayStats.gamesCompleted / todayStats.gamesStarted 
                     : 0,
-                averageSessionDuration: avgSession,
-                averageLifeDuration: avgLife,
+                averageSessionDuration: todayStats.sessionDurations.length > 0
+                    ? todayStats.sessionDurations.reduce((a, b) => a + b, 0) / todayStats.sessionDurations.length
+                    : 0,
+                averageLifeDuration: todayStats.lifeDurations.length > 0
+                    ? todayStats.lifeDurations.reduce((a, b) => a + b, 0) / todayStats.lifeDurations.length
+                    : 0,
                 peakConcurrentToday: todayStats.peakConcurrent || 0,
                 globalPeakConcurrent: this.globalPeak || 0,
-                currentConcurrent: actualCurrentSessions
+                currentConcurrent: activeSessions
             },
-            activeSessions: actualCurrentSessions,
+            activeSessions,
             recentEvents: this.events.slice(-50), // Last 50 events
-            totalPlayers: todayUniquePlayersCount  // Show today's unique players instead of all-time
+            totalPlayers: todayStats.uniquePlayers.size
         };
     }
     
