@@ -149,11 +149,37 @@ button:focus, a:focus {
     outline: 2px solid #4af;
 }
 
-h1 {
+
+h1.superspace-title {
     color: #33f;
-    font-size: 48px;
-    margin-bottom: 50px;
-    text-shadow: 0 0 10px #33f, 0 0 20px #33f;
+    font-size: 80px;
+    margin-bottom: 18px;
+    text-shadow: 0 0 18px #33f, 0 0 40px #33f;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.superspace-title .star {
+    color: #fff;
+    font-size: 1.1em;
+    margin: 0 0.08em;
+    text-shadow: 0 0 12px #fff, 0 0 24px #33f;
+    font-weight: 900;
+}
+.launch-subtext {
+    color: #8cf;
+    font-size: 1.5em;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    margin-bottom: 36px;
+    text-shadow: 0 0 8px #33f, 0 0 16px #fff;
+    text-align: center;
+    text-transform: uppercase;
 }
 
 /* Unified Options/Instructions Overlay - Space Theme Improvements */
