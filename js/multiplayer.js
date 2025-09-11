@@ -83,6 +83,12 @@ export class MultiplayerManager {
 
     // Reset all player progress and show notification
     resetPlayerProgress(oldVersion) {
+        // Always clear disclaimer agreement so it will show after a reset
+        try {
+            localStorage.removeItem('superspace-disclaimer-agreed');
+            sessionStorage.removeItem('superspace-disclaimer-temp-agreed');
+            console.log('Disclaimer agreement cleared due to major update reset');
+        } catch (e) { console.warn('Could not clear disclaimer agreement:', e); }
         // Reset achievements: clear saved progress and reset in-memory trackers if present
         try {
             // Clear persisted achievements object
