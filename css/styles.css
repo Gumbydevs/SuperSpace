@@ -1874,3 +1874,27 @@ input[type="range"] {
         word-wrap: break-word;
     }
 }
+
+/* iPhone Portrait Orientation - Fix button overlap issue */
+@media screen and (max-width: 428px) and (orientation: portrait) {
+    /* Adjust top-right button positioning for iPhone portrait mode */
+    #shop-btn {
+        top: 76px !important;
+    }
+    
+    #mobile-menu-button {
+        top: 120px !important; /* Increased spacing from 114px */
+    }
+    
+    #premium-btn {
+        top: 164px !important; /* Increased spacing from 132px */
+    }
+    
+    #admin-btn {
+        top: 208px !important; /* Increased spacing from 152px */
+    }
+    
+    #mobile-chat-btn {
+        top: 252px !important; /* Increased spacing from 188px */
+    }
+}
