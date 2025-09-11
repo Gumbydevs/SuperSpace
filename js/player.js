@@ -156,7 +156,7 @@ export class Player {
         this.speed = 0;
         this.maxSpeed = 400; // Maximum possible speed for the ship
         this.acceleration = 300; // How quickly the ship speeds up
-        this.rotationSpeed = 4.0; // How quickly the ship can turn
+    this.rotationSpeed = 2.5; // How quickly the ship can turn (finer control)
         this.friction = 0.998; // Space-like movement with minimal friction
         this.braking = false; // Tracks if player is actively braking
         this.brakePower = 0.95; // How effective braking is (lower = stronger brakes)
