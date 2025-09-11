@@ -575,10 +575,8 @@ export class UI {
     }
     
     renderMinimap(ctx, player, world) {
-    const minimapCanvas = document.getElementById('minimap');
-    if (!minimapCanvas) return;
-    // Only draw if ctx is the minimap's context
-    if (ctx !== minimapCanvas.getContext('2d')) return;
+        const minimapCanvas = document.getElementById('minimap');
+        if (!minimapCanvas) return;
         
         const minimapCtx = minimapCanvas.getContext('2d');
         const scale = minimapCanvas.width / world.width;
