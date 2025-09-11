@@ -579,16 +579,20 @@ export class UI {
     if (!minimapCanvas) return;
 
     const minimapCtx = minimapCanvas.getContext('2d');
-    // Increase scale by 1.5x to zoom in minimap items, and keep centered
+    // Increase scale by 1.5x to zoom in minimap items, and keep player centered
     const ZOOM = 1.5;
     const baseScale = minimapCanvas.width / world.width;
     const scale = baseScale * ZOOM;
 
-    // Save and transform context to keep minimap centered when zoomed
+    // Save and transform context to keep minimap centered on player
     minimapCtx.save();
+    // Center on player
     minimapCtx.translate(minimapCanvas.width / 2, minimapCanvas.height / 2);
     minimapCtx.scale(ZOOM, ZOOM);
-    minimapCtx.translate(-minimapCanvas.width / 2, -minimapCanvas.height / 2);
+    // Offset so player is at center
+    const playerMapX = (player.x + world.width / 2) * baseScale;
+    const playerMapY = (player.y + world.height / 2) * baseScale;
+    minimapCtx.translate(-playerMapX, -playerMapY);
         
         // Clear minimap
         minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -601,9 +605,9 @@ export class UI {
         
         // Draw safe zone - now as a square since world.safeZone is a square
         if (world.safeZone) {
-            const safeX = (world.safeZone.x + world.width/2) * scale;
-            const safeY = (world.safeZone.y + world.height/2) * scale;
-            const safeSize = world.safeZone.size * scale;
+        const safeX = (world.safeZone.x + world.width/2) * baseScale;
+        const safeY = (world.safeZone.y + world.height/2) * baseScale;
+        const safeSize = world.safeZone.size * baseScale;
             
             // Draw safe zone fill with semi-transparent blue
             minimapCtx.fillStyle = 'rgb(255, 153, 0)';
@@ -635,10 +639,9 @@ export class UI {
         // Draw asteroids
         minimapCtx.fillStyle = '#aaa';
         world.asteroids.forEach(asteroid => {
-            const x = (asteroid.x + world.width/2) * scale;
-            const y = (asteroid.y + world.height/2) * scale;
-            const radius = asteroid.radius * scale;
-            
+            const x = (asteroid.x + world.width/2) * baseScale;
+            const y = (asteroid.y + world.height/2) * baseScale;
+            const radius = asteroid.radius * baseScale;
             minimapCtx.beginPath();
             minimapCtx.arc(x, y, Math.max(1, radius), 0, Math.PI * 2);
             minimapCtx.fill();
@@ -646,9 +649,8 @@ export class UI {
         
         // Draw powerups
         world.powerups.forEach(powerup => {
-            const x = (powerup.x + world.width/2) * scale;
-            const y = (powerup.y + world.height/2) * scale;
-            
+            const x = (powerup.x + world.width/2) * baseScale;
+            const y = (powerup.y + world.height/2) * baseScale;
             let color;
             switch(powerup.type) {
                 case 'health': color = '#0f0'; break;
@@ -657,7 +659,6 @@ export class UI {
                 case 'energy': color = '#ff0'; break;
                 default: color = '#fff';
             }
-            
             minimapCtx.fillStyle = color;
             minimapCtx.beginPath();
             minimapCtx.arc(x, y, this.isMobileDevice ? 1 : 1.5, 0, Math.PI * 2);
@@ -668,27 +669,22 @@ export class UI {
         // IMPORTANT: Use window.game.multiplayer instead of player.game.multiplayer
         if (window.game && window.game.multiplayer && window.game.multiplayer.players) {
             const otherPlayers = window.game.multiplayer.players;
-            
             // Draw each player on the minimap
             Object.values(otherPlayers).forEach(otherPlayer => {
                 // Skip destroyed players and the current player
                 if (otherPlayer.destroyed || (window.game.multiplayer.socket && otherPlayer.id === window.game.multiplayer.socket.id)) {
                     return;
                 }
-                
                 // Convert player coords to minimap coords
-                const px = (otherPlayer.x + world.width/2) * scale;
-                const py = (otherPlayer.y + world.height/2) * scale;
-                
+                const px = (otherPlayer.x + world.width/2) * baseScale;
+                const py = (otherPlayer.y + world.height/2) * baseScale;
                 // Use player's ship color or default to red
                 const playerColor = otherPlayer.color || '#f00';
-                
                 // Draw player dot
                 minimapCtx.fillStyle = playerColor;
                 minimapCtx.beginPath();
                 minimapCtx.arc(px, py, this.isMobileDevice ? 2 : 2.5, 0, Math.PI * 2);
                 minimapCtx.fill();
-                
                 // Draw direction indicator if rotation is available
                 if (otherPlayer.rotation !== undefined) {
                     const dirLength = this.isMobileDevice ? 3 : 4;
@@ -708,9 +704,8 @@ export class UI {
         // Draw NPCs on minimap
         if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
             window.game.npcManager.npcs.forEach(npc => {
-                const nx = (npc.x + world.width/2) * scale;
-                const ny = (npc.y + world.height/2) * scale;
-                
+                const nx = (npc.x + world.width/2) * baseScale;
+                const ny = (npc.y + world.height/2) * baseScale;
                 // Different colors for different NPC types
                 let npcColor;
                 switch(npc.type) {
@@ -723,13 +718,11 @@ export class UI {
                     default:
                         npcColor = '#f80'; // Orange for other NPCs
                 }
-                
                 minimapCtx.fillStyle = npcColor;
                 minimapCtx.beginPath();
                 const npcSize = npc.type === 'dreadnaught' ? 4 : 2; // Larger dot for boss
                 minimapCtx.arc(nx, ny, this.isMobileDevice ? npcSize : npcSize + 0.5, 0, Math.PI * 2);
                 minimapCtx.fill();
-                
                 // Add pulsing effect for dreadnaught
                 if (npc.type === 'dreadnaught') {
                     const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300);
@@ -743,15 +736,16 @@ export class UI {
         }
         
         // Draw player (always draw last so it's on top)
-        const playerX = (player.x + world.width/2) * scale;
-        const playerY = (player.y + world.height/2) * scale;
-        
+        // Player is always at the center of the minimap
+        const playerX = minimapCanvas.width / 2 / ZOOM;
+        const playerY = minimapCanvas.height / 2 / ZOOM;
+
         // Draw current player with a distinctive color and slightly larger dot
         minimapCtx.fillStyle = '#3af'; // Bright cyan-blue
         minimapCtx.beginPath();
         minimapCtx.arc(playerX, playerY, this.isMobileDevice ? 2.5 : 3, 0, Math.PI * 2);
         minimapCtx.fill();
-        
+
         // Add direction indicator for player
         const dirLength = this.isMobileDevice ? 4 : 5;
         minimapCtx.strokeStyle = '#3af';
