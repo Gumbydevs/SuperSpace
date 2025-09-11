@@ -1,6 +1,6 @@
 // List of profane words for filtering player names and chat messages
 // Add more words as needed
-module.exports = [
+export default [
   "badwords",
   "nig",
   "nazi",
