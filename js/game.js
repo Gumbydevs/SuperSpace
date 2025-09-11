@@ -907,6 +907,64 @@ class Game {
         // Render the player when actively playing
         if (this.gameState === 'playing') {
             this.player.render(this.ctx);
+            
+            // Render local player shields (matching remote player system)
+            if (this.player.shield && this.player.shield > 0) {
+                this.ctx.save();
+                this.ctx.translate(this.player.x, this.player.y);
+                
+                // Create shield visual effect based on shield strength
+                const shieldPercentage = this.player.shield / (this.player.shieldCapacity || 100);
+                const glowSize = 25 + (shieldPercentage * 8);
+                const glowOpacity = 0.3 + (shieldPercentage * 0.4);
+                
+                // Create radial gradient for shield effect
+                const shieldGradient = this.ctx.createRadialGradient(0, 0, glowSize * 0.3, 0, 0, glowSize);
+                shieldGradient.addColorStop(0, `rgba(64, 160, 255, ${glowOpacity * 0.15})`);
+                shieldGradient.addColorStop(0.6, `rgba(64, 160, 255, ${glowOpacity * 0.8})`);
+                shieldGradient.addColorStop(1, `rgba(32, 100, 255, 0)`);
+                
+                // Draw the shield glow
+                this.ctx.fillStyle = shieldGradient;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Add multiple ripple rings with different timing
+                const drawRipple = (phase, width, opacity) => {
+                    const pulsePhase = (Date.now() % 2000) / 2000;
+                    const adjustedPhase = (pulsePhase + phase) % 1;
+                    if (adjustedPhase < 0.7) {
+                        const rippleSize = glowSize * (0.8 + adjustedPhase * 0.6);
+                        const rippleOpacity = (0.7 - Math.abs(0.35 - adjustedPhase)) * opacity * shieldPercentage;
+                        
+                        this.ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
+                        this.ctx.lineWidth = width;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                    }
+                };
+                
+                // Draw multiple ripples at different phases
+                drawRipple(0, 1.8, 0.5);
+                drawRipple(0.3, 1.2, 0.4);
+                drawRipple(0.6, 1.0, 0.3);
+                
+                // Shield impact flashes when taking recent damage
+                if (this.player.lastDamageTime) {
+                    const timeSinceDamage = (Date.now() / 1000) - this.player.lastDamageTime;
+                    if (timeSinceDamage < 0.3) {
+                        const flashOpacity = 0.7 * (1 - (timeSinceDamage / 0.3));
+                        this.ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
+                        this.ctx.beginPath();
+                        this.ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                }
+                
+                this.ctx.restore();
+            }
         }
         
         // Always render other players from multiplayer (even when dying)

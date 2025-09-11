@@ -153,25 +153,26 @@ export class ShipSkinSystem {
     }
     
     applyMetallicEffect(ctx, ship, appearance, time) {
-        // Metallic reflection sweep
+        // Metallic reflection sweep - modified to not interfere with shields
         const sweep = (time * 0.5) % 2 - 1; // -1 to 1
         
         const gradient = ctx.createLinearGradient(
-            ship.x - 30, ship.y - 30,
-            ship.x + 30, ship.y + 30
+            ship.x - 20, ship.y - 20,
+            ship.x + 20, ship.y + 20
         );
         
         const reflection = Math.abs(sweep);
         gradient.addColorStop(0, appearance.color);
         gradient.addColorStop(0.5 - sweep * 0.3, appearance.color);
-        gradient.addColorStop(0.5, appearance.accent + 'aa');
+        gradient.addColorStop(0.5, appearance.accent + '66'); // Less visible
         gradient.addColorStop(0.5 + sweep * 0.3, appearance.color);
         gradient.addColorStop(1, appearance.color);
         
         ctx.globalCompositeOperation = 'overlay';
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(ship.x, ship.y, 25, 0, Math.PI * 2);
+        // Use smaller radius and draw ship shape instead of circle to avoid shield confusion
+        ctx.arc(ship.x, ship.y, 15, 0, Math.PI * 2); // Smaller radius so it doesn't look like shields
         ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
     }
