@@ -82,7 +82,7 @@ export class Player {
             // Take minimal damage from player collision
             const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
             if (impactForce > 200) { // Only deal damage for high-speed collisions
-                const damageFactor = 0.05; // Less damage for player-player collisions
+                const damageFactor = 0.07; // Increased damage factor for player collisions
                 const damage = Math.max(1, impactForce * damageFactor);
                 this.takeDamage(damage);
             }
