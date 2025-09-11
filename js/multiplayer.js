@@ -698,33 +698,48 @@ export class MultiplayerManager {
                 confirmButton.style.backgroundColor = '#4af';
             };
             
+
+            // Add feedback message area
+            const feedback = document.createElement('div');
+            feedback.style.color = '#f84';
+            feedback.style.margin = '10px 0 0 0';
+            feedback.style.textAlign = 'center';
+            dialog.appendChild(feedback);
+
             confirmButton.onclick = () => {
                 // Validate and set player name (min 3 chars, max 15 chars)
                 let name = input.value.trim();
-                
+
                 // Default to random name if empty
                 if (name === '') {
                     name = 'Pilot-' + Math.floor(Math.random() * 1000);
                 }
-                
+
                 // Enforce length limits
                 if (name.length < 3) {
                     name = name.padEnd(3, '0');
                 }
-                
+
                 if (name.length > 15) {
                     name = name.substring(0, 15);
                 }
-                
+
+                // Profanity check before closing dialog
+                if (containsProfanity(name)) {
+                    feedback.textContent = 'Profanity is not allowed in player names.';
+                    input.focus();
+                    return;
+                }
+
                 // Update player name
                 this.setPlayerName(name);
-                
+
                 // Remove modal
                 document.body.removeChild(backdrop);
-                
+
                 // Clear flag
                 window.isRenaming = false;
-                
+
                 // Resolve the promise
                 resolve();
             };
