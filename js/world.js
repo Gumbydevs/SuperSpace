@@ -6,8 +6,8 @@
             // Random position within world bounds
             const x = this.getRandomInt(-this.width / 2 + 50, this.width / 2 - 50);
             const y = this.getRandomInt(-this.height / 2 + 50, this.height / 2 - 50);
-            // Random type
-            const types = ['health', 'shield', 'energy', 'credits'];
+            // Random type (now includes fire rate boost)
+            const types = ['health', 'shield', 'energy', 'credits', 'fireRate'];
             const selectedType = types[Math.floor(Math.random() * types.length)];
             powerups.push({
                 x,
@@ -1366,7 +1366,26 @@
 
     applyPowerup(player, type) {
         // Here we handle effects for different powerup types
-        switch(type) {
+    switch(type) {
+            case 'fireRate':
+                // Direct fire rate boost powerup
+                const fireRateBoost = {
+                    multiplier: 0.4, // 60% faster (100% / 0.4 = 250% total)
+                    duration: 10000, // 10 seconds
+                    startTime: Date.now()
+                };
+                if (!player.fireRateBoosts) {
+                    player.fireRateBoosts = [];
+                }
+                player.fireRateBoosts.push(fireRateBoost);
+                if (!player.originalFireCooldownTime) {
+                    player.originalFireCooldownTime = player.fireCooldownTime;
+                }
+                player.fireCooldownTime = player.originalFireCooldownTime * fireRateBoost.multiplier;
+                if (window.game && window.game.multiplayer) {
+                    window.game.multiplayer.showGameMessage('FIRE RATE BOOST! (10s)', '#f33');
+                }
+                break;
             case 'health':
                 // Restore 25% of max health
                 const healthToAdd = player.maxHealth * 0.25;
