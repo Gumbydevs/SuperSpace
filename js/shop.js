@@ -208,8 +208,8 @@ export class ShopSystem {
                     range: 700,
                     energyCost: 35,
                     explosive: true,
-                    explosionRadius: 100, // Larger explosion radius
-                    explosionDamage: 40, // Higher explosion damage
+                    explosionRadius: 120, // Increased explosion radius
+                    explosionDamage: 65, // Significantly higher explosion damage
                     minDetonationRange: 200, // Minimum distance before it can explode
                     maxDetonationRange: 500  // Maximum distance before forced detonation
                 }
