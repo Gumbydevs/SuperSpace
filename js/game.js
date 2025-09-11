@@ -535,15 +535,15 @@ class Game {
             keysPressed.add(e.code);
             // console.log('Key pressed:', e.code, 'Current keys:', Array.from(keysPressed));
             
-            // Check for admin combination F+T+G (must be pressed together)
+            // Check for admin combination (must be pressed together)
             if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
-                console.log('Admin key combination detected! F+T+G pressed');
+                console.log('Admin key combination detected!');
                 this.toggleAdmin();
                 keysPressed.clear(); // Clear to prevent repeated triggers
                 return;
             }
             
-            // Admin panel access removed from F12 - use secret key sequence instead (F+T+G)
+            // Admin panel access removed from F12 - use secret key sequence instead 
             
 
             if (e.code === 'KeyB' && this.gameState === 'playing' && !this.input.isChatting) {
