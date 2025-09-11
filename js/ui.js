@@ -586,9 +586,13 @@ export class UI {
 
     // Save and transform context to keep minimap centered on world
     minimapCtx.save();
+    // Center the world center in the minimap after scaling
     minimapCtx.translate(minimapCanvas.width / 2, minimapCanvas.height / 2);
     minimapCtx.scale(ZOOM, ZOOM);
-    minimapCtx.translate(-minimapCanvas.width / 2, -minimapCanvas.height / 2);
+    // Offset so that the world center is at the minimap center
+    const worldCenterX = (world.width / 2) * scale;
+    const worldCenterY = (world.height / 2) * scale;
+    minimapCtx.translate(-worldCenterX, -worldCenterY);
         
         // Clear minimap
         minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
