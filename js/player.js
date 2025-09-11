@@ -73,7 +73,7 @@ export class Player {
             
             // Calculate impulse (how strongly we bounce)
             const baseImpulse = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
-            const impulseStrength = Math.max(60, (1 + this.bounceStrength) * baseImpulse * 0.3);
+            const impulseStrength = Math.max(90, (1 + this.bounceStrength) * baseImpulse * 0.3);
             
             // Apply impulse in the direction away from collision
             this.velocity.x = nx * impulseStrength;
