@@ -1891,6 +1891,6 @@ input[type="range"] {
     }
     
     #mobile-chat-btn {
-        top: 170px !important; /* Chat button - 50px spacing from premium */
+        top: 190px !important; /* Chat button - 50px spacing from premium */
     }
 }
