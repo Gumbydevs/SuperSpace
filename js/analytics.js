@@ -126,6 +126,23 @@ class GameAnalytics {
     }
     
     trackSessionStart() {
+        // Check if we recently sent a session_start to avoid duplicates on quick page refreshes
+        const lastSessionStart = localStorage.getItem('superspace_last_session_start');
+        const now = Date.now();
+        
+        // If last session start was less than 30 seconds ago, don't send another one
+        if (lastSessionStart && (now - parseInt(lastSessionStart)) < 30000) {
+            console.log('Skipping duplicate session_start - recent session detected');
+            return;
+        }
+        
+        // Store when we're sending this session_start
+        try {
+            localStorage.setItem('superspace_last_session_start', now.toString());
+        } catch (e) {
+            // Ignore localStorage errors
+        }
+        
         this.trackEvent('session_start', {
             userAgent: navigator.userAgent,
             screen: {
@@ -147,6 +164,13 @@ class GameAnalytics {
             sessionDuration: sessionDuration,
             eventsCount: this.events.length
         });
+        
+        // Clear the last session start timestamp since this session is ending
+        try {
+            localStorage.removeItem('superspace_last_session_start');
+        } catch (e) {
+            // Ignore localStorage errors
+        }
     }
     
     trackGameStart() {

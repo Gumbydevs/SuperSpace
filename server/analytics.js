@@ -132,19 +132,24 @@ class ServerAnalytics {
     
     updateSession(event) {
         const { sessionId, playerId } = event;
+        const now = event.timestamp || Date.now();
+        
         // Use playerId as the main key for presence and stats
-        // Only add a new session if this playerId+sessionId combo is truly new
         let isNewPlayer = false;
+        let isNewSessionForToday = false;
+        
+        // Check if this is a truly new player or just a page refresh
         if (!this.sessions.has(playerId)) {
             isNewPlayer = true;
             this.sessions.set(playerId, {
                 playerId,
                 sessionIds: new Set([sessionId]),
-                startTime: event.timestamp,
-                lastActivity: event.timestamp,
+                startTime: now,
+                lastActivity: now,
                 events: [],
                 ip: event.clientIp,
                 totalConnectedTime: 0,
+                lastSessionStart: now,
                 gameStats: {
                     gamesPlayed: 0,
                     totalGameTime: 0,
@@ -162,36 +167,67 @@ class ServerAnalytics {
                 }
             });
         } else {
-            // Only add sessionId if not already present
-            this.sessions.get(playerId).sessionIds.add(sessionId);
+            // Existing player - check if this is a quick reconnect/refresh
+            const session = this.sessions.get(playerId);
+            const timeSinceLastActivity = now - (session.lastActivity || session.startTime || 0);
+            
+            // If less than 30 seconds since last activity, treat as continuation
+            if (timeSinceLastActivity < 30000) {
+                // Just update the session ID set but don't count as new session
+                session.sessionIds.add(sessionId);
+                session.lastActivity = now;
+            } else {
+                // Longer gap - treat as new session
+                session.sessionIds.add(sessionId);
+                session.lastActivity = now;
+                session.lastSessionStart = now;
+                isNewSessionForToday = true;
+            }
         }
+        
         const session = this.sessions.get(playerId);
-        session.lastActivity = event.timestamp;
+        session.lastActivity = now;
         session.events.push(event);
+        
         // Keep only last 100 events per session to manage memory
         if (session.events.length > 100) {
             session.events = session.events.slice(-100);
         }
-        // Only update dailyStats for new unique player or session
+        
+        // Update daily stats
         const today = this.getDateString();
         if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
         const stats = this.dailyStats.get(today);
-        if (isNewPlayer) {
-            // Only count unique player once per day
-            if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
-            stats.uniquePlayers.add(playerId);
-        }
-        // Only count unique sessionId per player per day
+        
+        // Initialize required fields
+        if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
         if (!stats.playerSessionMap) stats.playerSessionMap = {};
-        if (!stats.playerSessionMap[playerId]) stats.playerSessionMap[playerId] = new Set();
-        if (!stats.playerSessionMap[playerId].has(sessionId)) {
-            stats.playerSessionMap[playerId].add(sessionId);
-            stats.uniqueSessions.add(sessionId);
-        }
-        // Always update current/peak concurrent
+        if (!stats.playerLastSeen) stats.playerLastSeen = {};
+        
+            // Only count as new session if it's a new player or significant time gap
+            if (isNewPlayer) {
+                stats.uniquePlayers.add(playerId);
+                stats.uniqueSessions.add(sessionId);
+                if (!stats.playerSessionMap[playerId]) stats.playerSessionMap[playerId] = new Set();
+                stats.playerSessionMap[playerId].add(sessionId);
+                stats.playerLastSeen[playerId] = now;
+                console.log(`Analytics: New player ${playerId} (session: ${sessionId})`);
+            } else if (isNewSessionForToday) {
+                // Only count as new session if significant time gap
+                stats.uniqueSessions.add(sessionId);
+                if (!stats.playerSessionMap[playerId]) stats.playerSessionMap[playerId] = new Set();
+                stats.playerSessionMap[playerId].add(sessionId);
+                stats.playerLastSeen[playerId] = now;
+                console.log(`Analytics: New session for existing player ${playerId} (session: ${sessionId})`);
+            } else {
+                // Just update last seen time for existing recent session
+                stats.playerLastSeen[playerId] = now;
+                console.log(`Analytics: Updated activity for recent session ${playerId} (session: ${sessionId})`);
+            }        // Always update current/peak concurrent (based on unique active players)
         const concurrent = this.sessions.size;
         stats.currentConcurrent = concurrent;
         stats.peakConcurrent = Math.max(stats.peakConcurrent || 0, concurrent);
+        
         // update globalPeak and persist if increased
         const newGlobal = Math.max(this.globalPeak || 0, stats.peakConcurrent || 0);
         if (newGlobal > this.globalPeak) {
@@ -649,6 +685,7 @@ class ServerAnalytics {
 
             // Remove session and refresh today's concurrent counter
             this.sessions.delete(playerId);
+            console.log(`Analytics: Session ended for player ${playerId}, ${this.sessions.size} active sessions remaining`);
             if (this.dailyStats.has(day)) {
                 const stats = this.dailyStats.get(day);
                 stats.currentConcurrent = this.sessions.size;
@@ -682,8 +719,17 @@ class ServerAnalytics {
     getCurrentStats() {
         const today = this.getDateString();
         const todayStats = this.dailyStats.get(today) || this.createEmptyDayStats();
-        // Only count unique playerIds for active sessions
+        
+        // Count only unique playerIds for active sessions
         const activePlayerIds = Array.from(this.sessions.keys());
+        const actualCurrentSessions = this.sessions.size;
+        
+        // Get today's unique players count (Set size)
+        const todayUniquePlayersCount = todayStats.uniquePlayers ? todayStats.uniquePlayers.size : 0;
+        
+        // Count today's total sessions more accurately - don't double count quick refreshes
+        const todaySessionsCount = todayStats.uniqueSessions ? todayStats.uniqueSessions.size : 0;
+        
         // Compute average session duration for today
         const avgSession = todayStats.sessionDurations && todayStats.sessionDurations.length > 0
             ? (todayStats.sessionDurations.reduce((a, b) => a + b, 0) / todayStats.sessionDurations.length)
@@ -694,14 +740,14 @@ class ServerAnalytics {
             ? (todayStats.lifeDurations.reduce((a, b) => a + b, 0) / todayStats.lifeDurations.length)
             : 0;
 
-        // Fix currentConcurrent to match actual sessions
-        const actualCurrent = this.sessions.size;
-        todayStats.currentConcurrent = actualCurrent;
+        // Update current concurrent to match actual active sessions
+        todayStats.currentConcurrent = actualCurrentSessions;
         
         return {
             today: {
                 ...todayStats,
-                uniqueSessions: todayStats.uniqueSessions.size,
+                uniquePlayers: todayUniquePlayersCount,
+                uniqueSessions: todaySessionsCount,
                 uniqueIPs: todayStats.uniqueIPs.size,
                 averageGameDuration: todayStats.gameDurations.length > 0 
                     ? todayStats.gameDurations.reduce((a, b) => a + b, 0) / todayStats.gameDurations.length 
@@ -713,11 +759,11 @@ class ServerAnalytics {
                 averageLifeDuration: avgLife,
                 peakConcurrentToday: todayStats.peakConcurrent || 0,
                 globalPeakConcurrent: this.globalPeak || 0,
-                currentConcurrent: actualCurrent
+                currentConcurrent: actualCurrentSessions
             },
-            activeSessions: actualCurrent,
+            activeSessions: actualCurrentSessions,
             recentEvents: this.events.slice(-50), // Last 50 events
-            totalPlayers: this.playerProfiles.size
+            totalPlayers: todayUniquePlayersCount  // Show today's unique players instead of all-time
         };
     }
     
