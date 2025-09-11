@@ -575,11 +575,13 @@ export class UI {
     }
     
     renderMinimap(ctx, player, world) {
-        const minimapCanvas = document.getElementById('minimap');
-        if (!minimapCanvas) return;
-        
-        const minimapCtx = minimapCanvas.getContext('2d');
-        const scale = minimapCanvas.width / world.width;
+    const minimapCanvas = document.getElementById('minimap');
+    if (!minimapCanvas) return;
+
+    const minimapCtx = minimapCanvas.getContext('2d');
+    // Increase scale by 1.5x to zoom in minimap items
+    const ZOOM = 1.5;
+    const scale = (minimapCanvas.width / world.width) * ZOOM;
         
         // Clear minimap
         minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
