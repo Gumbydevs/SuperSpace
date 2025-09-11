@@ -73,9 +73,9 @@ export class Player {
             
             // Calculate impulse (how strongly we bounce)
             const baseImpulse = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
-            const impulseStrength = Math.max(100, (1 + this.bounceStrength) * baseImpulse);
+            const impulseStrength = Math.max(30, (1 + this.bounceStrength) * baseImpulse * 0.3);
             
-            // Apply stronger impulse in the direction away from collision
+            // Apply impulse in the direction away from collision
             this.velocity.x = nx * impulseStrength;
             this.velocity.y = ny * impulseStrength;
             
@@ -174,7 +174,7 @@ export class Player {
         this.collisionRadius = 15; // Radius used for collision detection
         this.collisionCooldown = 0; // Time remaining before next collision can occur
         this.collisionCooldownTime = 0.1; // Time between collision processing to prevent multiple hits
-        this.bounceStrength = 0.5; // How strongly ships bounce off obstacles (0-1)
+        this.bounceStrength = 0.3; // How strongly ships bounce off obstacles (0-1)
         // Here we define the player's health and defense stats
         this.maxHealth = 100;
         this.health = 100;
