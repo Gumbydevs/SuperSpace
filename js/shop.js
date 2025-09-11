@@ -955,11 +955,23 @@ export class ShopSystem {
             const button = document.createElement('button');
             if (ship.owned) {
                 button.textContent = 'Select';
-                button.onclick = () => this.selectShip(ship.id);
+                button.onclick = () => {
+                    if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
+                        alert('You must be docked in a safe zone to change ships.');
+                        return;
+                    }
+                    this.selectShip(ship.id);
+                };
             } else {
                 button.textContent = `Buy: ${ship.price}`;
                 button.disabled = (this.player.credits || 0) < ship.price;
-                button.onclick = () => this.buyShip(ship.id);
+                button.onclick = () => {
+                    if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
+                        alert('You must be docked in a safe zone to purchase ships.');
+                        return;
+                    }
+                    this.buyShip(ship.id);
+                };
             }
             
             button.style.padding = '8px 16px';
@@ -1126,12 +1138,16 @@ export class ShopSystem {
                 button.style.backgroundColor = '#3f3';
             } else {
                 const cannotAfford = (this.player.credits || 0) < weapon.price;
-                
                 button.textContent = `Buy (${weapon.price})`;
                 button.disabled = cannotAfford;
-                button.onclick = () => this.buyWeapon(weapon.id);
+                button.onclick = () => {
+                    if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
+                        alert('You must be docked in a safe zone to purchase weapons.');
+                        return;
+                    }
+                    this.buyWeapon(weapon.id);
+                };
                 button.style.backgroundColor = '#33f';
-                
                 if (cannotAfford) {
                     button.title = 'Insufficient credits';
                 }
@@ -1345,7 +1361,13 @@ export class ShopSystem {
             } else {
                 button.textContent = `Upgrade: ${price}`;
                 button.disabled = (this.player.credits || 0) < price;
-                button.onclick = () => this.buyUpgrade(upgrade.id);
+                button.onclick = () => {
+                    if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
+                        alert('You must be docked in a safe zone to purchase upgrades.');
+                        return;
+                    }
+                    this.buyUpgrade(upgrade.id);
+                };
                 button.style.backgroundColor = '#33f';
             }
             
