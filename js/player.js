@@ -1657,11 +1657,6 @@ export class Player {
             
             // Draw shield effect for local player when they have shields (matching remote player system)
             if (this.shield && this.shield > 0) {
-                // Save context before drawing the shield
-                ctx.save();
-                // Reset translation and rotation for shield effect (shields should be unrotated)
-                ctx.setTransform(1, 0, 0, 1, this.x, this.y);
-                
                 // Create shield visual effect based on shield strength
                 const shieldPercentage = this.shield / (this.shieldCapacity || 100);
                 const glowSize = 25 + (shieldPercentage * 8);
@@ -1713,13 +1708,6 @@ export class Player {
                         ctx.fill();
                     }
                 }
-                
-                ctx.restore();
-                
-                // Reset context for ship rendering
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
             }
 
             // Draw ship geometry (original or default)
