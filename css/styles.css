@@ -1879,18 +1879,18 @@ input[type="range"] {
 @media screen and (max-width: 428px) and (orientation: portrait) {
     /* Adjust top-right button positioning for iPhone portrait mode */
     #shop-btn {
-        top: 50px !important; /* Moved up to use empty space */
+        top: 20px !important; /* Moved much higher to use empty space */
     }
     
     #mobile-menu-button {
-        top: 95px !important; /* Options button - adequate spacing from shop */
+        top: 70px !important; /* Options button - 50px spacing from shop */
     }
     
     #premium-btn {
-        top: 140px !important; /* Premium button - adequate spacing from options */
+        top: 120px !important; /* Premium button - 50px spacing from options */
     }
     
     #mobile-chat-btn {
-        top: 185px !important; /* Chat button - adequate spacing from premium */
+        top: 170px !important; /* Chat button - 50px spacing from premium */
     }
 }
