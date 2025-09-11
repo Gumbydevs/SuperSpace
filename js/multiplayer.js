@@ -83,11 +83,42 @@ export class MultiplayerManager {
 
     // Reset all player progress and show notification
     resetPlayerProgress(oldVersion) {
-        // Reset all achievements if available
-            if (window.game && window.game.achievements && typeof window.game.achievements.resetAllAchievements === 'function') {
-                window.game.achievements.resetAllAchievements();
-                console.log('🏆 All achievements reset (pre-clear)');
+        // Reset achievements: clear saved progress and reset in-memory trackers if present
+        try {
+            // Clear persisted achievements object
+            localStorage.removeItem('achievements');
+
+            // If achievement system is loaded, reset in-memory progress and save
+            if (window.game && window.game.achievements) {
+                try {
+                    // Reset each achievement's progress/unlocked state
+                    const ach = window.game.achievements;
+                    if (ach.achievements && typeof ach.achievements.forEach === 'function') {
+                        // Map may be a Map or similar
+                        if (typeof ach.achievements.entries === 'function') {
+                            for (const [id, a] of ach.achievements) {
+                                a.progress = 0;
+                                a.unlocked = false;
+                            }
+                        } else {
+                            // Fallback: iterate array or object
+                            try {
+                                Object.values(ach.achievements).forEach(a => { a.progress = 0; a.unlocked = false; });
+                            } catch (e) {}
+                        }
+                    }
+                    // Persist cleared progress
+                    if (typeof ach.saveProgress === 'function') ach.saveProgress();
+                    console.log('🏆 Achievements cleared (local + memory)');
+                } catch (e) {
+                    console.warn('Could not fully reset in-memory achievements:', e);
+                }
+            } else {
+                console.log('🏆 Achievements cleared from localStorage');
             }
+        } catch (e) {
+            console.warn('Error clearing achievements during reset:', e);
+        }
         console.log('🔄 Starting progress reset...');
         
         // Log current localStorage before reset
@@ -174,6 +205,31 @@ export class MultiplayerManager {
         upgradeIds.forEach(upgradeId => {
             localStorage.removeItem(`upgrade_${upgradeId}_level`);
         });
+
+        // Reset challenges state (persisted and in-memory)
+        try {
+            localStorage.removeItem('challenge_state');
+            if (window.game && window.game.challengeSystem) {
+                try {
+                    const cs = window.game.challengeSystem;
+                    cs.completed = { daily: [], weekly: [] };
+                    cs.claimed = { daily: [], weekly: [] };
+                    cs.notified = { daily: [], weekly: [] };
+                    cs.sessionNotified = { daily: [], weekly: [] };
+                    cs.lastDailyReset = null;
+                    cs.lastWeeklyReset = null;
+                    // Persist cleared state
+                    if (typeof cs.saveState === 'function') cs.saveState();
+                    console.log('🏁 Challenges cleared (local + memory)');
+                } catch (e) {
+                    console.warn('Could not fully reset in-memory challenges:', e);
+                }
+            } else {
+                console.log('🏁 Challenges cleared from localStorage');
+            }
+        } catch (e) {
+            console.warn('Error clearing challenges during reset:', e);
+        }
         
         console.log('🔄 Reset completed. New localStorage:');
         for (let i = 0; i < localStorage.length; i++) {
