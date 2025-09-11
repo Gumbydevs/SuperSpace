@@ -976,7 +976,7 @@ export class Player {
                     window.game.world.createExplosion(
                         projectile.x,
                         projectile.y,
-                        30, // Explosion radius for mine
+                        70, // MUCH bigger explosion radius for mine
                         window.game.soundManager,
                         'mine'
                     );
@@ -986,7 +986,7 @@ export class Player {
                     window.game.multiplayer.socket.emit('projectileExplosion', {
                         x: projectile.x,
                         y: projectile.y,
-                        radius: 30,
+                        radius: 70,
                         type: 'mine'
                     });
                 }
@@ -1006,7 +1006,7 @@ export class Player {
                             window.game.world.createExplosion(
                                 projectile.x,
                                 projectile.y,
-                                30, // Explosion radius for mine
+                                70, // MUCH bigger explosion radius for mine
                                 window.game.soundManager,
                                 'mine'
                             );
@@ -1016,7 +1016,7 @@ export class Player {
                             window.game.multiplayer.socket.emit('projectileExplosion', {
                                 x: projectile.x,
                                 y: projectile.y,
-                                radius: 30,
+                                radius: 70,
                                 type: 'mine'
                             });
                         }
