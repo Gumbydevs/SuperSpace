@@ -957,8 +957,10 @@ export class Player {
         const mineProximityRadiusSq = mineProximityRadius * mineProximityRadius;
 
         // Check all of our deployed mines for proximity to any player
-        for (let i = this.projectiles.length - 1; i >= 0; i--) {
-            const projectile = this.projectiles[i];
+        // Check all mines in the world (not just local player's)
+        if (!window.game.world || !window.game.world.projectiles) return;
+        for (let i = window.game.world.projectiles.length - 1; i >= 0; i--) {
+            const projectile = window.game.world.projectiles[i];
             // Only check armed mines
             if (projectile.type !== 'mine' || !projectile.isArmed) {
                 continue;
@@ -969,7 +971,7 @@ export class Player {
             const dyLocal = projectile.y - this.y;
             const distSqLocal = dxLocal * dxLocal + dyLocal * dyLocal;
             if (distSqLocal < mineProximityRadiusSq && !window.game.world.isInSafeZone(this)) {
-                // Local player triggered our own mine (friendly fire)
+                // Local player triggered a mine
                 this.takeDamage(projectile.damage);
                 // Create full explosion effect
                 if (window.game.world) {
@@ -990,7 +992,7 @@ export class Player {
                         type: 'mine'
                     });
                 }
-                window.game.multiplayer.showGameMessage('Your own mine exploded!', '#f84');
+                window.game.multiplayer.showGameMessage('A mine exploded!', '#f84');
                 mineTriggered = true;
             }
             // Check against all remote players
@@ -1001,7 +1003,7 @@ export class Player {
                     const dy = projectile.y - remotePlayer.y;
                     const distSq = dx * dx + dy * dy;
                     if (distSq < mineProximityRadiusSq && !window.game.world.isInSafeZone(remotePlayer)) {
-                        // Remote player triggered our mine
+                        // Remote player triggered a mine
                         if (window.game.world) {
                             window.game.world.createExplosion(
                                 projectile.x,
@@ -1043,7 +1045,7 @@ export class Player {
             }
             // Remove the mine if it was triggered
             if (mineTriggered) {
-                this.projectiles.splice(i, 1);
+                window.game.world.projectiles.splice(i, 1);
             }
         }
     }
