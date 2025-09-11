@@ -2,6 +2,7 @@ export class ShopSystem {
     constructor(player) {
         this.player = player;
         // Removed MAX_LOADOUT - players can now equip unlimited weapons
+        // Force Vercel deployment
         this.shopOpen = false;
         this.currentTab = 'ships'; // 'ships', 'weapons', 'upgrades'
     // Keep references to tab DOM elements so we can highlight them (e.g. challenges badge)
