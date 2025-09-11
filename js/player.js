@@ -1654,7 +1654,40 @@ export class Player {
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rotation);
-            // ...existing code for shield and electric effects...
+            
+            // Render shield effects if player has shields (using the same system as remote players)
+            if (this.shield > 0) {
+                const shieldRadius = 25;
+                const shieldOpacity = Math.max(0.1, this.shield / this.shieldCapacity);
+                
+                // Multiple concentric shield rings with ripple effects
+                for (let i = 0; i < 3; i++) {
+                    const time = Date.now() / 1000;
+                    const ringRadius = shieldRadius - (i * 3) + Math.sin(time * 2 + i) * 2;
+                    const ringOpacity = shieldOpacity * (0.3 - i * 0.1);
+                    
+                    ctx.strokeStyle = `rgba(100, 180, 255, ${ringOpacity})`;
+                    ctx.lineWidth = 2 - (i * 0.3);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Add pulsing outer glow effect
+                const pulseTime = Date.now() / 800;
+                const pulseIntensity = (Math.sin(pulseTime) * 0.3 + 0.7);
+                const glowRadius = shieldRadius + 3;
+                
+                const gradient = ctx.createRadialGradient(0, 0, shieldRadius - 5, 0, 0, glowRadius);
+                gradient.addColorStop(0, 'rgba(100, 180, 255, 0)');
+                gradient.addColorStop(0.8, `rgba(100, 180, 255, ${shieldOpacity * 0.2 * pulseIntensity})`);
+                gradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             // Draw ship geometry (original or default)
             // ...existing code for ship geometry...
