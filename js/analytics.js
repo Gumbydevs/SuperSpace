@@ -386,8 +386,7 @@ class GameAnalytics {
             sessionId: this.sessionId,
             sessionDuration: Date.now() - this.sessionStartTime,
             eventsCount: this.events.length,
-            currentGameSession: this.currentGameSession,
-            questCompletions: this.questCompletions || 0 // Include quest completions
+            currentGameSession: this.currentGameSession
         };
     }
     

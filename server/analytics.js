@@ -775,7 +775,7 @@ class ServerAnalytics {
             today: {
                 ...todayStats,
                 uniquePlayers: todayStats.uniquePlayers ? todayStats.uniquePlayers.size : 0,
-                totalSessions: Number(todayStats.totalSessions || 0), // Ensure totalSessions is a number
+                totalSessions: todayStats.totalSessions || 0,
                 averageGameDuration: todayStats.gameDurations && todayStats.gameDurations.length > 0 
                     ? todayStats.gameDurations.reduce((a, b) => a + b, 0) / todayStats.gameDurations.length 
                     : 0,

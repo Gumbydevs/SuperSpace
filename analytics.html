@@ -157,6 +157,7 @@
                 <div class="stat-value" id="todaySessions">-</div>
                 <div class="stat-label">Today's Sessions</div>
             </div>
+            
             <div class="stat-card">
                 <div class="stat-value" id="avgSessionDuration">-</div>
                 <div class="stat-label">Avg Session Length</div>
@@ -174,8 +175,8 @@
                 <div class="stat-label">All-time Peak</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="questCompletions">-</div>
-                <div class="stat-label">Quest Completion Rate</div>
+                <div class="stat-value" id="completionRate">-</div>
+                <div class="stat-label">Game Completion Rate</div>
             </div>
         </div>
         
@@ -290,7 +291,7 @@
             document.getElementById('globalPeak').textContent = data.today.globalPeakConcurrent || 0;
             
             const completionRate = (data.today.completionRate * 100) || 0;
-            document.getElementById('questCompletions').textContent = 
+            document.getElementById('completionRate').textContent = 
                 completionRate.toFixed(1) + '%';
         }
         
