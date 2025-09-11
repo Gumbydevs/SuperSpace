@@ -3905,6 +3905,7 @@ export class MultiplayerManager {
             const remoteShipType = player.currentShip || player.ship || 'scout';
 
             // Check if player has a ship skin and game has ship skin system
+            let usedShipSkin = false;
             if (player.shipSkin && player.shipSkin !== 'none' && this.game.shipSkins) {
                 // Use ship skin system to render with skin
                 const tempPlayer = {
@@ -3919,12 +3920,10 @@ export class MultiplayerManager {
                 tempPlayer.currentShip = tempPlayer.currentShip || remoteShipType;
 
                 this.game.shipSkins.renderShipWithSkin(ctx, tempPlayer, this.game.premiumStore);
-                ctx.restore();
-                return; // Early return since skin system handles the rendering
+                usedShipSkin = true;
             }
             
-            // Get ship color - use player's color or fallback
-            const shipColor = player.shipColor || player.color || '#f00';
+            // Get engine color and thrust level for dynamic engine flames (needed for all ships)
             const engineColor = player.engineColor || '#6ff';
             
             // Set thrust level based on player velocity (if not provided directly)
@@ -3937,8 +3936,13 @@ export class MultiplayerManager {
                 thrustLevel = Math.min(1.0, speed / 200); // Scale to 0-1 range
             }
             
-            // Draw ship based on type (prefer currentShip)
-            if (remoteShipType === 'fighter') {
+            // Only draw basic ship geometry if no ship skin was used
+            if (!usedShipSkin) {
+                // Get ship color - use player's color or fallback
+                const shipColor = player.shipColor || player.color || '#f00';
+                
+                // Draw ship based on type (prefer currentShip)
+                if (remoteShipType === 'fighter') {
                 // Enhanced fighter ship design
                 // Main body
                 ctx.fillStyle = shipColor;
@@ -3988,41 +3992,6 @@ export class MultiplayerManager {
                 ctx.lineTo(15, -2);
                 ctx.closePath();
                 ctx.fill();
-                
-                // Dynamic engine flame based on thrust level
-                    if (thrustLevel > 0) {
-                    // Base engine flame shape grows with thrust level
-                    ctx.fillStyle = engineColor;
-                    ctx.beginPath();
-                    ctx.moveTo(-7, 8);
-                    ctx.lineTo(-4, 8 + (10 * thrustLevel)); // Left side extends with thrust
-                    ctx.lineTo(0, 8 + (6 * thrustLevel)); // Center point
-                    ctx.lineTo(4, 8 + (10 * thrustLevel)); // Right side extends with thrust
-                    ctx.lineTo(7, 8);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Engine glow effect - intensity increases with thrust
-                        // If afterburner is active, boost glow size and intensity immediately
-                        const afterburnerBoost = player.afterburnerActive ? 1.5 : 1.0;
-                        const engineGlowSize = 8 + (10 * thrustLevel * afterburnerBoost);
-                    const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, engineGlowSize);
-                    fighterEngineGradient.addColorStop(0, engineColor);
-                    fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = fighterEngineGradient;
-                        ctx.fillRect(-8, 10, 16, 8 + (12 * thrustLevel * afterburnerBoost));
-                    
-                    // Add animated flickering for more realistic flame
-                    if (thrustLevel > 0.7) {
-                        const flickerIntensity = (Math.random() * 0.2) * thrustLevel;
-                        ctx.globalAlpha = 0.5 * flickerIntensity;
-                        ctx.beginPath();
-                        ctx.arc(0, 12 + (8 * thrustLevel), 6 * thrustLevel, 0, Math.PI * 2);
-                        ctx.fillStyle = '#fff';
-                        ctx.fill();
-                        ctx.globalAlpha = 1.0;
-                    }
-                }
                 
             } else if (remoteShipType === 'cruiser' || remoteShipType === 'heavy') {
                 // Enhanced heavy cruiser design
@@ -4085,65 +4054,6 @@ export class MultiplayerManager {
                 ctx.rect(8, -1, 12, 2);
                 ctx.fill();
                 
-                // Dynamic dual engine flames based on thrust level
-                if (thrustLevel > 0) {
-                    ctx.fillStyle = engineColor;
-                    
-                    // Left engine
-                    ctx.beginPath();
-                    ctx.moveTo(-10, 18);
-                    ctx.lineTo(-14, 18 + (10 * thrustLevel));
-                    ctx.lineTo(-8, 18 + (8 * thrustLevel));
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Right engine
-                    ctx.beginPath();
-                    ctx.moveTo(10, 18);
-                    ctx.lineTo(14, 18 + (10 * thrustLevel)); 
-                    ctx.lineTo(8, 18 + (8 * thrustLevel));
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Engine glow effects - intensity increases with thrust
-                    const afterburnerBoost = player.afterburnerActive ? 1.4 : 1.0;
-                    const engineGlowSize = 6 + (8 * thrustLevel * afterburnerBoost);
-                    
-                    // Left engine glow
-                    const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, engineGlowSize);
-                    leftEngineGlow.addColorStop(0, engineColor);
-                    leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = leftEngineGlow;
-                    ctx.fillRect(-16, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
-                    
-                    // Right engine glow
-                    const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, engineGlowSize);
-                    rightEngineGlow.addColorStop(0, engineColor);
-                    rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = rightEngineGlow;
-                    ctx.fillRect(4, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
-                    
-                    // Add animated flickering for more realistic flame
-                    if (thrustLevel > 0.6) {
-                        // Left engine flicker
-                        const leftFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
-                        ctx.globalAlpha = 0.5 * leftFlickerIntensity;
-                        ctx.beginPath();
-                        ctx.arc(-10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
-                        ctx.fillStyle = '#fff';
-                        ctx.fill();
-                        
-                        // Right engine flicker
-                        const rightFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
-                        ctx.globalAlpha = 0.5 * rightFlickerIntensity;
-                        ctx.beginPath();
-                        ctx.arc(10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
-                        ctx.fillStyle = '#fff';
-                        ctx.fill();
-                        ctx.globalAlpha = 1.0;
-                    }
-                }
-                
             } else if (remoteShipType === 'stealth') {
                 // Stealth ship design - sleek and angular
                 ctx.fillStyle = shipColor;
@@ -4199,33 +4109,6 @@ export class MultiplayerManager {
                 ctx.ellipse(0, -8, 2, 6, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Stealth engines have subtle glow that intensifies with thrust
-                if (thrustLevel > 0) {
-                    // More transparent for stealth ship
-                    ctx.globalAlpha = 0.3 + (0.4 * thrustLevel);
-                    ctx.fillStyle = engineColor;
-                    
-                    // Engine flame shape
-                    ctx.beginPath();
-                    ctx.moveTo(-5, 12);
-                    ctx.lineTo(-3, 12 + (8 * thrustLevel));
-                    ctx.lineTo(0, 12 + (4 * thrustLevel));
-                    ctx.lineTo(3, 12 + (8 * thrustLevel));
-                    ctx.lineTo(5, 12);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Add subtle pulsing effect unique to stealth engines
-                    const pulseIntensity = (Math.sin(Date.now() / 200) * 0.2 + 0.8) * thrustLevel;
-                    ctx.globalAlpha = 0.2 * pulseIntensity;
-                    ctx.beginPath();
-                    ctx.arc(0, 14 + (4 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
-                    ctx.fillStyle = engineColor;
-                    ctx.fill();
-                    
-                    ctx.globalAlpha = 1.0;
-                }
-                
             } else {
                 // Default scout ship design - modernized
                 ctx.fillStyle = shipColor;
@@ -4266,39 +4149,169 @@ export class MultiplayerManager {
                 ctx.lineTo(4, -8);
                 ctx.stroke();
                 
-                // Dynamic engine flame based on thrust level
-                if (thrustLevel > 0) {
-                    ctx.fillStyle = engineColor;
-                    ctx.beginPath();
-                    ctx.moveTo(-5, 5);
-                    ctx.lineTo(-3, 5 + (9 * thrustLevel)); // Left flame point
-                    ctx.lineTo(0, 5 + (5 * thrustLevel)); // Center flame
-                    ctx.lineTo(3, 5 + (9 * thrustLevel)); // Right flame point
-                    ctx.lineTo(5, 5);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Add engine glow effect - size based on thrust level
-                    const engineGlowSize = 4 + (7 * thrustLevel);
-                    const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, engineGlowSize);
-                    engineGradient.addColorStop(0, engineColor);
-                    engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = engineGradient;
-                    ctx.beginPath();
-                    ctx.ellipse(0, 9 + (3 * thrustLevel), 5 * thrustLevel, 6 * thrustLevel, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Add subtle flame variations when at high thrust
-                    if (thrustLevel > 0.5) {
-                        const flicker = Math.random() * 0.3 * thrustLevel;
-                        ctx.globalAlpha = 0.3 * flicker;
-                        ctx.fillStyle = '#fff';
+            } // End of else (scout ship)
+            } // End of if (!usedShipSkin)
+            
+            // --- Always render dynamic engine flames for all ships (whether using skins or not) ---
+            // This ensures engine flames show for remote players just like for the local player
+            switch(remoteShipType) {
+                case 'fighter':
+                    if (thrustLevel > 0) {
+                        ctx.fillStyle = engineColor;
                         ctx.beginPath();
-                        ctx.arc(0, 9 + (3 * thrustLevel), 2 * thrustLevel, 0, Math.PI * 2);
+                        ctx.moveTo(-7, 8);
+                        ctx.lineTo(-4, 8 + (10 * thrustLevel));
+                        ctx.lineTo(0, 8 + (6 * thrustLevel));
+                        ctx.lineTo(4, 8 + (10 * thrustLevel));
+                        ctx.lineTo(7, 8);
+                        ctx.closePath();
                         ctx.fill();
+                        
+                        // Engine glow effect - intensity increases with thrust
+                        const afterburnerBoost = player.afterburnerActive ? 1.5 : 1.0;
+                        const engineGlowSize = 8 + (10 * thrustLevel * afterburnerBoost);
+                        const fighterEngineGradient = ctx.createRadialGradient(0, 12, 0, 0, 12, engineGlowSize);
+                        fighterEngineGradient.addColorStop(0, engineColor);
+                        fighterEngineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = fighterEngineGradient;
+                        ctx.fillRect(-8, 10, 16, 8 + (12 * thrustLevel * afterburnerBoost));
+                        
+                        // Add animated flickering for more realistic flame
+                        if (thrustLevel > 0.7) {
+                            const flickerIntensity = (Math.random() * 0.2) * thrustLevel;
+                            ctx.globalAlpha = 0.5 * flickerIntensity;
+                            ctx.beginPath();
+                            ctx.arc(0, 12 + (8 * thrustLevel), 6 * thrustLevel, 0, Math.PI * 2);
+                            ctx.fillStyle = '#fff';
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                    break;
+                    
+                case 'cruiser':
+                case 'heavy':
+                    if (thrustLevel > 0) {
+                        ctx.fillStyle = engineColor;
+                        
+                        // Left engine
+                        ctx.beginPath();
+                        ctx.moveTo(-10, 18);
+                        ctx.lineTo(-14, 18 + (10 * thrustLevel));
+                        ctx.lineTo(-8, 18 + (8 * thrustLevel));
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Right engine
+                        ctx.beginPath();
+                        ctx.moveTo(10, 18);
+                        ctx.lineTo(14, 18 + (10 * thrustLevel)); 
+                        ctx.lineTo(8, 18 + (8 * thrustLevel));
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Engine glow effects - intensity increases with thrust
+                        const afterburnerBoost = player.afterburnerActive ? 1.4 : 1.0;
+                        const engineGlowSize = 6 + (8 * thrustLevel);
+                        
+                        // Left engine glow
+                        const leftEngineGlow = ctx.createRadialGradient(-10, 22, 0, -10, 22, engineGlowSize);
+                        leftEngineGlow.addColorStop(0, engineColor);
+                        leftEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = leftEngineGlow;
+                        ctx.fillRect(-16, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
+                        
+                        // Right engine glow
+                        const rightEngineGlow = ctx.createRadialGradient(10, 22, 0, 10, 22, engineGlowSize);
+                        rightEngineGlow.addColorStop(0, engineColor);
+                        rightEngineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = rightEngineGlow;
+                        ctx.fillRect(4, 20, 12, 6 + (10 * thrustLevel * afterburnerBoost));
+                        
+                        // Add animated flickering for more realistic flame
+                        if (thrustLevel > 0.6) {
+                            // Left engine flicker
+                            const leftFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
+                            ctx.globalAlpha = 0.5 * leftFlickerIntensity;
+                            ctx.beginPath();
+                            ctx.arc(-10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                            ctx.fillStyle = '#fff';
+                            ctx.fill();
+                            
+                            // Right engine flicker
+                            const rightFlickerIntensity = (Math.random() * 0.3) * thrustLevel;
+                            ctx.globalAlpha = 0.5 * rightFlickerIntensity;
+                            ctx.beginPath();
+                            ctx.arc(10, 22 + (6 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                            ctx.fillStyle = '#fff';
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                    break;
+                    
+                case 'stealth':
+                    if (thrustLevel > 0) {
+                        // More transparent for stealth ship
+                        ctx.globalAlpha = 0.3 + (0.4 * thrustLevel);
+                        ctx.fillStyle = engineColor;
+                        
+                        // Engine flame shape
+                        ctx.beginPath();
+                        ctx.moveTo(-5, 12);
+                        ctx.lineTo(-3, 12 + (8 * thrustLevel));
+                        ctx.lineTo(0, 12 + (4 * thrustLevel));
+                        ctx.lineTo(3, 12 + (8 * thrustLevel));
+                        ctx.lineTo(5, 12);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Add subtle pulsing effect unique to stealth engines
+                        const pulseIntensity = (Math.sin(Date.now() / 200) * 0.2 + 0.8) * thrustLevel;
+                        ctx.globalAlpha = 0.2 * pulseIntensity;
+                        ctx.beginPath();
+                        ctx.arc(0, 14 + (4 * thrustLevel), 4 * thrustLevel, 0, Math.PI * 2);
+                        ctx.fillStyle = engineColor;
+                        ctx.fill();
+                        
                         ctx.globalAlpha = 1.0;
                     }
-                }
+                    break;
+                    
+                default: // scout and other ship types
+                    if (thrustLevel > 0) {
+                        ctx.fillStyle = engineColor;
+                        ctx.beginPath();
+                        ctx.moveTo(-5, 5);
+                        ctx.lineTo(-3, 5 + (9 * thrustLevel)); // Left flame point
+                        ctx.lineTo(0, 5 + (5 * thrustLevel)); // Center flame
+                        ctx.lineTo(3, 5 + (9 * thrustLevel)); // Right flame point
+                        ctx.lineTo(5, 5);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Add engine glow effect - size based on thrust level
+                        const engineGlowSize = 4 + (7 * thrustLevel);
+                        const engineGradient = ctx.createRadialGradient(0, 9, 0, 0, 9, engineGlowSize);
+                        engineGradient.addColorStop(0, engineColor);
+                        engineGradient.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = engineGradient;
+                        ctx.beginPath();
+                        ctx.ellipse(0, 9 + (3 * thrustLevel), 5 * thrustLevel, 6 * thrustLevel, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Add subtle flame variations when at high thrust
+                        if (thrustLevel > 0.5) {
+                            const flicker = Math.random() * 0.3 * thrustLevel;
+                            ctx.globalAlpha = 0.3 * flicker;
+                            ctx.fillStyle = '#fff';
+                            ctx.beginPath();
+                            ctx.arc(0, 9 + (3 * thrustLevel), 2 * thrustLevel, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                    break;
             }
             
             ctx.restore();
