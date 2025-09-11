@@ -755,18 +755,7 @@ export class UI {
         );
         minimapCtx.stroke();
         
-        // Draw view area (visible area on main screen)
-        const viewWidth = window.innerWidth * scale;
-        const viewHeight = window.innerHeight * scale;
-        
-        minimapCtx.strokeStyle = 'rgba(51, 153, 255, 0.6)';
-        minimapCtx.lineWidth = 1;
-        minimapCtx.strokeRect(
-            playerX - viewWidth/2,
-            playerY - viewHeight/2,
-            viewWidth,
-            viewHeight
-        );
+    // Removed blue view area rectangle from minimap
     }
     
     // Update health bar display based on current health percentage
