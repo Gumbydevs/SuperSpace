@@ -1,4 +1,6 @@
+
 import { KillAnnouncer } from './killannouncer.js';
+import { containsProfanity } from './profaneFilter.js';
 
 export class MultiplayerManager {
     constructor(game) {
@@ -747,15 +749,23 @@ export class MultiplayerManager {
 
     // Set player name and update UI if needed
     setPlayerName(name) {
-        this.playerName = name;
-        
+        // Profanity filter: fallback to 'Player' if name is inappropriate
+        if (containsProfanity(name)) {
+            this.playerName = 'Player';
+            if (window.game && window.game.ui) {
+                window.game.ui.showMessage('Inappropriate name not allowed.', '#f84');
+            }
+        } else {
+            this.playerName = name;
+        }
+
         // Save player name to localStorage
-        localStorage.setItem('playerName', name);
-        
+        localStorage.setItem('playerName', this.playerName);
+
         // Save that we've set the name
         this.hasSetName = true;
         localStorage.setItem('hasSetName', 'true');
-        
+
         // Update player list if already connected
         const playerList = document.getElementById('player-list-container');
         if (playerList) {
