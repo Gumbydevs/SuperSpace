@@ -322,6 +322,102 @@ export class ShopSystem {
     window.shopSystem = this;
     }
     
+    // Show a sleek custom popup near the mouse cursor for safe zone warnings
+    showSafeZoneWarning(event, message) {
+        try {
+            // Remove any existing warning
+            const existing = document.querySelector('.safe-zone-warning');
+            if (existing) existing.remove();
+            
+            const warning = document.createElement('div');
+            warning.className = 'safe-zone-warning';
+
+            // Create warning content
+            const title = document.createElement('div');
+            title.textContent = 'Not In Safe Zone';
+            title.style.fontWeight = '700';
+            title.style.color = '#ff4444';
+            title.style.marginBottom = '8px';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message;
+            messageDiv.style.fontSize = '13px';
+            messageDiv.style.marginBottom = '6px';
+
+            const instructionDiv = document.createElement('div');
+            instructionDiv.innerHTML = `<span style="color:#ffd700;font-weight:700;">Dock at a station</span> to use the shop.`;
+            instructionDiv.style.fontSize = '13px';
+
+            // Style the warning popup
+            warning.style.position = 'absolute';
+            warning.style.background = 'linear-gradient(135deg, rgba(40,0,0,0.95), rgba(60,20,20,0.95))';
+            warning.style.color = '#fff';
+            warning.style.padding = '14px 16px';
+            warning.style.borderRadius = '10px';
+            warning.style.fontSize = '14px';
+            warning.style.zIndex = '10050';
+            warning.style.maxWidth = '320px';
+            warning.style.boxShadow = '0 6px 24px rgba(255,68,68,0.3), 0 2px 6px rgba(255,68,68,0.1)';
+            warning.style.border = '1px solid rgba(255,68,68,0.3)';
+
+            // Position near the mouse cursor if available, otherwise center on screen
+            let x = window.innerWidth / 2;
+            let y = window.innerHeight / 2;
+            
+            if (event && event.clientX !== undefined && event.clientY !== undefined) {
+                x = event.clientX + window.scrollX + 10;
+                y = event.clientY + window.scrollY - 50;
+            }
+
+            // Keep popup within viewport
+            const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+            const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+            
+            if (x + 340 > viewportWidth) x = viewportWidth - 340;
+            if (x < 10) x = 10;
+            if (y < 10) y = 10;
+            if (y + 100 > viewportHeight) y = viewportHeight - 100;
+
+            warning.style.left = `${x}px`;
+            warning.style.top = `${y}px`;
+
+            warning.appendChild(title);
+            warning.appendChild(messageDiv);
+            warning.appendChild(instructionDiv);
+
+            document.body.appendChild(warning);
+
+            // Play a retro warning sound
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'square';
+                o.frequency.value = 150;
+                g.gain.value = 0.15;
+                o.connect(g).connect(ctx.destination);
+                o.start();
+                o.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.15);
+                g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+                o.stop(ctx.currentTime + 0.2);
+                o.onended = () => ctx.close();
+            } catch (e) { /* ignore */ }
+
+            // Auto-remove after 3s with fade
+            setTimeout(() => {
+                warning.style.transition = 'opacity 300ms ease, transform 300ms ease';
+                warning.style.opacity = '0';
+                warning.style.transform = 'translateY(-10px)';
+                setTimeout(() => warning.remove(), 300);
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error showing safe zone warning:', error);
+            // Fallback to alert if custom popup fails
+            alert(message);
+        }
+    }
+    
     // New method to apply all purchased upgrades to the player
     applyAllPurchasedUpgrades() {
         // Apply all upgrade effects to the player
@@ -955,9 +1051,9 @@ export class ShopSystem {
             const button = document.createElement('button');
             if (ship.owned) {
                 button.textContent = 'Select';
-                button.onclick = () => {
+                button.onclick = (e) => {
                     if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
-                        alert('You must be docked in a safe zone to change ships.');
+                        this.showSafeZoneWarning(e, 'You must be docked in a safe zone to change ships.');
                         return;
                     }
                     this.selectShip(ship.id);
@@ -965,9 +1061,9 @@ export class ShopSystem {
             } else {
                 button.textContent = `Buy: ${ship.price}`;
                 button.disabled = (this.player.credits || 0) < ship.price;
-                button.onclick = () => {
+                button.onclick = (e) => {
                     if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
-                        alert('You must be docked in a safe zone to purchase ships.');
+                        this.showSafeZoneWarning(e, 'You must be docked in a safe zone to purchase ships.');
                         return;
                     }
                     this.buyShip(ship.id);
@@ -1140,9 +1236,9 @@ export class ShopSystem {
                 const cannotAfford = (this.player.credits || 0) < weapon.price;
                 button.textContent = `Buy (${weapon.price})`;
                 button.disabled = cannotAfford;
-                button.onclick = () => {
+                button.onclick = (e) => {
                     if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
-                        alert('You must be docked in a safe zone to purchase weapons.');
+                        this.showSafeZoneWarning(e, 'You must be docked in a safe zone to purchase weapons.');
                         return;
                     }
                     this.buyWeapon(weapon.id);
@@ -1363,7 +1459,7 @@ export class ShopSystem {
                 button.disabled = (this.player.credits || 0) < price;
                 button.onclick = () => {
                     if (window.game && window.game.world && !window.game.world.isInSafeZone(this.player)) {
-                        alert('You must be docked in a safe zone to purchase upgrades.');
+                        this.showSafeZoneWarning(event, 'You must be docked in a safe zone to purchase upgrades.');
                         return;
                     }
                     this.buyUpgrade(upgrade.id);
