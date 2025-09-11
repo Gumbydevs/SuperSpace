@@ -10,7 +10,9 @@
           "image-rendering: crisp-edges",
           "user-select",
           "-webkit-overflow-scrolling",
-          "-webkit-text-size-adjust"
+          "-webkit-text-size-adjust",
+          "overscroll-behavior-y",
+          "overscroll-behavior-y: contain"
         ]
       }
     ]
