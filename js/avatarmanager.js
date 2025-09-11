@@ -1195,6 +1195,38 @@ export class AvatarManager {
                 ctx.fillStyle = '#cc4499'; // Pink flight suit
                 ctx.fillRect(2, 12, 12, 4);
                 break;
+            case 'cyber_pilot': // Cyber X mini avatar
+                // Background
+                ctx.fillStyle = '#0a0a1a';
+                ctx.fillRect(0, 0, 16, 16);
+                // Head
+                ctx.fillStyle = '#666677';
+                ctx.fillRect(4, 3, 8, 8);
+                // Tech panel lines
+                ctx.fillStyle = '#4444aa';
+                ctx.fillRect(5, 4, 6, 1);
+                ctx.fillRect(6, 6, 5, 1);
+                // Red cyber eye (left)
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(6, 7, 2, 2);
+                ctx.fillStyle = '#ffaaaa';
+                ctx.fillRect(7, 8, 1, 1);
+                // Normal eye (right)
+                ctx.fillStyle = '#0066cc';
+                ctx.fillRect(10, 8, 1, 1);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(11, 8, 1, 1);
+                // Implants
+                ctx.fillStyle = '#999999';
+                ctx.fillRect(3, 7, 1, 3);
+                ctx.fillRect(12, 6, 1, 3);
+                // Suit
+                ctx.fillStyle = '#222244';
+                ctx.fillRect(4, 11, 8, 3);
+                // Neon circuit lines
+                ctx.fillStyle = '#00ffff';
+                ctx.fillRect(5, 12, 6, 1);
+                break;
         }
         
         // Return the canvas as data URL for use in player list
