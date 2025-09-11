@@ -287,12 +287,10 @@
             const dontShowCheckbox = document.getElementById('dont-show-again');
 
             // Check if user has already agreed (permanently or for this session)
-            const hasAgreed = localStorage.getItem('superspace-disclaimer-agreed') || 
-                            sessionStorage.getItem('superspace-disclaimer-temp-agreed');
-
-            console.log('localStorage value:', localStorage.getItem('superspace-disclaimer-agreed'));
-            console.log('sessionStorage value:', sessionStorage.getItem('superspace-disclaimer-temp-agreed'));
-            console.log('hasAgreed:', hasAgreed);
+            // Only treat the string 'true' (lowercase) as agreed
+            const agreedLocal = localStorage.getItem('superspace-disclaimer-agreed');
+            const agreedSession = sessionStorage.getItem('superspace-disclaimer-temp-agreed');
+            const hasAgreed = (agreedLocal === 'true') || (agreedSession === 'true');
 
             if (!hasAgreed) {
                 disclaimerPopup.style.display = 'flex';
