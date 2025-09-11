@@ -726,7 +726,7 @@ export class MultiplayerManager {
 
                 // Profanity check before closing dialog
                 if (containsProfanity(name)) {
-                    feedback.textContent = 'Profanity is not allowed in player names.';
+                    feedback.textContent = 'Name rejected by the Galactic Council. Try something cleaner!';
                     input.focus();
                     return;
                 }

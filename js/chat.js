@@ -72,7 +72,7 @@ export default class Chat {
         if (!message) return;
         if (containsProfanity(message)) {
             if (this.chatToastContainer) {
-                this.showToast('System', 'Profanity is not allowed in chat.');
+                this.showToast('System', 'Transmission blocked: No bad words allowed in the galaxy!');
             }
             return;
         }
