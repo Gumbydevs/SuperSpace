@@ -524,6 +524,9 @@ class Game {
     }
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
+        // Admin key combination for testing purposes 
+        const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY'];
+        
         // Track key sequence for cheat codes
         let keySequence = [];
         let keysPressed = new Set();
