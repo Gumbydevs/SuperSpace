@@ -221,23 +221,25 @@ class ServerAnalytics {
         const today = this.getDateString(timestamp);
         if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
         const stats = this.dailyStats.get(today);
-        
+
         // Initialize required fields
         if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
-        
+        if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
+
         stats.uniquePlayers.add(playerId);
         stats.totalSessions++;
         console.log(`Analytics: Added new player ${playerId} to daily stats`);
     }
-    
+
     updateDailyStatsForReturningPlayer(playerId, timestamp) {
         const today = this.getDateString(timestamp);
         if (!this.dailyStats.has(today)) this.dailyStats.set(today, this.createEmptyDayStats());
         const stats = this.dailyStats.get(today);
-        
+
         // Initialize required fields
         if (!stats.uniquePlayers) stats.uniquePlayers = new Set();
-        
+        if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
+
         // Player already exists, just increment session count
         stats.totalSessions++;
         console.log(`Analytics: Added new session for returning player ${playerId}`);
@@ -560,7 +562,8 @@ class ServerAnalytics {
             shipUsage: {},
             weaponUsage: {},
             weaponKills: {},
-            eventCounts: {}
+            eventCounts: {},
+            questCompletions: 0 // New field for quest completions
         };
     }
     
