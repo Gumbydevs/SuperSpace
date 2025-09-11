@@ -100,8 +100,8 @@ input, textarea, select, button, [contenteditable] {
 }
 
 #minimap {
-    width: 150%;
-    height: 150%;
+    width: 110%;
+    height: 110%;
     background-color: rgba(0, 0, 0, 0.5);
     /* border: 2px solid #33f; */
     border-radius: 50%;
