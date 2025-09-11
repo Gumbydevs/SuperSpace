@@ -88,26 +88,6 @@
         <div id="chat-container" class="hidden">
             <div id="chat-messages"></div>
             <input type="text" id="chat-input" placeholder="Say something...">
-            <script>
-            // Rotating chat placeholder
-            (function() {
-                const placeholders = [
-                    'Enter transmission…',
-                    'Broadcast to the galaxy…',
-                    'Open comms channel…',
-                    'Send interstellar message…'
-                ];
-                const chatInput = document.getElementById('chat-input');
-                let idx = 0;
-                function rotatePlaceholder() {
-                    chatInput.placeholder = placeholders[idx];
-                    idx = (idx + 1) % placeholders.length;
-                }
-                setInterval(rotatePlaceholder, 4000);
-                // Set initial
-                rotatePlaceholder();
-            })();
-            </script>
         </div>
 
         <div id="menu">

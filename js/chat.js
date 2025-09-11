@@ -56,6 +56,14 @@ export default class Chat {
     showChat() {
         this.isVisible = true;
         this.chatContainer.classList.remove('hidden');
+        // Set a random space-themed placeholder each time chat opens
+        const placeholders = [
+            'Enter transmission…',
+            'Broadcast to the galaxy…',
+            'Open comms channel…',
+            'Send interstellar message…'
+        ];
+        this.chatInput.placeholder = placeholders[Math.floor(Math.random() * placeholders.length)];
         this.chatInput.focus();
         this.inputManager.setChatting(true);
     }
