@@ -221,6 +221,12 @@ export class UI {
         topInfoPanel.style.transform = `scale(${topPanelScale})`;
         topInfoPanel.style.transformOrigin = 'top left';
 
+        // Hide the top right online player panel by default
+        setTimeout(() => {
+            const topRightPanel = document.getElementById('top-right-panel');
+            if (topRightPanel) topRightPanel.style.display = 'none';
+        }, 0);
+
         // Create empty placeholder to maintain spacing where server info was
         const placeholderDisplay = document.createElement('div');
         placeholderDisplay.className = 'status-item-small';
@@ -399,7 +405,6 @@ export class UI {
             if (serverInfo.parentNode) {
                 serverInfo.parentNode.removeChild(serverInfo);
             }
-            
             // Style to match other elements
             serverInfo.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             serverInfo.style.padding = this.isMobileDevice ? 
@@ -411,7 +416,6 @@ export class UI {
             serverInfo.style.color = 'white';
             serverInfo.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
             serverInfo.style.fontWeight = '500';
-            
             // Add to top right panel
             topRightPanel.appendChild(serverInfo);
         } else {

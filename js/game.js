@@ -676,23 +676,29 @@ class Game {
         
         // Record start time for survival tracking
         this.gameStartTime = Date.now();
-        
         this.gameState = 'playing';
         document.getElementById('menu').classList.add('hidden');
-        
+
         // Show shop button when game starts
         document.getElementById('shop-btn').style.display = 'block';
-        
+
         // Show premium store button 
         document.getElementById('premium-btn').style.display = 'block';
-        
+
         // Show mobile chat button only on touch devices
         const mobileChatBtn = document.getElementById('mobile-chat-btn');
         if (mobileChatBtn && this.input.isTouchDevice) {
             mobileChatBtn.style.display = 'block';
         }
-        
+
         // Show gameplay UI elements
+        this.ui.setGameplayUIVisibility(true);
+
+        // Show online player status in both locations when game starts
+        const serverInfo = document.getElementById('server-info');
+        if (serverInfo) serverInfo.style.display = '';
+        const topRightPanel = document.getElementById('top-right-panel');
+        if (topRightPanel) topRightPanel.style.display = 'flex';
         this.ui.setGameplayUIVisibility(true);
         
         // Ensure player starts with full health based on their upgrades
