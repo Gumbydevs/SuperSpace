@@ -990,15 +990,18 @@ io.on('connection', (socket) => {
 
       // Emit analytics respawn event so server records life start
       try {
-        const clientIp = socket.request.connection.remoteAddress || socket.request.headers['x-forwarded-for'] || 'unknown';
-        const respawnEvent = {
-          sessionId: socket.analytics && socket.analytics.sessionId ? socket.analytics.sessionId : `session_${Date.now()}_${socket.id}`,
-          playerId: socket.analytics && socket.analytics.playerId ? socket.analytics.playerId : socket.id,
-          eventType: 'respawn',
-          timestamp: Date.now(),
-          data: { x: gameState.players[socket.id].x, y: gameState.players[socket.id].y }
-        };
-        analytics.processEvent(respawnEvent, clientIp);
+        // Only create analytics event if we have proper analytics data
+        if (socket.analytics && socket.analytics.playerId && socket.analytics.sessionId) {
+          const clientIp = socket.request.connection.remoteAddress || socket.request.headers['x-forwarded-for'] || 'unknown';
+          const respawnEvent = {
+            sessionId: socket.analytics.sessionId,
+            playerId: socket.analytics.playerId,
+            eventType: 'respawn',
+            timestamp: Date.now(),
+            data: { x: gameState.players[socket.id].x, y: gameState.players[socket.id].y }
+          };
+          analytics.processEvent(respawnEvent, clientIp);
+        }
       } catch (e) {
         // ignore analytics errors
       }

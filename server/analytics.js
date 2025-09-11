@@ -113,8 +113,10 @@ class ServerAnalytics {
                 this.events = this.events.slice(-this.maxEventsBuffer);
             }
             
-            // Update session tracking
-            this.updateSession(enrichedEvent);
+            // Update session tracking only for session-related events
+            if (enrichedEvent.eventType === 'session_start' || enrichedEvent.eventType === 'session_end') {
+                this.updateSession(enrichedEvent);
+            }
             
             // Update daily statistics
             this.updateDailyStats(enrichedEvent);
