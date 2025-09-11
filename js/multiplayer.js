@@ -11,7 +11,7 @@ export class MultiplayerManager {
         this.playerId = null;
         
         // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
-        this.GAME_VERSION = "2025.09.07.004"; // Format: YYYY.MM.DD.increment
+        this.GAME_VERSION = "2025.09.10.002"; // Format: YYYY.MM.DD.increment
         
         // Flag to track if a reset occurred during this session
         this.resetOccurred = false;
@@ -97,23 +97,37 @@ export class MultiplayerManager {
             console.log(`  ${key}: ${localStorage.getItem(key)}`);
         }
 
-        // List of localStorage keys to preserve (keep player name and basic settings)
-        const keysToPreserve = [
+        // List of localStorage keys to explicitly preserve (keep player name and basic settings)
+        const explicitPreserve = [
             'playerName',
             'hasSetName',
             'gameVersion',
             'soundEnabled',
             'musicEnabled',
-            'selectedAvatar'        ];
-        
-        // Get all keys that should be preserved
+            'selectedAvatar',
+            'selectedShipSkin',
+            'shipSkinEffectsEnabled'
+        ];
+
+        // Also preserve any premium/skin/avatar/purchase related keys so paid purchases are not lost
         const preservedData = {};
-        keysToPreserve.forEach(key => {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
             const value = localStorage.getItem(key);
-            if (value !== null) {
+            if (!key) continue;
+
+            // Explicitly preserved keys
+            if (explicitPreserve.includes(key)) {
                 preservedData[key] = value;
+                continue;
             }
-        });
+
+            // Heuristic: preserve anything related to skins, avatars, premium purchases or ownership lists
+            if (/skin|avatar|premium|purchase|purchased|owned/i.test(key)) {
+                preservedData[key] = value;
+                continue;
+            }
+        }
 
         console.log('💾 Preserving data:', preservedData);
         
@@ -125,17 +139,25 @@ export class MultiplayerManager {
             localStorage.setItem(key, preservedData[key]);
         });
         
-        // Explicitly reset key game progress items
-        localStorage.setItem('playerCredits', '0');  // Reset credits to 0
+    // Explicitly reset key game progress items
+    // Reset credits (handle both legacy and current keys)
+    localStorage.setItem('playerCredits', '0');  // Reset credits to 0
+    localStorage.setItem('credits', '0');
         localStorage.setItem('currentShip', 'scout'); // Reset to default ship
         localStorage.removeItem('playerShipColor');   // Remove custom ship color
         localStorage.removeItem('playerEngineColor'); // Remove custom engine color
         
-        // Reset all ship ownership
+        // Reset all ship ownership (but do not remove premium skins or purchased ownership keys)
         const shipIds = ['scout', 'interceptor', 'destroyer', 'cruiser'];
         shipIds.forEach(shipId => {
             if (shipId !== 'scout') { // Keep scout as owned
-                localStorage.removeItem(`ship_${shipId}`);
+                // Only remove the basic ownership flag if it exists and is not a premium/owned list
+                const key = `ship_${shipId}`;
+                if (localStorage.getItem(key) && !/skin|avatar|premium|purchase|purchased|owned/i.test(key)) {
+                    localStorage.removeItem(key);
+                } else {
+                    // If it's a premium-owned marker like purchasedSkins or ownedAvatars, keep it
+                }
             }
         });
         
@@ -248,12 +270,15 @@ export class MultiplayerManager {
             <p style="margin: 10px 0; font-size: 14px; color: #aaa;">
                 Your progress has been reset to ensure compatibility with the new features.
             </p>
-            <p style="margin: 15px 0; font-size: 12px; color: #888;">
-                Version: ${oldVersion} → ${this.GAME_VERSION}
+            <p style="margin: 10px 0; font-size: 13px; color: #fff;">
+                <strong>New Game Version:</strong> <span style="color: #ffd36b;">${this.GAME_VERSION}</span>
+            </p>
+            <p style="margin: 6px 0 15px 0; font-size: 12px; color: #888;">
+                Previous: ${oldVersion}
             </p>
             <div style="margin: 20px 0; padding: 15px; background: rgba(255, 107, 107, 0.1); border-radius: 10px; border-left: 4px solid #ff6b6b;">
                 <p style="margin: 0; font-size: 14px; color: #ffcc00;">
-                    ⚡ Your pilot name and avatar have been preserved!
+                    ⚡ Your pilot name, avatars, and any premium skins/purchases have been preserved!
                 </p>
             </div>
         `;
