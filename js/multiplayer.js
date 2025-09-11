@@ -89,8 +89,6 @@ export class MultiplayerManager {
             sessionStorage.removeItem('superspace-disclaimer-temp-agreed');
             console.log('Disclaimer agreement cleared due to major update reset');
         } catch (e) { console.warn('Could not clear disclaimer agreement:', e); }
-    // Force a page reload so disclaimer logic runs
-    setTimeout(() => { location.reload(); }, 100);
         // Reset achievements: clear saved progress and reset in-memory trackers if present
         try {
             // Clear persisted achievements object
@@ -402,9 +400,10 @@ export class MultiplayerManager {
         
         continueBtn.onclick = () => {
             document.body.removeChild(backdrop);
-            
             // Force refresh the game state after reset
             this.refreshGameStateAfterReset();
+            // After user acknowledges, reload so disclaimer logic runs
+            setTimeout(() => { location.reload(); }, 100);
         };
         
         dialog.appendChild(continueBtn);
