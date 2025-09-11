@@ -2392,13 +2392,15 @@ export class MultiplayerManager {
             }
         };
         
-        // Add to world.projectiles so all players can see and interact with remote projectiles (including mines)
-        if (window.game && window.game.world) {
-            if (!window.game.world.projectiles) window.game.world.projectiles = [];
-            window.game.world.projectiles.push(projectile);
-            console.log(`✅ Added remote projectile to world.projectiles from player ${playerId}`);
+        // Add to remote player's projectiles if they exist
+        if (this.players[playerId] && !this.players[playerId].destroyed) { // Skip for destroyed players
+            if (!this.players[playerId].projectiles) {
+                this.players[playerId].projectiles = [];
+            }
+            this.players[playerId].projectiles.push(projectile);
+            console.log(`✅ Added remote projectile to player ${playerId} (${this.players[playerId].name}). Total: ${this.players[playerId].projectiles.length}`);
         } else {
-            console.warn(`❌ Cannot add remote projectile to world - world not found`);
+            console.warn(`❌ Cannot add remote projectile - player ${playerId} not found or destroyed`);
         }
     }
 
