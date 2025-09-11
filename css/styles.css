@@ -1890,11 +1890,7 @@ input[type="range"] {
         top: 164px !important; /* Increased spacing from 132px */
     }
     
-    #admin-btn {
-        top: 208px !important; /* Increased spacing from 152px */
-    }
-    
     #mobile-chat-btn {
-        top: 252px !important; /* Increased spacing from 188px */
+        top: 208px !important; /* Adjusted spacing, removed admin button */
     }
 }
