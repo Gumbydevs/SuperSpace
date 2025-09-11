@@ -1,6 +1,20 @@
+
+
 import { Projectile } from './projectile.js';
+import { containsProfanity } from './profaneFilter.js';
 
 export class Player {
+    // Set player name with profanity filter
+    setName(name) {
+        if (containsProfanity(name)) {
+            this.name = 'Player'; // fallback name
+            if (window.game && window.game.ui) {
+                window.game.ui.showMessage('Inappropriate name not allowed.', '#f84');
+            }
+        } else {
+            this.name = name;
+        }
+    }
     // Handle collisions with asteroids
     handleAsteroidCollision(asteroid, soundManager) {
         if (this.collisionCooldown <= 0) {

@@ -1,5 +1,7 @@
 // js/chat.js
 
+import { containsProfanity } from './profaneFilter.js';
+
 export default class Chat {
     constructor(inputManager) {
         this.socket = null;
@@ -67,7 +69,14 @@ export default class Chat {
 
     sendMessage() {
         const message = this.chatInput.value.trim();
-        if (this.socket && message) {
+        if (!message) return;
+        if (containsProfanity(message)) {
+            if (this.chatToastContainer) {
+                this.showToast('System', 'Profanity is not allowed in chat.');
+            }
+            return;
+        }
+        if (this.socket) {
             this.socket.emit('chatMessage', { message });
             this.chatInput.value = '';
         }
