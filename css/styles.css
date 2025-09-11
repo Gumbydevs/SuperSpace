@@ -163,13 +163,6 @@ h1.superspace-title {
     align-items: center;
     justify-content: center;
 }
-.superspace-title .star {
-    color: #fff;
-    font-size: 1.1em;
-    margin: 0 0.08em;
-    text-shadow: 0 0 12px #fff, 0 0 24px #33f;
-    font-weight: 900;
-}
 .launch-subtext {
     color: #8cf;
     font-size: 1.5em;
