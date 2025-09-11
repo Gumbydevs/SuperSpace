@@ -403,13 +403,13 @@ export class ShopSystem {
                 o.onended = () => ctx.close();
             } catch (e) { /* ignore */ }
 
-            // Auto-remove after 3s with fade
+            // Auto-remove after 2s with fade
             setTimeout(() => {
                 warning.style.transition = 'opacity 300ms ease, transform 300ms ease';
                 warning.style.opacity = '0';
                 warning.style.transform = 'translateY(-10px)';
                 setTimeout(() => warning.remove(), 300);
-            }, 3000);
+            }, 2000);
 
         } catch (error) {
             console.error('Error showing safe zone warning:', error);
