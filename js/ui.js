@@ -579,9 +579,16 @@ export class UI {
     if (!minimapCanvas) return;
 
     const minimapCtx = minimapCanvas.getContext('2d');
-    // Increase scale by 1.5x to zoom in minimap items
+    // Increase scale by 1.5x to zoom in minimap items, and keep centered
     const ZOOM = 1.5;
-    const scale = (minimapCanvas.width / world.width) * ZOOM;
+    const baseScale = minimapCanvas.width / world.width;
+    const scale = baseScale * ZOOM;
+
+    // Save and transform context to keep minimap centered when zoomed
+    minimapCtx.save();
+    minimapCtx.translate(minimapCanvas.width / 2, minimapCanvas.height / 2);
+    minimapCtx.scale(ZOOM, ZOOM);
+    minimapCtx.translate(-minimapCanvas.width / 2, -minimapCanvas.height / 2);
         
         // Clear minimap
         minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -758,6 +765,7 @@ export class UI {
         minimapCtx.stroke();
         
     // Removed blue view area rectangle from minimap
+    minimapCtx.restore();
     }
     
     // Update health bar display based on current health percentage
