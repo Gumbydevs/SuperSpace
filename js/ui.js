@@ -579,20 +579,16 @@ export class UI {
     if (!minimapCanvas) return;
 
     const minimapCtx = minimapCanvas.getContext('2d');
-    // Increase scale by 1.5x to zoom in minimap items, and keep player centered
+    // Increase scale by 1.5x to zoom in minimap items, centered on world
     const ZOOM = 1.5;
     const baseScale = minimapCanvas.width / world.width;
     const scale = baseScale * ZOOM;
 
-    // Save and transform context to keep minimap centered on player
+    // Save and transform context to keep minimap centered on world
     minimapCtx.save();
-    // Center on player
     minimapCtx.translate(minimapCanvas.width / 2, minimapCanvas.height / 2);
     minimapCtx.scale(ZOOM, ZOOM);
-    // Offset so player is at center
-    const playerMapX = (player.x + world.width / 2) * baseScale;
-    const playerMapY = (player.y + world.height / 2) * baseScale;
-    minimapCtx.translate(-playerMapX, -playerMapY);
+    minimapCtx.translate(-minimapCanvas.width / 2, -minimapCanvas.height / 2);
         
         // Clear minimap
         minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -605,9 +601,9 @@ export class UI {
         
         // Draw safe zone - now as a square since world.safeZone is a square
         if (world.safeZone) {
-        const safeX = (world.safeZone.x + world.width/2) * baseScale;
-        const safeY = (world.safeZone.y + world.height/2) * baseScale;
-        const safeSize = world.safeZone.size * baseScale;
+    const safeX = (world.safeZone.x + world.width/2) * scale;
+    const safeY = (world.safeZone.y + world.height/2) * scale;
+    const safeSize = world.safeZone.size * scale;
             
             // Draw safe zone fill with semi-transparent blue
             minimapCtx.fillStyle = 'rgb(255, 153, 0)';
@@ -639,9 +635,9 @@ export class UI {
         // Draw asteroids
         minimapCtx.fillStyle = '#aaa';
         world.asteroids.forEach(asteroid => {
-            const x = (asteroid.x + world.width/2) * baseScale;
-            const y = (asteroid.y + world.height/2) * baseScale;
-            const radius = asteroid.radius * baseScale;
+            const x = (asteroid.x + world.width/2) * scale;
+            const y = (asteroid.y + world.height/2) * scale;
+            const radius = asteroid.radius * scale;
             minimapCtx.beginPath();
             minimapCtx.arc(x, y, Math.max(1, radius), 0, Math.PI * 2);
             minimapCtx.fill();
@@ -649,8 +645,8 @@ export class UI {
         
         // Draw powerups
         world.powerups.forEach(powerup => {
-            const x = (powerup.x + world.width/2) * baseScale;
-            const y = (powerup.y + world.height/2) * baseScale;
+            const x = (powerup.x + world.width/2) * scale;
+            const y = (powerup.y + world.height/2) * scale;
             let color;
             switch(powerup.type) {
                 case 'health': color = '#0f0'; break;
@@ -676,8 +672,8 @@ export class UI {
                     return;
                 }
                 // Convert player coords to minimap coords
-                const px = (otherPlayer.x + world.width/2) * baseScale;
-                const py = (otherPlayer.y + world.height/2) * baseScale;
+                const px = (otherPlayer.x + world.width/2) * scale;
+                const py = (otherPlayer.y + world.height/2) * scale;
                 // Use player's ship color or default to red
                 const playerColor = otherPlayer.color || '#f00';
                 // Draw player dot
@@ -704,8 +700,8 @@ export class UI {
         // Draw NPCs on minimap
         if (window.game && window.game.npcManager && window.game.npcManager.npcs) {
             window.game.npcManager.npcs.forEach(npc => {
-                const nx = (npc.x + world.width/2) * baseScale;
-                const ny = (npc.y + world.height/2) * baseScale;
+                const nx = (npc.x + world.width/2) * scale;
+                const ny = (npc.y + world.height/2) * scale;
                 // Different colors for different NPC types
                 let npcColor;
                 switch(npc.type) {
@@ -736,11 +732,9 @@ export class UI {
         }
         
         // Draw player (always draw last so it's on top)
-        // Player is always at the center of the minimap
-        const playerX = minimapCanvas.width / 2 / ZOOM;
-        const playerY = minimapCanvas.height / 2 / ZOOM;
-
         // Draw current player with a distinctive color and slightly larger dot
+        const playerX = (player.x + world.width/2) * scale;
+        const playerY = (player.y + world.height/2) * scale;
         minimapCtx.fillStyle = '#3af'; // Bright cyan-blue
         minimapCtx.beginPath();
         minimapCtx.arc(playerX, playerY, this.isMobileDevice ? 2.5 : 3, 0, Math.PI * 2);
