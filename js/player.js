@@ -1655,38 +1655,71 @@ export class Player {
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rotation);
             
-            // Render shield effects if player has shields (using the same system as remote players)
-            if (this.shield > 0) {
-                const shieldRadius = 25;
-                const shieldOpacity = Math.max(0.1, this.shield / this.shieldCapacity);
+            // Draw shield effect for local player when they have shields (matching remote player system)
+            if (this.shield && this.shield > 0) {
+                // Save context before drawing the shield
+                ctx.save();
+                // Reset translation and rotation for shield effect (shields should be unrotated)
+                ctx.setTransform(1, 0, 0, 1, this.x, this.y);
                 
-                // Multiple concentric shield rings with ripple effects
-                for (let i = 0; i < 3; i++) {
-                    const time = Date.now() / 1000;
-                    const ringRadius = shieldRadius - (i * 3) + Math.sin(time * 2 + i) * 2;
-                    const ringOpacity = shieldOpacity * (0.3 - i * 0.1);
-                    
-                    ctx.strokeStyle = `rgba(100, 180, 255, ${ringOpacity})`;
-                    ctx.lineWidth = 2 - (i * 0.3);
-                    ctx.beginPath();
-                    ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
-                    ctx.stroke();
+                // Create shield visual effect based on shield strength
+                const shieldPercentage = this.shield / (this.shieldCapacity || 100);
+                const glowSize = 25 + (shieldPercentage * 8);
+                const glowOpacity = 0.3 + (shieldPercentage * 0.4);
+                
+                // Create radial gradient for shield effect
+                const shieldGradient = ctx.createRadialGradient(0, 0, glowSize * 0.3, 0, 0, glowSize);
+                shieldGradient.addColorStop(0, `rgba(64, 160, 255, ${glowOpacity * 0.15})`); // Inner glow
+                shieldGradient.addColorStop(0.6, `rgba(64, 160, 255, ${glowOpacity * 0.8})`); // Main shield glow
+                shieldGradient.addColorStop(1, `rgba(32, 100, 255, 0)`); // Fade out at the edge
+                
+                // Draw the shield glow
+                ctx.fillStyle = shieldGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add multiple ripple rings with different timing
+                const drawRipple = (phase, width, opacity) => {
+                    const pulsePhase = (Date.now() % 2000) / 2000;
+                    const adjustedPhase = (pulsePhase + phase) % 1;
+                    if (adjustedPhase < 0.7) { // Only show ripple during part of the cycle
+                        // Calculate ripple size based on pulse phase
+                        const rippleSize = glowSize * (0.8 + adjustedPhase * 0.6);
+                        const rippleOpacity = (0.7 - Math.abs(0.35 - adjustedPhase)) * opacity * shieldPercentage;
+                        
+                        // Draw ripple effect
+                        ctx.strokeStyle = `rgba(120, 200, 255, ${rippleOpacity})`;
+                        ctx.lineWidth = width;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, rippleSize, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                };
+                
+                // Draw multiple ripples at different phases for a more dynamic effect
+                drawRipple(0, 1.8, 0.5);
+                drawRipple(0.3, 1.2, 0.4);
+                drawRipple(0.6, 1.0, 0.3);
+                
+                // Extra effect: shield impact flashes when taking recent damage
+                if (this.lastDamageTime) {
+                    const timeSinceDamage = (Date.now() / 1000) - this.lastDamageTime;
+                    if (timeSinceDamage < 0.3) {
+                        const flashOpacity = 0.7 * (1 - (timeSinceDamage / 0.3));
+                        ctx.fillStyle = `rgba(200, 230, 255, ${flashOpacity})`;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
                 
-                // Add pulsing outer glow effect
-                const pulseTime = Date.now() / 800;
-                const pulseIntensity = (Math.sin(pulseTime) * 0.3 + 0.7);
-                const glowRadius = shieldRadius + 3;
+                ctx.restore();
                 
-                const gradient = ctx.createRadialGradient(0, 0, shieldRadius - 5, 0, 0, glowRadius);
-                gradient.addColorStop(0, 'rgba(100, 180, 255, 0)');
-                gradient.addColorStop(0.8, `rgba(100, 180, 255, ${shieldOpacity * 0.2 * pulseIntensity})`);
-                gradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
-                ctx.fill();
+                // Reset context for ship rendering
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
             }
 
             // Draw ship geometry (original or default)
