@@ -16,6 +16,34 @@ const server = http.createServer(app);
 // Initialize analytics
 const analytics = new ServerAnalytics();
 
+// Log buffer for debugging (keep last 100 log entries)
+const logBuffer = [];
+const maxLogBuffer = 100;
+
+// Override console.log and console.error to capture logs
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+
+console.log = (...args) => {
+  const timestamp = new Date().toISOString();
+  const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+  logBuffer.push({ timestamp, level: 'info', message });
+  if (logBuffer.length > maxLogBuffer) {
+    logBuffer.shift();
+  }
+  originalConsoleLog(...args);
+};
+
+console.error = (...args) => {
+  const timestamp = new Date().toISOString();
+  const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+  logBuffer.push({ timestamp, level: 'error', message });
+  if (logBuffer.length > maxLogBuffer) {
+    logBuffer.shift();
+  }
+  originalConsoleError(...args);
+};
+
 // Configure CORS to allow requests from specific domains
 app.use(cors({
   origin: '*',
@@ -1528,5 +1556,26 @@ app.post('/analytics/reset', async (req, res) => {
   } catch (error) {
     console.error('Error in analytics reset:', error);
     res.status(500).json({ error: 'Reset failed' });
+  }
+});
+
+// Debug endpoint to get recent server logs (same secret as reset)
+app.get('/debug/logs', (req, res) => {
+  try {
+    const secretHeader = req.get('x-analytics-secret');
+    const envSecret = process.env.ANALYTICS_RESET_SECRET || 'superspaceRESET_8f7c2b1e4d9a';
+    if (!secretHeader || secretHeader !== envSecret) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    res.json({
+      logs: logBuffer.slice(-50), // Last 50 log entries
+      serverTime: new Date().toISOString(),
+      activeSessions: analytics.sessions.size,
+      activeGamePlayers: Object.keys(gameState.players).length
+    });
+  } catch (error) {
+    console.error('Error in debug logs endpoint:', error);
+    res.status(500).json({ error: 'Failed to get logs' });
   }
 });
