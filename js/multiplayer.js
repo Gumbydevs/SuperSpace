@@ -129,32 +129,45 @@ export class MultiplayerManager {
         }
 
         // List of localStorage keys to explicitly preserve (keep player name and basic settings)
+        // Added many common variants used by shops/legacy code to avoid accidental removal
         const explicitPreserve = [
-            'playerName',
-            'hasSetName',
-            'gameVersion',
-            'soundEnabled',
-            'musicEnabled',
-            'selectedAvatar',
-            'selectedShipSkin',
-            'shipSkinEffectsEnabled'
+            'playerName', 'player_name', 'name', // name variants
+            'hasSetName', 'has_set_name', // flag variants
+            'gameVersion', 'game_version',
+            'soundEnabled', 'musicEnabled',
+            'selectedAvatar', 'selected_avatar',
+            'selectedShipSkin', 'selected_ship_skin',
+            'shipSkinEffectsEnabled',
+            // Common shop/purchase/ownership keys (whitelist)
+            'ownedSkins', 'ownedAvatars', 'purchasedSkins', 'purchasedAvatars',
+            'ownedShipSkins', 'owned_items', 'premiumPurchases', 'purchases',
+            'shop_owned', 'shop_purchased', 'entitlements', 'purchase_history',
         ];
 
         // Also preserve any premium/skin/avatar/purchase related keys so paid purchases are not lost
         const preservedData = {};
+        // Make a broader, case-insensitive regex to catch varied naming conventions
+        const preserveRegex = /(?:\bskin\b|\bavatar\b|premium|purchase|purch|purchased|owned|own|entitlement|shop|purchase_history|purchasedItems|ownedItems)/i;
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const value = localStorage.getItem(key);
             if (!key) continue;
 
-            // Explicitly preserved keys
+            // Explicitly preserved keys (case-sensitive check first)
             if (explicitPreserve.includes(key)) {
                 preservedData[key] = value;
                 continue;
             }
 
-            // Heuristic: preserve anything related to skins, avatars, premium purchases or ownership lists
-            if (/skin|avatar|premium|purchase|purchased|owned/i.test(key)) {
+            // Also accept case-insensitive explicit matches
+            const lowerKey = key.toLowerCase();
+            if (explicitPreserve.some(k => k.toLowerCase() === lowerKey)) {
+                preservedData[key] = value;
+                continue;
+            }
+
+            // Heuristic: preserve anything that looks like a shop/purchase/ownership key
+            if (preserveRegex.test(key)) {
                 preservedData[key] = value;
                 continue;
             }
@@ -169,6 +182,21 @@ export class MultiplayerManager {
         Object.keys(preservedData).forEach(key => {
             localStorage.setItem(key, preservedData[key]);
         });
+
+        // Ensure in-memory player name / flag are restored so UI won't show a reset name
+        try {
+            const restoredName = localStorage.getItem('playerName') || localStorage.getItem('player_name') || localStorage.getItem('name');
+            if (restoredName) {
+                this.playerName = restoredName;
+            }
+            const restoredHasSet = (localStorage.getItem('hasSetName') === 'true') || (localStorage.getItem('has_set_name') === 'true');
+            if (restoredHasSet) {
+                this.hasSetName = true;
+            }
+            console.log('💾 Restored in-memory playerName and hasSetName from preserved data');
+        } catch (e) {
+            console.warn('Could not restore in-memory player name/flags after reset:', e);
+        }
         
     // Explicitly reset key game progress items
     // Reset credits (handle both legacy and current keys)
