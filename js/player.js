@@ -444,17 +444,25 @@ export class Player {
         
         // Use weapon stats if available, otherwise fall back to the stored fireCooldownTime
         let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
-        
+
         let energyRatio = this.energy / this.maxEnergy;
         // Fire rate slows dramatically as energy drops
         let cooldownMod = 1;
         if (energyRatio < 0.8) {
             cooldownMod = 1 + (1 - energyRatio) * 6; // Up to 7x slower at 0 energy
         }
-        
+
+        // --- Fire Rate Boost: Reduce energy cost per shot while active ---
+        let fireRateMultiplier = 1;
+        if (this.fireRateBoosts && this.fireRateBoosts.length > 0) {
+            // Find the strongest (lowest) multiplier
+            fireRateMultiplier = this.fireRateBoosts.reduce((min, b) => b.multiplier < min ? b.multiplier : min, 1);
+        }
+
         // Check if player has enough energy to fire the weapon
         let weaponEnergyCost = weapon && weapon.stats ? weapon.stats.energyCost : 0;
-        if (this.energy <= 0 || (weaponEnergyCost > 0 && this.energy < weaponEnergyCost)) {
+        let adjustedEnergyCost = weaponEnergyCost * fireRateMultiplier;
+        if (this.energy <= 0 || (adjustedEnergyCost > 0 && this.energy < adjustedEnergyCost)) {
             canFire = false;
             if (this.fireCooldown <= 0) {
                 this.fireCooldown = baseCooldown * 7; // Big lockout when insufficient energy
@@ -465,6 +473,10 @@ export class Player {
             canFire = false;
         }
         if (canFire) {
+            // Subtract reduced energy cost if applicable
+            if (adjustedEnergyCost > 0) {
+                this.energy = Math.max(0, this.energy - adjustedEnergyCost);
+            }
             this.fire(soundManager);
             this.fireCooldown = baseCooldown * cooldownMod;
         }
