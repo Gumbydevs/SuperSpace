@@ -870,6 +870,60 @@ export class NPCManager {
                         }
                         this.world.npcProjectiles.push(npcBossProjectile);
 
+                        // Create a brief muzzle flash at the mount
+                        try {
+                            const flash = {
+                                x: mountWorldX,
+                                y: mountWorldY,
+                                velocityX: (Math.random() - 0.5) * 40,
+                                velocityY: (Math.random() - 0.5) * 40,
+                                size: npcBossProjectile.type === 'missile' ? 12 : 10,
+                                color: npcBossProjectile.type === 'missile' ? '#ffffff' : '#ffdd66',
+                                life: 1.0,
+                                maxLife: 0.12,
+                                rotation: Math.random() * Math.PI * 2,
+                                update(deltaTime) {
+                                    this.x += this.velocityX * deltaTime;
+                                    this.y += this.velocityY * deltaTime;
+                                    this.life -= deltaTime / this.maxLife;
+                                }
+                            };
+                            this.world.particles.push(flash);
+                        } catch (e) {
+                            // harmless if world particles array not present
+                        }
+
+                        // Add a distinctive tracer for missiles and mortars so their salvos are readable
+                        try {
+                            const tracer = {
+                                x: mountWorldX,
+                                y: mountWorldY,
+                                velocityX: (npcBossProjectile.velocityX || (Math.cos(angle) * 300)) * 0.6,
+                                velocityY: (npcBossProjectile.velocityY || (Math.sin(angle) * 300)) * 0.6,
+                                size: npcBossProjectile.type === 'missile' ? 2 : 3,
+                                color: npcBossProjectile.type === 'missile' ? (npcBossProjectile.__wrapped ? (npcBossProjectile.__wrapped.trailColor || '#ff8') : '#ff8') : (npcBossProjectile.color || '#ffaa00'),
+                                life: 1.0,
+                                maxLife: npcBossProjectile.type === 'missile' ? 0.6 : 0.45,
+                                update(deltaTime) {
+                                    this.x += this.velocityX * deltaTime;
+                                    this.y += this.velocityY * deltaTime;
+                                    this.life -= deltaTime / this.maxLife;
+                                }
+                            };
+                            this.world.particles.push(tracer);
+
+                            // For seeker salvos, add a brighter long tracer to help read the volley
+                            if (npcBossProjectile.type === 'missile') {
+                                const bright = Object.assign({}, tracer);
+                                bright.size = 3;
+                                bright.color = '#fff5b0';
+                                bright.maxLife = 0.9;
+                                bright.life = 1.0;
+                                this.world.particles.push(bright);
+                            }
+                        } catch (e) {
+                            // ignore
+                        }
                         // Sound/VFX based on projectile type to match player weapons
                         if (this.soundManager) {
                             try {

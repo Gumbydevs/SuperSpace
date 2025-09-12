@@ -252,12 +252,17 @@ export class Projectile {
                         if (!npc || npc.health <= 0) continue;
                         // Skip mines or non-targetable entities if flagged
                         if (npc.type && npc.type === 'mine') continue;
+                        // Prefer small agile targets like alien_scout slightly for seeker missiles
                         const dx = npc.x - this.x;
                         const dy = npc.y - this.y;
                         const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < nearestDist) {
+                        let effectiveDist = dist;
+                        if (npc.type === 'alien_scout') {
+                            effectiveDist *= 0.85; // bias toward scouts by reducing perceived distance
+                        }
+                        if (effectiveDist < nearestDist) {
                             nearest = npc;
-                            nearestDist = dist;
+                            nearestDist = effectiveDist;
                         }
                     }
                 }
