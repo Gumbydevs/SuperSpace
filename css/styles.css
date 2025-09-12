@@ -706,7 +706,7 @@ input[type="range"] {
     box-shadow: 0 0 8px rgba(0, 100, 255, 0.5);
     z-index: 1001;
     pointer-events: auto;
-    width: 200px !important; /* Fixed width to prevent any resizing */
+    width: 280px !important; /* Increased fixed width for better readability */
     box-sizing: border-box;
 }
 
