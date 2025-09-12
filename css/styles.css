@@ -916,17 +916,17 @@ input[type="range"] {
 
 /* Mobile and Tablet Responsive Design */
 @media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
-    /* Shop button for Mobile Only - position to avoid player list */
+    /* Shop button for Mobile Only - position within fixed viewport */
     #shop-btn {
-        top: 20px !important;
-        right: 20px !important;
-        position: fixed !important;
+        top: 10px !important;
+        right: 10px !important;
+        position: absolute !important;
         z-index: 1003 !important;
     }
     #mobile-menu-button {
-        top: 80px !important;
-        right: 20px !important;
-        position: fixed !important;
+        top: 60px !important;
+        right: 10px !important;
+        position: absolute !important;
         z-index: 1003 !important;
     }
     
@@ -948,18 +948,22 @@ input[type="range"] {
         z-index: 50 !important; /* Lower than player list (z-index: 1001) */
     }
     
-    /* Ensure mobile viewport fills correctly and starts from true top */
+    /* Ensure mobile viewport fills correctly and prevents scroll */
     html, body {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
         width: 100% !important;
         height: 100% !important;
         overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .game-container {
-        position: fixed !important;
+        position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
@@ -968,7 +972,7 @@ input[type="range"] {
     }
     
     #gameCanvas {
-        position: fixed !important;
+        position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
@@ -976,12 +980,13 @@ input[type="range"] {
     }
     
     #hud {
-        position: fixed !important;
+        position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        padding: 10px !important; /* Reduced padding for mobile */
+        padding: 0 !important;
+        overflow: hidden !important;
     }
     
     /* Menu adjustments for mobile */
@@ -1138,15 +1143,15 @@ input[type="range"] {
         top: 70px;
     }
     
-    /* Player list mobile adjustments - make it much smaller - MOBILE ONLY */
+    /* Player list mobile adjustments - position within fixed viewport */
     #player-list {
         max-width: 220px !important;
         max-height: 250px !important;
         font-size: 12px !important;
         padding: 8px !important;
-        top: 20px !important;
-        left: 20px !important;
-        position: fixed !important;
+        top: 10px !important;
+        left: 10px !important;
+        position: absolute !important;
         transform: scale(0.9) !important;
         transform-origin: top left !important;
         z-index: 1001 !important;
