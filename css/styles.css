@@ -1174,6 +1174,8 @@ input[type="range"] {
         font-size: 12px !important;
     }    /* Touch controls styling */
     .touch-ui {
+        --touch-gap: 30px; /* distance from edges */
+        --touch-gap-large: 100px; /* secondary offset used between buttons */
         display: block !important;
         position: fixed;
         bottom: 0;
@@ -1232,8 +1234,8 @@ input[type="range"] {
     
     /* Fire button - larger and prominent */
     #fire-button {
-        bottom: 30px;
-        right: 30px;
+        bottom: var(--touch-gap);
+        right: var(--touch-gap);
         width: 80px;
         height: 80px;
         background-color: rgba(255, 100, 100, 0.3);
@@ -1246,8 +1248,8 @@ input[type="range"] {
     
     /* Weapon switch button */
     #weapon-button {
-        bottom: 30px;
-        right: 130px;
+        bottom: var(--touch-gap);
+        right: calc(var(--touch-gap) + var(--touch-gap-large));
         width: 60px;
         height: 60px;
         background-color: rgba(100, 150, 255, 0.3);
@@ -1260,8 +1262,9 @@ input[type="range"] {
     
     /* Afterburner button */
     #afterburner-button {
-        bottom: 150px; /* Moved higher to prevent overlap */
-        right: 30px;
+        /* place above the fire button with the same spacing as the weapon's horizontal offset */
+        bottom: calc(var(--touch-gap) + var(--touch-gap-large));
+        right: var(--touch-gap);
         width: 60px;
         height: 60px;
         background-color: rgba(255, 200, 100, 0.3);
@@ -1471,26 +1474,26 @@ input[type="range"] {
     }
     
     #fire-button {
-        width: 65px;
-        height: 65px;
-        bottom: 20px;
-        right: 20px;
+    width: 80px;
+    height: 80px;
+    bottom: var(--touch-gap);
+    right: var(--touch-gap);
         font-size: 20px;
     }
     
     #weapon-button {
-        width: 50px;
-        height: 50px;
-        bottom: 20px;
-        right: 100px;
+    width: 60px;
+    height: 60px;
+    bottom: var(--touch-gap);
+    right: calc(var(--touch-gap) + var(--touch-gap-large));
         font-size: 18px;
     }
     
     #afterburner-button {
-        width: 50px;
-        height: 50px;
-        bottom: 100px; /* Moved higher to prevent overlap */
-        right: 20px;
+    width: 60px;
+    height: 60px;
+    bottom: calc(var(--touch-gap) + var(--touch-gap-large));
+    right: var(--touch-gap);
         font-size: 18px;
     }
     
