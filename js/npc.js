@@ -19,6 +19,11 @@ export class NPCManager {
         // Timeout timers for NPCs
         this.alienLifespan = 120000; // 2 minutes before aliens fly away
         this.dreadnaughtRetreatTimer = 180000; // 3 minutes before dreadnaught retreats
+    // Dreadnaught behavior tuning (adjustable)
+    this.dreadnaughtBombardPauseApproach = 2000; // ms to pause while bombarding when approaching
+    this.dreadnaughtBombardPauseCombat = 1500; // ms to pause while bombarding in combat
+    this.dreadnaughtDriftWhilePaused = true; // if true, apply a small drift while paused instead of full stop
+    this.dreadnaughtDriftSpeed = 0.15; // fraction of normal speed when drifting while paused
     }
     
     // Create an alien scout that emerges from an asteroid
@@ -545,8 +550,15 @@ export class NPCManager {
             } else {
                 // If we're currently paused for a bombardment, do not change rotation or move
                 if (Date.now() < (dreadnaught.pauseUntil || 0)) {
-                    dreadnaught.velocity.x = 0;
-                    dreadnaught.velocity.y = 0;
+                    // While paused for bombardment, optionally drift slowly instead of full stop
+                    if (this.dreadnaughtDriftWhilePaused) {
+                        // Keep current rotation but move slowly in current heading
+                        dreadnaught.velocity.x = Math.cos(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * this.dreadnaughtDriftSpeed * deltaTime;
+                        dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * this.dreadnaughtDriftSpeed * deltaTime;
+                    } else {
+                        dreadnaught.velocity.x = 0;
+                        dreadnaught.velocity.y = 0;
+                    }
                     // intentionally do not update rotation while paused
                 } else {
                     dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
@@ -560,7 +572,7 @@ export class NPCManager {
                 const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
                 if (!targetInSafeZone) {
                     // Do NOT rotate to face the target. Instead, briefly pause movement and bombard.
-                    dreadnaught.pauseUntil = Date.now() + 2000; // pause for 2 seconds while firing
+                    dreadnaught.pauseUntil = Date.now() + (this.dreadnaughtBombardPauseApproach || 2000);
                     this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
                 }
             }
@@ -601,7 +613,7 @@ export class NPCManager {
                 const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
                 if (!targetInSafeZone) {
                     // Briefly pause movement while performing a bombardment to make the dreadnaught feel heavy and deliberate
-                    dreadnaught.pauseUntil = Date.now() + 1500;
+                    dreadnaught.pauseUntil = Date.now() + (this.dreadnaughtBombardPauseCombat || 1500);
                     this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
                 }
             }
