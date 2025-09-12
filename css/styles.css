@@ -750,6 +750,7 @@ input[type="range"] {
     user-select: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 #shop-btn:hover {
@@ -769,6 +770,13 @@ input[type="range"] {
     cursor: pointer;
     font-family: inherit;
     font-size: 14px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 #admin-btn:hover {
@@ -1296,6 +1304,13 @@ input[type="range"] {
         justify-content: center;
         text-align: center;
         font-family: inherit;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     }
     
     /* Show mobile menu button only on touch devices */
