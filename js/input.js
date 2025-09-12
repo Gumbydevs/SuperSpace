@@ -497,6 +497,34 @@ export class InputHandler {
             menuButton: menuButton,
             brakeButton: brakeButton
         };
+        
+        // Apply computed positions from CSS variables to ensure buttons are placed correctly at runtime.
+        const applyTouchButtonPositions = () => {
+            try {
++                const rootStyles = getComputedStyle(touchUI);
+                const gap = parseInt(rootStyles.getPropertyValue('--touch-gap')) || 30;
+                const gapLarge = parseInt(rootStyles.getPropertyValue('--touch-gap-large')) || 100;
+
+                // Fire button -> bottom/right = gap
+                fireButton.style.bottom = gap + 'px';
+                fireButton.style.right = gap + 'px';
+
+                // Weapon button -> bottom = gap, right = gap + gapLarge
+                weaponButton.style.bottom = gap + 'px';
+                weaponButton.style.right = (gap + gapLarge) + 'px';
+
+                // Afterburner -> bottom = gap + gapLarge, right = gap
+                afterburnerButton.style.bottom = (gap + gapLarge) + 'px';
+                afterburnerButton.style.right = gap + 'px';
+            } catch (err) {
+                // ignore in older browsers
+            }
+        };
+
+        // Run once and on resize/orientation change to keep in sync with CSS changes
+        applyTouchButtonPositions();
+        window.addEventListener('resize', applyTouchButtonPositions);
+        window.addEventListener('orientationchange', applyTouchButtonPositions);
     }
     
     handleTouchStart(e) {
