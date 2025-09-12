@@ -1445,7 +1445,7 @@ export class MultiplayerManager {
                     this.killAnnouncer.announceKill(killerName, 'you', 'destroyed', killerAvatar);
                 } else {
                     console.error('❌ KillAnnouncer not ready for death announcement!');
-                    // Fallback: show a game message
+                    // Fallback: show a game message (keep this for victims so they always know who killed them)
                     this.showGameMessage(`${killerName} destroyed you!`, '#ff4444');
                 }
             } else {
@@ -2769,8 +2769,10 @@ export class MultiplayerManager {
                     // Broadcast stats update immediately
                     this.broadcastStatsUpdate();
                 }
-            } else {
-                this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
+                } else {
+                // Spectator fallback message disabled because kill announcer displays this information.
+                // To re-enable spectator messages, uncomment the line below.
+                // this.showGameMessage(`${attacker} destroyed ${deadPlayerName}!`, '#fff');
             }        // Create ship destruction effect for remote player
         if (this.game.world && deadPlayer) {
             // Use the createRemoteShipDestructionEffect with player's data
