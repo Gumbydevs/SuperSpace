@@ -691,6 +691,43 @@ input[type="range"] {
     text-shadow: 0 0 5px #4af;
 }
 
+/* Base Status Panel Styles */
+#status-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 6px;
+    border: 1px solid #444;
+    box-shadow: 0 0 8px rgba(0, 100, 255, 0.5);
+    z-index: 1001;
+    pointer-events: auto;
+}
+
+#status-panel .status-item {
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    color: white;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+#status-panel .status-label {
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+#status-panel .status-value {
+    font-weight: bold;
+}
+
 /* Branding styles for options overlay */
 .branding-section {
     border-top: 1px solid #334;
