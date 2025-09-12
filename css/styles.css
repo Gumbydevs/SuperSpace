@@ -706,7 +706,8 @@ input[type="range"] {
     box-shadow: 0 0 8px rgba(0, 100, 255, 0.5);
     z-index: 1001;
     pointer-events: auto;
-    min-width: 180px; /* Fixed minimum width to prevent resizing with different weapons */
+    width: 200px !important; /* Fixed width to prevent any resizing */
+    box-sizing: border-box;
 }
 
 #status-panel .status-item {
