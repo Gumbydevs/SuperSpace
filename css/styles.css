@@ -2018,3 +2018,18 @@ input[type="range"] {
         top: 190px !important; /* Chat button - 50px spacing from premium */
     }
 }
+
+/* Desktop: ensure status panel is anchored to bottom-left only on non-mobile/desktop */
+@media screen and (min-width: 769px) {
+    /* Force bottom-left anchoring on desktop. Use !important to override inline styles
+       applied by the HUD creation JS so desktop always shows status in the lower-left. */
+    #status-panel {
+        position: fixed !important;
+        bottom: 20px !important;
+        left: 20px !important;
+        transform: none !important; /* Remove JS scaling transforms that shift placement */
+        transform-origin: unset !important;
+        z-index: 1001 !important;
+        width: auto !important; /* Allow width to size naturally on desktop */
+    }
+}
