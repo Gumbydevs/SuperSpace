@@ -246,6 +246,21 @@ export class Projectile {
                         }
                     }
                 }
+                // Also consider NPCs (like dreadnaught) as homing targets
+                if (window.game.npcManager && window.game.npcManager.npcs) {
+                    for (const npc of window.game.npcManager.npcs) {
+                        if (!npc || npc.health <= 0) continue;
+                        // Skip mines or non-targetable entities if flagged
+                        if (npc.type && npc.type === 'mine') continue;
+                        const dx = npc.x - this.x;
+                        const dy = npc.y - this.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < nearestDist) {
+                            nearest = npc;
+                            nearestDist = dist;
+                        }
+                    }
+                }
                 // Only home if within 300px and gradual turning instead of instant snap
                 const homingRadius = 300;
                 if (nearest && nearestDist <= homingRadius && !this.hasHomed) {

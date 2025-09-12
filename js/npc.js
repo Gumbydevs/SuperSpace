@@ -25,6 +25,7 @@ export class NPCManager {
     this.dreadnaughtBombardPauseCombat = 1500; // ms to pause while bombarding in combat
     this.dreadnaughtDriftWhilePaused = true; // if true, apply a small drift while paused instead of full stop
     this.dreadnaughtDriftSpeed = 0.15; // fraction of normal speed when drifting while paused
+    this.dreadnaughtVolleyReload = 900; // ms reload/pause between volleys
     }
     
     // Create an alien scout that emerges from an asteroid
@@ -595,15 +596,18 @@ export class NPCManager {
                 dreadnaught.velocity.y = Math.sin(awayAngle) * dreadnaught.speed * deltaTime;
                 dreadnaught.rotation = awayAngle + Math.PI / 2;
             } else {
-                // Normal circle strafe pattern
+                // Normal circle strafe pattern around world center to avoid jitter near (0,0)
                 const circleAngle = Date.now() / 5000;
                 const circleRadius = 400;
-                const targetX = Math.cos(circleAngle) * circleRadius;
-                const targetY = Math.sin(circleAngle) * circleRadius;
-                
+                const bounds = this.world.boundaries;
+                const centerX = (bounds.left + bounds.right) / 2;
+                const centerY = (bounds.top + bounds.bottom) / 2;
+                const targetX = centerX + Math.cos(circleAngle) * circleRadius;
+                const targetY = centerY + Math.sin(circleAngle) * circleRadius;
+
                 const dx = targetX - dreadnaught.x;
                 const dy = targetY - dreadnaught.y;
-                
+
                 dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
                 dreadnaught.velocity.x = dx * 0.1 * deltaTime;
                 dreadnaught.velocity.y = dy * 0.1 * deltaTime;
@@ -866,6 +870,19 @@ export class NPCManager {
                         }
                         this.world.npcProjectiles.push(npcBossProjectile);
 
+                        // Sound/VFX based on projectile type to match player weapons
+                        if (this.soundManager) {
+                            try {
+                                if (npcBossProjectile.type === 'missile') {
+                                    this.soundManager.play('missile', { volume: 0.9, position: { x: mountWorldX, y: mountWorldY } });
+                                } else if (npcBossProjectile.type === 'rocket' || npcBossProjectile.type === 'fusionMortar') {
+                                    this.soundManager.play('mortar', { volume: 0.95, position: { x: mountWorldX, y: mountWorldY } });
+                                }
+                            } catch (e) {
+                                // Ignore sound errors
+                            }
+                        }
+
                         // Broadcast projectile to other players
                         this.broadcastNPCProjectile(npcBossProjectile);
                         
@@ -876,7 +893,16 @@ export class NPCManager {
             }
             
             dreadnaught.burstCount++;
-            dreadnaught.lastFireTime = currentTime;            // Play dreadnaught weapon sound
+            dreadnaught.lastFireTime = currentTime;
+
+            // If we've reached the burst max, apply a short reload/pause
+            if (dreadnaught.burstCount >= dreadnaught.burstMax) {
+                dreadnaught.pauseUntil = Date.now() + (this.dreadnaughtVolleyReload || 900);
+                dreadnaught.burstCount = 0; // reset for next volley
+                dreadnaught.lastBurstTime = Date.now();
+            }
+
+            // Play dreadnaught weapon sound for the volley
             if (this.soundManager) {
                 this.soundManager.play('explosion', {
                     volume: 0.6,
