@@ -307,8 +307,9 @@ export class InputHandler {
             }
             
             #fire-button {
-                bottom: 30px;
-                right: 30px;
+                /* Positioning delegated to external stylesheet via CSS variables */
+                bottom: var(--touch-gap, 30px);
+                right: var(--touch-gap, 30px);
                 width: 80px;
                 height: 80px;
                 background-color: rgba(255, 100, 100, 0.3);
@@ -322,8 +323,8 @@ export class InputHandler {
             }
             
             #weapon-button {
-                bottom: 30px;
-                right: 130px;
+                bottom: var(--touch-gap, 30px);
+                right: calc(var(--touch-gap, 30px) + var(--touch-gap-large, 100px));
                 width: 60px;
                 height: 60px;
                 background-color: rgba(100, 150, 255, 0.3);
@@ -336,8 +337,9 @@ export class InputHandler {
             }
             
             #afterburner-button {
-                bottom: 100px;
-                right: 30px;
+                /* place above the fire button using same spacing variables */
+                bottom: calc(var(--touch-gap, 30px) + var(--touch-gap-large, 100px));
+                right: var(--touch-gap, 30px);
                 width: 60px;
                 height: 60px;
                 background-color: rgba(255, 200, 100, 0.3);
