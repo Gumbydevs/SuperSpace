@@ -333,7 +333,7 @@ export class UI {
         weaponDisplay.className = 'status-item';
         weaponDisplay.innerHTML = '<span class="status-label">WEAPON:</span> <span id="weapons" class="status-value">Disengaged</span>';
         
-        // Weapon icon - made smaller
+        // Weapon icon - made smaller with fixed width to prevent resizing
         const weaponIcon = document.createElement('div');
         weaponIcon.id = 'weapon-icon';
         weaponIcon.innerHTML = '❌'; // Default to disengaged icon
@@ -342,6 +342,10 @@ export class UI {
         weaponIcon.style.display = 'inline-block';
         weaponIcon.style.verticalAlign = 'middle';
         weaponIcon.style.textShadow = '0 0 3px #f00';
+        weaponIcon.style.width = '16px'; // Fixed width to accommodate largest weapon icon (Plasma Cannon 12px + some padding)
+        weaponIcon.style.height = '16px'; // Fixed height
+        weaponIcon.style.textAlign = 'center';
+        weaponIcon.style.lineHeight = '16px';
         
         const weaponText = weaponDisplay.querySelector('#weapons');
         if (weaponText) {

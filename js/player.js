@@ -2705,8 +2705,11 @@ export class Player {
         weaponIcon.innerHTML = '';
         weaponIcon.style.display = 'inline-block';  // Keep inline to prevent line break
         weaponIcon.style.verticalAlign = 'middle';
-        weaponIcon.style.width = 'auto';
-        weaponIcon.style.height = 'auto';
+        weaponIcon.style.width = '16px';  // Fixed width to prevent status panel resizing
+        weaponIcon.style.height = '16px'; // Fixed height
+        weaponIcon.style.textAlign = 'center';
+        weaponIcon.style.lineHeight = '16px';
+        weaponIcon.style.overflow = 'hidden'; // Prevent content from overflowing the fixed size
         
         // Handle disengaged state
         if (weaponName === 'Disengaged') {
