@@ -33,8 +33,26 @@ export class Player {
             // Calculate impulse (how strongly we bounce)
             const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
             // Apply impulse in the direction away from collision
-            this.velocity.x = nx * impulseStrength;
-            this.velocity.y = ny * impulseStrength;
+            const impulseX = nx * impulseStrength;
+            const impulseY = ny * impulseStrength;
+
+            // Apply to this player
+            this.velocity.x = impulseX;
+            this.velocity.y = impulseY;
+
+            // Apply equal and opposite impulse to the other player if we have a local reference
+            if (otherPlayer && otherPlayer.velocity) {
+                try {
+                    otherPlayer.velocity.x = -impulseX;
+                    otherPlayer.velocity.y = -impulseY;
+                    // Also set a short collision cooldown on the other player to avoid immediate re-processing
+                    if (typeof otherPlayer.collisionCooldown !== 'undefined') {
+                        otherPlayer.collisionCooldown = 0.05;
+                    }
+                } catch (e) {
+                    // Defensive: if otherPlayer is a lightweight remote stub without writable velocity, ignore
+                }
+            }
             // Take damage based on impact force
             if (impactForce > 100) {
                 const damage = Math.max(5, impactForce * 0.1);
