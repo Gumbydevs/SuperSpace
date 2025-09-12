@@ -1237,7 +1237,7 @@ input[type="range"] {
     
     /* Afterburner button */
     #afterburner-button {
-        bottom: 200px; /* Moved higher to prevent overlap */
+        bottom: 180px; /* Moved higher to prevent overlap */
         right: 30px;
         width: 60px;
         height: 60px;
