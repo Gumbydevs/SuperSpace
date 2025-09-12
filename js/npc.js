@@ -156,6 +156,7 @@ export class NPCManager {
             state: 'approaching', // approaching, combat, retreating, leaving
             spawnTime: Date.now(),
             lastPlayerContact: Date.now(), // Track when dreadnaught last saw players
+            pauseUntil: 0, // timestamp to temporarily pause movement while bombarding
             
             // Weapons
             weaponMounts: [
@@ -500,8 +501,8 @@ export class NPCManager {
             dreadnaught.state = 'leaving';
         }
         
-        // Movement AI based on state
-        if (dreadnaught.state === 'leaving') {
+    // Movement AI based on state
+    if (dreadnaught.state === 'leaving') {
             // Retreat to edge of map
             const bounds = this.world.boundaries;
             const targetX = dreadnaught.x > 0 ? bounds.right + 300 : bounds.left - 300;
@@ -537,25 +538,29 @@ export class NPCManager {
             const dx = dreadnaught.targetPosition.x - dreadnaught.x;
             const dy = dreadnaught.targetPosition.y - dreadnaught.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             // Switch to combat mode earlier if players are nearby
             if (distance < 100 || (closestTarget && closestDistance < dreadnaught.aggroRange)) {
                 dreadnaught.state = 'combat';
             } else {
-                dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
-                dreadnaught.velocity.x = Math.cos(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
-                dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+                // If we're currently paused for a bombardment, do not change rotation or move
+                if (Date.now() < (dreadnaught.pauseUntil || 0)) {
+                    dreadnaught.velocity.x = 0;
+                    dreadnaught.velocity.y = 0;
+                    // intentionally do not update rotation while paused
+                } else {
+                    dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+                    dreadnaught.velocity.x = Math.cos(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+                    dreadnaught.velocity.y = Math.sin(dreadnaught.rotation - Math.PI / 2) * dreadnaught.speed * deltaTime;
+                }
             }
-            
+
             // Fire weapons while approaching if players are in range and attacking
             if (closestTarget && closestDistance < dreadnaught.attackRange) {
                 const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
                 if (!targetInSafeZone) {
-                    // Face the target while approaching
-                    const targetDx = closestTarget.x - dreadnaught.x;
-                    const targetDy = closestTarget.y - dreadnaught.y;
-                    dreadnaught.rotation = Math.atan2(targetDy, targetDx) + Math.PI / 2;
-                    
+                    // Do NOT rotate to face the target. Instead, briefly pause movement and bombard.
+                    dreadnaught.pauseUntil = Date.now() + 2000; // pause for 2 seconds while firing
                     this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
                 }
             }
@@ -595,6 +600,8 @@ export class NPCManager {
             if (closestTarget && closestDistance < dreadnaught.attackRange) {
                 const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
                 if (!targetInSafeZone) {
+                    // Briefly pause movement while performing a bombardment to make the dreadnaught feel heavy and deliberate
+                    dreadnaught.pauseUntil = Date.now() + 1500;
                     this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
                 }
             }
