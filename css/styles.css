@@ -1172,7 +1172,9 @@ input[type="range"] {
 
     #status-panel .status-value {
         font-size: 12px !important;
-    }    /* Touch controls styling */
+    }
+    
+    /* Touch controls styling */
     .touch-ui {
         --touch-gap: 30px; /* distance from edges */
         --touch-gap-large: 100px; /* secondary offset used between buttons */
