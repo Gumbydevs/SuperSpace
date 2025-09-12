@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SuperSpace 👨‍🚀 The Multiplayer Space Deathmatch Game</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -320,6 +320,33 @@
         document.body.innerHTML = '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
         throw new Error('Blocked by admin kick');
     }
+    </script>
+    <script>
+    // Mobile touch/gesture hardening: prevent pinch-zoom, double-tap zoom, and two-finger gestures
+    (function(){
+        if ('ontouchstart' in window) {
+            // Disable Safari gesture events (pinch/rotate)
+            document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+            document.addEventListener('gesturechange', function(e){ e.preventDefault(); });
+
+            // Prevent multi-touch pinch by blocking touchmove when >1 touch is present
+            document.addEventListener('touchmove', function(e){
+                if (e.touches && e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Simple double-tap prevention: block the second quick tap's default behavior
+            var lastTouch = 0;
+            document.addEventListener('touchend', function(e){
+                var now = Date.now();
+                if (now - lastTouch <= 300) {
+                    e.preventDefault();
+                }
+                lastTouch = now;
+            }, { passive: false });
+        }
+    })();
     </script>
     <script src="js/game.js" type="module"></script>
 </body>

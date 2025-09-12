@@ -6,6 +6,14 @@
     font-weight: bold;
     font-family: inherit;
     font-size: 14px;
+    /* Prevent iOS/Android tap highlighting and selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 #premium-btn .premium-emoji {
     font-size: 18px;
