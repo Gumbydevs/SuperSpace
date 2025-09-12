@@ -935,15 +935,104 @@ io.on('connection', (socket) => {
     // Update activity timestamp
     playerLastActivity[socket.id] = Date.now();
     
-    // Broadcast the collision to other players
-    socket.broadcast.emit('playerCollision', {
-      sourceId: data.sourceId,
-      targetId: data.targetId,
-      position: data.position,
-      velocity: data.velocity
-    });
-    
-    console.log(`Player collision: ${data.sourceId} collided with ${data.targetId}`);
+    // Authoritative collision resolution server-side
+    try {
+      const srcId = data.sourceId;
+      const tgtId = data.targetId;
+      const src = gameState.players[srcId];
+      const tgt = gameState.players[tgtId];
+
+      if (!src || !tgt) {
+        // One of the players is missing - fallback to broadcasting for visuals
+        socket.broadcast.emit('playerCollision', {
+          sourceId: data.sourceId,
+          targetId: data.targetId,
+          position: data.position,
+          velocity: data.velocity
+        });
+        return;
+      }
+
+      // Basic symmetric elastic impulse along collision normal (equal masses)
+      const dx = src.x - tgt.x;
+      const dy = src.y - tgt.y;
+      let distance = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+      const nx = dx / distance;
+      const ny = dy / distance;
+
+      // Velocities (safe defaults)
+      const v1x = (src.velocity && typeof src.velocity.x === 'number') ? src.velocity.x : 0;
+      const v1y = (src.velocity && typeof src.velocity.y === 'number') ? src.velocity.y : 0;
+      const v2x = (tgt.velocity && typeof tgt.velocity.x === 'number') ? tgt.velocity.x : 0;
+      const v2y = (tgt.velocity && typeof tgt.velocity.y === 'number') ? tgt.velocity.y : 0;
+
+      // Relative velocity along normal
+      const relVel = (v1x - v2x) * nx + (v1y - v2y) * ny;
+
+      // Restitution (bounciness)
+      const restitution = 0.6; // tweakable
+
+      // Only apply impulse if closing (relVel < 0)
+      if (relVel < 0) {
+        // Equal mass impulse magnitude j = -(1+e) * relVel / (1/m1 + 1/m2) with m1=m2=1 -> divide by 2
+        const j = (-(1 + restitution) * relVel) / 2;
+
+        // Apply impulse
+        const newV1x = v1x + j * nx;
+        const newV1y = v1y + j * ny;
+        const newV2x = v2x - j * nx;
+        const newV2y = v2y - j * ny;
+
+        src.velocity = { x: newV1x, y: newV1y };
+        tgt.velocity = { x: newV2x, y: newV2y };
+      }
+
+      // Simple separation to prevent overlap (assume collision radius ~15 each)
+      const radius = 15;
+      const penetration = (radius + radius) - distance; // both radii
+      if (penetration > 0) {
+        const sep = penetration / 2 + 0.1; // small extra buffer
+        src.x += nx * sep;
+        src.y += ny * sep;
+        tgt.x -= nx * sep;
+        tgt.y -= ny * sep;
+      }
+
+      // Broadcast updated positions/velocities for both players so clients reconcile immediately
+      io.emit('playerMoved', {
+        id: srcId,
+        x: src.x,
+        y: src.y,
+        rotation: src.rotation,
+        velocity: src.velocity
+      });
+      io.emit('playerMoved', {
+        id: tgtId,
+        x: tgt.x,
+        y: tgt.y,
+        rotation: tgt.rotation,
+        velocity: tgt.velocity
+      });
+
+      // Also emit a collision visual/sound event to all clients
+      io.emit('playerCollision', {
+        sourceId: srcId,
+        targetId: tgtId,
+        position: { x: (src.x + tgt.x) / 2, y: (src.y + tgt.y) / 2 },
+        velocity: src.velocity
+      });
+
+      console.log(`Resolved collision server-side: ${srcId} <-> ${tgtId}`);
+    } catch (err) {
+      console.error('Error resolving playerCollision:', err);
+      // fallback: broadcast the original collision for visuals
+      socket.broadcast.emit('playerCollision', {
+        sourceId: data.sourceId,
+        targetId: data.targetId,
+        position: data.position,
+        velocity: data.velocity
+      });
+    }
   });
   
   // Player death by asteroid
