@@ -12,7 +12,8 @@
           "-webkit-overflow-scrolling",
           "-webkit-text-size-adjust",
           "overscroll-behavior-y",
-          "overscroll-behavior-y: contain"
+          "overscroll-behavior-y: contain",
+          "overscroll-behavior"
         ]
       }
     ]
