@@ -322,8 +322,10 @@
     }
     </script>
     <script>
-    // Mobile touch/gesture hardening: prevent pinch-zoom, double-tap zoom, and two-finger gestures
+    // Mobile touch/gesture hardening: prevent pinch/rotate, block page scrolling while
+    // still allowing touch scrolling inside explicit scrollable UI (shop/options/chat)
     (function(){
+
         if ('ontouchstart' in window) {
             // Disable Safari gesture events (pinch/rotate)
             document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
@@ -331,7 +333,12 @@
 
             // Prevent multi-touch pinch by blocking touchmove when >1 touch is present
             document.addEventListener('touchmove', function(e){
-                if (e.touches && e.touches.length > 1) {
+                // Always block multi-touch gestures
+                if (e.touches && e.touches.length > 1) { e.preventDefault(); return; }
+
+                // Allow touch scrolling inside explicitly scrollable containers or form controls
+                var allowScroll = e.target.closest('input, textarea, select, [contenteditable], .options-panel, .avatar-selection, #shop-container, #shop-content, #chat-messages');
+                if (!allowScroll) {
                     e.preventDefault();
                 }
             }, { passive: false });

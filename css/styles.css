@@ -36,6 +36,13 @@
     color: #4fc3f7;
     font-weight: bold;
 }
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -43,8 +50,8 @@ body {
     color: #fff;
     font-family: 'Orbitron', 'Arial', sans-serif;
     font-weight: 400;
-    overflow: hidden;
-    overscroll-behavior-y: contain;
+    /* overflow is handled on html/body to avoid mobile bounce/scroll */
+    /* keep overscroll-behavior none at root to stop pull-to-refresh and bounce */
     /* Disable text selection globally to prevent accidental highlighting */
     -webkit-user-select: none;
     -moz-user-select: none;
