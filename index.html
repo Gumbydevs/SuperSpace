@@ -322,35 +322,30 @@
     }
     </script>
     <script>
-    // Mobile touch/gesture hardening: prevent pinch/rotate, block page scrolling while
-    // still allowing touch scrolling inside explicit scrollable UI (shop/options/chat)
+    // Simple mobile zoom prevention
     (function(){
-
         if ('ontouchstart' in window) {
-            // Disable Safari gesture events (pinch/rotate)
-            document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
-            document.addEventListener('gesturechange', function(e){ e.preventDefault(); });
-
-            // Prevent multi-touch pinch by blocking touchmove when >1 touch is present
-            document.addEventListener('touchmove', function(e){
-                // Always block multi-touch gestures
-                if (e.touches && e.touches.length > 1) { e.preventDefault(); return; }
-
-                // Allow touch scrolling inside explicitly scrollable containers or form controls
-                var allowScroll = e.target.closest('input, textarea, select, [contenteditable], .options-panel, .avatar-selection, #shop-container, #shop-content, #chat-messages');
-                if (!allowScroll) {
+            // Prevent pinch zoom
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
                     e.preventDefault();
                 }
             }, { passive: false });
-
-            // Simple double-tap prevention: block the second quick tap's default behavior
-            var lastTouch = 0;
-            document.addEventListener('touchend', function(e){
-                var now = Date.now();
-                if (now - lastTouch <= 300) {
+            
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) {
                     e.preventDefault();
                 }
-                lastTouch = now;
+            }, { passive: false });
+            
+            // Prevent double-tap zoom
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
             }, { passive: false });
         }
     })();

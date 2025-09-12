@@ -41,29 +41,13 @@ html, body {
     width: 100%;
     overflow: hidden;
     overscroll-behavior: none;
-    /* Fix for mobile viewport issues */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    margin: 0;
+    padding: 0;
 }
 
 /* Prevent zoom on all elements */
 * {
     touch-action: manipulation;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-/* Re-enable selection for form elements */
-input, textarea, select, button, [contenteditable] {
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-    user-select: auto;
 }
 
 body {
@@ -958,31 +942,21 @@ input[type="range"] {
         z-index: 50 !important; /* Lower than player list (z-index: 1001) */
     }
     
-    /* Ensure mobile viewport fills correctly */
+    /* Ensure mobile viewport fills correctly without position fixed */
     .game-container {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
         width: 100% !important;
-        height: 100% !important;
+        height: 100vh !important;
+        overflow: hidden !important;
     }
     
     #gameCanvas {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
         width: 100% !important;
-        height: 100% !important;
+        height: 100vh !important;
     }
     
     #hud {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
         width: 100% !important;
-        height: 100% !important;
+        height: 100vh !important;
         padding: 10px !important; /* Reduced padding for mobile */
     }
     
