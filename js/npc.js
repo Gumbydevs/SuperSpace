@@ -1,4 +1,5 @@
 // NPC System for SuperSpace
+import { Projectile } from './projectile.js';
 // Handles AI-controlled enemy spaceships including alien scouts and dreadnaughts
 
 export class NPCManager {
@@ -163,13 +164,13 @@ export class NPCManager {
             lastPlayerContact: Date.now(), // Track when dreadnaught last saw players
             pauseUntil: 0, // timestamp to temporarily pause movement while bombarding
             
-            // Weapons
+            // Weapons: mounts may indicate a preferred weapon type to bias heavy weapon use
             weaponMounts: [
-                { x: -40, y: -60, lastFire: 0 },
-                { x: 40, y: -60, lastFire: 0 },
-                { x: -60, y: 0, lastFire: 0 },
-                { x: 60, y: 0, lastFire: 0 },
-                { x: 0, y: 40, lastFire: 0 }
+                { x: -40, y: -60, lastFire: 0, preferred: 'cannon' },
+                { x: 40, y: -60, lastFire: 0, preferred: 'cannon' },
+                { x: -60, y: 0, lastFire: 0, preferred: 'cannon' },
+                { x: 60, y: 0, lastFire: 0, preferred: 'cannon' },
+                { x: 0, y: 40, lastFire: 0, preferred: 'mortar' } // center/rear mount prefers mortars
             ]
         };
         
@@ -725,50 +726,148 @@ export class NPCManager {
                         const dy = target.y - mountWorldY;
                         const angle = Math.atan2(dy, dx);
                         
-                        // Create dreadnaught projectile
-                        const projectile = {
-                            x: mountWorldX,
-                            y: mountWorldY,
-                            velocityX: Math.cos(angle) * 400,
-                            velocityY: Math.sin(angle) * 400,
-                            damage: 25,
-                            type: 'dreadnaught_cannon',
-                            owner: dreadnaught.id,
-                            color: '#f44',
-                            size: 8,
-                            life: 1,
-                            maxLife: 4,
-                            update: function(deltaTime) {
-                                this.x += this.velocityX * deltaTime;
-                                this.y += this.velocityY * deltaTime;
-                                this.life -= deltaTime / this.maxLife;
-                            },
-                            render: function(ctx) {
-                                ctx.save();
-                                ctx.globalAlpha = this.life;
-                                ctx.fillStyle = this.color;
-                                ctx.shadowBlur = 15;
-                                ctx.shadowColor = this.color;
-                                ctx.beginPath();
-                                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                                ctx.fill();
-                                
-                                // Add trailing effect
-                                ctx.globalAlpha *= 0.5;
-                                ctx.beginPath();
-                                ctx.arc(this.x - this.velocityX * 0.01, this.y - this.velocityY * 0.01, this.size * 0.7, 0, Math.PI * 2);
-                                ctx.fill();
-                                ctx.restore();
-                            }
-                        };
-                        
+                        // Decide which weapon to fire: mostly cannon, sometimes seeker missile or fusion mortar
+                        // Weight selection with mount preference
+                        const baseRoll = Math.random();
+                        let roll = baseRoll;
+                        if (mount.preferred === 'mortar') {
+                            // Make mortar more likely for preferred mounts
+                            roll = baseRoll * 0.6; // biases towards higher categories
+                        }
+                        let npcBossProjectile = null;
+
+                        if (roll < 0.7) {
+                            // Dreadnaught cannon (existing behavior)
+                            npcBossProjectile = {
+                                x: mountWorldX,
+                                y: mountWorldY,
+                                velocityX: Math.cos(angle) * 400,
+                                velocityY: Math.sin(angle) * 400,
+                                damage: 25,
+                                type: 'dreadnaught_cannon',
+                                owner: dreadnaught.id,
+                                color: '#f44',
+                                size: 8,
+                                life: 1,
+                                maxLife: 4,
+                                update: function(deltaTime) {
+                                    this.x += this.velocityX * deltaTime;
+                                    this.y += this.velocityY * deltaTime;
+                                    this.life -= deltaTime / this.maxLife;
+                                },
+                                render: function(ctx) {
+                                    ctx.save();
+                                    ctx.globalAlpha = this.life;
+                                    ctx.fillStyle = this.color;
+                                    ctx.shadowBlur = 15;
+                                    ctx.shadowColor = this.color;
+                                    ctx.beginPath();
+                                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                                    ctx.fill();
+                                    
+                                    // Add trailing effect
+                                    ctx.globalAlpha *= 0.5;
+                                    ctx.beginPath();
+                                    ctx.arc(this.x - this.velocityX * 0.01, this.y - this.velocityY * 0.01, this.size * 0.7, 0, Math.PI * 2);
+                                    ctx.fill();
+                                    ctx.restore();
+                                }
+                            };
+                        } else if (roll < 0.9) {
+                            // Seeker missile - use Projectile class and wrap for NPC system
+                            const proj = new Projectile(
+                                mountWorldX,
+                                mountWorldY,
+                                angle + Math.PI/2,
+                                'missile',
+                                30, // damage
+                                350, // speed
+                                1000, // range
+                                true // homing
+                            );
+
+                            // Wrap Projectile so existing NPC projectile loop can handle it
+                            npcBossProjectile = {
+                                __wrapped: proj,
+                                x: proj.x,
+                                y: proj.y,
+                                velocityX: proj.velocity.x,
+                                velocityY: proj.velocity.y,
+                                type: proj.type,
+                                owner: dreadnaught.id,
+                                color: proj.color,
+                                size: proj.width || 6,
+                                life: 1,
+                                maxLife: 6,
+                                update: function(deltaTime) {
+                                    proj.update(deltaTime);
+                                    this.x = proj.x;
+                                    this.y = proj.y;
+                                    this.velocityX = proj.velocity.x;
+                                    this.velocityY = proj.velocity.y;
+                                    if (proj.range && proj.range > 0) {
+                                        const remaining = Math.max(0, 1 - proj.distanceTraveled / proj.range);
+                                        this.life = remaining;
+                                    }
+                                },
+                                render: function(ctx) { proj.render(ctx); }
+                            };
+                        } else {
+                            // Fusion Mortar - explosive rocket
+                            const proj = new Projectile(
+                                mountWorldX,
+                                mountWorldY,
+                                angle + Math.PI/2,
+                                'rocket',
+                                45, // damage
+                                320, // speed
+                                900, // range
+                                false, // homing
+                                0, // splash
+                                120, // explosionRadius
+                                50, // explosionDamage
+                                180, // minDetonationRange
+                                500 // maxDetonationRange
+                            );
+                            proj.color = '#ff6600';
+                            proj.trail = true;
+                            proj.trailColor = '#ffaa00';
+                            proj.explosive = true;
+
+                            npcBossProjectile = {
+                                __wrapped: proj,
+                                x: proj.x,
+                                y: proj.y,
+                                velocityX: proj.velocity.x,
+                                velocityY: proj.velocity.y,
+                                type: proj.type,
+                                owner: dreadnaught.id,
+                                color: proj.color,
+                                size: proj.width || 8,
+                                life: 1,
+                                maxLife: 6,
+                                update: function(deltaTime) {
+                                    proj.update(deltaTime);
+                                    this.x = proj.x;
+                                    this.y = proj.y;
+                                    this.velocityX = proj.velocity.x;
+                                    this.velocityY = proj.velocity.y;
+                                    if (proj.range && proj.range > 0) {
+                                        const remaining = Math.max(0, 1 - proj.distanceTraveled / proj.range);
+                                        this.life = remaining;
+                                    }
+                                },
+                                render: function(ctx) { proj.render(ctx); }
+                            };
+                        }
+
                         if (!this.world.npcProjectiles) {
                             this.world.npcProjectiles = [];
                         }
-                        this.world.npcProjectiles.push(projectile);
-                        
+                        this.world.npcProjectiles.push(npcBossProjectile);
+
                         // Broadcast projectile to other players
-                        this.broadcastNPCProjectile(projectile);
+                        this.broadcastNPCProjectile(npcBossProjectile);
                         
                         mount.lastFire = currentTime;
                     }
