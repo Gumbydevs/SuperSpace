@@ -1459,7 +1459,7 @@ input[type="range"] {
     #afterburner-button {
         width: 50px;
         height: 50px;
-        bottom: 150px; /* Moved higher to prevent overlap */
+        bottom: 100px; /* Moved higher to prevent overlap */
         right: 20px;
         font-size: 18px;
     }
