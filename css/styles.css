@@ -41,6 +41,29 @@ html, body {
     width: 100%;
     overflow: hidden;
     overscroll-behavior: none;
+    /* Fix for mobile viewport issues */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Prevent zoom on all elements */
+* {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Re-enable selection for form elements */
+input, textarea, select, button, [contenteditable] {
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
 }
 
 body {
@@ -52,29 +75,23 @@ body {
     font-weight: 400;
     /* overflow is handled on html/body to avoid mobile bounce/scroll */
     /* keep overscroll-behavior none at root to stop pull-to-refresh and bounce */
-    /* Disable text selection globally to prevent accidental highlighting */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
     /* Disable touch callouts on mobile */
     -webkit-touch-callout: none;
     /* Disable tap highlight on mobile */
     -webkit-tap-highlight-color: transparent;
+    /* Prevent mobile zoom issues */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
 }
 
-/* Allow text selection on form elements where it's needed */
-input, textarea, select, button, [contenteditable] {
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-    user-select: auto;
-}
+
 
 .game-container {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    /* Use 100% instead of 100vw/100vh for better mobile compatibility */
 }
 
 #gameCanvas {
@@ -193,7 +210,7 @@ h1.superspace-title {
 /* Unified Options/Instructions Overlay - Space Theme Improvements */
 #options-overlay {
     position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(10,12,32,0.25);
     z-index: 10000;
     display: flex;
@@ -941,10 +958,32 @@ input[type="range"] {
         z-index: 50 !important; /* Lower than player list (z-index: 1001) */
     }
     
-    /* Global mobile adjustments */
-    body {
-        -webkit-text-size-adjust: 100%;
-        -ms-text-size-adjust: 100%;
+    /* Ensure mobile viewport fills correctly */
+    .game-container {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    #gameCanvas {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    #hud {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 10px !important; /* Reduced padding for mobile */
     }
     
     /* Menu adjustments for mobile */
@@ -1231,6 +1270,8 @@ input[type="range"] {
         pointer-events: none;
         z-index: 1001;
         background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+        /* Add safe area padding for devices with bottom indicators */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     
     .touch-joystick {
