@@ -501,7 +501,7 @@ export class InputHandler {
         // Apply computed positions from CSS variables to ensure buttons are placed correctly at runtime.
         const applyTouchButtonPositions = () => {
             try {
-+                const rootStyles = getComputedStyle(touchUI);
+                const rootStyles = getComputedStyle(touchUI);
                 const gap = parseInt(rootStyles.getPropertyValue('--touch-gap')) || 30;
                 const gapLarge = parseInt(rootStyles.getPropertyValue('--touch-gap-large')) || 100;
 
