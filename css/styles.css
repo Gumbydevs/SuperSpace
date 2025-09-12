@@ -719,6 +719,8 @@ input[type="range"] {
     font-weight: 500;
     font-size: 0.9em;
     white-space: nowrap; /* Prevent text wrapping that could cause size changes */
+    min-width: 160px; /* Fixed width to accommodate longest weapon name "Quantum Disruptor" */
+    box-sizing: border-box; /* Include padding and border in width calculation */
 }
 
 #status-panel .status-label {
@@ -1203,6 +1205,8 @@ input[type="range"] {
     #status-panel .status-item {
         font-size: 12px !important;
         margin-bottom: 3px !important;
+        min-width: 140px !important; /* Slightly smaller for mobile but still fixed */
+        box-sizing: border-box !important;
     }
 
     #status-panel .status-label {
