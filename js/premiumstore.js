@@ -396,6 +396,10 @@ export class PremiumStore {
         this.saveSpaceGems();
         
         if (packageId) {
+            // Find the gem package to get the real price
+            const gemPackage = this.gemPackages.find(p => p.id === packageId);
+            const realPrice = gemPackage ? gemPackage.price : 0;
+            
             this.premiumPurchases.purchaseHistory.push({
                 type: 'gems',
                 id: packageId,
@@ -404,6 +408,12 @@ export class PremiumStore {
                 timestamp: Date.now()
             });
             this.savePremiumPurchases();
+            
+            // Track revenue for analytics (real money purchase)
+            if (window.analytics && gemPackage) {
+                console.log(`💰 Tracking revenue purchase: ${gemPackage.name} for $${realPrice}`);
+                window.analytics.trackGemPurchase(amount, realPrice, 'USD');
+            }
         }
         
         console.log(`Added ${amount} Space Gems. Total: ${this.spaceGems}`);
@@ -433,21 +443,14 @@ export class PremiumStore {
     
     // Toggle store display
     toggleStore() {
-        console.log('🏪 PREMIUM STORE TOGGLE:', 'storeOpen before:', this.storeOpen, 'will become:', !this.storeOpen);
         this.storeOpen = !this.storeOpen;
         if (this.storeOpen) {
-            console.log('🏪 PREMIUM STORE OPENED - tracking store visit');
             this.updateOwnedStatus();
             
             // Track store visit for analytics
             if (window.analytics) {
-                console.log('🏪 Calling trackStoreVisit with analytics:', !!window.analytics);
                 window.analytics.trackStoreVisit('premium_store');
-            } else {
-                console.warn('🏪 window.analytics not available for trackStoreVisit');
             }
-        } else {
-            console.log('🏪 PREMIUM STORE CLOSED - no tracking');
         }
     }
     

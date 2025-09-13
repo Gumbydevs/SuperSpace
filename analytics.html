@@ -316,6 +316,10 @@
                     <div class="stat-label">Revenue</div>
                     <div class="stat-value" id="revenue">$0</div>
                 </div>
+                <div class="stat-item">
+                    <div class="stat-label">Gems Spent</div>
+                    <div class="stat-value" id="gemsSpent">0</div>
+                </div>
             </div>
         </div>
 
@@ -488,6 +492,7 @@
             document.getElementById('storeVisits').textContent = data.storeVisits || 0;
             document.getElementById('purchases').textContent = data.purchases || 0;
             document.getElementById('revenue').textContent = `$${(data.revenue || 0).toFixed(2)}`;
+            document.getElementById('gemsSpent').textContent = `${data.gemsSpent || 0} 💎`;
 
             // Update charts
             if (data.playerActivity) {
