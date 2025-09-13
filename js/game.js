@@ -1301,6 +1301,15 @@ class Game {
         
         console.log("FORCING PLAYER EXPLOSION!");
         
+        // Track player death with analytics
+        if (window.analytics) {
+            window.analytics.trackPlayerDied({
+                type: this.player.lastDamageFrom || 'unknown',
+                id: this.player.lastDamageFrom,
+                weapon: null
+            });
+        }
+        
         const playerX = this.player.x;
         const playerY = this.player.y;
         
