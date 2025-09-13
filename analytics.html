@@ -349,20 +349,22 @@
                 label: 'Events',
                 data: [0, 0, 0, 0, 0],
                 backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(255, 159, 64, 0.8)',
-                    'rgba(255, 205, 86, 0.8)',
-                    'rgba(75, 192, 192, 0.8)',
-                    'rgba(153, 102, 255, 0.8)'
+                    'rgba(255, 99, 132, 0.8)',   // Red for Kills
+                    'rgba(255, 159, 64, 0.8)',   // Orange for Deaths  
+                    'rgba(255, 205, 86, 0.8)',   // Yellow for Shots
+                    'rgba(75, 192, 192, 0.8)',   // Teal for Power-ups
+                    'rgba(153, 102, 255, 0.8)'   // Purple for Purchases
                 ],
                 borderColor: [
                     'rgb(255, 99, 132)',
-                    'rgb(255, 159, 64)',
+                    'rgb(255, 159, 64)', 
                     'rgb(255, 205, 86)',
                     'rgb(75, 192, 192)',
                     'rgb(153, 102, 255)'
                 ],
-                borderWidth: 2
+                borderWidth: 2,
+                borderRadius: 4,
+                borderSkipped: false
             }]
         };
 
@@ -399,18 +401,63 @@
             // Game Events Chart
             const eventsCtx = document.getElementById('gameEventsChart').getContext('2d');
             gameEventsChart = new Chart(eventsCtx, {
-                type: 'doughnut',
+                type: 'bar',
                 data: gameEventChartData,
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom',
-                            labels: {
+                            display: false // Hide legend for bar chart since x-axis labels are clear
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { 
                                 color: '#ffffff',
-                                padding: 20
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.1)' 
                             }
+                        },
+                        y: {
+                            ticks: { 
+                                color: '#ffffff',
+                                font: {
+                                    size: 12
+                                },
+                                precision: 0, // Show whole numbers only
+                                callback: function(value) {
+                                    return Math.floor(value); // Ensure integers
+                                }
+                            },
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.1)' 
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    // Show numbers on top of bars
+                    animation: {
+                        onComplete: function() {
+                            const ctx = this.chart.ctx;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 14px Arial';
+                            
+                            this.data.datasets.forEach((dataset, i) => {
+                                const meta = this.getDatasetMeta(i);
+                                meta.data.forEach((bar, index) => {
+                                    const data = dataset.data[index];
+                                    if (data > 0) { // Only show numbers if value > 0
+                                        ctx.fillText(data, bar.x, bar.y - 5);
+                                    }
+                                });
+                            });
                         }
                     }
                 }
@@ -480,7 +527,7 @@
                 events.purchases || 0
             ];
 
-            gameEventsChart.update('none');
+            gameEventsChart.update('active'); // Use 'active' animation to trigger onComplete callback
         }
 
         function updateEventLog(events) {
