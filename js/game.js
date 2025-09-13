@@ -490,8 +490,10 @@ class Game {
         }
     }
     togglePremiumStore() {
+        console.log('🎮 TOGGLE PREMIUM STORE called, gameState:', this.gameState);
         // Allow premium store access during menu or playing
         if (this.gameState === 'menu' || this.gameState === 'playing') {
+            console.log('🎮 Game state allows premium store access');
             // Close avatar modal if open
             const avatarModal = document.getElementById('avatarModal');
             if (avatarModal && !avatarModal.classList.contains('hidden')) {
@@ -503,7 +505,10 @@ class Game {
                 optionsOverlay.classList.add('hidden');
             }
             // Open the premium store
+            console.log('🎮 Calling this.premiumStore.toggleStore()');
             this.premiumStore.toggleStore();
+        } else {
+            console.log('🎮 Game state does not allow premium store access:', this.gameState);
         }
     }
 

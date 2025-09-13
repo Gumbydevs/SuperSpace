@@ -433,14 +433,21 @@ export class PremiumStore {
     
     // Toggle store display
     toggleStore() {
+        console.log('🏪 PREMIUM STORE TOGGLE:', 'storeOpen before:', this.storeOpen, 'will become:', !this.storeOpen);
         this.storeOpen = !this.storeOpen;
         if (this.storeOpen) {
+            console.log('🏪 PREMIUM STORE OPENED - tracking store visit');
             this.updateOwnedStatus();
             
             // Track store visit for analytics
             if (window.analytics) {
+                console.log('🏪 Calling trackStoreVisit with analytics:', !!window.analytics);
                 window.analytics.trackStoreVisit('premium_store');
+            } else {
+                console.warn('🏪 window.analytics not available for trackStoreVisit');
             }
+        } else {
+            console.log('🏪 PREMIUM STORE CLOSED - no tracking');
         }
     }
     
