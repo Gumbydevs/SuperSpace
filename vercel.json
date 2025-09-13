@@ -6,8 +6,14 @@
       "use": "@vercel/static"
     }
   ],
+  "functions": {
+    "api/analytics.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/", "dest": "/index.html" },
     { "src": "/css/(.*)", "dest": "/css/$1" },
     { "src": "/js/(.*)", "dest": "/js/$1" }
