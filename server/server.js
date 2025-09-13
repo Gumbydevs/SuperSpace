@@ -48,7 +48,7 @@ console.error = (...args) => {
 app.use(cors({
   origin: '*',
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
   credentials: false
 }));
 
