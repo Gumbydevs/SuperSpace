@@ -3,6 +3,34 @@
  * Add this script to help debug analytics issues
  */
 
+// Override fetch to monitor analytics requests
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    const url = args[0];
+    const options = args[1];
+    
+    // Check if this is an analytics request
+    if (url && url.includes('/analytics/track')) {
+        console.log('📡 ANALYTICS REQUEST:', url, options);
+        
+        // Call original fetch and monitor response
+        return originalFetch.apply(this, args).then(response => {
+            if (response.ok) {
+                console.log('✅ ANALYTICS REQUEST SUCCESS:', url, response.status);
+            } else {
+                console.error('❌ ANALYTICS REQUEST FAILED:', url, response.status, response.statusText);
+            }
+            return response;
+        }).catch(error => {
+            console.error('❌ ANALYTICS REQUEST ERROR:', url, error);
+            throw error;
+        });
+    }
+    
+    // For non-analytics requests, just call original fetch
+    return originalFetch.apply(this, args);
+};
+
 // Override console.log to also log analytics calls
 const originalConsoleLog = console.log;
 console.log = function(...args) {
