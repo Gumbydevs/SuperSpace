@@ -530,26 +530,143 @@ class Game {
             }
         }
     }
+    
+    // Security: Check if we're in a development environment
+    isDevEnvironment() {
+        // Simplified check - allow admin access but with password protection
+        // This allows testing on live deployment while still requiring authentication
+        return true; // Always allow, but password will protect access
+    }
+    
+    // Secure admin access method
+    attemptAdminAccess() {
+        // Check environment (now always returns true but kept for future use)
+        if (!this.isDevEnvironment()) {
+            console.log('Admin access denied: Not in development environment');
+            this.showSecurityMessage('Admin access is only available in development environment');
+            return;
+        }
+        
+        // Bass fishing themed password authentication
+        const password = prompt('Developer Access\nEnter the bass fishing password:');
+        
+        if (password === null) {
+            console.log('Admin authentication cancelled');
+            return;
+        }
+        
+        // Bass fishing themed passwords (case insensitive)
+        const validPasswords = [
+            'largemouth',
+            'spinnerbait',
+            'crankbait',
+            'texas rig',
+            'topwater',
+            'bass master',
+            'lunker'
+        ];
+        
+        const enteredPassword = password.toLowerCase().trim();
+        
+        if (validPasswords.includes(enteredPassword)) {
+            console.log('Admin authentication successful');
+            this.toggleAdmin();
+        } else {
+            console.log('Admin authentication failed');
+            this.showSecurityMessage('Incorrect password - think bass fishing!');
+        }
+    }
+    
+    // Show security message to user
+    showSecurityMessage(message) {
+        // Create a temporary overlay to show the message
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 10000;
+            font-family: 'Orbitron', Arial, sans-serif;
+            font-size: 16px;
+            text-align: center;
+            border: 2px solid #ff4444;
+        `;
+        overlay.textContent = message;
+        
+        document.body.appendChild(overlay);
+        
+        // Remove message after 3 seconds
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        }, 3000);
+    }
+    
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
         // Admin key combination for testing purposes 
         const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY'];
         
-        // Track key sequence for cheat codes
+        // Track key sequence for cheat codes and admin access
         let keySequence = [];
         let keysPressed = new Set();
+        let adminSequence = ['KeyA', 'KeyD', 'KeyM', 'KeyI', 'KeyN']; // Type "ADMIN"
+        let adminSequenceTimer = null;
+        
         window.addEventListener('keydown', e => {
             // Track pressed keys for admin combination
             keysPressed.add(e.code);
-            // console.log('Key pressed:', e.code, 'Current keys:', Array.from(keysPressed));
             
-            // Check for admin combination (must be pressed together)
-            if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
-                console.log('Admin key combination detected!');
-                this.toggleAdmin();
-                keysPressed.clear(); // Clear to prevent repeated triggers
+            // Handle admin key sequence (type A-D-M-I-N)
+            if (adminSequenceTimer) {
+                clearTimeout(adminSequenceTimer);
+            }
+            
+            keySequence.push(e.code);
+            
+            // Reset sequence if it gets too long or wrong key
+            if (keySequence.length > adminSequence.length) {
+                keySequence = [e.code];
+            }
+            
+            // Check if sequence matches admin sequence
+            let sequenceMatches = true;
+            for (let i = 0; i < keySequence.length; i++) {
+                if (keySequence[i] !== adminSequence[i]) {
+                    sequenceMatches = false;
+                    break;
+                }
+            }
+            
+            if (!sequenceMatches) {
+                keySequence = keySequence[keySequence.length - 1] === adminSequence[0] ? [keySequence[keySequence.length - 1]] : [];
+            }
+            
+            // If complete sequence is typed, attempt admin authentication
+            if (keySequence.length === adminSequence.length && sequenceMatches) {
+                this.attemptAdminAccess();
+                keySequence = [];
+                keysPressed.clear();
                 return;
             }
+            
+            // Reset sequence after 3 seconds of inactivity
+            adminSequenceTimer = setTimeout(() => {
+                keySequence = [];
+            }, 3000);
+            
+            // OLD FTG combination - now disabled for security
+            // if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
+            //     console.log('Old admin combo detected but disabled for security');
+            //     keysPressed.clear();
+            //     return;
+            // }
             
             // Admin panel access removed from F12 - use secret key sequence instead 
             
