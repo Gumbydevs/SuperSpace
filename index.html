@@ -9,10 +9,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Vercel Analytics - Modern Import Method -->
+    <!-- Vercel Analytics - Proper Import -->
+    <script src="https://va.vercel-scripts.com/v1/script.js" data-project-id="your-project-id" defer></script>
     <script type="module">
-        import { track } from 'https://cdn.skypack.dev/@vercel/analytics';
-        window.vercelTrack = track;
+        // Alternative: Try to import from unpkg
+        try {
+            const { track } = await import('https://unpkg.com/@vercel/analytics@1.5.0/dist/index.js');
+            window.vercelTrack = track;
+            console.log('✅ Vercel Analytics loaded via unpkg');
+        } catch (e) {
+            console.log('⚠️ Vercel Analytics not available, using debug mode');
+        }
     </script>
     <script src="js/vercelAnalytics.js"></script>
     <script>
