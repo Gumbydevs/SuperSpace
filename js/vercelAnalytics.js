@@ -58,7 +58,23 @@ class SuperSpaceAnalytics {
             };
             
             window.va('track', eventName, enrichedProperties);
-            console.log(`Analytics: ${eventName}`, enrichedProperties);
+            console.log(`🎯 VERCEL ANALYTICS EVENT: ${eventName}`, enrichedProperties);
+            
+            // Also send to our custom analytics API as backup
+            this.sendToCustomAnalytics(eventName, enrichedProperties);
+        }
+    }
+
+    // Backup analytics to our own endpoint
+    async sendToCustomAnalytics(eventName, properties) {
+        try {
+            await fetch('/api/analytics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event: eventName, data: properties })
+            });
+        } catch (e) {
+            // Silently fail - this is just backup tracking
         }
     }
 
