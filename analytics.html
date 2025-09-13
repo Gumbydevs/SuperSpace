@@ -539,7 +539,14 @@
             try {
                 showRefreshIndicator();
                 // Use the Render server analytics endpoint instead of Vercel
-                const response = await fetch('https://superspace-server.onrender.com/analytics');
+                // Add cache busting parameter to force fresh requests
+                const response = await fetch(`https://superspace-server.onrender.com/analytics?t=${Date.now()}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
