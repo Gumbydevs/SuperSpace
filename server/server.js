@@ -88,10 +88,13 @@ app.get('/analytics', (req, res) => {
   try {
     const stats = analytics.getCurrentStats();
     
+    // Use actual connected players count from gameState
+    const actualActivePlayers = Object.keys(gameState.players).length;
+    
     // Transform data to match dashboard expectations
     const dashboardData = {
-      // Basic metrics that dashboard expects
-      activePlayers: stats.activeSessions || 0,
+      // Basic metrics that dashboard expects - use real player count
+      activePlayers: actualActivePlayers,
       peakPlayers: stats.today?.peakConcurrent || 0,
       totalSessions: stats.today?.totalSessions || 0,
       avgSessionTime: Math.floor(stats.today?.averageSessionDuration || 0),
@@ -109,7 +112,7 @@ app.get('/analytics', (req, res) => {
       revenue: stats.today?.totalSpent || 0,
       
       // Chart data
-      playerActivity: generatePlayerActivityData(stats),
+      playerActivity: generatePlayerActivityData({ activeSessions: actualActivePlayers }),
       gameEvents: {
         kills: stats.today?.totalKills || 0,
         deaths: stats.today?.totalDeaths || 0,
@@ -119,8 +122,17 @@ app.get('/analytics', (req, res) => {
       },
       
       // Recent events for live log
-      recentEvents: stats.recentEvents || []
+      recentEvents: stats.recentEvents || [],
+      
+      // Debug info
+      debug: {
+        analyticsActiveSessions: stats.activeSessions || 0,
+        gameStateActivePlayers: actualActivePlayers,
+        playerNames: Object.values(gameState.players).map(p => p.name)
+      }
     };
+    
+    console.log(`📊 Analytics request - Active players: ${actualActivePlayers}, Analytics sessions: ${stats.activeSessions || 0}`);
     
     res.json(dashboardData);
   } catch (error) {
@@ -500,6 +512,28 @@ io.on('connection', (socket) => {
   socket.on('playerJoin', (playerData) => {
     // Update activity timestamp
     playerLastActivity[socket.id] = Date.now();
+    
+    // Track player join in analytics
+    const playerId = playerData.name || `Player-${socket.id.substring(0, 4)}`;
+    analytics.processEvent({
+      sessionId: `session_${Date.now()}_${socket.id}`,
+      playerId: playerId,
+      eventType: 'session_start',
+      timestamp: Date.now(),
+      data: { 
+        socketId: socket.id,
+        playerName: playerId 
+      }
+    }, socket.request.connection.remoteAddress || 'unknown');
+    
+    // Store analytics info on socket for disconnect handling
+    socket.analytics = {
+      playerId: playerId,
+      sessionId: `session_${Date.now()}_${socket.id}`,
+      startTime: Date.now()
+    };
+    
+    console.log(`📊 Player joined analytics: ${playerId} (Active players: ${analytics.sessions.size})`);
     
     // Add the player to the game state
     gameState.players[socket.id] = {
@@ -1548,16 +1582,18 @@ io.on('connection', (socket) => {
         const sessionObj = analytics.sessions.get(pid);
         if (sessionObj) {
           // compute approximate session duration
-          const start = sessionObj.startTime || sessionObj.events && sessionObj.events.length && sessionObj.events[0].timestamp || Date.now();
-          const duration = Date.now() - start;
+          const start = socket.analytics.startTime || sessionObj.startTime || Date.now();
+          const duration = Math.max(0, Date.now() - start);
           const endEvent = {
-            sessionId: socket.analytics.sessionId || sessionObj.sessionIds && Array.from(sessionObj.sessionIds)[0] || `session_${Date.now()}_${pid}`,
+            sessionId: socket.analytics.sessionId || `session_${Date.now()}_${pid}`,
             playerId: pid,
             eventType: 'session_end',
             timestamp: Date.now(),
             data: { sessionDuration: duration }
           };
           analytics.processEvent(endEvent, clientIp);
+          
+          console.log(`📊 Player left analytics: ${pid} (Session duration: ${Math.floor(duration/1000)}s, Active players: ${analytics.sessions.size})`);
         }
       }
     } catch (e) {
