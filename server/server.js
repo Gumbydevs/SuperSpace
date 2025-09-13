@@ -201,16 +201,26 @@ app.post('/analytics/track', (req, res) => {
   try {
     const { event, data, timestamp, url } = req.body;
     
-    // Track the event in our analytics system
+    // Track the event in our analytics system using the correct method and format
     if (event && data && data.playerId) {
-      analytics.trackEvent(data.playerId, event, data, req.ip);
+      const eventData = {
+        sessionId: data.sessionId || `session_${Date.now()}_${data.playerId}`,
+        playerId: data.playerId,
+        eventType: event,
+        timestamp: timestamp || Date.now(),
+        data: data
+      };
+      
+      analytics.processEvent(eventData, req.ip);
       console.log(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
+    } else {
+      console.log(`📊 Analytics event missing required fields:`, { event, hasData: !!data, hasPlayerId: data?.playerId });
     }
     
     res.json({ success: true, event, timestamp });
   } catch (error) {
     console.error('Error tracking analytics event:', error);
-    res.status(500).json({ error: 'Failed to track event' });
+    res.status(500).json({ error: 'Failed to track event', details: error.message });
   }
 });
 
