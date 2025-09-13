@@ -74,7 +74,7 @@ class SuperSpaceAnalytics {
         }
         
         // Also send to our custom analytics API as backup (silently)
-        this.sendToCustomAnalytics(eventName, enrichedProperties);
+        // this.sendToCustomAnalytics(eventName, enrichedProperties);
     }
 
     // Backup analytics to our own endpoint
