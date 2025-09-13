@@ -9,11 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Vercel Analytics -->
-    <script>
-      window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
+    <!-- Vercel Analytics - Modern Import Method -->
+    <script type="module">
+        import { track } from 'https://cdn.skypack.dev/@vercel/analytics';
+        window.vercelTrack = track;
     </script>
-    <script src="/_vercel/insights/script.js" defer></script>
     <script src="js/vercelAnalytics.js"></script>
     <script>
         // Connect to the server to get player count as soon as the page loads

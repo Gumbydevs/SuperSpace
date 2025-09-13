@@ -46,39 +46,65 @@ class SuperSpaceAnalytics {
     }
 
     track(eventName, properties = {}) {
-        if (typeof window.va === 'function') {
-            // Add common properties to all events
-            const enrichedProperties = {
-                ...properties,
-                playerId: this.playerId,
-                sessionId: this.sessionId,
-                sessionDuration: Date.now() - this.sessionStartTime,
-                isReturning: this.isReturningPlayer,
-                timestamp: Date.now()
-            };
-            
+        // Add common properties to all events
+        const enrichedProperties = {
+            ...properties,
+            playerId: this.playerId,
+            sessionId: this.sessionId,
+            sessionDuration: Date.now() - this.sessionStartTime,
+            isReturning: this.isReturningPlayer,
+            timestamp: Date.now()
+        };
+        
+        // Try multiple Vercel Analytics methods
+        if (typeof window.vercelTrack === 'function') {
+            // Modern @vercel/analytics import method
+            window.vercelTrack(eventName, enrichedProperties);
+            console.log(`🎯 VERCEL TRACK EVENT: ${eventName}`, enrichedProperties);
+        } else if (typeof window.va === 'function') {
+            // Legacy va method
             window.va('track', eventName, enrichedProperties);
-            console.log(`🎯 VERCEL ANALYTICS EVENT: ${eventName}`, enrichedProperties);
-            
-            // Also send to our custom analytics API as backup
-            this.sendToCustomAnalytics(eventName, enrichedProperties);
+            console.log(`🎯 VERCEL VA EVENT: ${eventName}`, enrichedProperties);
+        } else if (typeof window.gtag === 'function') {
+            // Google Analytics fallback
+            window.gtag('event', eventName, enrichedProperties);
+            console.log(`🎯 GTAG EVENT: ${eventName}`, enrichedProperties);
+        } else {
+            console.log(`🎯 ANALYTICS DEBUG (no tracking available): ${eventName}`, enrichedProperties);
         }
+        
+        // Also send to our custom analytics API as backup (silently)
+        this.sendToCustomAnalytics(eventName, enrichedProperties);
     }
 
     // Backup analytics to our own endpoint
     async sendToCustomAnalytics(eventName, properties) {
         try {
-            await fetch('/api/analytics', {
+            // Only send to custom analytics if the API exists
+            const response = await fetch('/api/analytics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ event: eventName, data: properties })
             });
+            
+            if (!response.ok && response.status !== 404) {
+                console.warn('Custom analytics API error:', response.status);
+            }
         } catch (e) {
-            // Silently fail - this is just backup tracking
+            // Silently fail for 404s and network errors - this is just backup tracking
+            if (!e.message.includes('404')) {
+                console.warn('Custom analytics error:', e.message);
+            }
         }
     }
 
     initializeTracking() {
+        // Debug Vercel Analytics setup
+        console.log('🔍 Checking Vercel Analytics setup:');
+        console.log('window.va available:', typeof window.va);
+        console.log('window.gtag available:', typeof window.gtag);
+        console.log('_vercel available:', typeof window._vercel);
+        
         // Track session start
         this.track('session_start', {
             userAgent: navigator.userAgent,
