@@ -610,11 +610,15 @@ class Game {
     
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
-        // Simple admin access - just use a single key combination that's hard to discover
-        // Press CTRL + SHIFT + B + A + S + S (for bass fishing!)
+        // Simple admin access - CTRL+SHIFT+B+A+S+S
         let bassSequence = [];
         const bassKeys = ['KeyB', 'KeyA', 'KeyS', 'KeyS'];
         let bassTimer = null;
+        
+        // Keep these for the existing cheat code system
+        const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY'];
+        let keySequence = [];
+        let keysPressed = new Set();
         
         window.addEventListener('keydown', e => {
             // Don't handle admin sequence if user is typing in input fields
@@ -625,7 +629,10 @@ class Game {
                 return;
             }
             
-            // Check for CTRL+SHIFT+B+A+S+S sequence
+            // Track pressed keys for other systems
+            keysPressed.add(e.code);
+            
+            // Check for CTRL+SHIFT+B+A+S+S sequence for admin access
             if (e.ctrlKey && e.shiftKey) {
                 if (bassTimer) clearTimeout(bassTimer);
                 
