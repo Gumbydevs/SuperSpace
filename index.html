@@ -9,16 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Vercel Analytics - Proper Import -->
-    <script src="https://va.vercel-scripts.com/v1/script.js" data-project-id="your-project-id" defer></script>
-    <script type="module">
-        // Alternative: Try to import from unpkg
-        try {
-            const { track } = await import('https://unpkg.com/@vercel/analytics@1.5.0/dist/index.js');
-            window.vercelTrack = track;
-            console.log('✅ Vercel Analytics loaded via unpkg');
-        } catch (e) {
-            console.log('⚠️ Vercel Analytics not available, using debug mode');
+    <!-- Vercel Analytics - Simplified -->
+    <script>
+        // Simple Vercel Analytics setup without external dependencies
+        window.vercelTrack = function(event, data) {
+            console.log('✅ Vercel Analytics (fallback):', event, data);
+            // This will be replaced by actual Vercel Analytics when available
+        };
+        
+        // Try to load Vercel Analytics
+        if (typeof window.va !== 'undefined') {
+            window.vercelTrack = (event, data) => window.va('track', event, data);
+            console.log('✅ Vercel Analytics loaded via window.va');
         }
     </script>
     <script src="js/vercelAnalytics.js"></script>
