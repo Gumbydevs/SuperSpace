@@ -636,31 +636,33 @@ class Game {
                 clearTimeout(adminSequenceTimer);
             }
             
-            keySequence.push(e.code);
-            console.log('Admin sequence progress:', keySequence.map(key => key.replace('Key', '')).join(''));
-            
-            // Reset sequence if it gets too long or wrong key
-            if (keySequence.length > adminSequence.length) {
-                keySequence = [e.code];
-                console.log('Sequence too long, reset to:', e.code.replace('Key', ''));
-            }
-            
-            // Check if sequence matches admin sequence
-            let sequenceMatches = true;
-            for (let i = 0; i < keySequence.length; i++) {
-                if (keySequence[i] !== adminSequence[i]) {
-                    sequenceMatches = false;
-                    break;
+            // Check if this key could start or continue the sequence
+            if (keySequence.length === 0) {
+                // Starting fresh - only accept 'A' as first key
+                if (e.code === 'KeyA') {
+                    keySequence = ['KeyA'];
+                    console.log('Admin sequence started: A');
+                }
+            } else {
+                // Continuing sequence - check if next key matches
+                const expectedKey = adminSequence[keySequence.length];
+                if (e.code === expectedKey) {
+                    keySequence.push(e.code);
+                    console.log('Admin sequence progress:', keySequence.map(key => key.replace('Key', '')).join(''));
+                } else {
+                    // Wrong key - check if it could start a new sequence
+                    if (e.code === 'KeyA') {
+                        keySequence = ['KeyA'];
+                        console.log('Admin sequence restarted: A');
+                    } else {
+                        keySequence = [];
+                        console.log('Admin sequence reset');
+                    }
                 }
             }
             
-            if (!sequenceMatches) {
-                keySequence = keySequence[keySequence.length - 1] === adminSequence[0] ? [keySequence[keySequence.length - 1]] : [];
-                console.log('Sequence mismatch, reset');
-            }
-            
             // If complete sequence is typed, attempt admin authentication
-            if (keySequence.length === adminSequence.length && sequenceMatches) {
+            if (keySequence.length === adminSequence.length) {
                 console.log('ADMIN sequence complete! Attempting authentication...');
                 this.attemptAdminAccess();
                 keySequence = [];
