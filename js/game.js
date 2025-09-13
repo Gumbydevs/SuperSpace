@@ -33,6 +33,14 @@ class Game {
         // Here we initialize all major game systems
         this.world = new World();  // Manages game world, asteroids, powerups, etc.
         this.player = new Player(this.canvas.width / 2, this.canvas.height / 2);  // Creates player ship at center
+        
+        // Track player spawn after short delay to ensure everything is initialized
+        setTimeout(() => {
+            if (window.analytics) {
+                window.analytics.trackPlayerSpawned(this.player.shipType);
+            }
+        }, 100);
+        
         this.input = new InputHandler();  // Handles keyboard and mouse input
         this.ui = new UI();  // Manages UI elements on screen
         window.ui = this.ui;  // Make UI accessible globally for avatar manager
@@ -97,16 +105,16 @@ class Game {
         // Set up event listeners for menu buttons
         document.getElementById('play-btn').addEventListener('click', () => {
             // Track UI interaction
-            if (window.gameAnalytics) {
-                window.gameAnalytics.trackUIInteraction('play-btn', 'click');
+            if (window.analytics) {
+                window.analytics.trackUIInteraction('play-btn', 'click');
             }
             this.startGame();
         });
         // Use the new overlay logic for options
         document.getElementById('options-btn').addEventListener('click', () => {
             // Track UI interaction
-            if (window.gameAnalytics) {
-                window.gameAnalytics.trackUIInteraction('options-btn', 'click');
+            if (window.analytics) {
+                window.analytics.trackUIInteraction('options-btn', 'click');
             }
             if (this.ui && this.ui.showOptionsOverlay) {
                 this.ui.showOptionsOverlay();
@@ -668,11 +676,8 @@ class Game {
         });
         
         // Track game start with our custom analytics system
-        if (window.gameAnalytics) {
-            window.gameAnalytics.setPlayerId(this.player.id || `player_${Date.now()}`);
-            window.gameAnalytics.trackGameStart();
-            window.gameAnalytics.trackShipChange(null, this.player.shipType || 'scout');
-        }
+        // Game start tracking is now handled automatically in analytics
+        // when player spawns
         
         // Record start time for survival tracking
         this.gameStartTime = Date.now();
@@ -1026,9 +1031,7 @@ class Game {
             });
             
             // Track game end with our custom analytics system
-            if (window.gameAnalytics) {
-                window.gameAnalytics.trackGameEnd();
-            }
+            // Game end tracking is handled in beforeunload in analytics
             
             // Here we create game over screen UI
             const gameOverScreen = document.createElement('div');

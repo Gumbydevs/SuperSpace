@@ -143,7 +143,14 @@ export class ChallengeSystem {
 
         this.claimed[type].push(challengeId);
         // Award credits
-        if (this.player) this.player.credits += ch.reward;
+        if (this.player) {
+            this.player.credits += ch.reward;
+            
+            // Track coins earned from challenge
+            if (window.analytics) {
+                window.analytics.trackCoinsEarned(ch.reward, 'challenge_reward');
+            }
+        }
         this.saveState();
         return ch.reward;
     }

@@ -84,6 +84,12 @@ export default class Chat {
             }
             return;
         }
+        
+        // Track chat message
+        if (window.analytics) {
+            window.analytics.trackChatMessage(message.length);
+        }
+        
         if (this.socket) {
             this.socket.emit('chatMessage', { message });
             this.chatInput.value = '';

@@ -851,6 +851,11 @@ export class MultiplayerManager {
             this.playerId = this.socket.id;
             this.connected = true;
             
+            // Track server connection
+            if (window.analytics) {
+                window.analytics.trackServerConnection('connected');
+            }
+            
             // Reset connection error count on successful connection
             this.connectionErrorCount = 0;
             
@@ -1031,6 +1036,11 @@ export class MultiplayerManager {
             this.connected = false;
             this.players = {}; // Clear remote players
             
+            // Track server disconnection
+            if (window.analytics) {
+                window.analytics.trackServerConnection('disconnected');
+            }
+            
             // Clear leaderboard update timer
             if (this.leaderboardTimer) {
                 clearInterval(this.leaderboardTimer);
@@ -1052,6 +1062,11 @@ export class MultiplayerManager {
             // Reduce console spam - only log first few errors
             if (!this.connectionErrorCount) this.connectionErrorCount = 0;
             this.connectionErrorCount++;
+            
+            // Track connection error
+            if (window.analytics && this.connectionErrorCount === 1) {
+                window.analytics.trackServerConnection('error');
+            }
             
             if (this.connectionErrorCount <= 3) {
                 console.error('Connection error:', error.message || error);
@@ -1332,14 +1347,22 @@ export class MultiplayerManager {
             this.recentKillEvents.set(killEventKey, now);
             
             // Track analytics for kills and deaths
-            if (window.gameAnalytics) {
+            if (window.analytics) {
                 if (data.attackerId === this.playerId) {
                     // Player got a kill
-                    window.gameAnalytics.trackKill(data.playerId, data.weapon || 'unknown');
+                    window.analytics.trackKill({
+                        type: 'player',
+                        id: data.playerId,
+                        weapon: data.weapon || 'unknown'
+                    });
                 }
                 if (data.playerId === this.playerId) {
                     // Player died
-                    window.gameAnalytics.trackDeath(data.attackerId, data.weapon || 'unknown');
+                    window.analytics.trackPlayerDied({
+                        type: 'player',
+                        id: data.attackerId,
+                        weapon: data.weapon || 'unknown'
+                    });
                 }
             }
             
@@ -4595,6 +4618,11 @@ export class MultiplayerManager {
             // Count is current player (if connected) plus all remote players
             const count = (this.connected ? 1 : 0) + Object.keys(this.players).length;
             playerCountElement.textContent = count;
+            
+            // Track concurrent players for analytics
+            if (window.analytics && count > 0) {
+                window.analytics.trackPlayerCount(count);
+            }
         }
     }
 

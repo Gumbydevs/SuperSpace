@@ -2443,8 +2443,18 @@ export class ShopSystem {
             container.classList.remove('hidden');
             this.updateShopContent();
             this.updateChallengeTabBadge();
+            
+            // Track shop opened
+            if (window.analytics) {
+                window.analytics.trackShopInteraction('opened');
+            }
         } else {
             container.classList.add('hidden');
+            
+            // Track shop closed
+            if (window.analytics) {
+                window.analytics.trackShopInteraction('closed');
+            }
         }
     }
     
@@ -2458,8 +2468,10 @@ export class ShopSystem {
         this.player.credits -= ship.price;
         
         // Track purchase with our analytics system
-        if (window.gameAnalytics) {
-            window.gameAnalytics.trackPurchase(ship.name || shipId, ship.price, 'credits');
+        if (window.analytics) {
+            const oldShip = this.player.shipType;
+            window.analytics.trackShipUpgraded(oldShip, ship.name || shipId, ship.price);
+            window.analytics.trackShopInteraction('purchased', ship.name || shipId);
         }
         
         // Mark as owned
@@ -2509,9 +2521,7 @@ export class ShopSystem {
         }
         
         // Track ship change with our analytics system
-        if (window.gameAnalytics && this.player.shipType) {
-            window.gameAnalytics.trackShipChange(this.player.shipType, shipId);
-        }
+        // Ship change tracking is now handled in buyShip method
         
         // Store the ship type for analytics
         this.player.shipType = shipId;
@@ -2570,8 +2580,9 @@ export class ShopSystem {
         this.player.credits -= weapon.price;
         
         // Track weapon purchase with our analytics system
-        if (window.gameAnalytics) {
-            window.gameAnalytics.trackPurchase(weapon.name || weaponId, weapon.price, 'credits');
+        if (window.analytics) {
+            window.analytics.trackWeaponPurchased(weapon.name || weaponId, weapon.price);
+            window.analytics.trackShopInteraction('purchased', weapon.name || weaponId);
         }
         
         // Mark as owned
@@ -2687,14 +2698,15 @@ export class ShopSystem {
         upgrade.level += 1;
         
         // Track shop purchase
-        if (window.game && typeof window.game.trackAnalyticsEvent === 'function') {
-            window.game.trackAnalyticsEvent('shop_purchase', {
-                upgrade_id: upgradeId,
-                upgrade_name: upgrade.name,
-                upgrade_level: upgrade.level,
-                price_paid: price,
-                remaining_credits: this.player.credits
+        if (window.analytics) {
+            window.analytics.track('upgrade_purchased', {
+                upgradeId: upgradeId,
+                upgradeName: upgrade.name,
+                upgradeLevel: upgrade.level,
+                pricePaid: price,
+                remainingCredits: this.player.credits
             });
+            window.analytics.trackShopInteraction('purchased', upgrade.name);
         }
         
         // Track achievements

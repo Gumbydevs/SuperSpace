@@ -1166,9 +1166,13 @@ export class Player {
     }
 
     die() {
-        // Track player death with our analytics system
-        if (window.gameAnalytics) {
-            window.gameAnalytics.trackDeath(null, null); // We'll get killer info from multiplayer events
+        // Track player death with our new analytics system
+        if (window.analytics) {
+            window.analytics.trackPlayerDied({
+                type: this.lastDamageFrom ? 'player' : 'unknown',
+                id: this.lastDamageFrom,
+                weapon: null // This will be updated by multiplayer events
+            });
         }
         
         // Set health to 0
@@ -1293,6 +1297,11 @@ export class Player {
         // Here we add credits to player's account (from destroying asteroids, etc.)
         this.credits += amount;
         
+        // Track coins earned
+        if (window.analytics) {
+            window.analytics.trackCoinsEarned(amount, 'game_activity');
+        }
+        
         // Save credits to localStorage to persist between deaths
         localStorage.setItem('playerCredits', this.credits.toString());
         
@@ -1309,8 +1318,8 @@ export class Player {
         let projectiles = [];
         
         // Track weapon firing with our analytics system
-        if (window.gameAnalytics) {
-            window.gameAnalytics.trackWeaponFire(this.currentWeapon, null);
+        if (window.analytics) {
+            window.analytics.trackWeaponFired(this.currentWeapon, null);
         }
         
         // Trigger combat tension in ambient music when shooting
