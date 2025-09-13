@@ -366,12 +366,31 @@ class ServerAnalytics {
                 }
                 break;
                 
-            case 'shop_purchase':
-            case 'premium_purchase':
-            case 'purchase':
+            case 'gem_purchase':
+                // Player spending gems on items (avatars, skins, etc.)
+                stats.totalPurchases++;
+                if (event.data.cost || event.data.amount) {
+                    if (!stats.gemsSpent) stats.gemsSpent = 0;
+                    stats.gemsSpent += (event.data.cost || event.data.amount || 0);
+                }
+                break;
+                
+            case 'revenue_purchase':
+                // Real money purchases (PayPal gem purchases)
                 stats.totalPurchases++;
                 if (event.data.cost || event.data.amount) {
                     stats.totalSpent += (event.data.cost || event.data.amount || 0);
+                }
+                break;
+                
+            case 'shop_purchase':
+            case 'premium_purchase':
+            case 'purchase':
+                // Legacy purchase events - treat as gem purchases for backwards compatibility
+                stats.totalPurchases++;
+                if (event.data.cost || event.data.amount) {
+                    if (!stats.gemsSpent) stats.gemsSpent = 0;
+                    stats.gemsSpent += (event.data.cost || event.data.amount || 0);
                 }
                 break;
                 
@@ -571,7 +590,8 @@ class ServerAnalytics {
             totalDeaths: 0,
             totalShots: 0,
             totalPurchases: 0,
-            totalSpent: 0,
+            totalSpent: 0,     // Real money revenue
+            gemsSpent: 0,      // Gems spent on items
             storeVisits: 0,
             powerupsCollected: 0,
             totalAchievements: 0,

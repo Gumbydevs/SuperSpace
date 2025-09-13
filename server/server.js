@@ -109,7 +109,8 @@ app.get('/analytics', (req, res) => {
       premiumPlayers: stats.today?.premiumPlayers || 0,
       storeVisits: stats.today?.storeVisits || 0,
       purchases: stats.today?.totalPurchases || 0,
-      revenue: stats.today?.totalSpent || 0,
+      revenue: stats.today?.totalSpent || 0,        // Real money revenue
+      gemsSpent: stats.today?.gemsSpent || 0,       // Gems spent on items
       
       // Chart data
       playerActivity: generatePlayerActivityData({ activeSessions: actualActivePlayers }),
