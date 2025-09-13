@@ -380,6 +380,11 @@ class ServerAnalytics {
                 stats.powerupsCollected++;
                 break;
                 
+            case 'store_visit':
+                if (!stats.storeVisits) stats.storeVisits = 0;
+                stats.storeVisits++;
+                break;
+                
             case 'achievement_unlocked':
                 stats.totalAchievements++;
                 break;
@@ -567,6 +572,8 @@ class ServerAnalytics {
             totalShots: 0,
             totalPurchases: 0,
             totalSpent: 0,
+            storeVisits: 0,
+            powerupsCollected: 0,
             totalAchievements: 0,
             peakConcurrent: 0,
             currentConcurrent: 0,
