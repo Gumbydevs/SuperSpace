@@ -74,27 +74,25 @@ class SuperSpaceAnalytics {
         }
         
         // Also send to our custom analytics API as backup (silently)
-        // this.sendToCustomAnalytics(eventName, enrichedProperties);
+        this.sendToCustomAnalytics(eventName, enrichedProperties);
     }
 
     // Backup analytics to our own endpoint
     async sendToCustomAnalytics(eventName, properties) {
         try {
-            // Only send to custom analytics if the API exists
-            const response = await fetch('/api/analytics', {
+            // Send to our standalone analytics system
+            await fetch('/api/analytics', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event: eventName, data: properties })
+                body: JSON.stringify({ 
+                    event: eventName, 
+                    data: properties,
+                    timestamp: Date.now(),
+                    url: window.location.href
+                })
             });
-            
-            if (!response.ok && response.status !== 404) {
-                console.warn('Custom analytics API error:', response.status);
-            }
         } catch (e) {
-            // Silently fail for 404s and network errors - this is just backup tracking
-            if (!e.message.includes('404')) {
-                console.warn('Custom analytics error:', e.message);
-            }
+            // Silently fail - this is backup tracking
         }
     }
 
