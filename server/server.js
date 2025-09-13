@@ -97,7 +97,7 @@ app.get('/analytics', (req, res) => {
       activePlayers: actualActivePlayers,
       peakPlayers: stats.today?.peakConcurrent || 0,
       totalSessions: stats.today?.totalSessions || 0,
-      avgSessionTime: Math.floor(stats.today?.averageSessionDuration || 0),
+      avgSessionTime: Math.floor((stats.today?.averageSessionDuration || 0) / 1000),
       
       // Game statistics - map to actual field names
       killsToday: stats.today?.totalKills || 0,

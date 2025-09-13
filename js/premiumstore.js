@@ -349,6 +349,11 @@ export class PremiumStore {
         this.saveSpaceGems();
         this.savePremiumPurchases();
         
+        // Track premium purchase for analytics
+        if (window.analytics) {
+            window.analytics.trackPremiumPurchase(item.name, item.gemPrice, 'gems');
+        }
+        
         // Update owned status to sync the .owned properties
         this.updateOwnedStatus();
         
@@ -431,6 +436,11 @@ export class PremiumStore {
         this.storeOpen = !this.storeOpen;
         if (this.storeOpen) {
             this.updateOwnedStatus();
+            
+            // Track store visit for analytics
+            if (window.analytics) {
+                window.analytics.trackStoreVisit('premium_store');
+            }
         }
     }
     

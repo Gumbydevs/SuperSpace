@@ -42,9 +42,13 @@ export class Player {
             // Take damage based on impact force
             if (impactForce > 100) {
                 const damage = Math.max(5, impactForce * 0.1);
+                // Record that damage is from asteroid collision for analytics
+                this.recordDamageFrom('asteroid');
                 this.takeDamage(damage);
             } else if (impactForce > 10) {
                 // Apply at least minimal damage for smaller bumps
+                // Record that damage is from asteroid collision for analytics
+                this.recordDamageFrom('asteroid');
                 this.takeDamage(5);
             }
             // Play collision sound
