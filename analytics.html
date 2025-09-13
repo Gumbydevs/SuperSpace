@@ -538,7 +538,8 @@
         async function fetchAnalyticsData() {
             try {
                 showRefreshIndicator();
-                const response = await fetch('/api/analytics');
+                // Use the Render server analytics endpoint instead of Vercel
+                const response = await fetch('https://superspace-server.onrender.com/analytics');
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

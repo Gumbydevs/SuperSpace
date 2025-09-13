@@ -126,6 +126,24 @@ app.get('/analytics/retention', (req, res) => {
   }
 });
 
+// Analytics tracking endpoint - receives events from the client
+app.post('/analytics/track', (req, res) => {
+  try {
+    const { event, data, timestamp, url } = req.body;
+    
+    // Track the event in our analytics system
+    if (event && data && data.playerId) {
+      analytics.trackEvent(data.playerId, event, data, req.ip);
+      console.log(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
+    }
+    
+    res.json({ success: true, event, timestamp });
+  } catch (error) {
+    console.error('Error tracking analytics event:', error);
+    res.status(500).json({ error: 'Failed to track event' });
+  }
+});
+
 // Debug endpoint - shows current sessions and today's dailyStats for troubleshooting
 app.get('/analytics/debug', (req, res) => {
   try {

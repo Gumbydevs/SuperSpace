@@ -80,8 +80,8 @@ class SuperSpaceAnalytics {
     // Backup analytics to our own endpoint
     async sendToCustomAnalytics(eventName, properties) {
         try {
-            // Send to our standalone analytics system
-            await fetch('/api/analytics', {
+            // Send to the Render server analytics endpoint instead of Vercel
+            await fetch('https://superspace-server.onrender.com/analytics/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
