@@ -620,6 +620,14 @@ class Game {
         let adminSequenceTimer = null;
         
         window.addEventListener('keydown', e => {
+            // Don't handle admin sequence if user is typing in input fields
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
+            
+            if (isTyping) {
+                return; // Let the browser handle the key normally
+            }
+            
             // Track pressed keys for admin combination
             keysPressed.add(e.code);
             
@@ -629,10 +637,12 @@ class Game {
             }
             
             keySequence.push(e.code);
+            console.log('Admin sequence progress:', keySequence.map(key => key.replace('Key', '')).join(''));
             
             // Reset sequence if it gets too long or wrong key
             if (keySequence.length > adminSequence.length) {
                 keySequence = [e.code];
+                console.log('Sequence too long, reset to:', e.code.replace('Key', ''));
             }
             
             // Check if sequence matches admin sequence
@@ -646,10 +656,12 @@ class Game {
             
             if (!sequenceMatches) {
                 keySequence = keySequence[keySequence.length - 1] === adminSequence[0] ? [keySequence[keySequence.length - 1]] : [];
+                console.log('Sequence mismatch, reset');
             }
             
             // If complete sequence is typed, attempt admin authentication
             if (keySequence.length === adminSequence.length && sequenceMatches) {
+                console.log('ADMIN sequence complete! Attempting authentication...');
                 this.attemptAdminAccess();
                 keySequence = [];
                 keysPressed.clear();
@@ -659,6 +671,7 @@ class Game {
             // Reset sequence after 3 seconds of inactivity
             adminSequenceTimer = setTimeout(() => {
                 keySequence = [];
+                console.log('Admin sequence timed out');
             }, 3000);
             
             // OLD FTG combination - now disabled for security
