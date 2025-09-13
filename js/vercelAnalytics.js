@@ -199,6 +199,70 @@ class SuperSpaceAnalytics {
         this.track('player_kill', {
             totalKills: this.totalKills,
             currentStreak: this.currentStreak,
+            maxStreak: this.maxStreak,
+            victimType: victimInfo.type || 'unknown',
+            weapon: victimInfo.weapon || 'unknown'
+        });
+    }
+
+    trackWeaponFired(weapon, targetInfo = null) {
+        this.track('weapon_fired', {
+            weapon: weapon || 'unknown',
+            target: targetInfo?.type || null,
+            sessionEngaged: this.sessionEngaged
+        });
+    }
+
+    trackWeaponPurchased(weaponName, cost) {
+        this.track('premium_purchase', {
+            item: weaponName,
+            amount: cost,
+            category: 'weapon',
+            sessionEngaged: this.sessionEngaged
+        });
+    }
+
+    trackShipUpgraded(oldShip, newShip, cost) {
+        this.track('premium_purchase', {
+            item: newShip,
+            amount: cost,
+            category: 'ship',
+            oldShip: oldShip,
+            sessionEngaged: this.sessionEngaged
+        });
+    }
+
+    trackAchievement(achievementId) {
+        this.track('achievement_unlocked', {
+            name: achievementId,
+            totalKills: this.totalKills,
+            totalDeaths: this.totalDeaths,
+            sessionDuration: Date.now() - this.sessionStartTime
+        });
+    }
+
+    trackCoinsEarned(amount, source) {
+        this.track('coins_earned', {
+            amount: amount,
+            source: source,
+            sessionEngaged: this.sessionEngaged
+        });
+    }
+
+    trackServerConnection(status) {
+        this.track('server_connection', {
+            status: status,
+            sessionDuration: Date.now() - this.sessionStartTime
+        });
+    }
+
+    trackPlayerCount(count) {
+        this.track('concurrent_players', {
+            count: count,
+            sessionEngaged: this.sessionEngaged
+        });
+    }
+            currentStreak: this.currentStreak,
             victimType: victimInfo.type || 'unknown', // 'player', 'npc'
             victimId: victimInfo.id || null,
             weapon: victimInfo.weapon || null

@@ -146,20 +146,33 @@ function generatePlayerActivityData(stats) {
   const activityData = [];
   const now = new Date();
   
-  // Generate last 24 hours of data points (every hour)
-  for (let i = 23; i >= 0; i--) {
-    const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
-    activityData.push({
-      timestamp: time.toISOString(),
-      count: Math.floor(Math.random() * (stats.activeSessions + 1)) // Simulate hourly data
-    });
+  // Get today's hourly activity from analytics if available
+  if (stats.today && stats.today.hourlyActivity) {
+    const hourlyActivity = stats.today.hourlyActivity;
+    
+    // Generate last 24 hours of data points (every hour)
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+      const hour = time.getHours();
+      const count = hourlyActivity[hour] || 0;
+      
+      activityData.push({
+        timestamp: time.toISOString(),
+        count: count
+      });
+    }
+  } else {
+    // Fallback: show current active players for recent hours
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+      const count = i === 0 ? (stats.activeSessions || 0) : 0;
+      
+      activityData.push({
+        timestamp: time.toISOString(),
+        count: count
+      });
+    }
   }
-  
-  // Add current data point
-  activityData.push({
-    timestamp: now.toISOString(),
-    count: stats.activeSessions || 0
-  });
   
   return activityData;
 }

@@ -336,7 +336,9 @@ class ServerAnalytics {
                 }
                 break;
                 
+            // Handle both old and new event naming conventions
             case 'player_kill':
+            case 'kill':
                 stats.totalKills++;
                 if (event.data.weapon) {
                     if (!stats.weaponKills[event.data.weapon]) {
@@ -347,10 +349,14 @@ class ServerAnalytics {
                 break;
                 
             case 'player_death':
+            case 'player_died':
+            case 'death':
                 stats.totalDeaths++;
                 break;
                 
             case 'weapon_fire':
+            case 'weapon_fired':
+            case 'shot_fired':
                 stats.totalShots++;
                 if (event.data.weapon) {
                     if (!stats.weaponUsage[event.data.weapon]) {
@@ -361,10 +367,17 @@ class ServerAnalytics {
                 break;
                 
             case 'shop_purchase':
+            case 'premium_purchase':
+            case 'purchase':
                 stats.totalPurchases++;
-                if (event.data.cost) {
-                    stats.totalSpent += event.data.cost;
+                if (event.data.cost || event.data.amount) {
+                    stats.totalSpent += (event.data.cost || event.data.amount || 0);
                 }
+                break;
+                
+            case 'powerup_collected':
+                if (!stats.powerupsCollected) stats.powerupsCollected = 0;
+                stats.powerupsCollected++;
                 break;
                 
             case 'achievement_unlocked':
