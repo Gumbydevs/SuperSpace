@@ -199,6 +199,8 @@ app.get('/analytics/retention', (req, res) => {
 // Analytics tracking endpoint - receives events from the client
 app.post('/analytics/track', (req, res) => {
   try {
+    console.log('📊 Analytics track request received:', req.body);
+    
     const { event, data, timestamp, url } = req.body;
     
     // Track the event in our analytics system using the correct method and format
@@ -211,15 +213,22 @@ app.post('/analytics/track', (req, res) => {
         data: data
       };
       
+      console.log('📊 Processing event data:', eventData);
       analytics.processEvent(eventData, req.ip);
       console.log(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
     } else {
-      console.log(`📊 Analytics event missing required fields:`, { event, hasData: !!data, hasPlayerId: data?.playerId });
+      console.log(`📊 Analytics event missing required fields:`, { 
+        event, 
+        hasData: !!data, 
+        hasPlayerId: data?.playerId,
+        fullBody: req.body 
+      });
     }
     
     res.json({ success: true, event, timestamp });
   } catch (error) {
-    console.error('Error tracking analytics event:', error);
+    console.error('❌ Error tracking analytics event:', error);
+    console.error('❌ Request body was:', req.body);
     res.status(500).json({ error: 'Failed to track event', details: error.message });
   }
 });

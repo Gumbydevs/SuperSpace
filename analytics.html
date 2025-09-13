@@ -492,10 +492,11 @@
 
             eventLog.innerHTML = eventData.map(event => {
                 const timestamp = new Date(event.timestamp).toLocaleTimeString();
+                const eventType = (event.type || event.eventType || 'unknown').toUpperCase();
                 return `
                     <div class="event-item">
                         <span class="event-timestamp">[${timestamp}]</span>
-                        <span class="event-type">${event.type.toUpperCase()}</span>
+                        <span class="event-type">${eventType}</span>
                         <span class="event-details">${formatEventDetails(event)}</span>
                     </div>
                 `;
@@ -506,11 +507,14 @@
         }
 
         function formatEventDetails(event) {
-            switch (event.type) {
+            const eventType = event.type || event.eventType || 'unknown';
+            switch (eventType) {
                 case 'player_joined':
+                case 'session_start':
                     return `Player joined the game`;
                 case 'player_left':
-                    return `Player left after ${Math.floor(event.data?.sessionTime || 0)}s`;
+                case 'session_end':
+                    return `Player left after ${Math.floor(event.data?.sessionTime || event.data?.sessionDuration || 0)/1000}s`;
                 case 'kill':
                     return `Kill with ${event.data?.weapon || 'unknown weapon'}`;
                 case 'death':
