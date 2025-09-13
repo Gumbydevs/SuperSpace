@@ -610,14 +610,11 @@ class Game {
     
     // Here we set up keyboard shortcuts for game functions
     setupHotkeys() {
-        // Admin key combination for testing purposes 
-        const moneyCheatCode = ['KeyM', 'KeyO', 'KeyN', 'KeyE', 'KeyY'];
-        
-        // Track key sequence for cheat codes and admin access
-        let keySequence = [];
-        let keysPressed = new Set();
-        let adminSequence = ['KeyA', 'KeyD', 'KeyM', 'KeyI', 'KeyN']; // Type "ADMIN"
-        let adminSequenceTimer = null;
+        // Simple admin access - just use a single key combination that's hard to discover
+        // Press CTRL + SHIFT + B + A + S + S (for bass fishing!)
+        let bassSequence = [];
+        const bassKeys = ['KeyB', 'KeyA', 'KeyS', 'KeyS'];
+        let bassTimer = null;
         
         window.addEventListener('keydown', e => {
             // Don't handle admin sequence if user is typing in input fields
@@ -625,67 +622,47 @@ class Game {
             const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable);
             
             if (isTyping) {
-                return; // Let the browser handle the key normally
-            }
-            
-            // Track pressed keys for admin combination
-            keysPressed.add(e.code);
-            
-            // Handle admin key sequence (type A-D-M-I-N)
-            if (adminSequenceTimer) {
-                clearTimeout(adminSequenceTimer);
-            }
-            
-            // Check if this key could start or continue the sequence
-            if (keySequence.length === 0) {
-                // Starting fresh - only accept 'A' as first key
-                if (e.code === 'KeyA') {
-                    keySequence = ['KeyA'];
-                    console.log('Admin sequence started: A');
-                }
-            } else {
-                // Continuing sequence - check if next key matches
-                const expectedKey = adminSequence[keySequence.length];
-                if (e.code === expectedKey) {
-                    keySequence.push(e.code);
-                    console.log('Admin sequence progress:', keySequence.map(key => key.replace('Key', '')).join(''));
-                } else {
-                    // Wrong key - check if it could start a new sequence
-                    if (e.code === 'KeyA') {
-                        keySequence = ['KeyA'];
-                        console.log('Admin sequence restarted: A');
-                    } else {
-                        keySequence = [];
-                        console.log('Admin sequence reset');
-                    }
-                }
-            }
-            
-            // If complete sequence is typed, attempt admin authentication
-            if (keySequence.length === adminSequence.length) {
-                console.log('ADMIN sequence complete! Attempting authentication...');
-                this.attemptAdminAccess();
-                keySequence = [];
-                keysPressed.clear();
                 return;
             }
             
-            // Reset sequence after 3 seconds of inactivity
-            adminSequenceTimer = setTimeout(() => {
-                keySequence = [];
-                console.log('Admin sequence timed out');
-            }, 3000);
-            
-            // OLD FTG combination - now disabled for security
-            // if (keysPressed.has('KeyF') && keysPressed.has('KeyT') && keysPressed.has('KeyG')) {
-            //     console.log('Old admin combo detected but disabled for security');
-            //     keysPressed.clear();
-            //     return;
-            // }
-            
-            // Admin panel access removed from F12 - use secret key sequence instead 
-            
+            // Check for CTRL+SHIFT+B+A+S+S sequence
+            if (e.ctrlKey && e.shiftKey) {
+                if (bassTimer) clearTimeout(bassTimer);
+                
+                if (bassSequence.length === 0 && e.code === 'KeyB') {
+                    bassSequence = ['KeyB'];
+                    console.log('🎣 Bass sequence started...');
+                } else if (bassSequence.length > 0 && bassSequence.length < bassKeys.length) {
+                    const expectedKey = bassKeys[bassSequence.length];
+                    if (e.code === expectedKey) {
+                        bassSequence.push(e.code);
+                        console.log('🎣 Bass sequence:', bassSequence.map(k => k.replace('Key', '')).join(''));
+                        
+                        if (bassSequence.length === bassKeys.length) {
+                            console.log('🎣 BASS sequence complete! Admin access granted!');
+                            this.attemptAdminAccess();
+                            bassSequence = [];
+                            return;
+                        }
+                    } else {
+                        bassSequence = [];
+                        console.log('🎣 Bass sequence reset');
+                    }
+                }
+                
+                bassTimer = setTimeout(() => {
+                    bassSequence = [];
+                    console.log('🎣 Bass sequence timed out');
+                }, 2000);
+                
+                e.preventDefault();
+                return;
+            } else {
+                // Reset if not holding ctrl+shift
+                bassSequence = [];
+            }
 
+            // Rest of the normal hotkey handling
             if (e.code === 'KeyB' && this.gameState === 'playing' && !this.input.isChatting) {
                 this.toggleShop();
             }
