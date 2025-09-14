@@ -94,9 +94,12 @@ export default class Chat {
     if (window.analytics) {
       window.analytics.trackChatMessage(message.length);
     }
-    // Complete chat challenge if present
+    // Complete chat challenge if present, show popup only if newly completed
     if (window.game && window.game.challengeSystem) {
-      window.game.challengeSystem.markCompleted('daily', 'chat_1');
+      const cs = window.game.challengeSystem;
+      const wasCompleted = cs.completed.daily.includes('chat_1');
+      const justCompleted = cs.markCompleted('daily', 'chat_1');
+      // Popup will only show if justCompleted is true (i.e., newly completed)
     }
 
     if (this.socket) {
