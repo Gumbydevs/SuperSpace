@@ -1876,200 +1876,108 @@ export class ShopSystem {
 
     let showProgress = '';
     if (!isCompleted) {
+      // Updated progress logic for only valid challenges and real stat names
       switch (challenge.id) {
-        case 'survive_10': {
-          const currentSurvival = Math.floor(stats.longestSurvival || 0);
-          showProgress = progressText('Survived', currentSurvival, 600, ' sec');
+        case 'survive_10':
+          showProgress = progressText('Survived', Math.floor(stats.longestSurvival || 0), 600, ' sec');
           break;
-        }
-        case 'destroy_200_asteroids': {
-          const currentAsteroids = stats.asteroidsDestroyed || 0;
-          showProgress = progressText('Asteroids destroyed', currentAsteroids, 200);
+        case 'destroy_200_asteroids':
+          showProgress = progressText('Asteroids destroyed', stats.asteroidsDestroyed || 0, 200);
           break;
-        }
-        case 'earn_1000_credits': {
-          const currentCreditsEarned = stats.totalCreditsEarned || 0;
-          showProgress = progressText('Credits earned', currentCreditsEarned, 1000);
+        case 'earn_1000_credits':
+          showProgress = progressText('Credits earned', stats.totalCreditsEarned || 0, 1000);
           break;
-        }
-        case 'kill_10_enemies': {
-          const kills = stats.totalKills || 0;
-          showProgress = progressText('Enemies killed', kills, 10);
+        case 'kill_10_enemies':
+          showProgress = progressText('Enemies killed', stats.totalKills || 0, 10);
           break;
-        }
-        case 'collect_5_powerups': {
-          const collected = stats.powerupsCollected || 0;
-          showProgress = progressText('Power-ups collected', collected, 5);
+        case 'collect_5_powerups':
+          showProgress = progressText('Power-ups collected', stats.powerupsCollected || 0, 5);
           break;
-        }
-        case 'no_damage_5': {
-          const noDamage = Math.floor(stats.noDamageTime || 0);
-          showProgress = progressText('No-damage time', noDamage, 300, ' sec');
+        case 'no_damage_5':
+          showProgress = progressText('No-damage survival', Math.floor(stats.noDamageSurvival || 0), 300, ' sec');
           break;
-        }
-        case 'use_3_bombs': {
-          const bombs = stats.bombsUsed || 0;
-          showProgress = progressText('Bombs used', bombs, 3);
+        case 'use_3_bombs':
+          showProgress = progressText('Bombs used', stats.bombsUsed || 0, 3);
           break;
-        }
-        case 'spend_500_credits': {
-          const spent = stats.creditsSpent || 0;
-          showProgress = progressText('Credits spent', spent, 500);
+        case 'spend_500_credits':
+          showProgress = progressText('Credits spent', stats.totalCreditsSpent || 0, 500);
           break;
-        }
-        case 'fly_10km': {
-          const dist = ((stats.distanceTraveled || 0) / 1000).toFixed(1);
-          showProgress = progressText('Distance traveled', dist, 10, ' km');
+        case 'fly_10km':
+          showProgress = progressText('Distance traveled', ((stats.totalDistance || 0) / 1000).toFixed(1), 10, ' km');
           break;
-        }
-        case 'chat_1': {
-          const chats = stats.chatMessages || 0;
-          showProgress = progressText('Chat messages', chats, 1);
+        case 'chat_1':
+          showProgress = progressText('Chat messages', stats.chatMessagesSent || 0, 1);
           break;
-        }
-        case 'equip_skin': {
-          const equipped = stats.skinsEquipped || 0;
-          showProgress = progressText('Skins equipped', equipped, 1);
+        case 'equip_skin':
+          showProgress = progressText('Skins equipped', stats.skinsEquipped || 0, 1);
           break;
-        }
-        case 'assist_ally': {
-          const assists = stats.alliesAssisted || 0;
-          showProgress = progressText('Allies assisted', assists, 1);
+        case 'evade_20_projectiles':
+          showProgress = progressText('Projectiles evaded', stats.projectilesEvaded || 0, 20);
           break;
-        }
-        case 'evade_20_projectiles': {
-          const evaded = stats.projectilesEvaded || 0;
-          showProgress = progressText('Projectiles evaded', evaded, 20);
+        case 'upgrade_weapon':
+          showProgress = progressText('Weapons upgraded', stats.weaponsUpgraded || 0, 1);
           break;
-        }
-        case 'upgrade_weapon': {
-          const upgrades = stats.weaponUpgrades || 0;
-          showProgress = progressText('Weapon upgrades', upgrades, 1);
+        case 'visit_sector_5':
+          showProgress = progressText('Visited sector 5', (stats.sectorsVisited && stats.sectorsVisited.includes(5) ? 1 : 0), 1);
           break;
-        }
-        case 'visit_sector_5': {
-          const visited = stats.sectorsVisited || 0;
-          showProgress = progressText('Sectors visited', visited, 5);
+        case 'scan_3_artifacts':
+          showProgress = progressText('Artifacts scanned', stats.artifactsScanned || 0, 3);
           break;
-        }
-        case 'scan_3_artifacts': {
-          const scanned = stats.artifactsScanned || 0;
-          showProgress = progressText('Artifacts scanned', scanned, 3);
+        case 'destroy_boss':
+          showProgress = progressText('Bosses defeated', stats.bossesDefeated || 0, 1);
           break;
-        }
-        case 'destroy_boss': {
-          const bosses = stats.bossesDefeated || 0;
-          showProgress = progressText('Bosses defeated', bosses, 1);
+        case 'collect_10_powerups':
+          showProgress = progressText('Power-ups collected', stats.powerupsCollected || 0, 10);
           break;
-        }
-        case 'trade_market': {
-          const trades = stats.marketTrades || 0;
-          showProgress = progressText('Market trades', trades, 1);
+        case 'activate_shield':
+          showProgress = progressText('Shield activations', stats.shieldActivations || 0, 3);
           break;
-        }
-        case 'collect_10_powerups': {
-          const collected = stats.powerupsCollected || 0;
-          showProgress = progressText('Power-ups collected', collected, 10);
-          break;
-        }
-        case 'activate_shield': {
-          const shields = stats.shieldActivations || 0;
-          showProgress = progressText('Shield activations', shields, 3);
-          break;
-        }
-        case 'warp_jump': {
-          const warps = stats.warpJumps || 0;
-          showProgress = progressText('Warp jumps', warps, 1);
-          break;
-        }
+
         // Weekly
-        case 'score_50000': {
+        case 'score_50000':
           showProgress = progressText('Score', currentScore, 50000);
           break;
-        }
-        case 'kill_25_enemies': {
-          const kills = stats.totalKills || 0;
-          showProgress = progressText('Enemies killed', kills, 25);
+        case 'kill_25_enemies':
+          showProgress = progressText('Enemies killed', stats.totalKills || 0, 25);
           break;
-        }
-        case 'play_20_games': {
-          const games = stats.gamesPlayed || 0;
-          showProgress = progressText('Games played', games, 20);
+        case 'play_20_games':
+          showProgress = progressText('Games played', stats.gamesPlayed || 0, 20);
           break;
-        }
-        case 'destroy_1000_asteroids': {
-          const asteroids = stats.asteroidsDestroyed || 0;
-          showProgress = progressText('Asteroids destroyed', asteroids, 1000);
+        case 'destroy_1000_asteroids':
+          showProgress = progressText('Asteroids destroyed', stats.asteroidsDestroyed || 0, 1000);
           break;
-        }
-        case 'earn_10000_credits': {
-          const credits = stats.totalCreditsEarned || 0;
-          showProgress = progressText('Credits earned', credits, 10000);
+        case 'earn_10000_credits':
+          showProgress = progressText('Credits earned', stats.totalCreditsEarned || 0, 10000);
           break;
-        }
-        case 'top_scorer_10min': {
-          const top = stats.topScorer10min || 0;
-          showProgress = progressText('Top scorer (10min)', top, 1);
+        case 'top_scorer_10min':
+          showProgress = progressText('Top scorer (10min)', stats.topScorer10min ? 1 : 0, 1);
           break;
-        }
-        case 'no_death_3_games': {
-          const streak = stats.noDeathStreak || 0;
-          showProgress = progressText('No-death games', streak, 3);
+        case 'no_death_3_games':
+          showProgress = progressText('No-death games', stats.noDeathStreak || 0, 3);
           break;
-        }
-        case 'buy_3_items': {
-          const bought = stats.itemsBought || 0;
-          showProgress = progressText('Items bought', bought, 3);
+        case 'buy_3_items':
+          showProgress = progressText('Unique items bought', stats.uniqueShopItemsBought || 0, 3);
           break;
-        }
-        case 'explore_50km': {
-          const dist = ((stats.distanceTraveled || 0) / 1000).toFixed(1);
-          showProgress = progressText('Distance traveled', dist, 50, ' km');
+        case 'explore_50km':
+          showProgress = progressText('Distance traveled', ((stats.totalDistance || 0) / 1000).toFixed(1), 50, ' km');
           break;
-        }
-        case 'ally_revives': {
-          const revives = stats.alliesRevived || 0;
-          showProgress = progressText('Allies revived', revives, 10);
+        case 'defeat_5_bosses':
+          showProgress = progressText('Bosses defeated', stats.bossesDefeated || 0, 5);
           break;
-        }
-        case 'defeat_5_bosses': {
-          const bosses = stats.bossesDefeated || 0;
-          showProgress = progressText('Bosses defeated', bosses, 5);
+        case 'collect_10_gems':
+          showProgress = progressText('Rare gems collected', stats.rareGemsCollected || 0, 10);
           break;
-        }
-        case 'collect_10_gems': {
-          const gems = stats.rareGemsCollected || 0;
-          showProgress = progressText('Rare gems collected', gems, 10);
+        case 'upgrade_5_times':
+          showProgress = progressText('Weapons upgraded', stats.weaponsUpgraded || 0, 5);
           break;
-        }
-        case 'complete_10_trades': {
-          const trades = stats.marketTrades || 0;
-          showProgress = progressText('Market trades', trades, 10);
+        case 'scan_15_artifacts':
+          showProgress = progressText('Artifacts scanned', stats.artifactsScanned || 0, 15);
           break;
-        }
-        case 'upgrade_5_times': {
-          const upgrades = stats.shipUpgrades || 0;
-          showProgress = progressText('Ship upgrades', upgrades, 5);
+        case 'evade_100_projectiles':
+          showProgress = progressText('Projectiles evaded', stats.projectilesEvaded || 0, 100);
           break;
-        }
-        case 'scan_15_artifacts': {
-          const scanned = stats.artifactsScanned || 0;
-          showProgress = progressText('Artifacts scanned', scanned, 15);
-          break;
-        }
-        case 'evade_100_projectiles': {
-          const evaded = stats.projectilesEvaded || 0;
-          showProgress = progressText('Projectiles evaded', evaded, 100);
-          break;
-        }
-        case 'warp_10_times': {
-          const warps = stats.warpJumps || 0;
-          showProgress = progressText('Warp jumps', warps, 10);
-          break;
-        }
-        default: {
+        default:
           showProgress = '';
-        }
       }
       progress.textContent = showProgress;
     } else {
