@@ -4,7 +4,7 @@
 export class PlayerProfile {
   constructor(player) {
     this.player = player;
-    this.stats = {
+  this.stats = {
       totalPlayTime: 0,
       totalDistance: 0,
       totalShots: 0,
@@ -23,9 +23,13 @@ export class PlayerProfile {
       totalCreditsSpent: 0,
       asteroidsDestroyed: 0,
       averageAccuracy: 0,
-      nemesis: null, // Player who killed us the most
-      nemesisKills: 0, // How many times nemesis killed us
-      killedByPlayers: {}, // Track who killed us and how many times
+  nemesis: null, // Player who killed us the most
+  nemesisKills: 0, // How many times nemesis killed us
+  killedByPlayers: {}, // Track who killed us and how many times
+  // Challenge-specific stats
+  noDamageSurvival: 0, // Longest time survived without taking damage in a session (seconds)
+  weaponsUpgraded: 0, // Number of times player upgraded their weapon/ship
+  topScorer10min: false, // True if player was top scorer in a 10-min window (set externally)
     };
 
     this.loadStats();
@@ -123,6 +127,8 @@ export class PlayerProfile {
   onGameStart() {
     this.stats.gamesPlayed++;
     this.currentGameStartTime = Date.now();
+    this._noDamageStart = Date.now();
+    this._lastDamageTime = null;
     this.saveStats();
   }
 
@@ -133,6 +139,11 @@ export class PlayerProfile {
         this.stats.longestSurvival,
         survivalTime,
       );
+      // Save best no-damage survival for this session
+      if (this.stats.noDamageSurvivalSession && this.stats.noDamageSurvivalSession > this.stats.noDamageSurvival) {
+        this.stats.noDamageSurvival = this.stats.noDamageSurvivalSession;
+      }
+      this.stats.noDamageSurvivalSession = 0;
     }
     this.saveStats();
   }
@@ -148,6 +159,13 @@ export class PlayerProfile {
   onDeath(killerName = null) {
     this.stats.totalLosses++;
     this.stats.totalDeaths++;
+
+    // Reset no-damage timer on death
+    this._noDamageStart = Date.now();
+    if (this.stats.noDamageSurvivalSession && this.stats.noDamageSurvivalSession > this.stats.noDamageSurvival) {
+      this.stats.noDamageSurvival = this.stats.noDamageSurvivalSession;
+    }
+    this.stats.noDamageSurvivalSession = 0;
 
     // Track nemesis (who killed us the most)
     if (killerName && killerName !== 'asteroid') {
@@ -179,6 +197,28 @@ export class PlayerProfile {
 
   onDistanceTraveled(distance) {
     this.stats.totalDistance += distance;
+    this.saveStats();
+  }
+
+  // Call this when the player takes damage
+  onDamageTaken() {
+    if (this._noDamageStart) {
+      const now = Date.now();
+      const duration = (now - this._noDamageStart) / 1000;
+      this.stats.noDamageSurvivalSession = Math.max(this.stats.noDamageSurvivalSession || 0, duration);
+      this._noDamageStart = now;
+    }
+  }
+
+  // Call this when the player upgrades their weapon/ship
+  onWeaponUpgrade() {
+    this.stats.weaponsUpgraded = (this.stats.weaponsUpgraded || 0) + 1;
+    this.saveStats();
+  }
+
+  // Call this externally when the player is top scorer in a 10-min window
+  setTopScorer10min(val) {
+    this.stats.topScorer10min = !!val;
     this.saveStats();
   }
 

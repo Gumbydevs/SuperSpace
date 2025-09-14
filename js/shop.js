@@ -3238,6 +3238,13 @@ export class ShopSystem {
       case 'cargo':
         this.player.cargoCapacity = effects.cargoCapacity;
         break;
+      default:
+        break;
+    }
+
+    // Track weapon/ship upgrades for challenge progress
+    if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onWeaponUpgrade === 'function') {
+      window.game.playerProfile.onWeaponUpgrade();
     }
 
     // Update shop display

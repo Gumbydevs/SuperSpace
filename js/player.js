@@ -1296,6 +1296,11 @@ export class Player {
       return false; // No damage applied in safe zone
     }
 
+    // Track no-damage survival for challenges
+    if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onDamageTaken === 'function') {
+      window.game.playerProfile.onDamageTaken();
+    }
+
     // Record time of damage for shield recharge delay
     this.lastDamageTime = Date.now() / 1000;
 
