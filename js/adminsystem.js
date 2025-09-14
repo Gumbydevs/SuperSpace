@@ -249,6 +249,22 @@ export class AdminSystem {
 
     const actions = [
       {
+        text: 'Reset Challenges',
+        action: () => {
+          if (window.game && window.game.challengeSystem) {
+            window.game.challengeSystem.resetDaily();
+            window.game.challengeSystem.resetWeekly();
+            window.game.challengeSystem.lastDailyReset = null;
+            window.game.challengeSystem.lastWeeklyReset = null;
+            if (window.game.shop) window.game.shop.updateShopContent();
+            alert('All daily and weekly challenges have been reset!');
+          } else {
+            alert('Challenge system not available.');
+          }
+        },
+        color: '#2a7',
+      },
+      {
         text: 'Reset All Player Stats',
         action: () => this.resetAllPlayerStats(),
         color: '#f44',
