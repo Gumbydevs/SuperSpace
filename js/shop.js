@@ -2076,42 +2076,71 @@ export class ShopSystem {
           this.updateShopContent();
           this.updateChallengeTabBadge();
 
-          // Show Marvin popup for reward
+          // Show Marvin popup for reward (with debug logging and fallback)
           let rewardMsg = `<div style='font-size:1.1em;margin-bottom:4px;'>You claimed a reward!</div>`;
           rewardMsg += `<div style='color:#fc3;font-weight:bold;'>+${challenge.reward} credits</div>`;
           if (challenge.gems && challenge.gems > 0) {
             rewardMsg += `<div style='color:#3cf;font-weight:bold;'>+${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''} &#128142;</div>`;
           }
-          if (!window.marvinAssistant) {
-            window.marvinAssistant = new (window.MarvinAssistant || window.game?.marvinAssistant?.constructor || function(){})();
+          try {
+            if (!window.marvinAssistant) {
+              console.log('[DEBUG] Creating marvinAssistant instance');
+              window.marvinAssistant = new (window.MarvinAssistant || window.game?.marvinAssistant?.constructor || function(){})();
+            }
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = 'rgba(30, 20, 0, 0.95)';
+            notification.style.color = '#ffd965';
+            notification.style.padding = '14px 22px';
+            notification.style.borderRadius = '7px';
+            notification.style.border = '3px solid #ffcf5c';
+            notification.style.zIndex = '10000';
+            notification.style.fontFamily = "'Orbitron', monospace";
+            notification.style.fontSize = '15px';
+            notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
+            notification.style.position = 'relative';
+            notification.style.paddingRight = '55px';
+            notification.innerHTML = `<div style='font-weight:800; margin-bottom:6px; color:#fff'>REWARD CLAIMED!</div>${rewardMsg}`;
+            document.body.appendChild(notification);
+            if (window.marvinAssistant && typeof window.marvinAssistant.attachToNotification === 'function') {
+              console.log('[DEBUG] Attaching Marvin to notification');
+              window.marvinAssistant.attachToNotification(notification);
+            } else {
+              console.warn('[DEBUG] Marvin assistant or attachToNotification missing');
+            }
+            setTimeout(() => {
+              try {
+                if (notification.parentNode)
+                  notification.parentNode.removeChild(notification);
+              } catch (e) {}
+            }, 3500);
+          } catch (err) {
+            // Fallback: always show a visible notification if Marvin fails
+            console.error('[DEBUG] Marvin notification error:', err);
+            const fallback = document.createElement('div');
+            fallback.style.position = 'fixed';
+            fallback.style.top = '20px';
+            fallback.style.left = '50%';
+            fallback.style.transform = 'translateX(-50%)';
+            fallback.style.backgroundColor = '#a00';
+            fallback.style.color = '#fff';
+            fallback.style.padding = '14px 22px';
+            fallback.style.borderRadius = '7px';
+            fallback.style.zIndex = '10000';
+            fallback.style.fontFamily = "'Orbitron', monospace";
+            fallback.style.fontSize = '15px';
+            fallback.innerHTML = `<div style='font-weight:800; margin-bottom:6px;'>REWARD CLAIMED!</div>${rewardMsg}`;
+            document.body.appendChild(fallback);
+            setTimeout(() => {
+              try {
+                if (fallback.parentNode)
+                  fallback.parentNode.removeChild(fallback);
+              } catch (e) {}
+            }, 3500);
           }
-          const notification = document.createElement('div');
-          notification.style.position = 'fixed';
-          notification.style.top = '20px';
-          notification.style.left = '50%';
-          notification.style.transform = 'translateX(-50%)';
-          notification.style.backgroundColor = 'rgba(30, 20, 0, 0.95)';
-          notification.style.color = '#ffd965';
-          notification.style.padding = '14px 22px';
-          notification.style.borderRadius = '7px';
-          notification.style.border = '3px solid #ffcf5c';
-          notification.style.zIndex = '10000';
-          notification.style.fontFamily = "'Orbitron', monospace";
-          notification.style.fontSize = '15px';
-          notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
-          notification.style.position = 'relative';
-          notification.style.paddingRight = '55px';
-          notification.innerHTML = `<div style='font-weight:800; margin-bottom:6px; color:#fff'>REWARD CLAIMED!</div>${rewardMsg}`;
-          document.body.appendChild(notification);
-          if (window.marvinAssistant && typeof window.marvinAssistant.attachToNotification === 'function') {
-            window.marvinAssistant.attachToNotification(notification);
-          }
-          setTimeout(() => {
-            try {
-              if (notification.parentNode)
-                notification.parentNode.removeChild(notification);
-            } catch (e) {}
-          }, 3500);
 
           // --- Force cloud sync after claim ---
           const showSyncError = (msg) => {
