@@ -1008,6 +1008,18 @@
       if (distance < powerup.radius + player.width / 2) {
         // Apply powerup effect to player
         this.applyPowerup(player, powerup.type);
+        // Notify player profile about collected powerup so challenges update
+        try {
+          if (
+            window.game &&
+            window.game.playerProfile &&
+            typeof window.game.playerProfile.onPowerupCollected === 'function'
+          ) {
+            window.game.playerProfile.onPowerupCollected();
+          }
+        } catch (e) {
+          console.error('Error notifying playerProfile of powerup collection', e);
+        }
         // Remove collected powerup
         this.powerups.splice(i, 1);
 
