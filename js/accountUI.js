@@ -35,7 +35,7 @@ class AccountUI {
                 text-transform: uppercase;
                 letter-spacing: 1px;
                 margin: 8px 0;
-                width: 200px;
+                width: 220px;
                 transition: all 0.3s ease;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.3);
                 white-space: nowrap;
@@ -53,8 +53,8 @@ class AccountUI {
                 this.cloudSyncButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
             });
             
-            // Insert after options button
-            optionsBtn.parentNode.insertBefore(this.cloudSyncButton, optionsBtn.nextSibling);
+            // Insert before options button (so cloud sync appears first)
+            optionsBtn.parentNode.insertBefore(this.cloudSyncButton, optionsBtn);
             
             // Update button based on login status
             this.updateCloudSyncButton();
