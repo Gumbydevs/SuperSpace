@@ -232,7 +232,30 @@ app.get('/analytics/retention', (req, res) => {
 });
 
 // Analytics tracking endpoint - receives events from the client
+// Ensure preflight (OPTIONS) requests for this endpoint always succeed with the
+// expected CORS headers. The app-level cors() middleware should handle this
+// already, but some hosting layers or proxies may strip headers — add a route
+// level handler as a safety net.
+app.options('/analytics/track', (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Cache-Control, Pragma',
+  );
+  // 204 No Content is appropriate for successful preflight
+  return res.sendStatus(204);
+});
+
 app.post('/analytics/track', (req, res) => {
+  // Reinforce CORS headers on the actual response as an additional safeguard
+  // in case upstream proxies remove app-level headers.
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Cache-Control, Pragma',
+  );
   try {
     console.log('📊 Analytics track request received:', req.body);
 
