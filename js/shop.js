@@ -2028,9 +2028,7 @@ export class ShopSystem {
         case 'upgrade_5_times':
           showProgress = progressText('Weapons upgraded', stats.weaponsUpgraded || 0, 5);
           break;
-        case 'scan_15_artifacts':
-          showProgress = progressText('Artifacts scanned', stats.artifactsScanned || 0, 15);
-          break;
+        
         case 'evade_100_projectiles':
           showProgress = progressText('Projectiles evaded', stats.projectilesEvaded || 0, 100);
           break;
@@ -2989,8 +2987,13 @@ export class ShopSystem {
     this.player.currentShip = shipId;
     localStorage.setItem('currentShip', shipId);
     // When selecting a new ship, default to no skin selected to ensure canonical appearance
-    this.player.shipSkin = 'none';
-    localStorage.setItem('selectedShipSkin', 'none');
+    // Reset to default skin via player API so centralized logic runs
+    if (window.game && window.game.player) {
+      window.game.player.setShipSkin('none');
+    } else {
+      this.player.shipSkin = 'none';
+      localStorage.setItem('selectedShipSkin', 'none');
+    }
     // Notify multiplayer about the ship/skin change if connected
     if (
       window.game &&

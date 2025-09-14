@@ -180,7 +180,18 @@ export class Player {
   // Set ship skin and notify multiplayer
   setShipSkin(skinId) {
     this.shipSkin = skinId;
-    localStorage.setItem('selectedShipSkin', skinId);
+    // Prefer using the centralized ShipSkinSystem so stats and challenge checks run
+    try {
+      if (window.game && window.game.shipSkins && typeof window.game.shipSkins.setActiveSkin === 'function') {
+        window.game.shipSkins.setActiveSkin(this.currentShip || 'scout', skinId);
+      } else {
+        localStorage.setItem('selectedShipSkin', skinId);
+      }
+    } catch (e) {
+      // fallback
+      localStorage.setItem('selectedShipSkin', skinId);
+    }
+
     if (
       window.game &&
       window.game.multiplayer &&

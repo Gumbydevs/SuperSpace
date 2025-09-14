@@ -34,7 +34,7 @@ export const CHALLENGES = {
     { id: 'defeat_5_bosses', description: 'Defeat 5 boss ships', reward: 2200, gems: 10 },
     { id: 'collect_10_gems', description: 'Collect 10 rare space gems', reward: 1300, gems: 6 },
     { id: 'upgrade_5_times', description: 'Upgrade your ship 5 times', reward: 1100, gems: 4 },
-    { id: 'scan_15_artifacts', description: 'Scan 15 space artifacts', reward: 1400, gems: 5 },
+  // 'scan_15_artifacts' removed — not applicable in this build
      // Removed: Evade 100 enemy projectiles (not tracked or meaningful)
   ],
 };
@@ -193,9 +193,7 @@ export class ChallengeSystem {
         case 'upgrade_5_times':
           done = this.profile.stats.weaponsUpgraded >= 5;
           break;
-        case 'scan_15_artifacts':
-          done = this.profile.stats.artifactsScanned >= 15;
-          break;
+        
         case 'evade_100_projectiles':
           done = this.profile.stats.projectilesEvaded >= 100;
           break;

@@ -1325,16 +1325,18 @@ export class PremiumStore {
       if (isSkin) {
         const equippedSkin = localStorage.getItem('selectedShipSkin') || 'none';
         if (equippedSkin === item.id) {
-          // Unequip
-          localStorage.setItem('selectedShipSkin', 'none');
+          // Unequip via player API
           if (window.game && window.game.player) {
             window.game.player.setShipSkin('none');
+          } else {
+            localStorage.setItem('selectedShipSkin', 'none');
           }
         } else {
-          // Equip
-          localStorage.setItem('selectedShipSkin', item.id);
+          // Equip via player API
           if (window.game && window.game.player) {
             window.game.player.setShipSkin(item.id);
+          } else {
+            localStorage.setItem('selectedShipSkin', item.id);
           }
         }
       }
