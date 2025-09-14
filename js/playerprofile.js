@@ -129,6 +129,13 @@ export class PlayerProfile {
     this.currentGameStartTime = Date.now();
     this._noDamageStart = Date.now();
     this._lastDamageTime = null;
+    this._noDamageInterval = setInterval(() => {
+      if (window.game && window.game.player && window.game.player.alive !== false && typeof window.game.player.health === 'number' && window.game.player.health > 0) {
+        const now = Date.now();
+        const duration = (now - this._noDamageStart) / 1000;
+        this.stats.noDamageSurvivalSession = Math.max(this.stats.noDamageSurvivalSession || 0, duration);
+      }
+    }, 1000);
     this.saveStats();
   }
 
@@ -159,6 +166,12 @@ export class PlayerProfile {
   onDeath(killerName = null) {
     this.stats.totalLosses++;
     this.stats.totalDeaths++;
+
+    // Stop no-damage timer
+    if (this._noDamageInterval) {
+      clearInterval(this._noDamageInterval);
+      this._noDamageInterval = null;
+    }
 
     // Reset no-damage timer on death
     this._noDamageStart = Date.now();
@@ -207,6 +220,11 @@ export class PlayerProfile {
       const duration = (now - this._noDamageStart) / 1000;
       this.stats.noDamageSurvivalSession = Math.max(this.stats.noDamageSurvivalSession || 0, duration);
       this._noDamageStart = now;
+    }
+    // Reset timer on any damage
+    if (this._noDamageInterval) {
+      clearInterval(this._noDamageInterval);
+      this._noDamageInterval = null;
     }
   }
 

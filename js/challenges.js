@@ -15,7 +15,7 @@ export const CHALLENGES = {
     { id: 'chat_1', description: 'Send a message in chat', reward: 100, gems: 1 },
     { id: 'equip_skin', description: 'Equip a new ship skin', reward: 150, gems: 1 },
     { id: 'evade_20_projectiles', description: 'Evade 20 enemy projectiles', reward: 250, gems: 1 },
-    { id: 'upgrade_weapon', description: 'Upgrade your weapon once', reward: 200, gems: 1 },
+  { id: 'upgrade_weapon', description: 'Upgrade your ship once', reward: 200, gems: 1 },
     { id: 'visit_sector_5', description: 'Visit sector 5', reward: 180, gems: 1 },
     { id: 'scan_3_artifacts', description: 'Scan 3 space artifacts', reward: 220, gems: 1 },
     { id: 'destroy_boss', description: 'Defeat a boss ship', reward: 500, gems: 3 },
@@ -28,7 +28,7 @@ export const CHALLENGES = {
     { id: 'play_20_games', description: 'Play 20 games this week', reward: 800, gems: 4 },
     { id: 'destroy_1000_asteroids', description: 'Destroy 1,000 asteroids', reward: 1100, gems: 5 },
     { id: 'earn_10000_credits', description: 'Earn 10,000 credits this week', reward: 1000, gems: 4 },
-    { id: 'top_scorer_10min', description: 'Be the top scorer in a 10-minute period', reward: 2000, gems: 8 },
+  // { id: 'top_scorer_10min', description: 'Be the top scorer in a 10-minute period', reward: 2000, gems: 8 }, // Disabled: not supported
     { id: 'no_death_3_games', description: 'Complete 3 games in a row without dying', reward: 1800, gems: 7 },
     { id: 'buy_3_items', description: 'Buy 3 different items from the shop', reward: 900, gems: 4 },
     { id: 'explore_50km', description: 'Travel a total of 50 kilometers', reward: 1200, gems: 5 },
