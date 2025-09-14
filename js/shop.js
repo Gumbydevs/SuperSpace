@@ -1698,6 +1698,15 @@ export class ShopSystem {
       const weekKey = getESTWeekKey();
       const weekSeed = getWeeklySeed();
       seededShuffle(weeklyPool, weekSeed);
+      // Persist weekly rotation so challenge system and UI use the same pool
+      try {
+        const weeklyStateRaw = localStorage.getItem('weekly_challenge_rotation') || '{}';
+        const weeklyState = JSON.parse(weeklyStateRaw);
+        weeklyState[weekKey] = weeklyPool.slice(0, weeklyCount).map((ch) => ch.id);
+        localStorage.setItem('weekly_challenge_rotation', JSON.stringify(weeklyState));
+      } catch (e) {
+        // ignore storage errors
+      }
       weeklyPool.slice(0, weeklyCount).forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
           challenge,

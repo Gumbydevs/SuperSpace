@@ -40,12 +40,17 @@ export class ShipSkinSystem {
       localStorage.setItem('selectedShipSkin', skinId);
       // Increment skinsEquipped stat if available and trigger challenge check
       if (window.game && window.game.playerProfile) {
-        window.game.playerProfile.stats.skinsEquipped = (window.game.playerProfile.stats.skinsEquipped || 0) + 1;
-        window.game.playerProfile.saveStats();
-      }
-      if (window.game && window.game.challengeSystem) {
-        window.game.challengeSystem.check('daily');
-        window.game.challengeSystem.check('weekly');
+        // Use centralized helper so challenge checks always run
+        if (typeof window.game.playerProfile.onSkinEquipped === 'function') {
+          window.game.playerProfile.onSkinEquipped();
+        } else {
+          window.game.playerProfile.stats.skinsEquipped = (window.game.playerProfile.stats.skinsEquipped || 0) + 1;
+          window.game.playerProfile.saveStats();
+          if (window.game && window.game.challengeSystem) {
+            window.game.challengeSystem.check('daily');
+            window.game.challengeSystem.check('weekly');
+          }
+        }
       }
     } else {
       localStorage.setItem('selectedShipSkin', 'none');

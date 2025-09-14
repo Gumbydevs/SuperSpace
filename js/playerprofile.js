@@ -30,6 +30,21 @@ export class PlayerProfile {
   noDamageSurvival: 0, // Longest time survived without taking damage in a session (seconds)
   weaponsUpgraded: 0, // Number of times player upgraded their weapon/ship
   topScorer10min: false, // True if player was top scorer in a 10-min window (set externally)
+  // Additional challenge-tracked stats (initialized to prevent undefined checks)
+  powerupsCollected: 0,
+  bombsUsed: 0,
+  totalCreditsSpent: 0,
+  chatMessagesSent: 0,
+  skinsEquipped: 0,
+  projectilesEvaded: 0,
+  sectorsVisited: [],
+  artifactsScanned: 0,
+  bossesDefeated: 0,
+  shieldActivations: 0,
+  noDeathStreak: 0,
+  uniqueShopItemsBought: 0,
+  uniqueShopItems: [],
+  rareGemsCollected: 0,
     };
 
     this.loadStats();
@@ -269,6 +284,113 @@ export class PlayerProfile {
 
   onAsteroidDestroyed() {
     this.stats.asteroidsDestroyed++;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  // Centralized helpers for challenge-related events
+  onPowerupCollected() {
+    this.stats.powerupsCollected = (this.stats.powerupsCollected || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onBombUsed() {
+    this.stats.bombsUsed = (this.stats.bombsUsed || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onChatMessage() {
+    this.stats.chatMessagesSent = (this.stats.chatMessagesSent || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onProjectileEvaded() {
+    this.stats.projectilesEvaded = (this.stats.projectilesEvaded || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  visitSector(sectorId) {
+    this.stats.sectorsVisited = this.stats.sectorsVisited || [];
+    if (!this.stats.sectorsVisited.includes(sectorId)) {
+      this.stats.sectorsVisited.push(sectorId);
+    }
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onArtifactScanned() {
+    this.stats.artifactsScanned = (this.stats.artifactsScanned || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onBossDefeated() {
+    this.stats.bossesDefeated = (this.stats.bossesDefeated || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onShieldActivated() {
+    this.stats.shieldActivations = (this.stats.shieldActivations || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onShopPurchase(itemId) {
+    this.stats.uniqueShopItems = this.stats.uniqueShopItems || [];
+    if (itemId && !this.stats.uniqueShopItems.includes(itemId)) {
+      this.stats.uniqueShopItems.push(itemId);
+      this.stats.uniqueShopItemsBought = this.stats.uniqueShopItems.length;
+    }
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onRareGemCollected() {
+    this.stats.rareGemsCollected = (this.stats.rareGemsCollected || 0) + 1;
+    this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
+  }
+
+  onSkinEquipped() {
+    this.stats.skinsEquipped = (this.stats.skinsEquipped || 0) + 1;
     this.saveStats();
     if (window.game && window.game.challengeSystem) {
       window.game.challengeSystem.check('daily');

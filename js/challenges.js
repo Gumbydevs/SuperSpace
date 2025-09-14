@@ -122,8 +122,8 @@ export class ChallengeSystem {
         case 'use_3_bombs':
           done = this.profile.stats.bombsUsed >= 3;
           break;
-        case 'spend_500_credits':
-          done = this.profile.stats.totalCreditsSpent >= 500;
+        case 'spend_5000_credits':
+          done = this.profile.stats.totalCreditsSpent >= 5000;
           break;
         case 'fly_10km':
           done = this.profile.stats.totalDistance >= 10000;
@@ -157,8 +157,8 @@ export class ChallengeSystem {
           break;
 
         // Weekly
-        case 'score_50000':
-          done = this.player && this.player.score >= 50000;
+        case 'score_20000':
+          done = this.player && this.player.score >= 20000;
           break;
         case 'kill_25_enemies':
           done = this.profile.stats.totalKills >= 25;
@@ -175,7 +175,7 @@ export class ChallengeSystem {
         case 'top_scorer_10min':
           done = this.profile.stats.topScorer10min;
           break;
-        case 'no_death_3_games':
+        case 'no_death_3_rounds':
           done = this.profile.stats.noDeathStreak >= 3;
           break;
         case 'buy_3_items':
@@ -308,6 +308,8 @@ export class ChallengeSystem {
         notified: this.notified,
         lastDailyReset: this.lastDailyReset,
         lastWeeklyReset: this.lastWeeklyReset,
+        currentDaily: Array.isArray(this.currentDaily) ? this.currentDaily : [],
+        currentWeekly: Array.isArray(this.currentWeekly) ? this.currentWeekly : [],
       };
       localStorage.setItem('challenge_state', JSON.stringify(data));
     } catch (e) {
@@ -343,6 +345,34 @@ export class ChallengeSystem {
         };
       if (data.lastDailyReset) this.lastDailyReset = data.lastDailyReset;
       if (data.lastWeeklyReset) this.lastWeeklyReset = data.lastWeeklyReset;
+      if (Array.isArray(data.currentDaily)) this.currentDaily = data.currentDaily;
+      if (Array.isArray(data.currentWeekly)) this.currentWeekly = data.currentWeekly;
+      // If shop persisted a daily rotation for today, prefer that so UI and logic match
+      try {
+        const rotRaw = localStorage.getItem('daily_challenge_rotation');
+        if (rotRaw) {
+          const rot = JSON.parse(rotRaw || '{}');
+          const todayKey = this.getEasternDateKey();
+          if (rot[todayKey] && Array.isArray(rot[todayKey])) {
+            this.currentDaily = rot[todayKey];
+          }
+        }
+      } catch (e) {
+        // ignore rotation parse errors
+      }
+      // If shop persisted a weekly rotation for the current week, prefer that
+      try {
+        const wRaw = localStorage.getItem('weekly_challenge_rotation');
+        if (wRaw) {
+          const wrot = JSON.parse(wRaw || '{}');
+          const weekKey = this.getEasternWeekKey();
+          if (wrot[weekKey] && Array.isArray(wrot[weekKey])) {
+            this.currentWeekly = wrot[weekKey];
+          }
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
     } catch (e) {
       // ignore parse errors
     }
@@ -413,13 +443,22 @@ export class ChallengeSystem {
   performResetsIfNeeded() {
     try {
       const currentDaily = this.getEasternDateKey();
-      if (this.lastDailyReset !== currentDaily) {
+      // If the stored reset marker changed OR our in-memory pool is empty, regenerate daily pool
+      if (
+        this.lastDailyReset !== currentDaily ||
+        !Array.isArray(this.currentDaily) ||
+        this.currentDaily.length === 0
+      ) {
         this.resetDaily();
         this.lastDailyReset = currentDaily;
       }
 
       const currentWeek = this.getEasternWeekKey();
-      if (this.lastWeeklyReset !== currentWeek) {
+      if (
+        this.lastWeeklyReset !== currentWeek ||
+        !Array.isArray(this.currentWeekly) ||
+        this.currentWeekly.length === 0
+      ) {
         this.resetWeekly();
         this.lastWeeklyReset = currentWeek;
       }
