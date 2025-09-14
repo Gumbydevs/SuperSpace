@@ -65,6 +65,10 @@ export class ChallengeSystem {
     // Timer to periodically re-evaluate reset boundaries
     this._resetTimer = null;
 
+  // Always initialize currentDaily/currentWeekly as empty arrays to prevent undefined errors
+  this.currentDaily = [];
+  this.currentWeekly = [];
+
     // Make sure Marvin is available
     if (!window.marvinAssistant) {
       window.marvinAssistant = new MarvinAssistant();
