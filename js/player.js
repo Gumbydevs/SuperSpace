@@ -472,10 +472,10 @@ export class Player {
         let baseCooldown = weapon && weapon.stats ? weapon.stats.cooldown : this.fireCooldownTime;
 
         let energyRatio = this.energy / this.maxEnergy;
-        // Fire rate slows dramatically as energy drops
+        // Fire rate slows moderately as energy drops (less aggressive curve)
         let cooldownMod = 1;
-        if (energyRatio < 0.8) {
-            cooldownMod = 1 + (1 - energyRatio) * 6; // Up to 7x slower at 0 energy
+        if (energyRatio < 0.5) {
+            cooldownMod = 1 + (1 - energyRatio) * 3; // Up to 4x slower at 0 energy
         }
 
         // --- Fire Rate Boost: Reduce energy cost per shot while active ---
