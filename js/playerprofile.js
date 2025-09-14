@@ -112,16 +112,17 @@ export class PlayerProfile {
     if (this.stats.weaponStats[weapon]) {
       this.stats.weaponStats[weapon].kills++;
     }
-
     if (isPlayer && this.player) {
-      // Update highest score
       this.stats.highestScore = Math.max(
         this.stats.highestScore,
         this.player.score,
       );
     }
-
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   onGameStart() {
@@ -137,6 +138,10 @@ export class PlayerProfile {
       }
     }, 1000);
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   onGameEnd() {
@@ -211,6 +216,10 @@ export class PlayerProfile {
   onDistanceTraveled(distance) {
     this.stats.totalDistance += distance;
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   // Call this when the player takes damage
@@ -232,6 +241,10 @@ export class PlayerProfile {
   onWeaponUpgrade() {
     this.stats.weaponsUpgraded = (this.stats.weaponsUpgraded || 0) + 1;
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   // Call this externally when the player is top scorer in a 10-min window
@@ -243,6 +256,10 @@ export class PlayerProfile {
   onCreditsEarned(amount) {
     this.stats.totalCreditsEarned += amount;
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   onCreditsSpent(amount) {
@@ -253,6 +270,10 @@ export class PlayerProfile {
   onAsteroidDestroyed() {
     this.stats.asteroidsDestroyed++;
     this.saveStats();
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.check('daily');
+      window.game.challengeSystem.check('weekly');
+    }
   }
 
   updateFavoriteWeapon() {
