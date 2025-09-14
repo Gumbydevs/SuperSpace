@@ -1141,18 +1141,10 @@ export class PremiumStore {
   ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
   ctx.fillText('OWNED', x + 90, textY + 45);
 
-        // Equip / Unequip button
-        const btnX = x + width - 100;
-        const btnY = y + height - 35;
-        ctx.fillStyle = isEquipped ? '#440000' : '#004400';
-        ctx.fillRect(btnX, btnY, 80, 25);
-        ctx.strokeStyle = isEquipped ? '#ff6666' : '#00ff00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(btnX, btnY, 80, 25);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px Orbitron, Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(isEquipped ? 'UNEQUIP' : 'EQUIP', btnX + 40, btnY + 16);
+  // NOTE: per UX, hide the equip/unequip button in the Premium Store
+  // item card once the item is owned to avoid overlapping the status
+  // label. Equipping can still be done by clicking the item card (handled
+  // in `handleItemClick`) or in the Appearance tab.
       }
     }
   }
