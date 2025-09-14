@@ -240,8 +240,8 @@ export class Player {
         this.weaponSwitchCooldown = 0; // Prevents rapid cycling
         // Here we define the energy system (optional until upgraded)
         this.maxEnergy = 100;
-        this.energy = 100;
-        this.energyRegen = 5; // Energy points regenerated per second
+    this.energy = 100;
+    this.energyRegen = 7; // Energy points regenerated per second (raised from 5)
         // Here we set up the afterburner system
         this.afterburnerActive = false;
         this.afterburnerEnergyDrain = 25; // Energy per second when active

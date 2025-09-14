@@ -285,7 +285,7 @@ export class ShopSystem {
                 getPrice: (level) => 4000 * (level + 1),
                 getEffect: (level) => ({ 
                     maxEnergy: 100 + (level * 50),
-                    energyRegen: 5 + (level * 3)
+                    energyRegen: 7 + (level * 4)
                 })
             },
             {
