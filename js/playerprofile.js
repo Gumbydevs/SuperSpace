@@ -706,40 +706,52 @@ export class PlayerProfile {
 
   performCompleteReset() {
     try {
-      // Get all localStorage keys that might be related to the game
-      const gameKeys = [];
+      // Remove all localStorage keys related to SuperSpace, including challenges, achievements, shop, and settings
+      const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        // Include all keys that might be related to SuperSpace
         if (
           key &&
           (key.startsWith('player') ||
             key.startsWith('weapon_') ||
             key.startsWith('ship_') ||
             key.startsWith('upgrade_') ||
+            key.startsWith('shop_') ||
+            key.startsWith('achievement') ||
+            key.startsWith('challenge') ||
             key.includes('Credits') ||
             key.includes('Ship') ||
             key.includes('Weapon') ||
-            key.includes('achievement') ||
             key.includes('disclaimer') ||
             key === 'currentShip' ||
             key === 'currentWeapon' ||
-            key === 'playerStats')
+            key === 'playerStats' ||
+            key === 'challenge_state' ||
+            key === 'achievements' ||
+            key === 'shopPurchases')
         ) {
-          gameKeys.push(key);
+          keysToRemove.push(key);
         }
       }
-
-      // Remove all identified game-related localStorage items
-      gameKeys.forEach((key) => {
+      keysToRemove.forEach((key) => {
         localStorage.removeItem(key);
-        console.log(`Removed localStorage key: ${key}`);
+        console.log(`[RESET] Removed localStorage key: ${key}`);
       });
 
-      // Also remove challenge_state explicitly to ensure challenges reset
-      if (localStorage.getItem('challenge_state')) {
-        localStorage.removeItem('challenge_state');
-        console.log('Removed localStorage key: challenge_state');
+      // Also clear any in-memory state for challenges, achievements, and shop
+      if (window.game) {
+        if (window.game.challengeSystem) {
+          window.game.challengeSystem.resetDaily();
+          window.game.challengeSystem.resetWeekly();
+          window.game.challengeSystem.lastDailyReset = null;
+          window.game.challengeSystem.lastWeeklyReset = null;
+        }
+        if (window.game.achievements && typeof window.game.achievements.resetAll === 'function') {
+          window.game.achievements.resetAll();
+        }
+        if (window.game.shop && typeof window.game.shop.resetPurchases === 'function') {
+          window.game.shop.resetPurchases();
+        }
       }
 
       // Reset the player profile stats
