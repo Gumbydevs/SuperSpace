@@ -1136,9 +1136,10 @@ export class PremiumStore {
         const equippedSkin = localStorage.getItem('selectedShipSkin') || 'none';
         const isEquipped = equippedSkin === item.id;
 
-        ctx.fillStyle = isEquipped ? '#00ff00' : '#339933';
-        ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
-        ctx.fillText(isEquipped ? 'EQUIPPED' : 'OWNED', x + 90, textY + 45);
+  // Per UX: always display 'OWNED' for purchased items (do not show EQUIPPED/PURCHASED)
+  ctx.fillStyle = '#339933';
+  ctx.font = 'bold 14px Orbitron, Arial, sans-serif';
+  ctx.fillText('OWNED', x + 90, textY + 45);
 
         // Equip / Unequip button
         const btnX = x + width - 100;
