@@ -452,55 +452,61 @@ export class ChallengeSystem {
   }
 
   showChallengeComplete(challenge, type) {
-    // Robust challenge popup: unique ID, max z-index, pointer-events, log if removed
+    // Use the same container and CSS as achievement notifications for guaranteed visibility
     try {
       if (window && window.console)
         console.log('showChallengeComplete called for', challenge.id, type);
-      const notification = document.createElement('div');
-      notification.id = `challenge-popup-${challenge.id}-${type}-${Date.now()}`;
-      notification.style.position = 'fixed';
-      notification.style.top = '20px';
-      notification.style.left = '50%';
-      notification.style.transform = 'translateX(-50%)';
-      notification.style.backgroundColor = 'rgba(30, 20, 0, 0.97)';
-      notification.style.color = '#ffd965';
-      notification.style.padding = '14px 22px';
-      notification.style.borderRadius = '8px';
-      notification.style.border = '3px solid #ffcf5c';
-      notification.style.zIndex = '99999';
-      notification.style.fontFamily = "'Orbitron', monospace";
-      notification.style.fontSize = '16px';
-      notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.8), 0 0 10px rgba(255,207,92,0.18)';
-      notification.style.pointerEvents = 'all';
-      notification.style.position = 'relative';
-      notification.style.paddingRight = '60px';
-      notification.innerHTML = `
-        <div style="font-weight:900; margin-bottom:7px; color:#fff; letter-spacing:1px;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
-        <div style="font-size:1.05em; color: #ffeaa7; margin-bottom:2px;">${challenge.description}</div>
+      let container = document.getElementById('achievement-notifications');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'achievement-notifications';
+        container.style.position = 'fixed';
+        container.style.top = '20px';
+        container.style.left = '50%';
+        container.style.transform = 'translateX(-50%)';
+        container.style.zIndex = '2000';
+        container.style.pointerEvents = 'none';
+        document.body.appendChild(container);
+      }
+      const element = document.createElement('div');
+      element.className = 'achievement-notification';
+      element.style.cssText = `
+        background: linear-gradient(135deg, #FFD700, #FFB300);
+        color: #222;
+        padding: 14px 22px 32px 22px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        font-family: 'Orbitron', 'Arial', sans-serif;
+        font-size: 15px;
+        max-width: 340px;
+        animation: slideIn 0.3s ease-out;
+        position: relative;
+        padding-right: 65px;
+        pointer-events: all;
+        z-index: 99999;
       `;
-      document.body.appendChild(notification);
+      const icon = document.createElement('span');
+      icon.textContent = '🏆';
+      icon.style.fontSize = '24px';
+      icon.style.marginRight = '12px';
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 2px; color:#222;">${type.toUpperCase()} CHALLENGE COMPLETE!</div>
+        <div style="font-size: 13px; opacity: 0.95; color:#222;">${challenge.description}</div>
+      `;
+      element.appendChild(icon);
+      element.appendChild(content);
+      container.appendChild(element);
       if (!window.marvinAssistant) {
         window.marvinAssistant = new MarvinAssistant();
       }
-      window.marvinAssistant.attachToNotification(notification);
-      // Remove notification after 3.5 seconds, log if forcibly removed
-      let removed = false;
-      const removeFn = () => {
-        if (!removed) {
-          removed = true;
-          if (notification.parentNode) notification.parentNode.removeChild(notification);
-          else console.warn('[ChallengePopup] Notification was already removed from DOM!');
-        }
-      };
-      setTimeout(removeFn, 3500);
-      // Extra: log if notification is removed early
-      const observer = new MutationObserver(() => {
-        if (!document.body.contains(notification) && !removed) {
-          removed = true;
-          console.warn('[ChallengePopup] Notification forcibly removed from DOM before timeout!');
-        }
-      });
-      observer.observe(document.body, { childList: true });
+      window.marvinAssistant.attachToNotification(element);
+      setTimeout(() => {
+        if (element.parentNode) element.parentNode.removeChild(element);
+      }, 4000);
     } catch (e) {
       console.error('[ChallengePopup] Popup error:', e);
     }
