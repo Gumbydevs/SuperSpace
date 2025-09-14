@@ -628,20 +628,153 @@ class AccountUI {
             return;
         }
         
-        const recoveryKey = prompt(`Enter your recovery key for "${username}":\n\n(This was shown to you when you created your account)`);
+        this.showPasswordResetModal(username);
+    }
+
+    showPasswordResetModal(username) {
+        // Create a modal/overlay for password reset
+        const resetOverlay = document.createElement('div');
+        resetOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
         
-        if (!recoveryKey) {
-            return;
-        }
+        resetOverlay.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+                border: 2px solid #4a90e2;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 500px;
+                width: 90%;
+                color: white;
+                font-family: 'Orbitron', Arial, sans-serif;
+                text-align: center;
+            ">
+                <h3 style="color: #4a90e2; margin: 0 0 20px 0;">🔑 Reset Password</h3>
+                <p style="margin: 0 0 15px 0; color: #ccc;">
+                    Account: <strong>${username}</strong>
+                </p>
+                <p style="margin: 0 0 20px 0; color: #ffaa00; font-size: 12px;">
+                    Enter your recovery key (shown when you created your account):
+                </p>
+                <input type="text" id="reset-recovery-key" placeholder="STAR-MOON-MARS-COMET-1234" style="
+                    width: 100%;
+                    padding: 12px;
+                    margin: 0 0 15px 0;
+                    background: rgba(255,255,255,0.1);
+                    border: 2px solid #4a90e2;
+                    border-radius: 6px;
+                    color: white;
+                    font-family: 'Orbitron', Arial, sans-serif;
+                    font-size: 14px;
+                    text-align: center;
+                    letter-spacing: 1px;
+                    box-sizing: border-box;
+                ">
+                <p style="margin: 0 0 10px 0; color: #ffaa00; font-size: 12px;">
+                    Enter your new password:
+                </p>
+                <input type="password" id="reset-new-password" placeholder="New password (6+ characters)" style="
+                    width: 100%;
+                    padding: 12px;
+                    margin: 0 0 20px 0;
+                    background: rgba(255,255,255,0.1);
+                    border: 2px solid #4a90e2;
+                    border-radius: 6px;
+                    color: white;
+                    font-family: 'Orbitron', Arial, sans-serif;
+                    font-size: 14px;
+                    box-sizing: border-box;
+                ">
+                <div style="display: flex; gap: 10px;">
+                    <button id="confirm-password-reset" style="
+                        flex: 1;
+                        padding: 12px;
+                        background: linear-gradient(135deg, #28a745, #1e7e34);
+                        border: none;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-family: 'Orbitron', Arial, sans-serif;
+                        font-size: 14px;
+                    ">Reset Password</button>
+                    <button id="cancel-password-reset" style="
+                        flex: 1;
+                        padding: 12px;
+                        background: linear-gradient(135deg, #dc3545, #bd2130);
+                        border: none;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-family: 'Orbitron', Arial, sans-serif;
+                        font-size: 14px;
+                    ">Cancel</button>
+                </div>
+            </div>
+        `;
         
-        const newPassword = prompt('Enter your new password (at least 6 characters):');
+        document.body.appendChild(resetOverlay);
         
-        if (!newPassword || newPassword.length < 6) {
-            this.showMessage('New password must be at least 6 characters', 'error');
-            return;
-        }
+        // Focus on recovery key input
+        setTimeout(() => {
+            document.getElementById('reset-recovery-key').focus();
+        }, 100);
         
-        this.handlePasswordResetWithKey(username, recoveryKey.trim(), newPassword);
+        // Handle form submission
+        const confirmBtn = resetOverlay.querySelector('#confirm-password-reset');
+        const cancelBtn = resetOverlay.querySelector('#cancel-password-reset');
+        const recoveryKeyInput = resetOverlay.querySelector('#reset-recovery-key');
+        const passwordInput = resetOverlay.querySelector('#reset-new-password');
+        
+        const handleSubmit = () => {
+            const recoveryKey = recoveryKeyInput.value.trim();
+            const newPassword = passwordInput.value;
+            
+            if (!recoveryKey) {
+                this.showMessage('Please enter your recovery key', 'error');
+                return;
+            }
+            
+            if (!newPassword || newPassword.length < 6) {
+                this.showMessage('New password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            document.body.removeChild(resetOverlay);
+            this.handlePasswordResetWithKey(username, recoveryKey, newPassword);
+        };
+        
+        const handleCancel = () => {
+            document.body.removeChild(resetOverlay);
+        };
+        
+        confirmBtn.addEventListener('click', handleSubmit);
+        cancelBtn.addEventListener('click', handleCancel);
+        
+        // Allow Enter key to submit
+        [recoveryKeyInput, passwordInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                }
+            });
+        });
+        
+        // Allow Escape key to cancel
+        resetOverlay.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                handleCancel();
+            }
+        });
     }
     
     async handlePasswordResetWithKey(username, recoveryKey, newPassword) {

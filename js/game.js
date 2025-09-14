@@ -540,9 +540,41 @@ class Game {
         if (typeof window.CloudSyncService !== 'undefined' && typeof window.AccountUI !== 'undefined') {
             this.cloudSync = new window.CloudSyncService();
             this.accountUI = new window.AccountUI(this.cloudSync);
+            
+            // Set up callback for when cloud data is loaded
+            this.cloudSync.onDataSynced = () => {
+                this.refreshPlayerDataFromLocalStorage();
+            };
+            
             console.log('☁️ Cloud Sync System initialized');
         } else {
             console.log('☁️ Cloud Sync System not available (running in offline mode)');
+        }
+    }
+    
+    // Refresh player data after cloud sync
+    refreshPlayerDataFromLocalStorage() {
+        if (this.player) {
+            // Reload credits
+            const savedCredits = localStorage.getItem('playerCredits');
+            if (savedCredits) {
+                this.player._credits = parseInt(savedCredits);
+                console.log('🔄 Refreshed player credits from cloud:', savedCredits);
+            }
+            
+            // Reload player name if multiplayer is active
+            if (this.multiplayer) {
+                const savedName = localStorage.getItem('playerName');
+                if (savedName) {
+                    this.multiplayer.playerName = savedName;
+                    console.log('🔄 Refreshed player name from cloud:', savedName);
+                }
+            }
+            
+            // Update UI if it exists
+            if (this.ui) {
+                this.ui.updateCreditsDisplay();
+            }
         }
     }
     

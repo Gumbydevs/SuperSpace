@@ -12,6 +12,7 @@ class CloudSyncService {
         this.lastSyncTime = 0;
         this.syncInterval = 30000; // Sync every 30 seconds
         this.serverUrl = 'https://superspace-server.onrender.com'; // Your existing server
+        this.onDataSynced = null; // Callback for when data is synced
         
         // Check if user is already logged in
         this.checkExistingLogin();
@@ -188,12 +189,24 @@ class CloudSyncService {
                 key.startsWith('player_') || 
                 key.startsWith('ss_') ||
                 key === 'credits' ||
+                key === 'playerCredits' ||  // Added missing playerCredits
                 key === 'highScore' ||
                 key === 'settings' ||
                 key === 'achievements' ||
-                key === 'playerName' ||
+                key === 'playerName' ||     // Added missing playerName
                 key === 'selectedAvatar' ||
-                key === 'selectedShip') {
+                key === 'selectedShip' ||
+                key === 'unlocked_ships' ||
+                key === 'unlocked_avatars' ||
+                key === 'game_settings' ||
+                key === 'volume_settings' ||
+                key === 'upgrades_purchased' ||
+                key === 'premium_status' ||
+                key.startsWith('upgrade_') ||
+                key.startsWith('unlock_') ||
+                key.startsWith('achievement_') ||
+                key.startsWith('skill_') ||
+                key.startsWith('weapon_')) {
                 
                 gameData[key] = localStorage.getItem(key);
             }
@@ -211,11 +224,11 @@ class CloudSyncService {
             }
             
             // For some keys, we might want to merge rather than overwrite
-            if (key === 'credits') {
-                // Take the higher value
-                const localCredits = parseInt(localStorage.getItem('credits') || '0');
+            if (key === 'credits' || key === 'playerCredits') {
+                // Take the higher value for credits
+                const localCredits = parseInt(localStorage.getItem(key) || '0');
                 const cloudCredits = parseInt(value || '0');
-                localStorage.setItem('credits', Math.max(localCredits, cloudCredits).toString());
+                localStorage.setItem(key, Math.max(localCredits, cloudCredits).toString());
             } else if (key === 'highScore') {
                 // Take the higher score
                 const localScore = parseInt(localStorage.getItem('highScore') || '0');
@@ -225,6 +238,19 @@ class CloudSyncService {
                 // For most other data, cloud takes precedence
                 localStorage.setItem(key, value);
             }
+        }
+        
+        // Log the restored data for debugging
+        console.log('☁️ Restored game data:', {
+            playerCredits: localStorage.getItem('playerCredits'),
+            playerName: localStorage.getItem('playerName'),
+            selectedAvatar: localStorage.getItem('selectedAvatar'),
+            selectedShip: localStorage.getItem('selectedShip')
+        });
+        
+        // Trigger callback if set
+        if (this.onDataSynced && typeof this.onDataSynced === 'function') {
+            setTimeout(() => this.onDataSynced(), 100); // Small delay to ensure localStorage is updated
         }
     }
     
