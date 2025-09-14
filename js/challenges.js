@@ -85,8 +85,10 @@ export class ChallengeSystem {
   check(challengeType) {
     // Ensure profile stats are available
     if (!this.profile || !this.profile.stats) return;
-    const list = CHALLENGES[challengeType] || [];
-    list.forEach((ch) => {
+  // Only allow progress for current daily/weekly challenges
+  let allowedIds = challengeType === 'daily' ? this.currentDaily : this.currentWeekly;
+  const list = (CHALLENGES[challengeType] || []).filter((ch) => allowedIds.includes(ch.id));
+  list.forEach((ch) => {
       // Allow showing a popup this session even if the challenge was completed in a previous session.
       const alreadyCompleted = (this.completed[challengeType] || []).includes(
         ch.id,
@@ -231,9 +233,11 @@ export class ChallengeSystem {
 
   // Helper to mark a challenge completed and show popup (useful instead of mutating arrays directly)
   markCompleted(type, challengeId) {
-    const list = CHALLENGES[type] || [];
-    const ch = list.find((c) => c.id === challengeId);
-    if (!ch) return false;
+  // Only allow marking if in current pool
+  let allowedIds = type === 'daily' ? this.currentDaily : this.currentWeekly;
+  const list = (CHALLENGES[type] || []).filter((ch) => allowedIds.includes(ch.id));
+  const ch = list.find((c) => c.id === challengeId);
+  if (!ch) return false;
     let newlyCompleted = false;
     if (!this.completed[type].includes(challengeId)) {
       this.completed[type].push(challengeId);
@@ -254,9 +258,11 @@ export class ChallengeSystem {
 
   // Claim a completed challenge's reward. Returns reward amount if successful, 0 otherwise.
   claimChallenge(type, challengeId) {
-    const list = CHALLENGES[type] || [];
-    const ch = list.find((c) => c.id === challengeId);
-    if (!ch) return 0;
+  // Only allow claim if in current pool
+  let allowedIds = type === 'daily' ? this.currentDaily : this.currentWeekly;
+  const list = (CHALLENGES[type] || []).filter((ch) => allowedIds.includes(ch.id));
+  const ch = list.find((c) => c.id === challengeId);
+  if (!ch) return 0;
 
     // Only allow claim if completed and not already claimed
     if (!this.completed[type].includes(challengeId)) return 0;
