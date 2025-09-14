@@ -1731,6 +1731,8 @@ export class ShopSystem {
     claimAllSmall.onclick = () => {
       import('./challenges.js').then(({ CHALLENGES }) => {
         let totalAwarded = 0;
+        let totalGems = 0;
+        let totalCredits = 0;
         CHALLENGES.daily.concat(CHALLENGES.weekly).forEach((ch) => {
           const type = CHALLENGES.daily.find((d) => d.id === ch.id)
             ? 'daily'
@@ -1740,7 +1742,11 @@ export class ShopSystem {
             !(challengeSystem.claimed[type] || []).includes(ch.id)
           ) {
             const awarded = challengeSystem.claimChallenge(type, ch.id);
-            totalAwarded += awarded;
+            if (awarded > 0) {
+              totalAwarded += awarded;
+              totalCredits += ch.reward || 0;
+              totalGems += ch.gems || 0;
+            }
           }
         });
         if (totalAwarded > 0) {
@@ -1749,6 +1755,45 @@ export class ShopSystem {
           const creditsEl = document.getElementById('shop-credits');
           if (creditsEl)
             creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+
+          // Show Marvin popup for total reward
+          let rewardMsg = `<div style='font-size:1.1em;margin-bottom:4px;'>You claimed multiple rewards!</div>`;
+          if (totalCredits > 0) {
+            rewardMsg += `<div style='color:#fc3;font-weight:bold;'>+${totalCredits} credits</div>`;
+          }
+          if (totalGems > 0) {
+            rewardMsg += `<div style='color:#3cf;font-weight:bold;'>+${totalGems} space gem${totalGems > 1 ? 's' : ''} &#128142;</div>`;
+          }
+          if (!window.marvinAssistant) {
+            window.marvinAssistant = new (window.MarvinAssistant || window.game?.marvinAssistant?.constructor || function(){})();
+          }
+          const notification = document.createElement('div');
+          notification.style.position = 'fixed';
+          notification.style.top = '20px';
+          notification.style.left = '50%';
+          notification.style.transform = 'translateX(-50%)';
+          notification.style.backgroundColor = 'rgba(30, 20, 0, 0.95)';
+          notification.style.color = '#ffd965';
+          notification.style.padding = '14px 22px';
+          notification.style.borderRadius = '7px';
+          notification.style.border = '3px solid #ffcf5c';
+          notification.style.zIndex = '10000';
+          notification.style.fontFamily = "'Orbitron', monospace";
+          notification.style.fontSize = '15px';
+          notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
+          notification.style.position = 'relative';
+          notification.style.paddingRight = '55px';
+          notification.innerHTML = `<div style='font-weight:800; margin-bottom:6px; color:#fff'>REWARDS CLAIMED!</div>${rewardMsg}`;
+          document.body.appendChild(notification);
+          if (window.marvinAssistant && typeof window.marvinAssistant.attachToNotification === 'function') {
+            window.marvinAssistant.attachToNotification(notification);
+          }
+          setTimeout(() => {
+            try {
+              if (notification.parentNode)
+                notification.parentNode.removeChild(notification);
+            } catch (e) {}
+          }, 3500);
         }
         this.updateShopContent();
         this.updateChallengeTabBadge();
