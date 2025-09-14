@@ -132,6 +132,9 @@ class Game {
         // Set up keyboard shortcuts
         this.setupHotkeys();
         
+        // Initialize Cloud Sync System
+        this.initializeCloudSync();
+        
         // Initialize player count display by connecting to server without joining game
         this.initializePlayerCount();
 
@@ -528,6 +531,18 @@ class Game {
                 console.error('Failed to process pending payment:', e);
                 localStorage.removeItem('pendingPayment'); // Remove invalid data
             }
+        }
+    }
+    
+    // Initialize Cloud Sync System
+    initializeCloudSync() {
+        // Only initialize if the classes are available
+        if (typeof window.CloudSyncService !== 'undefined' && typeof window.AccountUI !== 'undefined') {
+            this.cloudSync = new window.CloudSyncService();
+            this.accountUI = new window.AccountUI(this.cloudSync);
+            console.log('☁️ Cloud Sync System initialized');
+        } else {
+            console.log('☁️ Cloud Sync System not available (running in offline mode)');
         }
     }
     

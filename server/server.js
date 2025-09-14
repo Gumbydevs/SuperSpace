@@ -8,6 +8,7 @@ const socketIO = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 const ServerAnalytics = require('./analytics');
+const CloudSyncAuth = require('./cloudSyncAuth');
 
 // Create the Express app and HTTP server
 const app = express();
@@ -15,6 +16,9 @@ const server = http.createServer(app);
 
 // Initialize analytics
 const analytics = new ServerAnalytics();
+
+// Initialize cloud sync auth
+const cloudAuth = new CloudSyncAuth();
 
 // Log buffer for debugging (keep last 100 log entries)
 const logBuffer = [];
@@ -246,6 +250,108 @@ app.post('/analytics/track', (req, res) => {
     res.status(500).json({ error: 'Failed to track event', details: error.message });
   }
 });
+
+// ===== CLOUD SYNC AUTHENTICATION ROUTES =====
+
+// Register new account
+app.post('/auth/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const result = await cloudAuth.register(username, password);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Registration endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Login
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const result = await cloudAuth.login(username, password);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(401).json(result);
+    }
+  } catch (error) {
+    console.error('Login endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Validate token
+app.get('/auth/validate', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ valid: false, message: 'No token provided' });
+    }
+    
+    const result = await cloudAuth.validateToken(token);
+    
+    if (result.valid) {
+      res.json({ valid: true, username: result.username });
+    } else {
+      res.status(401).json({ valid: false, message: 'Invalid token' });
+    }
+  } catch (error) {
+    console.error('Token validation endpoint error:', error);
+    res.status(500).json({ valid: false, message: 'Server error' });
+  }
+});
+
+// Upload game data
+app.post('/sync/upload', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+    
+    const { gameData } = req.body;
+    const result = await cloudAuth.savePlayerData(token, gameData);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Upload endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Download game data
+app.get('/sync/download', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided' });
+    }
+    
+    const result = await cloudAuth.loadPlayerData(token);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Download endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ===== END CLOUD SYNC ROUTES =====
 
 // Debug endpoint - shows current sessions and today's dailyStats for troubleshooting
 app.get('/analytics/debug', (req, res) => {
@@ -1726,6 +1832,11 @@ function getRandomColor() {
   const colors = ['#f44', '#4f4', '#44f', '#ff4', '#4ff', '#f4f', '#fa4', '#a4f'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
+
+// Clean up expired auth tokens daily
+setInterval(() => {
+  cloudAuth.cleanupTokens();
+}, 24 * 60 * 60 * 1000); // Every 24 hours
 
 // Start the server
 const PORT = process.env.PORT || 3000;
