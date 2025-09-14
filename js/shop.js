@@ -1794,65 +1794,235 @@ export class ShopSystem {
     }
     reward.style.fontSize = '0.9em';
 
-    // Progress section (you could add progress tracking here)
+    // Progress section (dynamic for all challenges)
     const progress = document.createElement('div');
     progress.style.fontSize = '0.8em';
     progress.style.color = '#aaa';
     progress.style.marginTop = '5px';
 
-    // Add some basic progress indicators based on challenge type
-    if (!isCompleted) {
-      // Prefer challengeSystem.profile.stats (created after Game startup). Fall back to player's attached profile or global game profile.
-      const stats =
-        (challengeSystem &&
-          challengeSystem.profile &&
-          challengeSystem.profile.stats) ||
-        (this.player &&
-          this.player.playerProfile &&
-          this.player.playerProfile.stats) ||
-        (window &&
-          window.game &&
-          window.game.playerProfile &&
-          window.game.playerProfile.stats) ||
-        {};
-      const currentScore =
-        challengeSystem &&
-        challengeSystem.player &&
-        typeof challengeSystem.player.score === 'number'
-          ? challengeSystem.player.score
-          : (this.player && this.player.score) || 0;
+    // Prefer challengeSystem.profile.stats (created after Game startup). Fall back to player's attached profile or global game profile.
+    const stats =
+      (challengeSystem &&
+        challengeSystem.profile &&
+        challengeSystem.profile.stats) ||
+      (this.player &&
+        this.player.playerProfile &&
+        this.player.playerProfile.stats) ||
+      (window &&
+        window.game &&
+        window.game.playerProfile &&
+        window.game.playerProfile.stats) ||
+      {};
+    const currentScore =
+      challengeSystem &&
+      challengeSystem.player &&
+      typeof challengeSystem.player.score === 'number'
+        ? challengeSystem.player.score
+        : (this.player && this.player.score) || 0;
 
+    // Helper for progress display
+    function progressText(label, current, required, unit = '') {
+      return `${label}: ${current} / ${required}${unit}`;
+    }
+
+    let showProgress = '';
+    if (!isCompleted) {
       switch (challenge.id) {
         case 'survive_10': {
           const currentSurvival = Math.floor(stats.longestSurvival || 0);
-          progress.textContent = `Best survival: ${currentSurvival} / 600 seconds`;
+          showProgress = progressText('Survived', currentSurvival, 600, ' sec');
           break;
         }
         case 'destroy_200_asteroids': {
           const currentAsteroids = stats.asteroidsDestroyed || 0;
-          progress.textContent = `Asteroids destroyed: ${currentAsteroids} / 200`;
+          showProgress = progressText('Asteroids destroyed', currentAsteroids, 200);
           break;
         }
         case 'earn_1000_credits': {
           const currentCreditsEarned = stats.totalCreditsEarned || 0;
-          progress.textContent = `Credits earned: ${currentCreditsEarned} / 1,000`;
+          showProgress = progressText('Credits earned', currentCreditsEarned, 1000);
           break;
         }
+        case 'kill_10_enemies': {
+          const kills = stats.totalKills || 0;
+          showProgress = progressText('Enemies killed', kills, 10);
+          break;
+        }
+        case 'collect_5_powerups': {
+          const collected = stats.powerupsCollected || 0;
+          showProgress = progressText('Power-ups collected', collected, 5);
+          break;
+        }
+        case 'no_damage_5': {
+          const noDamage = Math.floor(stats.noDamageTime || 0);
+          showProgress = progressText('No-damage time', noDamage, 300, ' sec');
+          break;
+        }
+        case 'use_3_bombs': {
+          const bombs = stats.bombsUsed || 0;
+          showProgress = progressText('Bombs used', bombs, 3);
+          break;
+        }
+        case 'spend_500_credits': {
+          const spent = stats.creditsSpent || 0;
+          showProgress = progressText('Credits spent', spent, 500);
+          break;
+        }
+        case 'fly_10km': {
+          const dist = ((stats.distanceTraveled || 0) / 1000).toFixed(1);
+          showProgress = progressText('Distance traveled', dist, 10, ' km');
+          break;
+        }
+        case 'chat_1': {
+          const chats = stats.chatMessages || 0;
+          showProgress = progressText('Chat messages', chats, 1);
+          break;
+        }
+        case 'equip_skin': {
+          const equipped = stats.skinsEquipped || 0;
+          showProgress = progressText('Skins equipped', equipped, 1);
+          break;
+        }
+        case 'assist_ally': {
+          const assists = stats.alliesAssisted || 0;
+          showProgress = progressText('Allies assisted', assists, 1);
+          break;
+        }
+        case 'evade_20_projectiles': {
+          const evaded = stats.projectilesEvaded || 0;
+          showProgress = progressText('Projectiles evaded', evaded, 20);
+          break;
+        }
+        case 'upgrade_weapon': {
+          const upgrades = stats.weaponUpgrades || 0;
+          showProgress = progressText('Weapon upgrades', upgrades, 1);
+          break;
+        }
+        case 'visit_sector_5': {
+          const visited = stats.sectorsVisited || 0;
+          showProgress = progressText('Sectors visited', visited, 5);
+          break;
+        }
+        case 'scan_3_artifacts': {
+          const scanned = stats.artifactsScanned || 0;
+          showProgress = progressText('Artifacts scanned', scanned, 3);
+          break;
+        }
+        case 'destroy_boss': {
+          const bosses = stats.bossesDefeated || 0;
+          showProgress = progressText('Bosses defeated', bosses, 1);
+          break;
+        }
+        case 'trade_market': {
+          const trades = stats.marketTrades || 0;
+          showProgress = progressText('Market trades', trades, 1);
+          break;
+        }
+        case 'collect_10_powerups': {
+          const collected = stats.powerupsCollected || 0;
+          showProgress = progressText('Power-ups collected', collected, 10);
+          break;
+        }
+        case 'activate_shield': {
+          const shields = stats.shieldActivations || 0;
+          showProgress = progressText('Shield activations', shields, 3);
+          break;
+        }
+        case 'warp_jump': {
+          const warps = stats.warpJumps || 0;
+          showProgress = progressText('Warp jumps', warps, 1);
+          break;
+        }
+        // Weekly
         case 'score_50000': {
-          progress.textContent = `Current score: ${currentScore} / 50,000`;
+          showProgress = progressText('Score', currentScore, 50000);
           break;
         }
         case 'kill_25_enemies': {
-          const currentKills = stats.totalKills || 0;
-          progress.textContent = `Enemy kills: ${currentKills} / 25`;
+          const kills = stats.totalKills || 0;
+          showProgress = progressText('Enemies killed', kills, 25);
           break;
         }
         case 'play_20_games': {
-          const currentGames = stats.gamesPlayed || 0;
-          progress.textContent = `Games played: ${currentGames} / 20`;
+          const games = stats.gamesPlayed || 0;
+          showProgress = progressText('Games played', games, 20);
           break;
         }
+        case 'destroy_1000_asteroids': {
+          const asteroids = stats.asteroidsDestroyed || 0;
+          showProgress = progressText('Asteroids destroyed', asteroids, 1000);
+          break;
+        }
+        case 'earn_10000_credits': {
+          const credits = stats.totalCreditsEarned || 0;
+          showProgress = progressText('Credits earned', credits, 10000);
+          break;
+        }
+        case 'top_scorer_10min': {
+          const top = stats.topScorer10min || 0;
+          showProgress = progressText('Top scorer (10min)', top, 1);
+          break;
+        }
+        case 'no_death_3_games': {
+          const streak = stats.noDeathStreak || 0;
+          showProgress = progressText('No-death games', streak, 3);
+          break;
+        }
+        case 'buy_3_items': {
+          const bought = stats.itemsBought || 0;
+          showProgress = progressText('Items bought', bought, 3);
+          break;
+        }
+        case 'explore_50km': {
+          const dist = ((stats.distanceTraveled || 0) / 1000).toFixed(1);
+          showProgress = progressText('Distance traveled', dist, 50, ' km');
+          break;
+        }
+        case 'ally_revives': {
+          const revives = stats.alliesRevived || 0;
+          showProgress = progressText('Allies revived', revives, 10);
+          break;
+        }
+        case 'defeat_5_bosses': {
+          const bosses = stats.bossesDefeated || 0;
+          showProgress = progressText('Bosses defeated', bosses, 5);
+          break;
+        }
+        case 'collect_10_gems': {
+          const gems = stats.rareGemsCollected || 0;
+          showProgress = progressText('Rare gems collected', gems, 10);
+          break;
+        }
+        case 'complete_10_trades': {
+          const trades = stats.marketTrades || 0;
+          showProgress = progressText('Market trades', trades, 10);
+          break;
+        }
+        case 'upgrade_5_times': {
+          const upgrades = stats.shipUpgrades || 0;
+          showProgress = progressText('Ship upgrades', upgrades, 5);
+          break;
+        }
+        case 'scan_15_artifacts': {
+          const scanned = stats.artifactsScanned || 0;
+          showProgress = progressText('Artifacts scanned', scanned, 15);
+          break;
+        }
+        case 'evade_100_projectiles': {
+          const evaded = stats.projectilesEvaded || 0;
+          showProgress = progressText('Projectiles evaded', evaded, 100);
+          break;
+        }
+        case 'warp_10_times': {
+          const warps = stats.warpJumps || 0;
+          showProgress = progressText('Warp jumps', warps, 10);
+          break;
+        }
+        default: {
+          showProgress = '';
+        }
       }
+      progress.textContent = showProgress;
     } else {
       progress.textContent = isClaimed ? 'Claimed' : 'Completed - Unclaimed';
       progress.style.color = isClaimed ? '#ffd700' : '#3f3';
