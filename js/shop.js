@@ -1878,7 +1878,7 @@ export class ShopSystem {
       action.appendChild(claimedLabel);
     } else if (isCompleted) {
       const claimBtn = document.createElement('button');
-      claimBtn.textContent = `Claim ${challenge.reward}`;
+      claimBtn.textContent = 'Claim Reward';
       claimBtn.style.padding = '8px 12px';
       claimBtn.style.backgroundColor = '#33c';
       claimBtn.style.border = 'none';
@@ -1903,6 +1903,43 @@ export class ShopSystem {
           // Refresh the shop content to reflect new state
           this.updateShopContent();
           this.updateChallengeTabBadge();
+
+          // Show Marvin popup for reward
+          let rewardMsg = `<div style='font-size:1.1em;margin-bottom:4px;'>You claimed a reward!</div>`;
+          rewardMsg += `<div style='color:#fc3;font-weight:bold;'>+${challenge.reward} credits</div>`;
+          if (challenge.gems && challenge.gems > 0) {
+            rewardMsg += `<div style='color:#3cf;font-weight:bold;'>+${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''} &#128142;</div>`;
+          }
+          if (!window.marvinAssistant) {
+            window.marvinAssistant = new (window.MarvinAssistant || window.game?.marvinAssistant?.constructor || function(){})();
+          }
+          const notification = document.createElement('div');
+          notification.style.position = 'fixed';
+          notification.style.top = '20px';
+          notification.style.left = '50%';
+          notification.style.transform = 'translateX(-50%)';
+          notification.style.backgroundColor = 'rgba(30, 20, 0, 0.95)';
+          notification.style.color = '#ffd965';
+          notification.style.padding = '14px 22px';
+          notification.style.borderRadius = '7px';
+          notification.style.border = '3px solid #ffcf5c';
+          notification.style.zIndex = '10000';
+          notification.style.fontFamily = "'Orbitron', monospace";
+          notification.style.fontSize = '15px';
+          notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.7), 0 0 10px rgba(255,207,92,0.15)';
+          notification.style.position = 'relative';
+          notification.style.paddingRight = '55px';
+          notification.innerHTML = `<div style='font-weight:800; margin-bottom:6px; color:#fff'>REWARD CLAIMED!</div>${rewardMsg}`;
+          document.body.appendChild(notification);
+          if (window.marvinAssistant && typeof window.marvinAssistant.attachToNotification === 'function') {
+            window.marvinAssistant.attachToNotification(notification);
+          }
+          setTimeout(() => {
+            try {
+              if (notification.parentNode)
+                notification.parentNode.removeChild(notification);
+            } catch (e) {}
+          }, 3500);
 
           // --- Force cloud sync after claim ---
           const showSyncError = (msg) => {
