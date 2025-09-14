@@ -1602,13 +1602,23 @@ export class ShopSystem {
 
     dailySection.appendChild(dailyHeader);
 
-    // Import and display daily challenges
+    // Import and display daily challenges (persisted for the day)
     import('./challenges.js').then(({ CHALLENGES }) => {
-      // Pick 3-5 random daily challenges for this rotation
-      let dailyPool = CHALLENGES.daily.slice();
-  let dailyCount = 3 + Math.floor(Math.random() * 3); // always 3, 4, or 5
-      // Use a seeded value based on the current day to keep it stable for the day
-      const today = (new Date()).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+      // Use EST date as key
+      function getESTDateKey() {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(now);
+        const y = parts.find((p) => p.type === 'year').value;
+        const m = parts.find((p) => p.type === 'month').value;
+        const d = parts.find((p) => p.type === 'day').value;
+        return `${y}-${m}-${d}`;
+      }
+
       function seededShuffle(array, seed) {
         let s = seed.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
         for (let i = array.length - 1; i > 0; i--) {
@@ -1617,8 +1627,25 @@ export class ShopSystem {
           [array[i], array[j]] = [array[j], array[i]];
         }
       }
-      seededShuffle(dailyPool, today);
-      dailyPool.slice(0, dailyCount).forEach((challenge) => {
+
+      // Persist daily challenge selection in localStorage for the day
+      const dailyKey = getESTDateKey();
+      let dailyState = {};
+      try {
+        dailyState = JSON.parse(localStorage.getItem('daily_challenge_rotation') || '{}');
+      } catch (e) { dailyState = {}; }
+      if (!dailyState[dailyKey]) {
+        // Pick and persist new daily challenges for today
+        let dailyPool = CHALLENGES.daily.slice();
+        let dailyCount = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5
+        seededShuffle(dailyPool, dailyKey);
+        dailyState[dailyKey] = dailyPool.slice(0, dailyCount).map((ch) => ch.id);
+        localStorage.setItem('daily_challenge_rotation', JSON.stringify(dailyState));
+      }
+      // Render today's persisted daily challenges
+      const dailyIds = dailyState[dailyKey];
+      const dailyChallenges = CHALLENGES.daily.filter((ch) => dailyIds.includes(ch.id));
+      dailyChallenges.forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
           challenge,
           'daily',
