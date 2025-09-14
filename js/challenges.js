@@ -159,19 +159,22 @@ export class ChallengeSystem {
     const list = CHALLENGES[type] || [];
     const ch = list.find((c) => c.id === challengeId);
     if (!ch) return false;
+    let newlyCompleted = false;
     if (!this.completed[type].includes(challengeId)) {
       this.completed[type].push(challengeId);
+      newlyCompleted = true;
     }
     this.sessionNotified[type] = this.sessionNotified[type] || [];
     this.notified[type] = this.notified[type] || [];
-    if (!this.sessionNotified[type].includes(challengeId)) {
+    // Always show popup if just completed now
+    if (newlyCompleted && !this.sessionNotified[type].includes(challengeId)) {
       this.sessionNotified[type].push(challengeId);
       if (!this.notified[type].includes(challengeId))
         this.notified[type].push(challengeId);
       this.showChallengeComplete(ch, type);
     }
     this.saveState();
-    return true;
+    return newlyCompleted;
   }
 
   // Claim a completed challenge's reward. Returns reward amount if successful, 0 otherwise.
