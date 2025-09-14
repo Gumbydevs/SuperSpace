@@ -3,30 +3,48 @@ import { MarvinAssistant } from './marvin.js';
 
 export const CHALLENGES = {
   daily: [
-    { id: 'survive_10', description: 'Survive for 10 minutes', reward: 500 },
-    {
-      id: 'destroy_200_asteroids',
-      description: 'Destroy 200 asteroids',
-      reward: 400,
-    },
-    {
-      id: 'earn_1000_credits',
-      description: 'Earn 1000 credits in one session',
-      reward: 300,
-    },
+    { id: 'survive_10', description: 'Survive for 10 minutes', reward: 500, gems: 2 },
+    { id: 'destroy_200_asteroids', description: 'Destroy 200 asteroids', reward: 400, gems: 2 },
+    { id: 'earn_1000_credits', description: 'Earn 1000 credits in one session', reward: 300, gems: 1 },
+    { id: 'kill_10_enemies', description: 'Kill 10 enemy ships', reward: 350, gems: 2 },
+    { id: 'collect_5_powerups', description: 'Collect 5 power-ups', reward: 250, gems: 1 },
+    { id: 'no_damage_5', description: 'Survive 5 minutes without taking damage', reward: 400, gems: 2 },
+    { id: 'use_3_bombs', description: 'Use 3 bombs in one game', reward: 200, gems: 1 },
+    { id: 'spend_500_credits', description: 'Spend 500 credits in the shop', reward: 300, gems: 1 },
+    { id: 'fly_10km', description: 'Travel 10 kilometers in one session', reward: 350, gems: 2 },
+    { id: 'chat_1', description: 'Send a message in chat', reward: 100, gems: 1 },
+    { id: 'equip_skin', description: 'Equip a new ship skin', reward: 150, gems: 1 },
+    // New daily challenges
+    { id: 'assist_ally', description: 'Assist an ally in multiplayer', reward: 200, gems: 1 },
+    { id: 'evade_20_projectiles', description: 'Evade 20 enemy projectiles', reward: 250, gems: 1 },
+    { id: 'upgrade_weapon', description: 'Upgrade your weapon once', reward: 200, gems: 1 },
+    { id: 'visit_sector_5', description: 'Visit sector 5', reward: 180, gems: 1 },
+    { id: 'scan_3_artifacts', description: 'Scan 3 space artifacts', reward: 220, gems: 1 },
+    { id: 'destroy_boss', description: 'Defeat a boss ship', reward: 500, gems: 3 },
+    { id: 'trade_market', description: 'Trade at the market once', reward: 150, gems: 1 },
+    { id: 'collect_rare_gem', description: 'Collect a rare space gem', reward: 300, gems: 2 },
+    { id: 'activate_shield', description: 'Activate your shield 3 times', reward: 180, gems: 1 },
+    { id: 'warp_jump', description: 'Perform a warp jump', reward: 200, gems: 1 },
   ],
   weekly: [
-    {
-      id: 'score_50000',
-      description: 'Score 50,000 points in one game',
-      reward: 1500,
-    },
-    { id: 'kill_25_enemies', description: 'Kill 25 enemy ships', reward: 1200 },
-    {
-      id: 'play_20_games',
-      description: 'Play 20 games this week',
-      reward: 800,
-    },
+    { id: 'score_50000', description: 'Score 50,000 points in one game', reward: 1500, gems: 6 },
+    { id: 'kill_25_enemies', description: 'Kill 25 enemy ships', reward: 1200, gems: 5 },
+    { id: 'play_20_games', description: 'Play 20 games this week', reward: 800, gems: 4 },
+    { id: 'destroy_1000_asteroids', description: 'Destroy 1,000 asteroids', reward: 1100, gems: 5 },
+    { id: 'earn_10000_credits', description: 'Earn 10,000 credits this week', reward: 1000, gems: 4 },
+  { id: 'top_scorer_10min', description: 'Be the top scorer in a 10-minute period', reward: 2000, gems: 8 },
+    { id: 'no_death_3_games', description: 'Complete 3 games in a row without dying', reward: 1800, gems: 7 },
+    { id: 'buy_3_items', description: 'Buy 3 different items from the shop', reward: 900, gems: 4 },
+    // New weekly challenges
+    { id: 'explore_50km', description: 'Travel a total of 50 kilometers', reward: 1200, gems: 5 },
+    { id: 'ally_revives', description: 'Revive allies 10 times', reward: 1500, gems: 6 },
+    { id: 'defeat_5_bosses', description: 'Defeat 5 boss ships', reward: 2200, gems: 10 },
+    { id: 'collect_10_gems', description: 'Collect 10 rare space gems', reward: 1300, gems: 6 },
+    { id: 'complete_10_trades', description: 'Complete 10 market trades', reward: 1000, gems: 4 },
+    { id: 'upgrade_5_times', description: 'Upgrade your ship 5 times', reward: 1100, gems: 4 },
+    { id: 'scan_15_artifacts', description: 'Scan 15 space artifacts', reward: 1400, gems: 5 },
+    { id: 'evade_100_projectiles', description: 'Evade 100 enemy projectiles', reward: 1200, gems: 5 },
+    { id: 'warp_10_times', description: 'Perform 10 warp jumps', reward: 1000, gems: 4 },
   ],
 };
 
@@ -167,13 +185,20 @@ export class ChallengeSystem {
     if (this.claimed[type].includes(challengeId)) return 0;
 
     this.claimed[type].push(challengeId);
-    // Award credits
+    // Award credits and gems
     if (this.player) {
       this.player.credits += ch.reward;
-
-      // Track coins earned from challenge
+      if (typeof this.player.gems === 'number') {
+        this.player.gems += ch.gems || 0;
+      } else {
+        this.player.gems = ch.gems || 0;
+      }
+      // Track coins and gems earned from challenge
       if (window.analytics) {
         window.analytics.trackCoinsEarned(ch.reward, 'challenge_reward');
+        if (ch.gems) {
+          window.analytics.track('gems_earned', { amount: ch.gems, source: 'challenge_reward' });
+        }
       }
     }
     this.saveState();

@@ -1767,7 +1767,11 @@ export class ShopSystem {
     description.style.marginBottom = '5px';
 
     const reward = document.createElement('div');
-    reward.textContent = `Reward: ${challenge.reward} credits`;
+    let rewardText = `Reward: ${challenge.reward} credits`;
+    if (typeof challenge.gems === 'number' && challenge.gems > 0) {
+      rewardText += `, ${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''}`;
+    }
+    reward.textContent = rewardText;
     reward.style.fontSize = '0.9em';
     reward.style.color = '#fc3';
 
@@ -1880,6 +1884,36 @@ export class ShopSystem {
           // Refresh the shop content to reflect new state
           this.updateShopContent();
           this.updateChallengeTabBadge();
+
+          // --- Force cloud sync after claim ---
+          const showSyncError = (msg) => {
+            const errDiv = document.createElement('div');
+            errDiv.textContent = msg;
+            errDiv.style.background = '#a00';
+            errDiv.style.color = '#fff';
+            errDiv.style.padding = '8px 12px';
+            errDiv.style.marginTop = '8px';
+            errDiv.style.borderRadius = '5px';
+            errDiv.style.fontWeight = 'bold';
+            action.appendChild(errDiv);
+            setTimeout(() => errDiv.remove(), 5000);
+          };
+          const trySync = (retries = 2) => {
+            if (window.game && window.game.cloudSync && window.game.cloudSync.isLoggedIn) {
+              window.game.cloudSync.uploadLocalStorageToCloud()
+                .then(() => {
+                  // Optionally show a quick success message
+                })
+                .catch((err) => {
+                  if (retries > 0) {
+                    setTimeout(() => trySync(retries - 1), 2000);
+                  } else {
+                    showSyncError('Cloud sync failed! Please check your connection.');
+                  }
+                });
+            }
+          };
+          trySync();
         } else {
           // nothing awarded (race/edge case)
           claimBtn.textContent = 'Already claimed';
