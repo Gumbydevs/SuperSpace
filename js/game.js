@@ -1,4 +1,3 @@
-// filepath: d:\Code_Playground\Games\SuperSpace\js\game.js
 // Import all necessary game components from their respective modules
 import { Player } from './player.js';
 import { World } from './world.js';
@@ -902,6 +901,15 @@ class Game {
     // Record start time for survival tracking
     this.gameStartTime = Date.now();
     this.gameState = 'playing';
+
+    // Initialize player profile game start (start no-damage timer and session stats)
+    if (this.playerProfile && typeof this.playerProfile.onGameStart === 'function') {
+      try {
+        this.playerProfile.onGameStart();
+      } catch (e) {
+        console.error('Error calling playerProfile.onGameStart()', e);
+      }
+    }
     document.getElementById('menu').classList.add('hidden');
 
     // Show shop button when game starts

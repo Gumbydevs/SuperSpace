@@ -766,8 +766,9 @@ export class AdminSystem {
           window.game.player.shipType = 'default';
 
           // Reset upgrades to level 0
-          window.game.player.maxSpeed = 3; // Default speed
-          window.game.player.acceleration = 0.2; // Default acceleration
+          // Restore sensible gameplay defaults (match Player constructor)
+          window.game.player.maxSpeed = 400; // Default speed (pixels/sec)
+          window.game.player.acceleration = 300; // Default acceleration (units/sec^2)
           window.game.player.maxHealth = 100; // Default health
           window.game.player.health = 100;
           window.game.player.maxEnergy = 100; // Default energy
