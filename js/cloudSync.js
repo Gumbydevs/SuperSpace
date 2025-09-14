@@ -37,12 +37,12 @@ class CloudSyncService {
     }
     
     // Create new account
-    async createAccount(username, password) {
+    async createAccount(username, password, email) {
         try {
             const response = await fetch(`${this.serverUrl}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password, email })
             });
             
             if (response.ok) {

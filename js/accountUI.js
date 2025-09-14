@@ -7,6 +7,7 @@ class AccountUI {
     constructor(cloudSync) {
         this.cloudSync = cloudSync;
         this.isVisible = false;
+        this.isRegistering = false;
         this.addCloudSyncToMainMenu();
         this.createLoginOverlay();
         this.setupEventListeners();
@@ -128,6 +129,20 @@ class AccountUI {
                             ">
                         </div>
                         
+                        <div style="margin-bottom: 15px;" id="email-field" style="display: none;">
+                            <input type="email" id="sync-email" name="email" placeholder="Email (for password reset)" autocomplete="email" style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 1px solid #4a90e2;
+                                border-radius: 6px;
+                                background: rgba(255,255,255,0.1);
+                                color: white;
+                                font-family: 'Orbitron', Arial, sans-serif;
+                                box-sizing: border-box;
+                                font-size: 14px;
+                            ">
+                        </div>
+                        
                         <div style="margin-bottom: 20px;">
                             <input type="password" id="sync-password" name="password" placeholder="Password" autocomplete="current-password" style="
                                 width: 100%;
@@ -168,6 +183,20 @@ class AccountUI {
                                 font-weight: bold;
                                 font-size: 14px;
                             ">Register</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <button type="button" id="forgot-password-btn" style="
+                                width: 100%;
+                                padding: 8px;
+                                background: none;
+                                border: 1px solid #666;
+                                color: #aaa;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-family: 'Orbitron', Arial, sans-serif;
+                                font-size: 11px;
+                            ">Forgot Password?</button>
                         </div>
                         
                         <div style="margin-bottom: 20px;">
@@ -273,7 +302,12 @@ class AccountUI {
         
         // Register button
         document.getElementById('sync-register-btn').addEventListener('click', () => {
-            this.handleRegister();
+            this.toggleRegisterMode();
+        });
+        
+        // Forgot password button
+        document.getElementById('forgot-password-btn').addEventListener('click', () => {
+            this.showForgotPasswordForm();
         });
         
         // Skip cloud sync button
@@ -386,6 +420,11 @@ class AccountUI {
     }
     
     async handleLogin() {
+        if (this.isRegistering) {
+            await this.handleRegister();
+            return;
+        }
+        
         const username = document.getElementById('sync-username').value.trim();
         const password = document.getElementById('sync-password').value;
         
@@ -418,9 +457,10 @@ class AccountUI {
     async handleRegister() {
         const username = document.getElementById('sync-username').value.trim();
         const password = document.getElementById('sync-password').value;
+        const email = document.getElementById('sync-email').value.trim();
         
-        if (!username || !password) {
-            this.showMessage('Please enter username and password', 'error');
+        if (!username || !password || !email) {
+            this.showMessage('Please enter username, email, and password', 'error');
             return;
         }
         
@@ -434,15 +474,25 @@ class AccountUI {
             return;
         }
         
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            this.showMessage('Please enter a valid email address', 'error');
+            return;
+        }
+        
         this.showMessage('Creating account...', 'info');
         
-        const result = await this.cloudSync.createAccount(username, password);
+        const result = await this.cloudSync.createAccount(username, password, email);
         
         if (result.success) {
             this.showMessage(result.message + ' You can now login!', 'success');
+            // Switch back to login mode
+            this.toggleRegisterMode();
             // Clear fields
             document.getElementById('sync-username').value = '';
             document.getElementById('sync-password').value = '';
+            document.getElementById('sync-email').value = '';
         } else {
             this.showMessage(result.message, 'error');
         }
@@ -487,6 +537,123 @@ class AccountUI {
         const messageEl = document.getElementById('sync-message');
         if (messageEl) {
             messageEl.textContent = '';
+        }
+    }
+    
+    toggleRegisterMode() {
+        this.isRegistering = !this.isRegistering;
+        const emailField = document.getElementById('email-field');
+        const registerBtn = document.getElementById('sync-register-btn');
+        const usernameField = document.getElementById('sync-username');
+        const passwordField = document.getElementById('sync-password');
+        
+        if (this.isRegistering) {
+            emailField.style.display = 'block';
+            registerBtn.textContent = 'Create Account';
+            registerBtn.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
+            usernameField.placeholder = 'Choose Username';
+            passwordField.placeholder = 'Choose Password';
+            passwordField.autocomplete = 'new-password';
+        } else {
+            emailField.style.display = 'none';
+            registerBtn.textContent = 'Register';
+            registerBtn.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
+            usernameField.placeholder = 'Username';
+            passwordField.placeholder = 'Password';
+            passwordField.autocomplete = 'current-password';
+        }
+    }
+    
+    showForgotPasswordForm() {
+        const username = document.getElementById('sync-username').value.trim();
+        
+        if (!username) {
+            this.showMessage('Please enter your username first', 'error');
+            return;
+        }
+        
+        const confirm = window.confirm(`Send password reset email for user "${username}"?\n\nA reset code will be sent to the email address associated with this account.`);
+        
+        if (confirm) {
+            this.handlePasswordReset(username);
+        }
+    }
+    
+    async handlePasswordReset(username) {
+        this.showMessage('Requesting password reset...', 'info');
+        
+        try {
+            const response = await fetch('/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showMessage('Reset code sent to your email! Check your inbox.', 'success');
+                this.showPasswordResetCodeInput(username);
+            } else {
+                this.showMessage(result.message || 'Failed to send reset email', 'error');
+            }
+        } catch (error) {
+            console.error('Password reset error:', error);
+            this.showMessage('Connection error. Please try again.', 'error');
+        }
+    }
+    
+    showPasswordResetCodeInput(username) {
+        const resetCode = prompt('Enter the 6-digit reset code from your email:');
+        
+        if (!resetCode) {
+            return;
+        }
+        
+        if (resetCode.length !== 6) {
+            this.showMessage('Reset code must be 6 digits', 'error');
+            return;
+        }
+        
+        const newPassword = prompt('Enter your new password (at least 6 characters):');
+        
+        if (!newPassword || newPassword.length < 6) {
+            this.showMessage('New password must be at least 6 characters', 'error');
+            return;
+        }
+        
+        this.handlePasswordResetConfirm(username, resetCode, newPassword);
+    }
+    
+    async handlePasswordResetConfirm(username, resetCode, newPassword) {
+        this.showMessage('Resetting password...', 'info');
+        
+        try {
+            const response = await fetch('/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    username, 
+                    resetCode, 
+                    newPassword 
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showMessage('Password reset successful! You can now login with your new password.', 'success');
+                document.getElementById('sync-password').value = '';
+            } else {
+                this.showMessage(result.message || 'Failed to reset password', 'error');
+            }
+        } catch (error) {
+            console.error('Password reset confirm error:', error);
+            this.showMessage('Connection error. Please try again.', 'error');
         }
     }
 }

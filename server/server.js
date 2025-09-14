@@ -256,8 +256,8 @@ app.post('/analytics/track', (req, res) => {
 // Register new account
 app.post('/auth/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const result = await cloudAuth.register(username, password);
+    const { username, password, email } = req.body;
+    const result = await cloudAuth.register(username, password, email);
     
     if (result.success) {
       res.json(result);
@@ -305,6 +305,52 @@ app.get('/auth/validate', async (req, res) => {
   } catch (error) {
     console.error('Token validation endpoint error:', error);
     res.status(500).json({ valid: false, message: 'Server error' });
+  }
+});
+
+// Password reset request
+app.post('/auth/forgot-password', async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    if (!username) {
+      return res.status(400).json({ success: false, message: 'Username required' });
+    }
+    
+    const result = await cloudAuth.generatePasswordResetCode(username);
+    
+    if (result.success) {
+      // In production, send email here instead of returning the code
+      console.log(`📧 Password reset code for ${username}: ${result.resetCode} (sent to ${result.email})`);
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Forgot password endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Password reset confirmation
+app.post('/auth/reset-password', async (req, res) => {
+  try {
+    const { username, resetCode, newPassword } = req.body;
+    
+    if (!username || !resetCode || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Username, reset code, and new password required' });
+    }
+    
+    const result = await cloudAuth.resetPassword(username, resetCode, newPassword);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Reset password endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

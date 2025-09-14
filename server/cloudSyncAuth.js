@@ -61,11 +61,11 @@ class CloudSyncAuth {
     }
     
     // Register new user
-    async register(username, password) {
+    async register(username, password, email) {
         try {
             // Validate input
-            if (!username || !password) {
-                return { success: false, message: 'Username and password required' };
+            if (!username || !password || !email) {
+                return { success: false, message: 'Username, password, and email required' };
             }
             
             if (username.length < 3) {
@@ -76,16 +76,30 @@ class CloudSyncAuth {
                 return { success: false, message: 'Password must be at least 6 characters' };
             }
             
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return { success: false, message: 'Please enter a valid email address' };
+            }
+            
             // Check if username already exists
             const users = await this.loadUsers();
             if (users[username.toLowerCase()]) {
                 return { success: false, message: 'Username already exists' };
             }
             
+            // Check if email already exists
+            for (const userKey in users) {
+                if (users[userKey].email && users[userKey].email.toLowerCase() === email.toLowerCase()) {
+                    return { success: false, message: 'Email address already registered' };
+                }
+            }
+            
             // Hash password and save user
             const { salt, hash } = this.hashPassword(password);
             users[username.toLowerCase()] = {
                 username: username, // Preserve original case
+                email: email,
                 salt,
                 hash,
                 createdAt: new Date().toISOString()
@@ -93,7 +107,7 @@ class CloudSyncAuth {
             
             await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
             
-            console.log(`✅ New user registered: ${username}`);
+            console.log(`✅ New user registered: ${username} (${email})`);
             return { success: true, message: 'Account created successfully' };
             
         } catch (error) {
@@ -261,6 +275,96 @@ class CloudSyncAuth {
             
         } catch (error) {
             console.error('Token cleanup error:', error);
+        }
+    }
+    
+    // Generate password reset code
+    async generatePasswordResetCode(username) {
+        try {
+            const users = await this.loadUsers();
+            const user = users[username.toLowerCase()];
+            
+            if (!user || !user.email) {
+                return { success: false, message: 'User not found or no email on file' };
+            }
+            
+            // Generate 6-digit reset code
+            const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+            
+            // Store reset code
+            user.resetCode = resetCode;
+            user.resetExpiry = resetExpiry.toISOString();
+            
+            await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+            
+            console.log(`🔑 Password reset code generated for ${username}: ${resetCode}`);
+            
+            // In a real app, you would send this via email
+            // For now, we'll log it and return success
+            return { 
+                success: true, 
+                message: 'Reset code sent to email',
+                resetCode: resetCode, // Remove this in production
+                email: user.email
+            };
+            
+        } catch (error) {
+            console.error('Password reset code generation error:', error);
+            return { success: false, message: 'Server error generating reset code' };
+        }
+    }
+    
+    // Verify reset code and update password
+    async resetPassword(username, resetCode, newPassword) {
+        try {
+            if (!newPassword || newPassword.length < 6) {
+                return { success: false, message: 'New password must be at least 6 characters' };
+            }
+            
+            const users = await this.loadUsers();
+            const user = users[username.toLowerCase()];
+            
+            if (!user) {
+                return { success: false, message: 'User not found' };
+            }
+            
+            if (!user.resetCode || !user.resetExpiry) {
+                return { success: false, message: 'No reset code requested' };
+            }
+            
+            // Check if reset code has expired
+            const now = new Date();
+            const expiry = new Date(user.resetExpiry);
+            if (now > expiry) {
+                delete user.resetCode;
+                delete user.resetExpiry;
+                await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+                return { success: false, message: 'Reset code has expired. Please request a new one.' };
+            }
+            
+            // Verify reset code
+            if (user.resetCode !== resetCode) {
+                return { success: false, message: 'Invalid reset code' };
+            }
+            
+            // Update password
+            const { salt, hash } = this.hashPassword(newPassword);
+            user.salt = salt;
+            user.hash = hash;
+            
+            // Clear reset code
+            delete user.resetCode;
+            delete user.resetExpiry;
+            
+            await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+            
+            console.log(`🔓 Password reset successfully for ${username}`);
+            return { success: true, message: 'Password reset successfully' };
+            
+        } catch (error) {
+            console.error('Password reset error:', error);
+            return { success: false, message: 'Server error resetting password' };
         }
     }
 }
