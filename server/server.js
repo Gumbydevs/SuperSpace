@@ -256,8 +256,8 @@ app.post('/analytics/track', (req, res) => {
 // Register new account
 app.post('/auth/register', async (req, res) => {
   try {
-    const { username, password, email } = req.body;
-    const result = await cloudAuth.register(username, password, email);
+    const { username, password } = req.body;
+    const result = await cloudAuth.register(username, password);
     
     if (result.success) {
       res.json(result);
@@ -350,6 +350,28 @@ app.post('/auth/reset-password', async (req, res) => {
     }
   } catch (error) {
     console.error('Reset password endpoint error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Password reset with recovery key
+app.post('/auth/reset-password-recovery', async (req, res) => {
+  try {
+    const { username, recoveryKey, newPassword } = req.body;
+    
+    if (!username || !recoveryKey || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Username, recovery key, and new password required' });
+    }
+    
+    const result = await cloudAuth.resetPasswordWithRecoveryKey(username, recoveryKey, newPassword);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Recovery key reset password endpoint error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

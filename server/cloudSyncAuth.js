@@ -13,6 +13,16 @@ class CloudSyncAuth {
         this.usersFile = path.join(this.dataDir, 'users.json');
         this.tokensFile = path.join(this.dataDir, 'tokens.json');
         
+        // Space-themed words for recovery keys
+        this.spaceWords = [
+            'STAR', 'MOON', 'MARS', 'VENUS', 'EARTH', 'COMET', 'NOVA', 'ORBIT',
+            'GALAXY', 'PLANET', 'ROCKET', 'COSMIC', 'SOLAR', 'NEBULA', 'METEOR',
+            'SATURN', 'PLUTO', 'JUPITER', 'URANUS', 'NEPTUNE', 'ASTEROID', 'QUASAR',
+            'PULSAR', 'PHOTON', 'PLASMA', 'VACUUM', 'GRAVITY', 'ECLIPSE', 'CRATER',
+            'COSMOS', 'VOID', 'SPACE', 'STELLAR', 'LUNAR', 'ALIEN', 'PROBE',
+            'SHUTTLE', 'STATION', 'MISSION', 'LAUNCH', 'LANDING', 'EXPLORE'
+        ];
+        
         // Ensure directories exist
         this.initializeDirectories();
     }
@@ -60,12 +70,24 @@ class CloudSyncAuth {
         return crypto.randomBytes(32).toString('hex');
     }
     
+    // Generate space-themed recovery key
+    generateRecoveryKey() {
+        const words = [];
+        for (let i = 0; i < 4; i++) {
+            const randomWord = this.spaceWords[Math.floor(Math.random() * this.spaceWords.length)];
+            words.push(randomWord);
+        }
+        // Add some numbers for extra security
+        const numbers = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+        return words.join('-') + '-' + numbers;
+    }
+    
     // Register new user
-    async register(username, password, email) {
+    async register(username, password) {
         try {
             // Validate input
-            if (!username || !password || !email) {
-                return { success: false, message: 'Username, password, and email required' };
+            if (!username || !password) {
+                return { success: false, message: 'Username and password required' };
             }
             
             if (username.length < 3) {
@@ -76,39 +98,35 @@ class CloudSyncAuth {
                 return { success: false, message: 'Password must be at least 6 characters' };
             }
             
-            // Basic email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                return { success: false, message: 'Please enter a valid email address' };
-            }
-            
             // Check if username already exists
             const users = await this.loadUsers();
             if (users[username.toLowerCase()]) {
                 return { success: false, message: 'Username already exists' };
             }
             
-            // Check if email already exists
-            for (const userKey in users) {
-                if (users[userKey].email && users[userKey].email.toLowerCase() === email.toLowerCase()) {
-                    return { success: false, message: 'Email address already registered' };
-                }
-            }
+            // Generate recovery key
+            const recoveryKey = this.generateRecoveryKey();
+            const { salt: recoverySalt, hash: recoveryHash } = this.hashPassword(recoveryKey);
             
             // Hash password and save user
             const { salt, hash } = this.hashPassword(password);
             users[username.toLowerCase()] = {
                 username: username, // Preserve original case
-                email: email,
                 salt,
                 hash,
+                recoverySalt,
+                recoveryHash,
                 createdAt: new Date().toISOString()
             };
             
             await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
             
-            console.log(`✅ New user registered: ${username} (${email})`);
-            return { success: true, message: 'Account created successfully' };
+            console.log(`✅ New user registered: ${username}`);
+            return { 
+                success: true, 
+                message: 'Account created successfully',
+                recoveryKey: recoveryKey
+            };
             
         } catch (error) {
             console.error('Registration error:', error);
@@ -364,6 +382,47 @@ class CloudSyncAuth {
             
         } catch (error) {
             console.error('Password reset error:', error);
+            return { success: false, message: 'Server error resetting password' };
+        }
+    }
+
+    // Reset password using recovery key
+    async resetPasswordWithRecoveryKey(username, recoveryKey, newPassword) {
+        try {
+            // Validate input
+            if (!username || !recoveryKey || !newPassword) {
+                return { success: false, message: 'Username, recovery key, and new password required' };
+            }
+            
+            if (newPassword.length < 6) {
+                return { success: false, message: 'Password must be at least 6 characters' };
+            }
+            
+            // Load users
+            const users = await this.loadUsers();
+            const user = users[username.toLowerCase()];
+            
+            if (!user) {
+                return { success: false, message: 'Invalid username or recovery key' };
+            }
+            
+            // Verify recovery key
+            if (!this.verifyPassword(recoveryKey, user.recoverySalt, user.recoveryHash)) {
+                return { success: false, message: 'Invalid username or recovery key' };
+            }
+            
+            // Update password
+            const { salt, hash } = this.hashPassword(newPassword);
+            user.salt = salt;
+            user.hash = hash;
+            
+            await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+            
+            console.log(`🔑 Password reset with recovery key for ${username}`);
+            return { success: true, message: 'Password reset successfully' };
+            
+        } catch (error) {
+            console.error('Recovery key password reset error:', error);
             return { success: false, message: 'Server error resetting password' };
         }
     }

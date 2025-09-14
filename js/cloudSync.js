@@ -37,17 +37,21 @@ class CloudSyncService {
     }
     
     // Create new account
-    async createAccount(username, password, email) {
+    async createAccount(username, password) {
         try {
             const response = await fetch(`${this.serverUrl}/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, email })
+                body: JSON.stringify({ username, password })
             });
             
             if (response.ok) {
                 const data = await response.json();
-                return { success: true, message: 'Account created successfully!' };
+                return { 
+                    success: true, 
+                    message: 'Account created successfully!',
+                    recoveryKey: data.recoveryKey
+                };
             } else {
                 const error = await response.json();
                 return { success: false, message: error.message || 'Failed to create account' };
@@ -266,6 +270,28 @@ class CloudSyncService {
                 }));
             }
         });
+    }
+    
+    // Reset password using recovery key
+    async resetPasswordWithRecoveryKey(username, recoveryKey, newPassword) {
+        try {
+            const response = await fetch(`${this.serverUrl}/auth/reset-password-recovery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, recoveryKey, newPassword })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return { success: true, message: data.message || 'Password reset successfully!' };
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.message || 'Failed to reset password' };
+            }
+        } catch (error) {
+            console.error('Password reset error:', error);
+            return { success: false, message: 'Network error. Please try again.' };
+        }
     }
     
     // Get sync status for UI

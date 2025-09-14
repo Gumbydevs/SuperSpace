@@ -129,20 +129,6 @@ class AccountUI {
                             ">
                         </div>
                         
-                        <div style="margin-bottom: 15px;" id="email-field" style="display: none;">
-                            <input type="email" id="sync-email" name="email" placeholder="Email (for password reset)" autocomplete="email" style="
-                                width: 100%;
-                                padding: 12px;
-                                border: 1px solid #4a90e2;
-                                border-radius: 6px;
-                                background: rgba(255,255,255,0.1);
-                                color: white;
-                                font-family: 'Orbitron', Arial, sans-serif;
-                                box-sizing: border-box;
-                                font-size: 14px;
-                            ">
-                        </div>
-                        
                         <div style="margin-bottom: 20px;">
                             <input type="password" id="sync-password" name="password" placeholder="Password" autocomplete="current-password" style="
                                 width: 100%;
@@ -302,7 +288,7 @@ class AccountUI {
         
         // Register button
         document.getElementById('sync-register-btn').addEventListener('click', () => {
-            this.toggleRegisterMode();
+            this.handleRegister();
         });
         
         // Forgot password button
@@ -420,11 +406,6 @@ class AccountUI {
     }
     
     async handleLogin() {
-        if (this.isRegistering) {
-            await this.handleRegister();
-            return;
-        }
-        
         const username = document.getElementById('sync-username').value.trim();
         const password = document.getElementById('sync-password').value;
         
@@ -457,10 +438,9 @@ class AccountUI {
     async handleRegister() {
         const username = document.getElementById('sync-username').value.trim();
         const password = document.getElementById('sync-password').value;
-        const email = document.getElementById('sync-email').value.trim();
         
-        if (!username || !password || !email) {
-            this.showMessage('Please enter username, email, and password', 'error');
+        if (!username || !password) {
+            this.showMessage('Please enter username and password', 'error');
             return;
         }
         
@@ -474,25 +454,17 @@ class AccountUI {
             return;
         }
         
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            this.showMessage('Please enter a valid email address', 'error');
-            return;
-        }
-        
         this.showMessage('Creating account...', 'info');
         
-        const result = await this.cloudSync.createAccount(username, password, email);
+        const result = await this.cloudSync.createAccount(username, password);
         
         if (result.success) {
-            this.showMessage(result.message + ' You can now login!', 'success');
-            // Switch back to login mode
-            this.toggleRegisterMode();
+            this.showMessage(result.message + ' Save your recovery key!', 'success');
+            // Show recovery key to user
+            this.showRecoveryKey(result.recoveryKey, username);
             // Clear fields
             document.getElementById('sync-username').value = '';
             document.getElementById('sync-password').value = '';
-            document.getElementById('sync-email').value = '';
         } else {
             this.showMessage(result.message, 'error');
         }
@@ -540,28 +512,112 @@ class AccountUI {
         }
     }
     
-    toggleRegisterMode() {
-        this.isRegistering = !this.isRegistering;
-        const emailField = document.getElementById('email-field');
-        const registerBtn = document.getElementById('sync-register-btn');
-        const usernameField = document.getElementById('sync-username');
-        const passwordField = document.getElementById('sync-password');
+    showRecoveryKey(recoveryKey, username) {
+        // Create a modal/overlay to show the recovery key
+        const keyOverlay = document.createElement('div');
+        keyOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
         
-        if (this.isRegistering) {
-            emailField.style.display = 'block';
-            registerBtn.textContent = 'Create Account';
-            registerBtn.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
-            usernameField.placeholder = 'Choose Username';
-            passwordField.placeholder = 'Choose Password';
-            passwordField.autocomplete = 'new-password';
-        } else {
-            emailField.style.display = 'none';
-            registerBtn.textContent = 'Register';
-            registerBtn.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
-            usernameField.placeholder = 'Username';
-            passwordField.placeholder = 'Password';
-            passwordField.autocomplete = 'current-password';
-        }
+        keyOverlay.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+                border: 2px solid #4a90e2;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 500px;
+                width: 90%;
+                color: white;
+                font-family: 'Orbitron', Arial, sans-serif;
+                text-align: center;
+            ">
+                <h3 style="color: #4a90e2; margin: 0 0 20px 0;">🚀 Account Created Successfully!</h3>
+                <p style="margin: 0 0 15px 0; color: #ccc;">
+                    Account: <strong>${username}</strong>
+                </p>
+                <p style="margin: 0 0 20px 0; color: #ff6b6b; font-size: 14px; font-weight: bold;">
+                    ⚠️ IMPORTANT: Save your recovery key!
+                </p>
+                <p style="margin: 0 0 15px 0; color: #ffaa00; font-size: 12px;">
+                    You'll need this to reset your password if you forget it:
+                </p>
+                <div style="
+                    background: rgba(255,255,255,0.1);
+                    border: 2px solid #4a90e2;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 0 0 20px 0;
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #4a90e2;
+                    letter-spacing: 2px;
+                " id="recovery-key-text">${recoveryKey}</div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="copy-recovery-key" style="
+                        flex: 1;
+                        padding: 10px;
+                        background: linear-gradient(135deg, #28a745, #1e7e34);
+                        border: none;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-family: 'Orbitron', Arial, sans-serif;
+                        font-size: 12px;
+                    ">Copy Key</button>
+                    <button id="close-recovery-key" style="
+                        flex: 1;
+                        padding: 10px;
+                        background: linear-gradient(135deg, #4a90e2, #357abd);
+                        border: none;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-family: 'Orbitron', Arial, sans-serif;
+                        font-size: 12px;
+                    ">I Saved It</button>
+                </div>
+                <p style="margin: 0; font-size: 10px; color: #888;">
+                    Write this down, take a screenshot, or save it in a password manager
+                </p>
+            </div>
+        `;
+        
+        document.body.appendChild(keyOverlay);
+        
+        // Copy key functionality
+        document.getElementById('copy-recovery-key').addEventListener('click', () => {
+            navigator.clipboard.writeText(recoveryKey).then(() => {
+                document.getElementById('copy-recovery-key').textContent = 'Copied!';
+                setTimeout(() => {
+                    document.getElementById('copy-recovery-key').textContent = 'Copy Key';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = recoveryKey;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                document.getElementById('copy-recovery-key').textContent = 'Copied!';
+            });
+        });
+        
+        // Close overlay
+        document.getElementById('close-recovery-key').addEventListener('click', () => {
+            document.body.removeChild(keyOverlay);
+        });
+        
+        // Prevent closing by clicking background (force user to acknowledge)
     }
     
     showForgotPasswordForm() {
@@ -572,48 +628,9 @@ class AccountUI {
             return;
         }
         
-        const confirm = window.confirm(`Send password reset email for user "${username}"?\n\nA reset code will be sent to the email address associated with this account.`);
+        const recoveryKey = prompt(`Enter your recovery key for "${username}":\n\n(This was shown to you when you created your account)`);
         
-        if (confirm) {
-            this.handlePasswordReset(username);
-        }
-    }
-    
-    async handlePasswordReset(username) {
-        this.showMessage('Requesting password reset...', 'info');
-        
-        try {
-            const response = await fetch('/auth/forgot-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showMessage('Reset code sent to your email! Check your inbox.', 'success');
-                this.showPasswordResetCodeInput(username);
-            } else {
-                this.showMessage(result.message || 'Failed to send reset email', 'error');
-            }
-        } catch (error) {
-            console.error('Password reset error:', error);
-            this.showMessage('Connection error. Please try again.', 'error');
-        }
-    }
-    
-    showPasswordResetCodeInput(username) {
-        const resetCode = prompt('Enter the 6-digit reset code from your email:');
-        
-        if (!resetCode) {
-            return;
-        }
-        
-        if (resetCode.length !== 6) {
-            this.showMessage('Reset code must be 6 digits', 'error');
+        if (!recoveryKey) {
             return;
         }
         
@@ -624,36 +641,19 @@ class AccountUI {
             return;
         }
         
-        this.handlePasswordResetConfirm(username, resetCode, newPassword);
+        this.handlePasswordResetWithKey(username, recoveryKey.trim(), newPassword);
     }
     
-    async handlePasswordResetConfirm(username, resetCode, newPassword) {
+    async handlePasswordResetWithKey(username, recoveryKey, newPassword) {
         this.showMessage('Resetting password...', 'info');
         
-        try {
-            const response = await fetch('/auth/reset-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    username, 
-                    resetCode, 
-                    newPassword 
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                this.showMessage('Password reset successful! You can now login with your new password.', 'success');
-                document.getElementById('sync-password').value = '';
-            } else {
-                this.showMessage(result.message || 'Failed to reset password', 'error');
-            }
-        } catch (error) {
-            console.error('Password reset confirm error:', error);
-            this.showMessage('Connection error. Please try again.', 'error');
+        const result = await this.cloudSync.resetPasswordWithRecoveryKey(username, recoveryKey, newPassword);
+        
+        if (result.success) {
+            this.showMessage('Password reset successful! You can now login with your new password.', 'success');
+            document.getElementById('sync-password').value = '';
+        } else {
+            this.showMessage(result.message || 'Failed to reset password', 'error');
         }
     }
 }
