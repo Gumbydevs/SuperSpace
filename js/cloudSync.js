@@ -4,6 +4,41 @@
  */
 
 class CloudSyncService {
+    // Clear all game-related localStorage keys except session/auth
+    clearGameDataLocalStorage() {
+        const preserveKeys = ['ss_auth_token', 'ss_username'];
+        const includeKeys = [
+            'credits', 'playerCredits', 'highScore', 'settings', 'achievements', 'playerName',
+            'selectedAvatar', 'selectedShip', 'unlocked_ships', 'unlocked_avatars', 'game_settings',
+            'volume_settings', 'upgrades_purchased', 'premium_status',
+            'pendingPayment', 'premiumPurchases', 'adminKey', 'playerStats', 'challenge_state'
+        ];
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (
+                !preserveKeys.includes(key) && (
+                    key.startsWith('superspace_') ||
+                    key.startsWith('player_') ||
+                    key.startsWith('ss_') ||
+                    key.startsWith('upgrade_') ||
+                    key.startsWith('unlock_') ||
+                    key.startsWith('achievement_') ||
+                    key.startsWith('skill_') ||
+                    key.startsWith('weapon_') ||
+                    includeKeys.includes(key)
+                )
+            ) {
+                keysToRemove.push(key);
+            }
+        }
+        for (const key of keysToRemove) {
+            localStorage.removeItem(key);
+        }
+        if (keysToRemove.length > 0) {
+            console.log('🧹 Cleared local game data keys:', keysToRemove);
+        }
+    }
     constructor() {
         this.isLoggedIn = false;
         this.username = null;
@@ -77,16 +112,14 @@ class CloudSyncService {
                 this.authToken = data.token;
                 this.username = username;
                 this.isLoggedIn = true;
-                
                 // Save login session
                 localStorage.setItem('ss_auth_token', this.authToken);
                 localStorage.setItem('ss_username', username);
-                
                 console.log('🔐 Logged in successfully as:', username);
-                
+                // Clear all game data keys before merging cloud data
+                this.clearGameDataLocalStorage();
                 // Download cloud data and merge with local
                 await this.downloadAndMergeCloudData();
-                
                 return { success: true, message: `Welcome back, ${username}!` };
             } else {
                 const error = await response.json();
@@ -179,39 +212,28 @@ class CloudSyncService {
     // Collect all game-related localStorage data
     collectGameData() {
         const gameData = {};
-        
-        // Collect all SuperSpace related localStorage keys
+        const includeKeys = [
+            'credits', 'playerCredits', 'highScore', 'settings', 'achievements', 'playerName',
+            'selectedAvatar', 'selectedShip', 'unlocked_ships', 'unlocked_avatars', 'game_settings',
+            'volume_settings', 'upgrades_purchased', 'premium_status',
+            'pendingPayment', 'premiumPurchases', 'adminKey', 'playerStats', 'challenge_state'
+        ];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            
-            // Only sync SuperSpace related data (customize these prefixes)
-            if (key.startsWith('superspace_') || 
-                key.startsWith('player_') || 
+            if (
+                key.startsWith('superspace_') ||
+                key.startsWith('player_') ||
                 key.startsWith('ss_') ||
-                key === 'credits' ||
-                key === 'playerCredits' ||  // Added missing playerCredits
-                key === 'highScore' ||
-                key === 'settings' ||
-                key === 'achievements' ||
-                key === 'playerName' ||     // Added missing playerName
-                key === 'selectedAvatar' ||
-                key === 'selectedShip' ||
-                key === 'unlocked_ships' ||
-                key === 'unlocked_avatars' ||
-                key === 'game_settings' ||
-                key === 'volume_settings' ||
-                key === 'upgrades_purchased' ||
-                key === 'premium_status' ||
                 key.startsWith('upgrade_') ||
                 key.startsWith('unlock_') ||
                 key.startsWith('achievement_') ||
                 key.startsWith('skill_') ||
-                key.startsWith('weapon_')) {
-                
+                key.startsWith('weapon_') ||
+                includeKeys.includes(key)
+            ) {
                 gameData[key] = localStorage.getItem(key);
             }
         }
-        
         return gameData;
     }
     
