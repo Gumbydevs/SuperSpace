@@ -21,7 +21,7 @@ class AccountUI {
             // Create cloud sync button
             this.cloudSyncButton = document.createElement('button');
             this.cloudSyncButton.id = 'cloud-sync-btn';
-            this.cloudSyncButton.innerHTML = '☁️ Cloud Sync';
+            this.cloudSyncButton.innerHTML = '☁️ Cloud';
             this.cloudSyncButton.style.cssText = `
                 background: linear-gradient(135deg, #4a90e2, #357abd);
                 border: 2px solid #6bb6ff;
@@ -32,10 +32,8 @@ class AccountUI {
                 font-size: 14px;
                 font-family: 'Orbitron', Arial, sans-serif;
                 font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 1px;
                 margin: 8px 0;
-                width: 220px;
+                width: 250px;
                 transition: all 0.3s ease;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.3);
                 white-space: nowrap;
@@ -336,7 +334,7 @@ class AccountUI {
             this.cloudSyncButton.innerHTML = `☁️ ${status.username}`;
             this.cloudSyncButton.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
         } else {
-            this.cloudSyncButton.innerHTML = '☁️ Cloud Sync';
+            this.cloudSyncButton.innerHTML = '☁️ Cloud';
             this.cloudSyncButton.style.background = 'linear-gradient(135deg, #4a90e2, #357abd)';
         }
     }
