@@ -1604,7 +1604,21 @@ export class ShopSystem {
 
     // Import and display daily challenges
     import('./challenges.js').then(({ CHALLENGES }) => {
-      CHALLENGES.daily.forEach((challenge) => {
+      // Pick 3-5 random daily challenges for this rotation
+      let dailyPool = CHALLENGES.daily.slice();
+      let dailyCount = Math.floor(Math.random() * 3) + 3; // 3-5
+      // Use a seeded value based on the current day to keep it stable for the day
+      const today = (new Date()).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+      function seededShuffle(array, seed) {
+        let s = seed.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+        for (let i = array.length - 1; i > 0; i--) {
+          s = (s * 9301 + 49297) % 233280;
+          const j = Math.floor((s / 233280) * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+      seededShuffle(dailyPool, today);
+      dailyPool.slice(0, dailyCount).forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
           challenge,
           'daily',
@@ -1612,7 +1626,6 @@ export class ShopSystem {
         );
         dailySection.appendChild(challengeCard);
       });
-      // after rendering, update tab badge
       this.updateChallengeTabBadge();
     });
 
@@ -1629,7 +1642,14 @@ export class ShopSystem {
     weeklySection.appendChild(weeklyHeader);
 
     import('./challenges.js').then(({ CHALLENGES }) => {
-      CHALLENGES.weekly.forEach((challenge) => {
+      // Pick 3-5 random weekly challenges for this rotation
+      let weeklyPool = CHALLENGES.weekly.slice();
+      let weeklyCount = Math.floor(Math.random() * 3) + 3; // 3-5
+      // Use a seeded value based on the current week to keep it stable for the week
+      const now = new Date();
+      const weekKey = `${now.getFullYear()}-W${Math.ceil(((now - new Date(now.getFullYear(),0,1)) / 86400000 + new Date(now.getFullYear(),0,1).getDay()+1)/7)}`;
+      seededShuffle(weeklyPool, weekKey);
+      weeklyPool.slice(0, weeklyCount).forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
           challenge,
           'weekly',
@@ -1637,7 +1657,6 @@ export class ShopSystem {
         );
         weeklySection.appendChild(challengeCard);
       });
-      // after rendering, update tab badge
       this.updateChallengeTabBadge();
     });
 
@@ -1768,12 +1787,12 @@ export class ShopSystem {
 
     const reward = document.createElement('div');
     let rewardText = `Reward: ${challenge.reward} credits`;
+    reward.innerHTML = `Reward: <span style="color:#fc3">${challenge.reward} credits</span>`;
     if (typeof challenge.gems === 'number' && challenge.gems > 0) {
-      rewardText += `, ${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''}`;
+      reward.innerHTML += `, <span style="color:#3cf;font-weight:bold;text-shadow:0 0 6px #6ef,0 0 2px #fff;">` +
+        `&#128142; ${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''}</span>`;
     }
-    reward.textContent = rewardText;
     reward.style.fontSize = '0.9em';
-    reward.style.color = '#fc3';
 
     // Progress section (you could add progress tracking here)
     const progress = document.createElement('div');
@@ -1922,10 +1941,10 @@ export class ShopSystem {
       };
       action.appendChild(claimBtn);
     } else {
-      const lockedLabel = document.createElement('div');
-      lockedLabel.textContent = 'Locked';
-      lockedLabel.style.color = '#aaa';
-      action.appendChild(lockedLabel);
+  const notCompletedLabel = document.createElement('div');
+  notCompletedLabel.textContent = 'Not completed';
+  notCompletedLabel.style.color = '#aaa';
+  action.appendChild(notCompletedLabel);
     }
 
     challengeCard.appendChild(statusIcon);
