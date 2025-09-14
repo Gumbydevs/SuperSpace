@@ -1263,6 +1263,40 @@ export class PremiumStore {
         y >= itemY &&
         y <= itemY + itemHeight
       ) {
+        // Click is inside the item box. Decide intent:
+        // - For gem packages: only trigger purchase when clicking the small BUY NOW button
+        // - For non-owned avatars/skins: only trigger purchase when clicking the PURCHASE button
+        // - For owned skins: clicking the item box toggles equip (keep existing behavior)
+
+        if (item.gems !== undefined) {
+          // Gem package BUY NOW button (matches render): btnW=65, btnH=20
+          const btnX = itemX + itemWidth - 80;
+          const btnY = itemY + itemHeight - 28;
+          const btnW = 65;
+          const btnH = 20;
+          if (x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH) {
+            this.handleItemClick(item);
+            return true;
+          }
+          // Click inside package box but not on button -> ignore
+          return false;
+        }
+
+        if (!item.owned) {
+          // Non-owned avatar/skin purchase button (matches render): btnW=80, btnH=25
+          const btnX = itemX + itemWidth - 80;
+          const btnY = itemY + itemHeight - 28;
+          const btnW = 80;
+          const btnH = 25;
+          if (x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH) {
+            this.handleItemClick(item);
+            return true;
+          }
+          // Click inside item but not on purchase button -> ignore
+          return false;
+        }
+
+        // Owned item: allow full-box click to toggle equip (skins)
         this.handleItemClick(item);
         return true;
       }
