@@ -620,17 +620,16 @@ class Game {
       return;
     }
 
-    // Bass fishing themed password authentication
-    const password = prompt(
-      'Developer Access\nEnter the bass fishing password:',
-    );
+    // Password authentication for developer/admin access
+    // NOTE: User-facing hints removed to avoid revealing any password cues
+    const password = prompt('Developer Access\nEnter the administrator password:');
 
     if (password === null) {
       console.log('Admin authentication cancelled');
       return;
     }
 
-    // Bass fishing themed passwords (case insensitive)
+    // Valid passwords (kept for backward compatibility)
     const validPasswords = [
       'largemouth',
       'spinnerbait',
@@ -648,7 +647,8 @@ class Game {
       this.toggleAdmin();
     } else {
       console.log('Admin authentication failed');
-      this.showSecurityMessage('Incorrect password - think bass fishing!');
+      // Show a neutral error message without hints
+      this.showSecurityMessage('Incorrect password');
     }
   }
 
@@ -715,9 +715,10 @@ class Game {
       if (e.ctrlKey && e.shiftKey) {
         if (bassTimer) clearTimeout(bassTimer);
 
-        if (bassSequence.length === 0 && e.code === 'KeyB') {
+          if (bassSequence.length === 0 && e.code === 'KeyB') {
           bassSequence = ['KeyB'];
-          console.log('🎣 Bass sequence started...');
+          // Sequence detection started (neutral log)
+          console.log('Admin sequence started');
         } else if (
           bassSequence.length > 0 &&
           bassSequence.length < bassKeys.length
@@ -726,25 +727,25 @@ class Game {
           if (e.code === expectedKey) {
             bassSequence.push(e.code);
             console.log(
-              '🎣 Bass sequence:',
+              'Admin sequence progress:',
               bassSequence.map((k) => k.replace('Key', '')).join(''),
             );
 
             if (bassSequence.length === bassKeys.length) {
-              console.log('🎣 BASS sequence complete! Admin access granted!');
+              console.log('Admin sequence complete; attempting authentication');
               this.attemptAdminAccess();
               bassSequence = [];
               return;
             }
           } else {
             bassSequence = [];
-            console.log('🎣 Bass sequence reset');
+            console.log('Admin sequence reset');
           }
         }
 
         bassTimer = setTimeout(() => {
           bassSequence = [];
-          console.log('🎣 Bass sequence timed out');
+          console.log('Admin sequence timed out');
         }, 2000);
 
         e.preventDefault();
