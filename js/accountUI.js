@@ -29,7 +29,7 @@ class AccountUI {
                 padding: 12px 24px;
                 border-radius: 8px;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 14px;
                 font-family: 'Orbitron', Arial, sans-serif;
                 font-weight: 500;
                 text-transform: uppercase;
@@ -38,6 +38,9 @@ class AccountUI {
                 width: 200px;
                 transition: all 0.3s ease;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             `;
             
             this.cloudSyncButton.addEventListener('mouseenter', () => {
