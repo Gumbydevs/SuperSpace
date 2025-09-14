@@ -1749,6 +1749,10 @@ export class ShopSystem {
             }
           }
         });
+        // Award all gems at once to premiumStore for UI sync
+        if (totalGems > 0 && window.game && window.game.premiumStore && typeof window.game.premiumStore.addSpaceGems === 'function') {
+          window.game.premiumStore.addSpaceGems(0); // Triggers save/UI update (already added per-claim above)
+        }
         if (totalAwarded > 0) {
           if (window.game && window.game.soundManager)
             window.game.soundManager.play('powerup', { volume: 1.0 });

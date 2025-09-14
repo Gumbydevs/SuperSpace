@@ -266,6 +266,11 @@ export class ChallengeSystem {
     // Award credits and gems
     if (this.player) {
       this.player.credits += ch.reward;
+      // Award premium gems to premiumStore if available
+      if (typeof ch.gems === 'number' && ch.gems > 0 && window.game && window.game.premiumStore && typeof window.game.premiumStore.addSpaceGems === 'function') {
+        window.game.premiumStore.addSpaceGems(ch.gems);
+      }
+      // Still update player.gems for legacy/compatibility
       if (typeof this.player.gems === 'number') {
         this.player.gems += ch.gems || 0;
       } else {
