@@ -16,6 +16,7 @@
           "overscroll-behavior"
         ]
       }
-    ]
+    ],
+    "no-inline-styles": "off"
   }
 }

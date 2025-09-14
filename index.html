@@ -1,368 +1,501 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>SuperSpace 👨‍🚀 The Multiplayer Space Deathmatch Game</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <!-- Vercel Analytics - Simplified -->
     <script>
-        // Simple Vercel Analytics setup without external dependencies
-        window.vercelTrack = function(event, data) {
-            console.log('✅ Vercel Analytics (fallback):', event, data);
-            // This will be replaced by actual Vercel Analytics when available
-        };
-        
-        // Try to load Vercel Analytics
-        if (typeof window.va !== 'undefined') {
-            window.vercelTrack = (event, data) => window.va('track', event, data);
-            console.log('✅ Vercel Analytics loaded via window.va');
-        }
+      // Simple Vercel Analytics setup without external dependencies
+      window.vercelTrack = function (event, data) {
+        console.log('✅ Vercel Analytics (fallback):', event, data);
+        // This will be replaced by actual Vercel Analytics when available
+      };
+
+      // Try to load Vercel Analytics
+      if (typeof window.va !== 'undefined') {
+        window.vercelTrack = (event, data) => window.va('track', event, data);
+        console.log('✅ Vercel Analytics loaded via window.va');
+      }
     </script>
     <script src="js/vercelAnalytics.js"></script>
     <script src="analytics-debug.js"></script>
     <script>
-        // Connect to the server to get player count as soon as the page loads
-        window.addEventListener('load', function() {
-            const serverUrl = window.location.hostname === 'localhost'
-                ? 'http://localhost:3000'
-                : 'https://superspace-server.onrender.com';
+      // Connect to the server to get player count as soon as the page loads
+      window.addEventListener('load', function () {
+        const serverUrl =
+          window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
+            : 'https://superspace-server.onrender.com';
 
-            // Connect to server
-            const socket = io(serverUrl, {
-                reconnection: true,
-                reconnectionAttempts: 3,
-                reconnectionDelay: 3000,
-                reconnectionDelayMax: 10000,
-                timeout: 10000
-            });
-
-            // When connected, request player count
-            socket.on('connect', function() {
-                socket.emit('getPlayerCount');
-            });
-
-            // Listen for player count updates
-            socket.on('playerCountUpdate', function(count) {
-                document.getElementById('player-count').textContent = count;
-            });
-
-            // Handle disconnect/errors gracefully
-            socket.on('disconnect', function() {
-                document.getElementById('player-count').textContent = '?';
-            });
-
-            socket.on('connect_error', function() {
-                document.getElementById('player-count').textContent = '?';
-            });
+        // Connect to server
+        const socket = io(serverUrl, {
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 3000,
+          reconnectionDelayMax: 10000,
+          timeout: 10000,
         });
+
+        // When connected, request player count
+        socket.on('connect', function () {
+          socket.emit('getPlayerCount');
+        });
+
+        // Listen for player count updates
+        socket.on('playerCountUpdate', function (count) {
+          document.getElementById('player-count').textContent = count;
+        });
+
+        // Handle disconnect/errors gracefully
+        socket.on('disconnect', function () {
+          document.getElementById('player-count').textContent = '?';
+        });
+
+        socket.on('connect_error', function () {
+          document.getElementById('player-count').textContent = '?';
+        });
+      });
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Disclaimer Popup -->
     <div id="disclaimer-popup" class="disclaimer-overlay">
-        <div class="disclaimer-content">
-            <h2>Development Notice</h2>
-            <p>
-                <strong>SuperSpace</strong> is a hobby project in constant development.<br><br>
-                <b>Best experienced on desktop. Mobile support is being worked ona and will improve!</b><br><br>
-                Please be aware that you may experience:
-            </p>
-            <ul class="disclaimer-list">
-                <li>Game crashes and freezes</li>
-                <li>Server downtime and disconnections</li>
-                <li>Loss of progress and statistics</li>
-                <li>Frequent updates and changes</li>
-            </ul>
-            <p>
-                By continuing, you acknowledge that this is an experimental game and accept these limitations.
-            </p>
-            <div class="disclaimer-actions">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="dont-show-again"> Don't show this again
-                </label>
-                <button id="disclaimer-agree-btn">I Agree & Continue</button>
-            </div>
+      <div class="disclaimer-content">
+        <h2>Development Notice</h2>
+        <p>
+          <strong>SuperSpace</strong> is a hobby project in constant
+          development.<br /><br />
+          <b
+            >Best experienced on desktop. Mobile support is being worked ona and
+            will improve!</b
+          ><br /><br />
+          Please be aware that you may experience:
+        </p>
+        <ul class="disclaimer-list">
+          <li>Game crashes and freezes</li>
+          <li>Server downtime and disconnections</li>
+          <li>Loss of progress and statistics</li>
+          <li>Frequent updates and changes</li>
+        </ul>
+        <p>
+          By continuing, you acknowledge that this is an experimental game and
+          accept these limitations.
+        </p>
+        <div class="disclaimer-actions">
+          <label class="checkbox-label">
+            <input type="checkbox" id="dont-show-again" /> Don't show this again
+          </label>
+          <button id="disclaimer-agree-btn">I Agree & Continue</button>
         </div>
+      </div>
     </div>
 
     <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
+      <canvas id="gameCanvas"></canvas>
 
-        <!-- Chat UI -->
-        <div id="chat-toast-container"></div>
-        <div id="chat-container" class="hidden">
-            <div id="chat-messages"></div>
-            <input type="text" id="chat-input" placeholder="Say something...">
-        </div>
+      <!-- Chat UI -->
+      <div id="chat-toast-container"></div>
+      <div id="chat-container" class="hidden">
+        <div id="chat-messages"></div>
+        <input type="text" id="chat-input" placeholder="Say something..." />
+      </div>
 
-        <div id="menu">
-            <h1 class="superspace-title">SUPERSPACE</h1>
-            <div class="launch-subtext">LAUNCH SEQUENCE READY</div>
-            <button id="play-btn">ENTER SUPERSPACE</button>
-            <button id="options-btn">Options</button>
-            <div id="server-info" style="display:none;">Online Players (<span id="player-count">0</span>)</div>
-            <div id="branding">
-                <div class="copyright">© Gumbysoft - Made by Gumby</div>
-                <div class="links">
-                    <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener">🎮 Other Games</a>
-                    <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener">☕ Support</a>
-                </div>
-                <div class="links">
-                    <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener">💬 Join Discord</a>
-                </div>
-            </div>
+      <div id="menu">
+        <h1 class="superspace-title">SUPERSPACE</h1>
+        <div class="launch-subtext">LAUNCH SEQUENCE READY</div>
+        <button id="play-btn">ENTER SUPERSPACE</button>
+        <button id="options-btn">Options</button>
+        <div id="server-info" style="display: none">
+          Online Players (<span id="player-count">0</span>)
         </div>
-        <!-- Unified Options/Instructions Overlay -->
-        <div id="options-overlay" class="hidden">
-            <div class="options-panel">
-                    <h2>Options & Controls</h2>
-                <button id="close-options-btn" class="close-btn">✕</button>
-                    <div class="section">
-                <div class="section">
-                    <div class="pilot-info">
-                        <div class="pilot-name-row">
-                            <span class="pilot-label">👨‍✈️ Pilot Name:</span>
-                            <span id="pilot-name">(Loading...)</span>
-                        </div>
-                        <canvas id="profileAvatarCanvas" class="profile-avatar-canvas" width="64" height="64"></canvas>
-                        <div class="profile-buttons">
-                            <button id="view-profile-btn" class="profile-btn">📊 Stats</button>
-                            <button id="view-achievements-btn" class="profile-btn">🏆 Achievements</button>
-                        </div>
-                        <div class="pilot-buttons">
-                            <button id="changePilotBtn" class="change-pilot-btn">Change Avatar</button>
-                            <button id="rename-btn" class="rename-btn">Change Name</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="section">
-                    <h3>Instructions</h3>
-                    <ul class="instructions-list">
-                        <li>Destroy asteroids and enemy ships to earn points and credits.</li>
-                        <li>Visit the shop (B) to upgrade your ship with new weapons and ships.</li>
-                        <li>Hold Left Shift for afterburner speed boost (uses energy).</li>
-                        <li>Switch weapons with Q/E or use number keys 0-9 for direct selection.</li>
-                    </ul>                                     
-                </div>
-                <div class="section">
-                    <h3>Controls (Desktop)</h3>
-                    <ul class="controls-list">
-                        <li><span class="control-action">Move:</span> <span class="control-key">Arrow Keys / WASD</span></li>
-                        <li><span class="control-action">Shoot:</span> <span class="control-key">Spacebar</span></li>
-                        <li><span class="control-action">Afterburner:</span> <span class="control-key">Left Shift (hold)</span></li>
-                        <li><span class="control-action">Weapon Switch:</span> <span class="control-key">Q (previous) / E (next)</span></li>
-                        <li><span class="control-action">Direct Weapon Select:</span> <span class="control-key">0-9 number keys</span></li>
-                        <li><span class="control-action">Player Profile:</span> <span class="control-key">P key</span></li>
-                        <li><span class="control-action">Shop:</span> <span class="control-key">B key</span></li>
-                        <li><span class="control-action">Open Chat</span> <span class="control-key">T key</span></li>
-                        <li><span class="control-action">Mute Music:</span> <span class="control-key">M key</span></li>
-                        <li><span class="control-action">Mute SFX:</span> <span class="control-key">N key</span></li>
-                        <li><span class="control-action">Show/Hide Menu:</span> <span class="control-key">Esc key</span></li>
-                    </ul>
-                </div>
-                <div class="section">
-                    <h3>Audio</h3>
-                    <label><input type="checkbox" id="music-toggle" checked> Music On/Off</label>
-                    <div class="audio-spacer"></div>
-                    <div class="slider-row">
-                        <label for="music-volume">Music Volume</label>
-                        <input type="range" id="music-volume" min="0" max="1" step="0.01" value="0.7">
-                    </div>
-                    <div class="slider-row">
-                        <label for="sfx-volume">SFX Volume</label>
-                        <input type="range" id="sfx-volume" min="0" max="1" step="0.01" value="0.7">
-                    </div>
-                </div>
-                <div class="section branding-section">
-                    <div class="game-branding">
-                        <div class="copyright-text">© Gumbysoft - Made by Gumby</div>
-                        <div class="brand-links">
-                            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener" class="brand-link">🎮 More Games</a>
-                            <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener" class="brand-link">☕ Support Dev</a>
-                        </div>
-                        <div class="brand-links">
-                            <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener" class="brand-link">💬 Join Discord</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Avatar Selection Modal -->
-            <div id="avatarModal" class="avatar-modal hidden">
-                <div class="avatar-modal-content">
-                    <h3>Select Pilot Avatar</h3>
-                    <div class="avatar-selection">
-                        <!-- Row 1: free avatars (first three) -->
-                        <div class="avatar-option" data-avatar="han">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Ace</span>
-                        </div>
-                        <div class="avatar-option" data-avatar="ripley">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Ripley</span>
-                        </div>
-                        <div class="avatar-option" data-avatar="missy">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Missy</span>
-                        </div>
-                        <!-- Premium slots-->
-                        <div class="avatar-option" data-avatar="robot">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Marvin</span>
-                        </div>
-                        <div class="avatar-option" data-avatar="alien">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Jeff</span>
-                        </div>
-                        <div class="avatar-option" data-avatar="longjohn">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Long John</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <!-- Row 2: 10 more avatars -->
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                        <div class="avatar-option disabled">
-                            <canvas class="avatar-canvas" width="48" height="48"></canvas>
-                            <span class="avatar-name">Soon</span>
-                        </div>
-                    </div>
-                    <div class="avatar-modal-actions">
-                        <button id="authenticateBtn" class="authenticate-btn">Authenticate</button>
-                        <button id="cancelAvatarBtn" class="cancel-btn">Cancel</button>
-                    </div>
-                </div>
-            </div>
+        <div id="branding">
+          <div class="copyright">© Gumbysoft - Made by Gumby</div>
+          <div class="links">
+            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener"
+              >🎮 Other Games</a
+            >
+            <a
+              href="https://buymeacoffee.com/gumbydev"
+              target="_blank"
+              rel="noopener"
+              >☕ Support</a
+            >
+          </div>
+          <div class="links">
+            <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener"
+              >💬 Join Discord</a
+            >
+          </div>
         </div>
+      </div>
+      <!-- Unified Options/Instructions Overlay -->
+      <div id="options-overlay" class="hidden">
+        <div class="options-panel">
+          <h2>Options & Controls</h2>
+          <button id="close-options-btn" class="close-btn">✕</button>
+          <div class="section">
+            <div class="section">
+              <div class="pilot-info">
+                <div class="pilot-name-row">
+                  <span class="pilot-label">👨‍✈️ Pilot Name:</span>
+                  <span id="pilot-name">(Loading...)</span>
+                </div>
+                <canvas
+                  id="profileAvatarCanvas"
+                  class="profile-avatar-canvas"
+                  width="64"
+                  height="64"
+                ></canvas>
+                <div class="profile-buttons">
+                  <button id="view-profile-btn" class="profile-btn">
+                    📊 Stats
+                  </button>
+                  <button id="view-achievements-btn" class="profile-btn">
+                    🏆 Achievements
+                  </button>
+                </div>
+                <div class="pilot-buttons">
+                  <button id="changePilotBtn" class="change-pilot-btn">
+                    Change Avatar
+                  </button>
+                  <button id="rename-btn" class="rename-btn">
+                    Change Name
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="section">
+              <h3>Instructions</h3>
+              <ul class="instructions-list">
+                <li>
+                  Destroy asteroids and enemy ships to earn points and credits.
+                </li>
+                <li>
+                  Visit the shop (B) to upgrade your ship with new weapons and
+                  ships.
+                </li>
+                <li>
+                  Hold Left Shift for afterburner speed boost (uses energy).
+                </li>
+                <li>
+                  Switch weapons with Q/E or use number keys 0-9 for direct
+                  selection.
+                </li>
+              </ul>
+            </div>
+            <div class="section">
+              <h3>Controls (Desktop)</h3>
+              <ul class="controls-list">
+                <li>
+                  <span class="control-action">Move:</span>
+                  <span class="control-key">Arrow Keys / WASD</span>
+                </li>
+                <li>
+                  <span class="control-action">Shoot:</span>
+                  <span class="control-key">Spacebar</span>
+                </li>
+                <li>
+                  <span class="control-action">Afterburner:</span>
+                  <span class="control-key">Left Shift (hold)</span>
+                </li>
+                <li>
+                  <span class="control-action">Weapon Switch:</span>
+                  <span class="control-key">Q (previous) / E (next)</span>
+                </li>
+                <li>
+                  <span class="control-action">Direct Weapon Select:</span>
+                  <span class="control-key">0-9 number keys</span>
+                </li>
+                <li>
+                  <span class="control-action">Player Profile:</span>
+                  <span class="control-key">P key</span>
+                </li>
+                <li>
+                  <span class="control-action">Shop:</span>
+                  <span class="control-key">B key</span>
+                </li>
+                <li>
+                  <span class="control-action">Open Chat</span>
+                  <span class="control-key">T key</span>
+                </li>
+                <li>
+                  <span class="control-action">Mute Music:</span>
+                  <span class="control-key">M key</span>
+                </li>
+                <li>
+                  <span class="control-action">Mute SFX:</span>
+                  <span class="control-key">N key</span>
+                </li>
+                <li>
+                  <span class="control-action">Show/Hide Menu:</span>
+                  <span class="control-key">Esc key</span>
+                </li>
+              </ul>
+            </div>
+            <div class="section">
+              <h3>Audio</h3>
+              <label
+                ><input type="checkbox" id="music-toggle" checked /> Music
+                On/Off</label
+              >
+              <div class="audio-spacer"></div>
+              <div class="slider-row">
+                <label for="music-volume">Music Volume</label>
+                <input
+                  type="range"
+                  id="music-volume"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.7"
+                />
+              </div>
+              <div class="slider-row">
+                <label for="sfx-volume">SFX Volume</label>
+                <input
+                  type="range"
+                  id="sfx-volume"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.7"
+                />
+              </div>
+            </div>
+            <div class="section branding-section">
+              <div class="game-branding">
+                <div class="copyright-text">© Gumbysoft - Made by Gumby</div>
+                <div class="brand-links">
+                  <a
+                    href="https://gumbydev.itch.io/"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >🎮 More Games</a
+                  >
+                  <a
+                    href="https://buymeacoffee.com/gumbydev"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >☕ Support Dev</a
+                  >
+                </div>
+                <div class="brand-links">
+                  <a
+                    href="https://discord.gg/8vcPr9WK"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >💬 Join Discord</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Avatar Selection Modal -->
+        <div id="avatarModal" class="avatar-modal hidden">
+          <div class="avatar-modal-content">
+            <h3>Select Pilot Avatar</h3>
+            <div class="avatar-selection">
+              <!-- Row 1: free avatars (first three) -->
+              <div class="avatar-option" data-avatar="han">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Ace</span>
+              </div>
+              <div class="avatar-option" data-avatar="ripley">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Ripley</span>
+              </div>
+              <div class="avatar-option" data-avatar="missy">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Missy</span>
+              </div>
+              <!-- Premium slots-->
+              <div class="avatar-option" data-avatar="robot">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Marvin</span>
+              </div>
+              <div class="avatar-option" data-avatar="alien">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Jeff</span>
+              </div>
+              <div class="avatar-option" data-avatar="longjohn">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Long John</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <!-- Row 2: 10 more avatars -->
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+            </div>
+            <div class="avatar-modal-actions">
+              <button id="authenticateBtn" class="authenticate-btn">
+                Authenticate
+              </button>
+              <button id="cancelAvatarBtn" class="cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script>
-        // Disclaimer popup logic
-        document.addEventListener('DOMContentLoaded', function() {
-            const disclaimerPopup = document.getElementById('disclaimer-popup');
-            const agreeBtn = document.getElementById('disclaimer-agree-btn');
-            const dontShowCheckbox = document.getElementById('dont-show-again');
+      // Disclaimer popup logic
+      document.addEventListener('DOMContentLoaded', function () {
+        const disclaimerPopup = document.getElementById('disclaimer-popup');
+        const agreeBtn = document.getElementById('disclaimer-agree-btn');
+        const dontShowCheckbox = document.getElementById('dont-show-again');
 
-            // Check if user has already agreed (permanently or for this session)
-            // Only treat the string 'true' (lowercase) as agreed
-            const agreedLocal = localStorage.getItem('superspace-disclaimer-agreed');
-            const agreedSession = sessionStorage.getItem('superspace-disclaimer-temp-agreed');
-            const hasAgreed = (agreedLocal === 'true') || (agreedSession === 'true');
+        // Check if user has already agreed (permanently or for this session)
+        // Only treat the string 'true' (lowercase) as agreed
+        const agreedLocal = localStorage.getItem(
+          'superspace-disclaimer-agreed',
+        );
+        const agreedSession = sessionStorage.getItem(
+          'superspace-disclaimer-temp-agreed',
+        );
+        const hasAgreed = agreedLocal === 'true' || agreedSession === 'true';
 
-            if (!hasAgreed) {
-                disclaimerPopup.style.display = 'flex';
-            } else {
-                disclaimerPopup.style.display = 'none';
-                // Fire event immediately if already agreed
-                window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
-            }
-
-            agreeBtn.addEventListener('click', function() {
-
-
-                disclaimerPopup.style.display = 'none';
-                if (dontShowCheckbox.checked) {
-                    localStorage.setItem('superspace-disclaimer-agreed', 'true');
-                } else {
-                    sessionStorage.setItem('superspace-disclaimer-temp-agreed', 'true');
-                }
-                window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
-            });
-        });
-    </script>
-
-    <script>
-    // Block gameplay if kicked
-    if (sessionStorage.getItem('wasKicked') === '1') {
-        document.body.innerHTML = '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
-        throw new Error('Blocked by admin kick');
-    }
-    </script>
-    <script>
-    // Simple mobile zoom prevention
-    (function(){
-        if ('ontouchstart' in window) {
-            // Prevent pinch zoom
-            document.addEventListener('touchstart', function(e) {
-                if (e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-            
-            document.addEventListener('touchmove', function(e) {
-                if (e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-            
-            // Prevent double-tap zoom
-            let lastTouchEnd = 0;
-            document.addEventListener('touchend', function(e) {
-                const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
-                    e.preventDefault();
-                }
-                lastTouchEnd = now;
-            }, { passive: false });
+        if (!hasAgreed) {
+          disclaimerPopup.style.display = 'flex';
+        } else {
+          disclaimerPopup.style.display = 'none';
+          // Fire event immediately if already agreed
+          window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
         }
-    })();
+
+        agreeBtn.addEventListener('click', function () {
+          disclaimerPopup.style.display = 'none';
+          if (dontShowCheckbox.checked) {
+            localStorage.setItem('superspace-disclaimer-agreed', 'true');
+          } else {
+            sessionStorage.setItem('superspace-disclaimer-temp-agreed', 'true');
+          }
+          window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
+        });
+      });
     </script>
+
+    <script>
+      // Block gameplay if kicked
+      if (sessionStorage.getItem('wasKicked') === '1') {
+        document.body.innerHTML =
+          '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
+        throw new Error('Blocked by admin kick');
+      }
+    </script>
+    <script>
+      // Simple mobile zoom prevention
+      (function () {
+        if ('ontouchstart' in window) {
+          // Prevent pinch zoom
+          document.addEventListener(
+            'touchstart',
+            function (e) {
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            },
+            { passive: false },
+          );
+
+          document.addEventListener(
+            'touchmove',
+            function (e) {
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            },
+            { passive: false },
+          );
+
+          // Prevent double-tap zoom
+          let lastTouchEnd = 0;
+          document.addEventListener(
+            'touchend',
+            function (e) {
+              const now = Date.now();
+              if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+              }
+              lastTouchEnd = now;
+            },
+            { passive: false },
+          );
+        }
+      })();
+    </script>
+
     <!-- Cloud Sync System -->
     <script src="js/cloudSync.js"></script>
     <script src="js/accountUI.js"></script>
     <script src="js/game.js" type="module"></script>
-</body>
+  </body>
 </html>
