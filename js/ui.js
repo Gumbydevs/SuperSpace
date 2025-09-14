@@ -251,13 +251,7 @@ export class UI {
       if (topRightPanel) topRightPanel.style.display = 'none';
     }, 0);
 
-    // Create ONLINE indicator (no gap)
-    const onlineDisplay = document.createElement('div');
-    onlineDisplay.className = 'status-item-small';
-    onlineDisplay.innerHTML =
-      '<span class="status-label">ONLINE</span>';
-    this.styleStatusItemSmall(onlineDisplay, '#0af');
-    topInfoPanel.appendChild(onlineDisplay);
+    // Do NOT add redundant ONLINE label; rely on existing button/indicator in HTML
 
     // Score display
     const scoreDisplay = document.createElement('div');
@@ -265,7 +259,7 @@ export class UI {
     scoreDisplay.innerHTML =
       '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
     // restore horizontal spacing to avoid overlapping the Online indicator
-  scoreDisplay.style.marginLeft = '1ch'; // minimal spacing to the left
+  scoreDisplay.style.marginLeft = '3ch'; // restore spacing to match original layout
     scoreDisplay.style.marginTop = '0.5em';
     this.styleStatusItemSmall(scoreDisplay, '#fff');
 
@@ -320,6 +314,18 @@ export class UI {
     gemsDisplay.style.marginLeft = '0.5ch';
     this.styleStatusItemSmall(gemsDisplay, '#3cf');
     topInfoPanel.appendChild(gemsDisplay);
+
+    // Live update gem count from premiumStore
+    const updateGemsUI = () => {
+      let gems = 0;
+      if (window.game && window.game.premiumStore && typeof window.game.premiumStore.spaceGems === 'number') {
+        gems = window.game.premiumStore.spaceGems;
+      }
+      const gemsEl = document.getElementById('gems');
+      if (gemsEl) gemsEl.textContent = gems;
+    };
+    updateGemsUI();
+    setInterval(updateGemsUI, 1000);
 
     // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
