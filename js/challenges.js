@@ -452,8 +452,20 @@ export class ChallengeSystem {
       this.claimed.daily = [];
       this.notified.daily = [];
       this.sessionNotified.daily = [];
+      // Select a new random set of daily challenges
+      let pool = (window.CHALLENGES?.daily || CHALLENGES.daily).slice();
+      let count = 3 + Math.floor(Math.random() * 3); // 3-5
+      // Deterministic shuffle by date
+      const key = this.getEasternDateKey();
+      let s = key.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      for (let i = pool.length - 1; i > 0; i--) {
+        s = (s * 9301 + 49297) % 233280;
+        const j = Math.floor((s / 233280) * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      this.currentDaily = pool.slice(0, count).map((ch) => ch.id);
       if (window && window.console)
-        console.log('Daily challenges reset (Eastern midnight)');
+        console.log('Daily challenges reset (Eastern midnight)', this.currentDaily);
     } catch (e) {}
   }
 
@@ -463,8 +475,19 @@ export class ChallengeSystem {
       this.claimed.weekly = [];
       this.notified.weekly = [];
       this.sessionNotified.weekly = [];
+      // Select a new random set of weekly challenges
+      let pool = (window.CHALLENGES?.weekly || CHALLENGES.weekly).slice();
+      let count = 3 + Math.floor((this.getEasternWeekKey().split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 3); // 3-5
+      // Deterministic shuffle by week
+      let s = this.getEasternWeekKey().split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      for (let i = pool.length - 1; i > 0; i--) {
+        s = (s * 9301 + 49297) % 233280;
+        const j = Math.floor((s / 233280) * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      this.currentWeekly = pool.slice(0, count).map((ch) => ch.id);
       if (window && window.console)
-        console.log('Weekly challenges reset (Eastern week boundary)');
+        console.log('Weekly challenges reset (Eastern week boundary)', this.currentWeekly);
     } catch (e) {}
   }
 
