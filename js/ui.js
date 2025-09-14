@@ -251,14 +251,13 @@ export class UI {
       if (topRightPanel) topRightPanel.style.display = 'none';
     }, 0);
 
-    // Create empty placeholder to maintain spacing where server info was
-    const placeholderDisplay = document.createElement('div');
-    placeholderDisplay.className = 'status-item-small';
-    placeholderDisplay.style.visibility = 'hidden'; // Invisible but takes up space
-    placeholderDisplay.innerHTML =
-      '<span class="status-label">ONLINE:</span> <span class="status-value">0</span>';
-    this.styleStatusItemSmall(placeholderDisplay, '#0af');
-    topInfoPanel.appendChild(placeholderDisplay);
+    // Create ONLINE indicator (no gap)
+    const onlineDisplay = document.createElement('div');
+    onlineDisplay.className = 'status-item-small';
+    onlineDisplay.innerHTML =
+      '<span class="status-label">ONLINE</span>';
+    this.styleStatusItemSmall(onlineDisplay, '#0af');
+    topInfoPanel.appendChild(onlineDisplay);
 
     // Score display
     const scoreDisplay = document.createElement('div');
@@ -266,7 +265,7 @@ export class UI {
     scoreDisplay.innerHTML =
       '<span class="status-label">SCORE:</span> <span id="score" class="status-value">0</span>';
     // restore horizontal spacing to avoid overlapping the Online indicator
-    scoreDisplay.style.marginLeft = '5ch'; // add spacing to the left
+  scoreDisplay.style.marginLeft = '1ch'; // minimal spacing to the left
     scoreDisplay.style.marginTop = '0.5em';
     this.styleStatusItemSmall(scoreDisplay, '#fff');
 
@@ -276,8 +275,8 @@ export class UI {
     creditsDisplay.innerHTML =
       '<span class="status-label">CREDITS:</span> <span id="credits" class="status-value">0</span>';
     // vertical offset to align with score
-    creditsDisplay.style.marginTop = '0.5em';
-    creditsDisplay.style.marginLeft = '0.5ch';
+  creditsDisplay.style.marginTop = '0.5em';
+  creditsDisplay.style.marginLeft = '0.5ch';
     this.styleStatusItemSmall(creditsDisplay, '#ff0');
 
     // Check if multiplayer reset occurred and ensure credits display is correct
@@ -311,6 +310,16 @@ export class UI {
     // Add score and credits to info panel
     topInfoPanel.appendChild(scoreDisplay);
     topInfoPanel.appendChild(creditsDisplay);
+
+    // Gem display (styled like credits, right of credits)
+    const gemsDisplay = document.createElement('div');
+    gemsDisplay.className = 'status-item-small';
+    gemsDisplay.innerHTML =
+      '<span class="status-label">GEMS:</span> <span id="gems" class="status-value">0</span>';
+    gemsDisplay.style.marginTop = '0.5em';
+    gemsDisplay.style.marginLeft = '0.5ch';
+    this.styleStatusItemSmall(gemsDisplay, '#3cf');
+    topInfoPanel.appendChild(gemsDisplay);
 
     // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
