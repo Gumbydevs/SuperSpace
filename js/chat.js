@@ -89,9 +89,14 @@ export default class Chat {
       return;
     }
 
+
     // Track chat message
     if (window.analytics) {
       window.analytics.trackChatMessage(message.length);
+    }
+    // Complete chat challenge if present
+    if (window.game && window.game.challengeSystem) {
+      window.game.challengeSystem.markCompleted('daily', 'chat_1');
     }
 
     if (this.socket) {

@@ -1606,7 +1606,7 @@ export class ShopSystem {
     import('./challenges.js').then(({ CHALLENGES }) => {
       // Pick 3-5 random daily challenges for this rotation
       let dailyPool = CHALLENGES.daily.slice();
-      let dailyCount = Math.floor(Math.random() * 3) + 3; // 3-5
+  let dailyCount = 3 + Math.floor(Math.random() * 3); // always 3, 4, or 5
       // Use a seeded value based on the current day to keep it stable for the day
       const today = (new Date()).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
       function seededShuffle(array, seed) {
@@ -1644,7 +1644,7 @@ export class ShopSystem {
     import('./challenges.js').then(({ CHALLENGES }) => {
       // Pick 3-5 random weekly challenges for this rotation
       let weeklyPool = CHALLENGES.weekly.slice();
-      let weeklyCount = Math.floor(Math.random() * 3) + 3; // 3-5
+  let weeklyCount = 3 + Math.floor(Math.random() * 3); // always 3, 4, or 5
       // Use a seeded value based on the current week to keep it stable for the week
       const now = new Date();
       const weekKey = `${now.getFullYear()}-W${Math.ceil(((now - new Date(now.getFullYear(),0,1)) / 86400000 + new Date(now.getFullYear(),0,1).getDay()+1)/7)}`;

@@ -22,7 +22,7 @@ export const CHALLENGES = {
     { id: 'scan_3_artifacts', description: 'Scan 3 space artifacts', reward: 220, gems: 1 },
     { id: 'destroy_boss', description: 'Defeat a boss ship', reward: 500, gems: 3 },
     { id: 'trade_market', description: 'Trade at the market once', reward: 150, gems: 1 },
-    { id: 'collect_rare_gem', description: 'Collect a rare space gem', reward: 300, gems: 2 },
+  { id: 'collect_10_powerups', description: 'Collect 10 power-ups in one day', reward: 300, gems: 2 },
     { id: 'activate_shield', description: 'Activate your shield 3 times', reward: 180, gems: 1 },
     { id: 'warp_jump', description: 'Perform a warp jump', reward: 200, gems: 1 },
   ],
