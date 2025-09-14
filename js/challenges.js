@@ -87,6 +87,7 @@ export class ChallengeSystem {
     if (!this.profile || !this.profile.stats) return;
   // Only allow progress for current daily/weekly challenges
   let allowedIds = challengeType === 'daily' ? this.currentDaily : this.currentWeekly;
+  if (!Array.isArray(allowedIds)) allowedIds = [];
   const list = (CHALLENGES[challengeType] || []).filter((ch) => allowedIds.includes(ch.id));
   list.forEach((ch) => {
       // Allow showing a popup this session even if the challenge was completed in a previous session.
@@ -235,6 +236,7 @@ export class ChallengeSystem {
   markCompleted(type, challengeId) {
   // Only allow marking if in current pool
   let allowedIds = type === 'daily' ? this.currentDaily : this.currentWeekly;
+  if (!Array.isArray(allowedIds)) allowedIds = [];
   const list = (CHALLENGES[type] || []).filter((ch) => allowedIds.includes(ch.id));
   const ch = list.find((c) => c.id === challengeId);
   if (!ch) return false;
@@ -260,6 +262,7 @@ export class ChallengeSystem {
   claimChallenge(type, challengeId) {
   // Only allow claim if in current pool
   let allowedIds = type === 'daily' ? this.currentDaily : this.currentWeekly;
+  if (!Array.isArray(allowedIds)) allowedIds = [];
   const list = (CHALLENGES[type] || []).filter((ch) => allowedIds.includes(ch.id));
   const ch = list.find((c) => c.id === challengeId);
   if (!ch) return 0;
