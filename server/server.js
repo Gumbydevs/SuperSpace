@@ -1211,6 +1211,16 @@ io.on('connection', (socket) => {
           npcType = npc.type;
         }
       }
+      // DEBUG: Log before emitting playerDestroyed so we can trace events
+      console.log('DEBUG: Emitting playerDestroyed', {
+        playerId: data.targetId,
+        attackerId: socket.id,
+        killerAvatar: attackerPlayer?.avatar || 'han',
+        killerName:
+          attackerPlayer?.name || `Player-${socket.id.substring(0, 4)}`,
+        npcType: npcType,
+      });
+
       io.emit('playerDestroyed', {
         playerId: data.targetId,
         attackerId: socket.id,
@@ -1598,6 +1608,13 @@ io.on('connection', (socket) => {
       gameState.players[socket.id].health = 100;
       gameState.players[socket.id].x = data.x || 0;
       gameState.players[socket.id].y = data.y || 0;
+
+      // DEBUG: Log before broadcasting playerRespawned
+      console.log('DEBUG: Broadcasting playerRespawned', {
+        id: socket.id,
+        x: gameState.players[socket.id].x,
+        y: gameState.players[socket.id].y,
+      });
 
       socket.broadcast.emit('playerRespawned', {
         id: socket.id,

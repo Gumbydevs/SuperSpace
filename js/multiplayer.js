@@ -1458,6 +1458,12 @@ export class MultiplayerManager {
 
     // Handle player destruction
     this.socket.on('playerDestroyed', (data) => {
+      // DEBUG: Log incoming playerDestroyed payload for tracing
+      try {
+        console.log('DEBUG CLIENT: Received playerDestroyed', data);
+      } catch (e) {
+        console.log('DEBUG CLIENT: Received playerDestroyed (could not stringify)');
+      }
       // Create unique key for this kill event
       const killEventKey = `${data.attackerId}-${data.playerId}`;
       const now = Date.now();
@@ -1642,9 +1648,11 @@ export class MultiplayerManager {
       // Now handle the actual player death events
       if (data.playerId === this.playerId) {
         // Local player destroyed
+        console.log('DEBUG CLIENT: Handling local player death for', this.playerId);
         this.handleDeath(data.attackerId);
       } else {
         // Remote player destroyed
+        console.log('DEBUG CLIENT: Handling remote player death for', data.playerId, 'attacker', data.attackerId);
         this.handleRemotePlayerDeath(data.playerId, data.attackerId);
       }
     });
@@ -3059,6 +3067,7 @@ export class MultiplayerManager {
 
   // Handle remote player death
   handleRemotePlayerDeath(playerId, attackerId) {
+    console.log('DEBUG CLIENT: enter handleRemotePlayerDeath', { playerId, attackerId });
     // Get player data before removing them
     const deadPlayer = this.players[playerId];
     if (!deadPlayer) return;
@@ -3156,6 +3165,7 @@ export class MultiplayerManager {
     setTimeout(() => {
       delete this.players[playerId];
       this.updatePlayerList();
+      console.log('DEBUG CLIENT: remote player removed from list', playerId);
     }, 3000);
   }
 
@@ -3429,6 +3439,7 @@ export class MultiplayerManager {
 
   // Handle remote player respawn
   handleRemotePlayerRespawn(playerId, x, y) {
+    console.log('DEBUG CLIENT: enter handleRemotePlayerRespawn', { playerId, x, y });
     // Safety check: Don't process respawn for our own player
     if (playerId === this.playerId) {
       console.warn('Ignoring remote respawn event for local player');
