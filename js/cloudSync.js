@@ -163,7 +163,20 @@ class CloudSyncService {
     localStorage.removeItem('ss_auth_token');
     localStorage.removeItem('ss_username');
 
-    console.log('🔐 Logged out successfully');
+    // --- Reset challenge state to local (non-cloud) state on logout ---
+    if (window && window.challengeSystem && typeof window.challengeSystem.loadState === 'function') {
+      window.challengeSystem.loadState();
+      if (typeof window.challengeSystem.saveState === 'function') {
+        window.challengeSystem.saveState();
+      }
+    }
+
+    // Optionally, force UI update if needed (shop, challenge tab, etc)
+    if (window && window.shop && typeof window.shop.updateShopContent === 'function') {
+      window.shop.updateShopContent();
+    }
+
+    console.log('🔐 Logged out successfully, challenge state reset to local.');
   }
 
   // Upload current localStorage to cloud
