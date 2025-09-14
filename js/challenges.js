@@ -14,17 +14,13 @@ export const CHALLENGES = {
     { id: 'fly_10km', description: 'Travel 10 kilometers in one session', reward: 350, gems: 2 },
     { id: 'chat_1', description: 'Send a message in chat', reward: 100, gems: 1 },
     { id: 'equip_skin', description: 'Equip a new ship skin', reward: 150, gems: 1 },
-    // New daily challenges
-    { id: 'assist_ally', description: 'Assist an ally in multiplayer', reward: 200, gems: 1 },
     { id: 'evade_20_projectiles', description: 'Evade 20 enemy projectiles', reward: 250, gems: 1 },
     { id: 'upgrade_weapon', description: 'Upgrade your weapon once', reward: 200, gems: 1 },
     { id: 'visit_sector_5', description: 'Visit sector 5', reward: 180, gems: 1 },
     { id: 'scan_3_artifacts', description: 'Scan 3 space artifacts', reward: 220, gems: 1 },
     { id: 'destroy_boss', description: 'Defeat a boss ship', reward: 500, gems: 3 },
-    { id: 'trade_market', description: 'Trade at the market once', reward: 150, gems: 1 },
-  { id: 'collect_10_powerups', description: 'Collect 10 power-ups in one day', reward: 300, gems: 2 },
+    { id: 'collect_10_powerups', description: 'Collect 10 power-ups in one day', reward: 300, gems: 2 },
     { id: 'activate_shield', description: 'Activate your shield 3 times', reward: 180, gems: 1 },
-    { id: 'warp_jump', description: 'Perform a warp jump', reward: 200, gems: 1 },
   ],
   weekly: [
     { id: 'score_50000', description: 'Score 50,000 points in one game', reward: 1500, gems: 6 },
@@ -32,19 +28,15 @@ export const CHALLENGES = {
     { id: 'play_20_games', description: 'Play 20 games this week', reward: 800, gems: 4 },
     { id: 'destroy_1000_asteroids', description: 'Destroy 1,000 asteroids', reward: 1100, gems: 5 },
     { id: 'earn_10000_credits', description: 'Earn 10,000 credits this week', reward: 1000, gems: 4 },
-  { id: 'top_scorer_10min', description: 'Be the top scorer in a 10-minute period', reward: 2000, gems: 8 },
+    { id: 'top_scorer_10min', description: 'Be the top scorer in a 10-minute period', reward: 2000, gems: 8 },
     { id: 'no_death_3_games', description: 'Complete 3 games in a row without dying', reward: 1800, gems: 7 },
     { id: 'buy_3_items', description: 'Buy 3 different items from the shop', reward: 900, gems: 4 },
-    // New weekly challenges
     { id: 'explore_50km', description: 'Travel a total of 50 kilometers', reward: 1200, gems: 5 },
-    { id: 'ally_revives', description: 'Revive allies 10 times', reward: 1500, gems: 6 },
     { id: 'defeat_5_bosses', description: 'Defeat 5 boss ships', reward: 2200, gems: 10 },
     { id: 'collect_10_gems', description: 'Collect 10 rare space gems', reward: 1300, gems: 6 },
-    { id: 'complete_10_trades', description: 'Complete 10 market trades', reward: 1000, gems: 4 },
     { id: 'upgrade_5_times', description: 'Upgrade your ship 5 times', reward: 1100, gems: 4 },
     { id: 'scan_15_artifacts', description: 'Scan 15 space artifacts', reward: 1400, gems: 5 },
     { id: 'evade_100_projectiles', description: 'Evade 100 enemy projectiles', reward: 1200, gems: 5 },
-    { id: 'warp_10_times', description: 'Perform 10 warp jumps', reward: 1000, gems: 4 },
   ],
 };
 
@@ -102,6 +94,7 @@ export class ChallengeSystem {
 
       let done = false;
       switch (ch.id) {
+        // Daily
         case 'survive_10':
           done = this.profile.stats.longestSurvival >= 600;
           break;
@@ -111,6 +104,53 @@ export class ChallengeSystem {
         case 'earn_1000_credits':
           done = this.profile.stats.totalCreditsEarned >= 1000;
           break;
+        case 'kill_10_enemies':
+          done = this.profile.stats.totalKills >= 10;
+          break;
+        case 'collect_5_powerups':
+          done = this.profile.stats.powerupsCollected >= 5;
+          break;
+        case 'no_damage_5':
+          done = this.profile.stats.noDamageSurvival >= 300;
+          break;
+        case 'use_3_bombs':
+          done = this.profile.stats.bombsUsed >= 3;
+          break;
+        case 'spend_500_credits':
+          done = this.profile.stats.totalCreditsSpent >= 500;
+          break;
+        case 'fly_10km':
+          done = this.profile.stats.totalDistance >= 10000;
+          break;
+        case 'chat_1':
+          done = this.profile.stats.chatMessagesSent >= 1;
+          break;
+        case 'equip_skin':
+          done = this.profile.stats.skinsEquipped >= 1;
+          break;
+        case 'evade_20_projectiles':
+          done = this.profile.stats.projectilesEvaded >= 20;
+          break;
+        case 'upgrade_weapon':
+          done = this.profile.stats.weaponsUpgraded >= 1;
+          break;
+        case 'visit_sector_5':
+          done = this.profile.stats.sectorsVisited && this.profile.stats.sectorsVisited.includes(5);
+          break;
+        case 'scan_3_artifacts':
+          done = this.profile.stats.artifactsScanned >= 3;
+          break;
+        case 'destroy_boss':
+          done = this.profile.stats.bossesDefeated >= 1;
+          break;
+        case 'collect_10_powerups':
+          done = this.profile.stats.powerupsCollected >= 10;
+          break;
+        case 'activate_shield':
+          done = this.profile.stats.shieldActivations >= 3;
+          break;
+
+        // Weekly
         case 'score_50000':
           done = this.player && this.player.score >= 50000;
           break;
@@ -120,6 +160,41 @@ export class ChallengeSystem {
         case 'play_20_games':
           done = this.profile.stats.gamesPlayed >= 20;
           break;
+        case 'destroy_1000_asteroids':
+          done = this.profile.stats.asteroidsDestroyed >= 1000;
+          break;
+        case 'earn_10000_credits':
+          done = this.profile.stats.totalCreditsEarned >= 10000;
+          break;
+        case 'top_scorer_10min':
+          done = this.profile.stats.topScorer10min;
+          break;
+        case 'no_death_3_games':
+          done = this.profile.stats.noDeathStreak >= 3;
+          break;
+        case 'buy_3_items':
+          done = this.profile.stats.uniqueShopItemsBought >= 3;
+          break;
+        case 'explore_50km':
+          done = this.profile.stats.totalDistance >= 50000;
+          break;
+        case 'defeat_5_bosses':
+          done = this.profile.stats.bossesDefeated >= 5;
+          break;
+        case 'collect_10_gems':
+          done = this.profile.stats.rareGemsCollected >= 10;
+          break;
+        case 'upgrade_5_times':
+          done = this.profile.stats.weaponsUpgraded >= 5;
+          break;
+        case 'scan_15_artifacts':
+          done = this.profile.stats.artifactsScanned >= 15;
+          break;
+        case 'evade_100_projectiles':
+          done = this.profile.stats.projectilesEvaded >= 100;
+          break;
+        default:
+          done = false;
       }
 
       // If it became done in this run, mark completed (but don't auto-award)
