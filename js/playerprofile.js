@@ -150,6 +150,18 @@ export class PlayerProfile {
         const now = Date.now();
         const duration = (now - this._noDamageStart) / 1000;
         this.stats.noDamageSurvivalSession = Math.max(this.stats.noDamageSurvivalSession || 0, duration);
+        // If we cross the 5-minute mark, trigger immediate challenge re-check so
+        // the player sees completion/popups without waiting for death/end of session.
+        try {
+          if (this.stats.noDamageSurvivalSession >= 300) {
+            if (window.game && window.game.challengeSystem) {
+              window.game.challengeSystem.check('daily');
+              window.game.challengeSystem.check('weekly');
+            }
+          }
+        } catch (e) {
+          console.error('Error while checking challenges for no-damage milestone', e);
+        }
       }
     }, 1000);
     this.saveStats();

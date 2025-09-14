@@ -117,7 +117,11 @@ export class ChallengeSystem {
           done = this.profile.stats.powerupsCollected >= 5;
           break;
         case 'no_damage_5':
-          done = this.profile.stats.noDamageSurvival >= 300;
+          // Consider both persisted best no-damage survival and the current
+          // in-session no-damage timer so the challenge can complete while
+          // the player is still alive in the session.
+          done = (this.profile.stats.noDamageSurvival >= 300) ||
+            (this.profile.stats.noDamageSurvivalSession >= 300);
           break;
         case 'use_3_bombs':
           done = this.profile.stats.bombsUsed >= 3;
