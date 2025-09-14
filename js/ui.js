@@ -236,7 +236,7 @@ export class UI {
     topInfoPanel.id = 'top-info-panel';
     topInfoPanel.style.position = 'absolute';
     topInfoPanel.style.top = topPanelPosition;
-    topInfoPanel.style.left = '140px'; // Shift right to clear ONLINE button
+    topInfoPanel.style.left = '70px'; // Tighter fit, just clears ONLINE button
     topInfoPanel.style.display = 'flex';
     topInfoPanel.style.flexDirection = 'row';
     topInfoPanel.style.alignItems = 'center';
