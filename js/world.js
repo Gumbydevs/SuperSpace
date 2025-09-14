@@ -1522,6 +1522,11 @@
             '#f33',
           );
         }
+        // Also temporarily increase energy recharge rate to 3x while boost active
+        if (!player._originalEnergyRegen) {
+          player._originalEnergyRegen = player.energyRegen || 0;
+        }
+        player.energyRegen = (player._originalEnergyRegen || 0) * 3;
         break;
       case 'health':
         // Restore 25% of max health
@@ -1768,6 +1773,11 @@
         player.originalFireCooldownTime = null;
       }
       player.fireRateBoosts = [];
+      // Restore original energy regen if we modified it
+      if (player._originalEnergyRegen !== undefined) {
+        player.energyRegen = player._originalEnergyRegen;
+        delete player._originalEnergyRegen;
+      }
     } else {
       // Calculate strongest boost (lowest multiplier = fastest fire rate)
       let strongestMultiplier = 1.0;
