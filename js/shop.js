@@ -1642,13 +1642,35 @@ export class ShopSystem {
     weeklySection.appendChild(weeklyHeader);
 
     import('./challenges.js').then(({ CHALLENGES }) => {
-      // Pick 3-5 random weekly challenges for this rotation
+      // Always show the same 3-5 weekly challenges for the entire week (EST)
       let weeklyPool = CHALLENGES.weekly.slice();
-  let weeklyCount = 3 + Math.floor(Math.random() * 3); // always 3, 4, or 5
-      // Use a seeded value based on the current week to keep it stable for the week
-      const now = new Date();
-      const weekKey = `${now.getFullYear()}-W${Math.ceil(((now - new Date(now.getFullYear(),0,1)) / 86400000 + new Date(now.getFullYear(),0,1).getDay()+1)/7)}`;
-      seededShuffle(weeklyPool, weekKey);
+      let weeklyCount = 3 + Math.floor((getWeeklySeed() % 3)); // 3, 4, or 5
+
+      // Get EST week string (YYYY-W##)
+      function getESTWeekKey() {
+        const now = new Date();
+        const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const jan1 = new Date(est.getFullYear(), 0, 1);
+        const days = Math.floor((est - jan1) / 86400000) + jan1.getDay() + 1;
+        const week = Math.ceil(days / 7);
+        return `${est.getFullYear()}-W${week}`;
+      }
+      // Deterministic seed for the week
+      function getWeeklySeed() {
+        const key = getESTWeekKey();
+        return key.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      }
+      function seededShuffle(array, seed) {
+        let s = seed;
+        for (let i = array.length - 1; i > 0; i--) {
+          s = (s * 9301 + 49297) % 233280;
+          const j = Math.floor((s / 233280) * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+      const weekKey = getESTWeekKey();
+      const weekSeed = getWeeklySeed();
+      seededShuffle(weeklyPool, weekSeed);
       weeklyPool.slice(0, weeklyCount).forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
           challenge,
