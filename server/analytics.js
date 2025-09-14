@@ -428,6 +428,19 @@ class ServerAnalytics {
       case 'achievement_unlocked':
         stats.totalAchievements++;
         break;
+      case 'cloud_login':
+        // Track cloud login counts and record username list
+        if (!stats.cloudLogins) stats.cloudLogins = 0;
+        stats.cloudLogins++;
+        if (!stats.cloudLoginUsers) stats.cloudLoginUsers = [];
+        try {
+          const uname = event.data && event.data.username ? event.data.username : event.playerId;
+          // Keep recent unique list (avoid duplicates)
+          if (!stats.cloudLoginUsers.includes(uname)) stats.cloudLoginUsers.push(uname);
+        } catch (e) {
+          // ignore
+        }
+        break;
     }
   }
 
@@ -881,6 +894,8 @@ class ServerAnalytics {
     return {
       today: {
         ...todayStats,
+        cloudLogins: todayStats.cloudLogins || 0,
+        cloudLoginUsers: todayStats.cloudLoginUsers || [],
         uniquePlayers: todayStats.uniquePlayers
           ? todayStats.uniquePlayers.size
           : 0,

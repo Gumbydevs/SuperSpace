@@ -142,7 +142,7 @@ app.get('/analytics', (req, res) => {
       },
 
       // Recent events for live log
-      recentEvents: stats.recentEvents || [],
+  recentEvents: stats.recentEvents || [],
 
       // Debug info
       debug: {
@@ -150,6 +150,9 @@ app.get('/analytics', (req, res) => {
         gameStateActivePlayers: actualActivePlayers,
         playerNames: Object.values(gameState.players).map((p) => p.name),
       },
+      // Cloud login metrics (exposed for admin dashboard)
+      cloudLogins: stats.today?.cloudLogins || 0,
+      cloudLoginUsers: stats.today?.cloudLoginUsers || [],
     };
 
     console.log(
@@ -319,6 +322,22 @@ app.post('/auth/login', async (req, res) => {
     const result = await cloudAuth.login(username, password);
 
     if (result.success) {
+      // Emit cloud_login analytics event for successful cloud auth
+      try {
+        analytics.processEvent(
+          {
+            sessionId: `cloud_${Date.now()}_${result.username}`,
+            playerId: result.username,
+            eventType: 'cloud_login',
+            timestamp: Date.now(),
+            data: { username: result.username },
+          },
+          req.ip || req.connection?.remoteAddress || 'unknown',
+        );
+      } catch (e) {
+        console.error('Failed to process cloud_login analytics event:', e);
+      }
+
       res.json(result);
     } else {
       res.status(401).json(result);
@@ -2016,6 +2035,41 @@ io.on('connection', (socket) => {
         message: message,
         isSystem: false,
       });
+    }
+  });
+
+  // Admin chat messages from analytics dashboard or admin clients
+  socket.on('adminChatMessage', (data) => {
+    try {
+      if (!data || !data.message) return;
+      const message = data.message.substring(0, 500);
+      // Prefix message with Admin: for broadcasting to game clients
+      const adminPayload = {
+        name: data.adminName || 'Admin',
+        message: message,
+        isSystem: true,
+      };
+      console.log(`[ADMIN CHAT] ${adminPayload.name}: ${adminPayload.message}`);
+      // Broadcast to all game clients
+      io.emit('chatMessage', adminPayload);
+
+      // Log analytics event for admin chat (for auditing)
+      try {
+        analytics.processEvent(
+          {
+            sessionId: `admin_${Date.now()}`,
+            playerId: adminPayload.name,
+            eventType: 'admin_chat',
+            timestamp: Date.now(),
+            data: { message: adminPayload.message },
+          },
+          socket.request.connection.remoteAddress || 'admin',
+        );
+      } catch (e) {
+        console.error('Failed to log admin_chat analytics event:', e);
+      }
+    } catch (e) {
+      console.error('Error handling adminChatMessage:', e);
     }
   });
 

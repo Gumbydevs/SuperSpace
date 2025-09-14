@@ -6,6 +6,16 @@
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
+// Optionally emit analytics events if analytics module is available
+let analytics = null;
+try {
+  analytics = require('./analytics');
+  // If analytics exports a class, try to reuse singleton via require cache in server.js
+  // server.js creates an instance named `analytics` — cloudSyncAuth will call analytics.processEvent if it's that instance
+} catch (e) {
+  // analytics not available in some contexts (e.g., unit tests) — silently ignore
+  analytics = null;
+}
 
 class CloudSyncAuth {
   constructor() {
@@ -207,6 +217,26 @@ class CloudSyncAuth {
       await fs.writeFile(this.tokensFile, JSON.stringify(tokens, null, 2));
 
       console.log(`✅ User logged in: ${user.username}`);
+      // Emit analytics event for cloud login if analytics instance exists and exposes processEvent
+      try {
+        if (analytics && typeof analytics.processEvent === 'function') {
+          const eventData = {
+            sessionId: `cloud_${Date.now()}_${user.username}`,
+            playerId: user.username,
+            eventType: 'cloud_login',
+            timestamp: Date.now(),
+            data: { username: user.username },
+          };
+          // analytics here may be the class export; if it's a constructor, skip calling
+          if (analytics && analytics.processEvent) {
+            // If analytics is the instance (server.js sets module.exports = instance), use directly
+            analytics.processEvent(eventData, 'local');
+          }
+        }
+      } catch (e) {
+        console.error('Failed to emit analytics cloud_login event:', e);
+      }
+
       return { success: true, token, username: user.username };
     } catch (error) {
       console.error('Login error:', error);

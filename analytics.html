@@ -338,9 +338,19 @@
           <div class="loading">Loading events...</div>
         </div>
       </div>
+
+      <!-- Admin Chat Panel -->
+      <div class="metric-card">
+        <h3>💬 Admin Chat</h3>
+        <div id="adminChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;"></div>
+        <input id="adminChatInput" type="text" placeholder="Send admin message..." style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(0,255,136,0.2);" />
+        <button id="adminChatSend" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#00ff88;border:none;cursor:pointer;">Send as Admin</button>
+      </div>
     </div>
 
     <script>
+      // Socket.IO client for admin chat (loaded dynamically below)
+      let socket = null;
       let playerActivityChart, gameEventsChart;
       let eventData = [];
       let chartData = {
@@ -673,11 +683,63 @@
         initCharts();
         fetchAnalyticsData();
 
+        // initialize Socket.IO connection for admin chat and live events
+        (function initSocket() {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+          script.onload = () => {
+            try {
+              // Connect to the analytics server (same base as data fetch)
+              socket = io('https://superspace-server.onrender.com', {
+                transports: ['websocket'],
+                secure: true,
+              });
+
+              socket.on('connect', () => {
+                console.log('Admin socket connected:', socket.id);
+              });
+
+              // Show incoming chat messages (including admin messages)
+              socket.on('chatMessage', (data) => {
+                const container = document.getElementById('adminChatMessages');
+                const el = document.createElement('div');
+                el.style.padding = '6px';
+                el.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+                el.innerHTML = `<strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
+                container.appendChild(el);
+                container.scrollTop = container.scrollHeight;
+              });
+
+              // Wire admin send button
+              document.getElementById('adminChatSend').onclick = () => {
+                const input = document.getElementById('adminChatInput');
+                const msg = input.value.trim();
+                if (!msg || !socket) return;
+                socket.emit('adminChatMessage', { message: msg, adminName: 'Admin' });
+                input.value = '';
+              };
+            } catch (e) {
+              console.error('Failed to initialize admin socket:', e);
+            }
+          };
+          document.head.appendChild(script);
+        })();
+
         // Auto-refresh every 5 seconds
         setInterval(fetchAnalyticsData, 5000);
 
         console.log('🚀 SuperSpace Analytics Dashboard Initialized');
       });
+
+      // Utility: escape HTML to avoid injection in admin chat
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
 
       // Handle visibility change to pause/resume updates
       document.addEventListener('visibilitychange', function () {
