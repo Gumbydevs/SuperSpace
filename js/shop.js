@@ -3314,6 +3314,11 @@ export class ShopSystem {
     // Track weapon/ship upgrades for challenge progress
     if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onWeaponUpgrade === 'function') {
       window.game.playerProfile.onWeaponUpgrade();
+      // Immediately check for challenge progress after upgrade
+      if (window.game && window.game.challengeSystem) {
+        window.game.challengeSystem.check('daily');
+        window.game.challengeSystem.check('weekly');
+      }
     }
 
     // Update shop display
