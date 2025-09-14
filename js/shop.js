@@ -1789,7 +1789,7 @@ export class ShopSystem {
     let rewardText = `Reward: ${challenge.reward} credits`;
     reward.innerHTML = `Reward: <span style="color:#fc3">${challenge.reward} credits</span>`;
     if (typeof challenge.gems === 'number' && challenge.gems > 0) {
-      reward.innerHTML += `, <span style="color:#3cf;font-weight:bold;text-shadow:0 0 6px #6ef,0 0 2px #fff;">` +
+      reward.innerHTML += `, <span style="color:#3cf;font-weight:bold;">` +
         `&#128142; ${challenge.gems} space gem${challenge.gems > 1 ? 's' : ''}</span>`;
     }
     reward.style.fontSize = '0.9em';
