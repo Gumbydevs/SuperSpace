@@ -1508,10 +1508,18 @@ io.on('connection', (socket) => {
       // Restitution (bounciness)
       const restitution = 0.6; // tweakable
 
+      // Minimum impulse magnitude to ensure soft touches still produce pushback
+      const MIN_IMPULSE = 70; // px/sec equivalent, tune this to taste
+
       // Only apply impulse if closing (relVel < 0)
       if (relVel < 0) {
         // Equal mass impulse magnitude j = -(1+e) * relVel / (1/m1 + 1/m2) with m1=m2=1 -> divide by 2
-        const j = (-(1 + restitution) * relVel) / 2;
+        let j = (-(1 + restitution) * relVel) / 2;
+
+        // Enforce a minimum impulse so very soft closing velocities still cause a perceptible push
+        if (Math.abs(j) < MIN_IMPULSE) {
+          j = Math.sign(j || -1) * MIN_IMPULSE;
+        }
 
         // Apply impulse
         const newV1x = v1x + j * nx;
@@ -1521,6 +1529,20 @@ io.on('connection', (socket) => {
 
         src.velocity = { x: newV1x, y: newV1y };
         tgt.velocity = { x: newV2x, y: newV2y };
+      } else {
+        // Not closing (could be grazing or already separating) — if there is penetration
+        // (overlap) apply a modest separation impulse so soft touches still feel like a push.
+        const radius = 15;
+        const penetration = radius + radius - distance; // both radii
+        if (penetration > 0) {
+          const sepImpulse = MIN_IMPULSE * 0.5; // smaller than full min impulse
+          const newV1x = v1x + sepImpulse * nx;
+          const newV1y = v1y + sepImpulse * ny;
+          const newV2x = v2x - sepImpulse * nx;
+          const newV2y = v2y - sepImpulse * ny;
+          src.velocity = { x: newV1x, y: newV1y };
+          tgt.velocity = { x: newV2x, y: newV2y };
+        }
       }
 
       // Simple separation to prevent overlap (assume collision radius ~15 each)
@@ -1555,7 +1577,11 @@ io.on('connection', (socket) => {
         sourceId: srcId,
         targetId: tgtId,
         position: { x: (src.x + tgt.x) / 2, y: (src.y + tgt.y) / 2 },
-        velocity: src.velocity,
+        // Provide both players' resolved velocities so clients can apply
+        // accurate immediate visual impulses without waiting for separate
+        // playerMoved events to reconcile.
+        sourceVelocity: src.velocity,
+        targetVelocity: tgt.velocity,
       });
 
       console.log(`Resolved collision server-side: ${srcId} <-> ${tgtId}`);
@@ -2244,11 +2270,42 @@ setInterval(
   24 * 60 * 60 * 1000,
 ); // Every 24 hours
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`SuperSpace multiplayer server running on port ${PORT}`);
-});
+// Start the server with graceful EADDRINUSE handling
+const PORT = parseInt(process.env.PORT, 10) || 3000;
+
+function startServer(port) {
+  server.once('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`Port ${port} is already in use.`);
+      // Attempt to suggest a fix but do not forcibly kill other processes
+      console.error(
+        `If this is unexpected, find and stop the process using port ${port} or set PORT to a different value and restart.`,
+      );
+      // Attempt a fallback port if explicitly allowed via env variable
+      const tryFallback = process.env.FALLBACK_PORTS === '1';
+      if (tryFallback) {
+        const newPort = port + 1;
+        console.log(`Attempting fallback to port ${newPort}...`);
+        // Remove this error listener and try again on the new port
+        server.removeAllListeners('error');
+        startServer(newPort);
+        return;
+      }
+
+      // Exit with a helpful message so process supervisors know why it quit
+      process.exit(1);
+    } else {
+      // Unknown server error - rethrow to let Node print stack
+      throw err;
+    }
+  });
+
+  server.listen(port, () => {
+    console.log(`SuperSpace multiplayer server running on port ${port}`);
+  });
+}
+
+startServer(PORT);
 
 // Secure reset endpoint for analytics data (POST only, requires header)
 app.post('/analytics/reset', async (req, res) => {

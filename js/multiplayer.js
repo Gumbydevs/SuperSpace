@@ -1776,6 +1776,60 @@ export class MultiplayerManager {
               position: { x: collisionX, y: collisionY },
             });
           }
+          // Apply immediate, local velocity/impulse to remote player objects so
+          // bumps feel instant on all clients (client-side prediction / visual).
+          // Use server-provided velocity when available, otherwise compute a
+          // conservative opposite impulse based on positions.
+          try {
+            // Small separation to reduce overlap artifacts
+            const dx = sourcePlayer.x - targetPlayer.x;
+            const dy = sourcePlayer.y - targetPlayer.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            // If server provided a velocity for the source, use it for immediate visual
+            const srcVel = data.sourceVelocity || data.velocity;
+            const tgtVel = data.targetVelocity || data.targetVelocity || null;
+            if (srcVel && typeof srcVel.x === 'number') {
+              // Overwrite source velocity for visual immediacy
+              sourcePlayer.velocity = sourcePlayer.velocity || { x: 0, y: 0 };
+              sourcePlayer.velocity.x = srcVel.x;
+              sourcePlayer.velocity.y = srcVel.y;
+
+              // For the target, if server sent an explicit targetVelocity use it,
+              // otherwise apply an equal-and-opposite damped velocity so the target
+              // is visually pushed away immediately.
+              targetPlayer.velocity = targetPlayer.velocity || { x: 0, y: 0 };
+              if (tgtVel && typeof tgtVel.x === 'number') {
+                targetPlayer.velocity.x = tgtVel.x;
+                targetPlayer.velocity.y = tgtVel.y;
+              } else {
+                // Dampen factor to avoid excessive snapping
+                const damp = 0.9;
+                targetPlayer.velocity.x = -srcVel.x * damp;
+                targetPlayer.velocity.y = -srcVel.y * damp;
+              }
+            } else {
+              // Fallback: nudge both players apart with a modest impulse
+              const impulse = 120; // tuned for feel (px/sec)
+              sourcePlayer.velocity = sourcePlayer.velocity || { x: 0, y: 0 };
+              targetPlayer.velocity = targetPlayer.velocity || { x: 0, y: 0 };
+              sourcePlayer.velocity.x += nx * impulse;
+              sourcePlayer.velocity.y += ny * impulse;
+              targetPlayer.velocity.x -= nx * impulse;
+              targetPlayer.velocity.y -= ny * impulse;
+            }
+
+            // Slight position separation to avoid visual overlap (small, instant)
+            const sep = 1.5; // pixels
+            sourcePlayer.x += nx * sep;
+            sourcePlayer.y += ny * sep;
+            targetPlayer.x -= nx * sep;
+            targetPlayer.y -= ny * sep;
+          } catch (e) {
+            console.warn('Error applying collision impulse locally:', e);
+          }
         }
       }
     });
