@@ -122,6 +122,56 @@ app.get('/test', (req, res) => {
 
 // Analytics endpoints
 app.get('/analytics', (req, res) => {
+    // --- Challenge completions aggregation ---
+    // Helper to get date string for N days ago
+    function getDateStringNDaysAgo(n) {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return analytics.getDateString(d);
+    }
+
+    // Aggregate completions by challenge ID for today, this week, all time
+    const challengeStats = { today: {}, week: {}, allTime: {} };
+    const playerChallengeMap = { today: {}, week: {}, allTime: {} };
+    const todayStr = analytics.getDateString();
+    const weekDays = Array.from({length: 7}, (_, i) => getDateStringNDaysAgo(i));
+
+    // Helper to add completion
+    function addCompletion(map, cid, player) {
+      if (!map[cid]) map[cid] = new Set();
+      map[cid].add(player);
+    }
+
+    // Scan dailyStats for all completions
+    for (const [date, stats] of analytics.dailyStats.entries()) {
+      // For each player in playerSessionMap, check challengesCompleted
+      if (stats.playerSessionMap) {
+        for (const [player, sessionSet] of Object.entries(stats.playerSessionMap)) {
+          // For each session, try to load session file and get challengesCompleted
+          for (const sessionId of sessionSet) {
+            try {
+              const sessionFile = require('path').join(__dirname, 'analytics_data', 'sessions', `session_${player}_${sessionId}.json`);
+              const fs = require('fs');
+              if (fs.existsSync(sessionFile)) {
+                const sessionData = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
+                const completed = sessionData.gameStats && sessionData.gameStats.challengesCompleted ? sessionData.gameStats.challengesCompleted : [];
+                for (const cid of completed) {
+                  if (date === todayStr) addCompletion(playerChallengeMap.today, cid, player);
+                  if (weekDays.includes(date)) addCompletion(playerChallengeMap.week, cid, player);
+                  addCompletion(playerChallengeMap.allTime, cid, player);
+                }
+              }
+            } catch (e) { /* ignore */ }
+          }
+        }
+      }
+    }
+    // Convert sets to counts and player lists
+    for (const period of ['today', 'week', 'allTime']) {
+      for (const [cid, players] of Object.entries(playerChallengeMap[period])) {
+        challengeStats[period][cid] = { count: players.size, players: Array.from(players) };
+      }
+    }
   try {
     const stats = analytics.getCurrentStats();
 
@@ -161,6 +211,8 @@ app.get('/analytics', (req, res) => {
 
     // Transform data to match dashboard expectations
   const dashboardData = {
+  // Challenge completions and achievers
+  challengeStats,
       // Basic metrics that dashboard expects - use real player count
       activePlayers: actualActivePlayers,
       peakPlayers: stats.today?.peakConcurrent || 0,
