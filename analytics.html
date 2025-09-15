@@ -520,10 +520,13 @@
 
       function updateMetrics(data) {
         // Update basic metrics
-  document.getElementById('activePlayersToday').textContent = (data.today && data.today.activePlayers) || 0;
-  document.getElementById('activePlayersAll').textContent = (data.allTime && data.allTime.activePlayers) || 0;
-  document.getElementById('peakPlayersToday').textContent = (data.today && data.today.peakConcurrent) || 0;
-  document.getElementById('peakPlayersAll').textContent = (data.allTime && data.allTime.peakConcurrent) || 0;
+  // Fallback to main data if today/allTime missing
+  const today = data.today || {};
+  const allTime = data.allTime || {};
+  document.getElementById('activePlayersToday').textContent = today.activePlayers ?? data.activePlayers ?? 0;
+  document.getElementById('activePlayersAll').textContent = allTime.activePlayers ?? data.activePlayers ?? 0;
+  document.getElementById('peakPlayersToday').textContent = today.peakConcurrent ?? data.peakPlayers ?? 0;
+  document.getElementById('peakPlayersAll').textContent = allTime.peakConcurrent ?? data.peakPlayers ?? 0;
   // Show today/all time for total sessions
   document.getElementById('totalSessionsToday').textContent = (data.today && data.today.totalSessions) || 0;
   document.getElementById('totalSessionsAll').textContent = (data.allTime && data.allTime.totalSessions) || 0;
@@ -542,12 +545,12 @@
         }
 
   // Cloud logins today/all time
-  document.getElementById('cloudLoginsToday').textContent = (data.today && data.today.cloudLogins) || 0;
-  document.getElementById('cloudLoginsAll').textContent = (data.allTime && data.allTime.cloudLogins) || 0;
+  document.getElementById('cloudLoginsToday').textContent = today.cloudLogins ?? data.cloudLogins ?? 0;
+  document.getElementById('cloudLoginsAll').textContent = allTime.cloudLogins ?? data.cloudLogins ?? 0;
 
         // Cloud login users today/all time
-        let todayUsers = (data.today && data.today.cloudLoginUsers) || [];
-        let allTimeUsers = (data.allTime && data.allTime.cloudLoginUsers) || [];
+  let todayUsers = today.cloudLoginUsers || [];
+  let allTimeUsers = allTime.cloudLoginUsers || [];
         let html = '';
         if (todayUsers.length > 0) {
           html += `<div><b>Today:</b> ${todayUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
@@ -580,21 +583,21 @@
 
         // Update game statistics
   // Show today/all time for kills, deaths, shots, powerups
-  document.getElementById('killsToday').textContent = (data.today && data.today.totalKills) || 0;
-  document.getElementById('killsAll').textContent = (data.allTime && data.allTime.totalKills) || 0;
-  document.getElementById('deathsToday').textContent = (data.today && data.today.totalDeaths) || 0;
-  document.getElementById('deathsAll').textContent = (data.allTime && data.allTime.totalDeaths) || 0;
-  document.getElementById('shotsFiredToday').textContent = (data.today && data.today.totalShots) || 0;
-  document.getElementById('shotsFiredAll').textContent = (data.allTime && data.allTime.totalShots) || 0;
-  document.getElementById('powerupsCollectedToday').textContent = (data.today && data.today.powerupsCollected) || 0;
-  document.getElementById('powerupsCollectedAll').textContent = (data.allTime && data.allTime.powerupsCollected) || 0;
+  document.getElementById('killsToday').textContent = today.totalKills ?? data.killsToday ?? 0;
+  document.getElementById('killsAll').textContent = allTime.totalKills ?? 0;
+  document.getElementById('deathsToday').textContent = today.totalDeaths ?? 0;
+  document.getElementById('deathsAll').textContent = allTime.totalDeaths ?? 0;
+  document.getElementById('shotsFiredToday').textContent = today.totalShots ?? 0;
+  document.getElementById('shotsFiredAll').textContent = allTime.totalShots ?? 0;
+  document.getElementById('powerupsCollectedToday').textContent = today.powerupsCollected ?? 0;
+  document.getElementById('powerupsCollectedAll').textContent = allTime.powerupsCollected ?? 0;
 
   // Update premium statistics (today/all time)
-  document.getElementById('premiumPlayers').textContent = `${(data.today && data.today.premiumPlayers) || 0} / ${(data.allTime && data.allTime.premiumPlayers) || 0}`;
-  document.getElementById('storeVisits').textContent = `${(data.today && data.today.storeVisits) || 0} / ${(data.allTime && data.allTime.storeVisits) || 0}`;
-  document.getElementById('purchases').textContent = `${(data.today && data.today.totalPurchases) || 0} / ${(data.allTime && data.allTime.totalPurchases) || 0}`;
-  document.getElementById('revenue').textContent = `$${((data.today && data.today.totalSpent) || 0).toFixed(2)} / $${((data.allTime && data.allTime.totalSpent) || 0).toFixed(2)}`;
-  document.getElementById('gemsSpent').textContent = `${(data.today && data.today.gemsSpent) || 0} / ${(data.allTime && data.allTime.gemsSpent) || 0} 💎`;
+  document.getElementById('premiumPlayers').textContent = `${today.premiumPlayers ?? 0} / ${allTime.premiumPlayers ?? 0}`;
+  document.getElementById('storeVisits').textContent = `${today.storeVisits ?? 0} / ${allTime.storeVisits ?? 0}`;
+  document.getElementById('purchases').textContent = `${today.totalPurchases ?? 0} / ${allTime.totalPurchases ?? 0}`;
+  document.getElementById('revenue').textContent = `$${(today.totalSpent ?? 0).toFixed(2)} / $${(allTime.totalSpent ?? 0).toFixed(2)}`;
+  document.getElementById('gemsSpent').textContent = `${today.gemsSpent ?? 0} / ${allTime.gemsSpent ?? 0} 💎`;
       // Load all previous chat history (all players, all server chat) into admin chat panel
       async function loadAllChatHistory() {
         try {
