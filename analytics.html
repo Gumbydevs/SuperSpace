@@ -583,21 +583,21 @@
 
         // Update game statistics
   // Show today/all time for kills, deaths, shots, powerups
-  document.getElementById('killsToday').textContent = today.totalKills ?? data.killsToday ?? 0;
-  document.getElementById('killsAll').textContent = allTime.totalKills ?? 0;
-  document.getElementById('deathsToday').textContent = today.totalDeaths ?? 0;
-  document.getElementById('deathsAll').textContent = allTime.totalDeaths ?? 0;
-  document.getElementById('shotsFiredToday').textContent = today.totalShots ?? 0;
-  document.getElementById('shotsFiredAll').textContent = allTime.totalShots ?? 0;
-  document.getElementById('powerupsCollectedToday').textContent = today.powerupsCollected ?? 0;
-  document.getElementById('powerupsCollectedAll').textContent = allTime.powerupsCollected ?? 0;
+  document.getElementById('killsToday').textContent = today.totalKills || 0;
+  document.getElementById('killsAll').textContent = allTime.totalKills || 0;
+  document.getElementById('deathsToday').textContent = today.totalDeaths || 0;
+  document.getElementById('deathsAll').textContent = allTime.totalDeaths || 0;
+  document.getElementById('shotsFiredToday').textContent = today.totalShots || 0;
+  document.getElementById('shotsFiredAll').textContent = allTime.totalShots || 0;
+  document.getElementById('powerupsCollectedToday').textContent = today.powerupsCollected || 0;
+  document.getElementById('powerupsCollectedAll').textContent = allTime.powerupsCollected || 0;
 
   // Update premium statistics (today/all time)
-  document.getElementById('premiumPlayers').textContent = `${today.premiumPlayers ?? 0} / ${allTime.premiumPlayers ?? 0}`;
-  document.getElementById('storeVisits').textContent = `${today.storeVisits ?? 0} / ${allTime.storeVisits ?? 0}`;
-  document.getElementById('purchases').textContent = `${today.totalPurchases ?? 0} / ${allTime.totalPurchases ?? 0}`;
-  document.getElementById('revenue').textContent = `$${(today.totalSpent ?? 0).toFixed(2)} / $${(allTime.totalSpent ?? 0).toFixed(2)}`;
-  document.getElementById('gemsSpent').textContent = `${today.gemsSpent ?? 0} / ${allTime.gemsSpent ?? 0} 💎`;
+  document.getElementById('premiumPlayers').textContent = `${today.premiumPlayers || 0} / ${allTime.premiumPlayers || 0}`;
+  document.getElementById('storeVisits').textContent = `${today.storeVisits || 0} / ${allTime.storeVisits || 0}`;
+  document.getElementById('purchases').textContent = `${today.totalPurchases || 0} / ${allTime.totalPurchases || 0}`;
+  document.getElementById('revenue').textContent = `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`;
+  document.getElementById('gemsSpent').textContent = `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`;
       // Load all previous chat history (all players, all server chat) into admin chat panel
       async function loadAllChatHistory() {
         try {
