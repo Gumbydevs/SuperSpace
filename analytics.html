@@ -875,22 +875,7 @@
           const data = await response.json();
           updateMetrics(data);
 
-          // Fetch and update 24h average player activity chart
-          try {
-            const respAvg = await fetch('/analytics/activity/average24h');
-            if (respAvg.ok) {
-              const avgData = await respAvg.json();
-              // avgData should be an array of { hour: 0-23, avgCount: number }
-              updatePlayerActivityChart(
-                avgData.map((d) => ({
-                  timestamp: new Date(1970, 0, 1, d.hour, 0, 0).toISOString(),
-                  count: d.avgCount,
-                }))
-              );
-            }
-          } catch (e) {
-            console.error('Failed to fetch 24h average player activity:', e);
-          }
+          // Removed fetch for /analytics/activity/average24h to prevent 404 errors
 
           // Update status indicator
           document.getElementById('statusIndicator').textContent = 'LIVE';
