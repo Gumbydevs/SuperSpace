@@ -241,8 +241,8 @@
       <!-- Live Player Count -->
       <div class="metric-card">
         <h3>🎮 Active Players</h3>
-        <div class="metric-value" id="activePlayers">0</div>
-        <div class="metric-subtitle">Currently Online</div>
+        <div class="metric-value"><span id="activePlayersToday">0</span> / <span id="activePlayersAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Player Names List -->
@@ -255,22 +255,22 @@
       <!-- Cloud Account Logins -->
       <div class="metric-card">
         <h3>☁️ Cloud Logins</h3>
-        <div class="metric-value" id="cloudLogins">0</div>
-        <div class="metric-subtitle">Today</div>
+        <div class="metric-value"><span id="cloudLoginsToday">0</span> / <span id="cloudLoginsAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Cloud Accounts Created/Logged In -->
       <div class="metric-card">
         <h3>👤 Cloud Users</h3>
         <div id="cloudLoginUsersList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
-        <div class="metric-subtitle">Usernames (today)</div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
-      <!-- Peak Players Today -->
+      <!-- Peak Players -->
       <div class="metric-card">
-        <h3>📈 Peak Today</h3>
-        <div class="metric-value" id="peakPlayers">0</div>
-        <div class="metric-subtitle">Maximum Concurrent</div>
+        <h3>📈 Peak Concurrent</h3>
+        <div class="metric-value"><span id="peakPlayersToday">0</span> / <span id="peakPlayersAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Total Sessions -->
@@ -520,8 +520,10 @@
 
       function updateMetrics(data) {
         // Update basic metrics
-        document.getElementById('activePlayers').textContent = data.activePlayers || 0;
-        document.getElementById('peakPlayers').textContent = data.peakPlayers || 0;
+  document.getElementById('activePlayersToday').textContent = (data.today && data.today.activePlayers) || 0;
+  document.getElementById('activePlayersAll').textContent = (data.allTime && data.allTime.activePlayers) || 0;
+  document.getElementById('peakPlayersToday').textContent = (data.today && data.today.peakConcurrent) || 0;
+  document.getElementById('peakPlayersAll').textContent = (data.allTime && data.allTime.peakConcurrent) || 0;
   // Show today/all time for total sessions
   document.getElementById('totalSessionsToday').textContent = (data.today && data.today.totalSessions) || 0;
   document.getElementById('totalSessionsAll').textContent = (data.allTime && data.allTime.totalSessions) || 0;
@@ -539,15 +541,22 @@
           document.getElementById('playerNamesList').innerHTML = '<em>No players connected</em>';
         }
 
-        // Cloud logins (today)
-        document.getElementById('cloudLogins').textContent = data.cloudLogins || 0;
+  // Cloud logins today/all time
+  document.getElementById('cloudLoginsToday').textContent = (data.today && data.today.cloudLogins) || 0;
+  document.getElementById('cloudLoginsAll').textContent = (data.allTime && data.allTime.cloudLogins) || 0;
 
-        // Cloud login users (today)
-        if (Array.isArray(data.cloudLoginUsers) && data.cloudLoginUsers.length > 0) {
-          document.getElementById('cloudLoginUsersList').innerHTML = data.cloudLoginUsers.map(u => `<div>${escapeHtml(u)}</div>`).join('');
-        } else {
-          document.getElementById('cloudLoginUsersList').innerHTML = '<em>None today</em>';
+        // Cloud login users today/all time
+        let todayUsers = (data.today && data.today.cloudLoginUsers) || [];
+        let allTimeUsers = (data.allTime && data.allTime.cloudLoginUsers) || [];
+        let html = '';
+        if (todayUsers.length > 0) {
+          html += `<div><b>Today:</b> ${todayUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
         }
+        if (allTimeUsers.length > 0) {
+          html += `<div><b>All Time:</b> ${allTimeUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
+        }
+        if (!html) html = '<em>None</em>';
+        document.getElementById('cloudLoginUsersList').innerHTML = html;
 
   // Format average session time (today/all time)
   const avgTimeToday = (data.today && data.today.averageSessionDuration) || 0;
@@ -580,12 +589,33 @@
   document.getElementById('powerupsCollectedToday').textContent = (data.today && data.today.powerupsCollected) || 0;
   document.getElementById('powerupsCollectedAll').textContent = (data.allTime && data.allTime.powerupsCollected) || 0;
 
-        // Update premium statistics
-        document.getElementById('premiumPlayers').textContent = data.premiumPlayers || 0;
-        document.getElementById('storeVisits').textContent = data.storeVisits || 0;
-        document.getElementById('purchases').textContent = data.purchases || 0;
-        document.getElementById('revenue').textContent = `$${(data.revenue || 0).toFixed(2)}`;
-        document.getElementById('gemsSpent').textContent = `${data.gemsSpent || 0} 💎`;
+  // Update premium statistics (today/all time)
+  document.getElementById('premiumPlayers').textContent = `${(data.today && data.today.premiumPlayers) || 0} / ${(data.allTime && data.allTime.premiumPlayers) || 0}`;
+  document.getElementById('storeVisits').textContent = `${(data.today && data.today.storeVisits) || 0} / ${(data.allTime && data.allTime.storeVisits) || 0}`;
+  document.getElementById('purchases').textContent = `${(data.today && data.today.totalPurchases) || 0} / ${(data.allTime && data.allTime.totalPurchases) || 0}`;
+  document.getElementById('revenue').textContent = `$${((data.today && data.today.totalSpent) || 0).toFixed(2)} / $${((data.allTime && data.allTime.totalSpent) || 0).toFixed(2)}`;
+  document.getElementById('gemsSpent').textContent = `${(data.today && data.today.gemsSpent) || 0} / ${(data.allTime && data.allTime.gemsSpent) || 0} 💎`;
+      // Load all previous chat history into admin chat panel
+      async function loadAdminChatHistory() {
+        try {
+          const resp = await fetch('/analytics');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.recentEvents) {
+              const chatMessages = data.recentEvents.filter(e => e.eventType === 'admin_chat');
+              const container = document.getElementById('adminChatMessages');
+              container.innerHTML = chatMessages.map(msg => `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><strong>${escapeHtml(msg.data?.name || 'Admin')}:</strong> ${escapeHtml(msg.data?.message || '')}</div>`).join('');
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load admin chat history:', e);
+        }
+      }
+
+      // Call this on DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function () {
+        loadAdminChatHistory();
+      });
 
         // Update charts
         if (data.playerActivity) {
