@@ -374,7 +374,7 @@
         <div id="leaderboardList" style="max-height:300px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
         <div class="metric-subtitle">Sorted by Score</div>
       </div>
-      
+
       <!-- Admin Chat Panel -->
       <div class="metric-card">
         <h3>💬 Admin Chat</h3>
@@ -693,6 +693,27 @@
   document.getElementById('revenue').textContent = `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`;
   document.getElementById('gemsSpent').textContent = `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`;
       // Load all previous chat history (all players, all server chat) into admin chat panel
+
+      // --- Admin Chat Scrollable Log ---
+      let isUserScrolledUp = false;
+      function scrollAdminChatToBottom(force = false) {
+        const container = document.getElementById('adminChatMessages');
+        if (!container) return;
+        if (force || !isUserScrolledUp) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+
+      function monitorAdminChatScroll() {
+        const container = document.getElementById('adminChatMessages');
+        if (!container) return;
+        container.addEventListener('scroll', function () {
+          // If user is near the bottom, auto-scroll on new messages
+          const threshold = 30; // px
+          isUserScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > threshold;
+        });
+      }
+
       async function loadAllChatHistory() {
         try {
           const resp = await fetch('/analytics');
@@ -708,6 +729,7 @@
                 const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '';
                 return `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><span style='color:#aaa;font-size:0.9em;'>[${ts}]</span> <strong>${name}:</strong> ${message}</div>`;
               }).join('');
+              scrollAdminChatToBottom(true);
             }
           }
         } catch (e) {
@@ -716,8 +738,10 @@
       }
 
       // Call this on DOMContentLoaded
+
       document.addEventListener('DOMContentLoaded', function () {
         loadAllChatHistory();
+        monitorAdminChatScroll();
       });
 
         // Update charts
@@ -909,9 +933,10 @@
                 const el = document.createElement('div');
                 el.style.padding = '6px';
                 el.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
-                el.innerHTML = `<strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
+                const now = new Date();
+                el.innerHTML = `<span style='color:#aaa;font-size:0.9em;'>[${now.toLocaleString()}]</span> <strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
                 container.appendChild(el);
-                container.scrollTop = container.scrollHeight;
+                scrollAdminChatToBottom();
               });
 
               // Wire admin send button
