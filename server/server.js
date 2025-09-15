@@ -1,3 +1,25 @@
+// Returns average player count for each hour of the day across all days
+app.get('/analytics/activity/average24h', (req, res) => {
+  try {
+    const analytics = require('./analytics');
+    const serverAnalytics = typeof analytics === 'function' ? new analytics() : analytics;
+    // Calculate average player count for each hour (0-23) across all days
+    const hourSums = Array(24).fill(0);
+    const hourCounts = Array(24).fill(0);
+    for (const stats of serverAnalytics.dailyStats.values()) {
+      if (Array.isArray(stats.hourlyActivity)) {
+        for (let h = 0; h < 24; h++) {
+          hourSums[h] += stats.hourlyActivity[h] || 0;
+          hourCounts[h] += 1;
+        }
+      }
+    }
+    const avg = hourSums.map((sum, h) => hourCounts[h] > 0 ? sum / hourCounts[h] : 0);
+    res.json({ average24h: avg });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to compute average 24h activity' });
+  }
+});
 // ...existing code...
 // TEMPORARY: Analytics reset endpoint (secure with secret key)
 const fs = require('fs').promises;
@@ -128,7 +150,7 @@ app.get('/analytics', (req, res) => {
     });
 
     // Transform data to match dashboard expectations
-    const dashboardData = {
+  const dashboardData = {
       // Basic metrics that dashboard expects - use real player count
       activePlayers: actualActivePlayers,
       peakPlayers: stats.today?.peakConcurrent || 0,
@@ -136,7 +158,10 @@ app.get('/analytics', (req, res) => {
       avgSessionTime: Math.floor(
         (stats.today?.averageSessionDuration || 0) / 1000,
       ),
-      connectedPlayers, // <-- new field: array of {name, duration, socketId}
+  connectedPlayers, // <-- new field: array of {name, duration, socketId}
+  // Expose today and allTime stats for frontend
+  today: stats.today || {},
+  allTime: stats.allTime || {},
 
       // Game statistics - map to actual field names
       killsToday: stats.today?.totalKills || 0,

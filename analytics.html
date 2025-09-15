@@ -247,9 +247,9 @@
 
       <!-- Player Names List -->
       <div class="metric-card">
-        <h3>🧑‍🚀 Player Names & Duration</h3>
+        <h3>🧑‍🚀 Online Players </h3>
         <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;display:flex;flex-direction:row;gap:24px;"></div>
-        <div class="metric-subtitle">Logged in & guests (side by side)</div>
+        <div class="metric-subtitle">Players logged in guest & cloud</div>
       </div>
 
       <!-- Cloud Account Logins -->
@@ -276,15 +276,15 @@
       <!-- Total Sessions -->
       <div class="metric-card">
         <h3>🔢 Total Sessions</h3>
-        <div class="metric-value" id="totalSessions">0</div>
-        <div class="metric-subtitle">All Time</div>
+        <div class="metric-value"><span id="totalSessionsToday">0</span> / <span id="totalSessionsAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Average Session Time -->
       <div class="metric-card">
         <h3>⏱️ Avg Session</h3>
-        <div class="metric-value" id="avgSessionTime">0m</div>
-        <div class="metric-subtitle">Time Played</div>
+        <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Player Activity Chart -->
@@ -308,20 +308,20 @@
         <h3>🎯 Game Statistics</h3>
         <div class="stats-grid">
           <div class="stat-item">
-            <div class="stat-label">Kills Today</div>
-            <div class="stat-value" id="killsToday">0</div>
+            <div class="stat-label">Kills</div>
+            <div class="stat-value"><span id="killsToday">0</span> / <span id="killsAll">0</span></div>
           </div>
           <div class="stat-item">
-            <div class="stat-label">Deaths Today</div>
-            <div class="stat-value" id="deathsToday">0</div>
+            <div class="stat-label">Deaths</div>
+            <div class="stat-value"><span id="deathsToday">0</span> / <span id="deathsAll">0</span></div>
           </div>
           <div class="stat-item">
             <div class="stat-label">Shots Fired</div>
-            <div class="stat-value" id="shotsFired">0</div>
+            <div class="stat-value"><span id="shotsFiredToday">0</span> / <span id="shotsFiredAll">0</span></div>
           </div>
           <div class="stat-item">
             <div class="stat-label">Power-ups</div>
-            <div class="stat-value" id="powerupsCollected">0</div>
+            <div class="stat-value"><span id="powerupsCollectedToday">0</span> / <span id="powerupsCollectedAll">0</span></div>
           </div>
         </div>
       </div>
@@ -522,16 +522,18 @@
         // Update basic metrics
         document.getElementById('activePlayers').textContent = data.activePlayers || 0;
         document.getElementById('peakPlayers').textContent = data.peakPlayers || 0;
-        document.getElementById('totalSessions').textContent = data.totalSessions || 0;
+  // Show today/all time for total sessions
+  document.getElementById('totalSessionsToday').textContent = (data.today && data.today.totalSessions) || 0;
+  document.getElementById('totalSessionsAll').textContent = (data.allTime && data.allTime.totalSessions) || 0;
 
         // Player names with session durations (side by side)
         if (Array.isArray(data.connectedPlayers) && data.connectedPlayers.length > 0) {
-          // Show names and durations in two columns, side by side
+          // Show names and durations in two columns, side by side, format duration as h/m/s
           const nameCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;'>${escapeHtml(p.name)}</div>`).join('');
-          const durCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;color:#00ff88;'>${p.duration}s</div>`).join('');
+          const durCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;color:#00ff88;'>${formatDuration(p.duration)}</div>`).join('');
           document.getElementById('playerNamesList').innerHTML = `
             <div style='flex:1;min-width:120px;'>${nameCol}</div>
-            <div style='flex:0 0 70px;text-align:right;'>${durCol}</div>
+            <div style='flex:0 0 110px;text-align:right;'>${durCol}</div>
           `;
         } else {
           document.getElementById('playerNamesList').innerHTML = '<em>No players connected</em>';
@@ -547,17 +549,36 @@
           document.getElementById('cloudLoginUsersList').innerHTML = '<em>None today</em>';
         }
 
-        // Format average session time
-        const avgTime = data.avgSessionTime || 0;
-        const minutes = Math.floor(avgTime / 60);
-        const seconds = avgTime % 60;
-        document.getElementById('avgSessionTime').textContent = `${minutes}m ${seconds}s`;
+  // Format average session time (today/all time)
+  const avgTimeToday = (data.today && data.today.averageSessionDuration) || 0;
+  const avgTimeAll = (data.allTime && data.allTime.averageSessionDuration) || 0;
+  document.getElementById('avgSessionTimeToday').textContent = formatDuration(avgTimeToday);
+  document.getElementById('avgSessionTimeAll').textContent = formatDuration(avgTimeAll);
+      // Utility: format seconds as h/m/s
+      function formatDuration(seconds) {
+        seconds = Math.floor(seconds);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        if (h > 0) {
+          return `${h}h ${m}m ${s}s`;
+        } else if (m > 0) {
+          return `${m}m ${s}s`;
+        } else {
+          return `${s}s`;
+        }
+      }
 
         // Update game statistics
-        document.getElementById('killsToday').textContent = data.killsToday || 0;
-        document.getElementById('deathsToday').textContent = data.deathsToday || 0;
-        document.getElementById('shotsFired').textContent = data.shotsFired || 0;
-        document.getElementById('powerupsCollected').textContent = data.powerupsCollected || 0;
+  // Show today/all time for kills, deaths, shots, powerups
+  document.getElementById('killsToday').textContent = (data.today && data.today.totalKills) || 0;
+  document.getElementById('killsAll').textContent = (data.allTime && data.allTime.totalKills) || 0;
+  document.getElementById('deathsToday').textContent = (data.today && data.today.totalDeaths) || 0;
+  document.getElementById('deathsAll').textContent = (data.allTime && data.allTime.totalDeaths) || 0;
+  document.getElementById('shotsFiredToday').textContent = (data.today && data.today.totalShots) || 0;
+  document.getElementById('shotsFiredAll').textContent = (data.allTime && data.allTime.totalShots) || 0;
+  document.getElementById('powerupsCollectedToday').textContent = (data.today && data.today.powerupsCollected) || 0;
+  document.getElementById('powerupsCollectedAll').textContent = (data.allTime && data.allTime.powerupsCollected) || 0;
 
         // Update premium statistics
         document.getElementById('premiumPlayers').textContent = data.premiumPlayers || 0;
@@ -696,6 +717,23 @@
 
           const data = await response.json();
           updateMetrics(data);
+
+          // Fetch and update 24h average player activity chart
+          try {
+            const respAvg = await fetch('/analytics/activity/average24h');
+            if (respAvg.ok) {
+              const avgData = await respAvg.json();
+              // avgData should be an array of { hour: 0-23, avgCount: number }
+              updatePlayerActivityChart(
+                avgData.map((d) => ({
+                  timestamp: new Date(1970, 0, 1, d.hour, 0, 0).toISOString(),
+                  count: d.avgCount,
+                }))
+              );
+            }
+          } catch (e) {
+            console.error('Failed to fetch 24h average player activity:', e);
+          }
 
           // Update status indicator
           document.getElementById('statusIndicator').textContent = 'LIVE';
