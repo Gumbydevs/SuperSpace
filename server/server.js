@@ -1203,32 +1203,51 @@ io.on('connection', (socket) => {
       }
 
       // Broadcast player destroyed event
-      // Check if attacker is an NPC (Alien or Dreadnaught)
-      let npcType = null;
-      if (!gameState.players[socket.id]) {
-        const npc = gameState.npcs.find((n) => n.id === data.attackerId);
-        if (npc) {
-          npcType = npc.type;
-        }
-      }
-      // DEBUG: Log before emitting playerDestroyed so we can trace events
-      console.log('DEBUG: Emitting playerDestroyed', {
-        playerId: data.targetId,
-        attackerId: socket.id,
-        killerAvatar: attackerPlayer?.avatar || 'han',
-        killerName:
-          attackerPlayer?.name || `Player-${socket.id.substring(0, 4)}`,
-        npcType: npcType,
-      });
+          // Resolve killer info (handles both player and NPC attackers)
+          let killerInfo = {
+            killerAvatar: attackerPlayer?.avatar || 'han',
+            killerName: attackerPlayer?.name || `Player-${socket.id.substring(0, 4)}`,
+            npcType: null,
+          };
 
-      io.emit('playerDestroyed', {
-        playerId: data.targetId,
-        attackerId: socket.id,
-        killerAvatar: attackerPlayer?.avatar || 'han',
-        killerName:
-          attackerPlayer?.name || `Player-${socket.id.substring(0, 4)}`,
-        npcType: npcType,
-      });
+          // If attackerId refers to an NPC id, prefer NPC info
+          if (typeof data.attackerId === 'string' && !gameState.players[data.attackerId]) {
+            const npc = gameState.npcs.find((n) => n.id === data.attackerId);
+            if (npc) {
+              killerInfo.npcType = npc.type || null;
+              // Human-friendly killer name for clients
+              if (npc.type && /alien/i.test(npc.type)) killerInfo.killerName = 'Alien';
+              else if (npc.type && /dreadnaught/i.test(npc.type)) killerInfo.killerName = 'Dreadnaught';
+              else killerInfo.killerName = data.killerName || npc.type || 'An enemy';
+              // NPCs don't have avatars - leave killerAvatar as provided or null
+              killerInfo.killerAvatar = data.killerAvatar || null;
+            }
+          }
+
+      // NOTE: Emitted payload fields for `playerDestroyed`:
+      // {
+      //   playerId: <id of victim>,
+      //   attackerId: <id of attacker (socket id for players or npc id for NPCs)>,
+      //   killerAvatar: <avatar key or null>,
+      //   killerName: <friendly name - player name or NPC friendly name>,
+      //   npcType: <raw npc type string or null>
+      // }
+      // DEBUG: Log before emitting playerDestroyed so we can trace events
+          console.log('DEBUG: Emitting playerDestroyed', {
+            playerId: data.targetId,
+            attackerId: socket.id,
+            killerAvatar: killerInfo.killerAvatar,
+            killerName: killerInfo.killerName,
+            npcType: killerInfo.npcType,
+          });
+
+          io.emit('playerDestroyed', {
+            playerId: data.targetId,
+            attackerId: socket.id,
+            killerAvatar: killerInfo.killerAvatar,
+            killerName: killerInfo.killerName,
+            npcType: killerInfo.npcType,
+          });
     }
   });
 
@@ -1423,22 +1442,32 @@ io.on('connection', (socket) => {
             `Player ${player.name} was destroyed by player ${gameState.players[socket.id]?.name}! Losses: ${player.losses}`,
           );
 
-          // Check if attacker is an NPC (Alien or Dreadnaught)
-          let npcType = null;
-          if (!gameState.players[socket.id]) {
-            const npc = gameState.npcs.find((n) => n.id === data.attackerId);
-            if (npc) {
-              npcType = npc.type;
-            }
-          }
-          io.emit('playerDestroyed', {
-            playerId: data.targetId,
-            attackerId: socket.id,
+          // Resolve killer info (handles both player and NPC attackers)
+          let killerInfo = {
             killerAvatar: gameState.players[socket.id]?.avatar || 'han',
             killerName:
               gameState.players[socket.id]?.name ||
               `Player-${socket.id.substring(0, 4)}`,
-            npcType: npcType,
+            npcType: null,
+          };
+
+          if (typeof data.attackerId === 'string' && !gameState.players[data.attackerId]) {
+            const npc = gameState.npcs.find((n) => n.id === data.attackerId);
+            if (npc) {
+              killerInfo.npcType = npc.type || null;
+              if (npc.type && /alien/i.test(npc.type)) killerInfo.killerName = 'Alien';
+              else if (npc.type && /dreadnaught/i.test(npc.type)) killerInfo.killerName = 'Dreadnaught';
+              else killerInfo.killerName = data.killerName || npc.type || 'An enemy';
+              killerInfo.killerAvatar = data.killerAvatar || null;
+            }
+          }
+
+          io.emit('playerDestroyed', {
+            playerId: data.targetId,
+            attackerId: socket.id,
+            killerAvatar: killerInfo.killerAvatar,
+            killerName: killerInfo.killerName,
+            npcType: killerInfo.npcType,
           });
 
           // Award points to the attacker
