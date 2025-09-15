@@ -1,3 +1,9 @@
+      <!-- Leaderboard -->
+      <div class="metric-card large-chart">
+        <h3>🏆 Leaderboard (Current Players)</h3>
+        <div id="leaderboardList" style="max-height:300px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Sorted by Score</div>
+      </div>
 <!doctype html>
 <html lang="en">
   <head>
@@ -519,6 +525,20 @@
       }
 
       function updateMetrics(data) {
+        // Leaderboard
+        if (Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
+          const rows = data.leaderboard.map((p, i) =>
+            `<tr><td style='color:#00ff88;'>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${p.score}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`
+          ).join('');
+          document.getElementById('leaderboardList').innerHTML = `
+            <table style='width:100%;color:#fff;font-size:1em;'>
+              <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wins</th><th>Losses</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `;
+        } else {
+          document.getElementById('leaderboardList').innerHTML = '<em>No players online</em>';
+        }
         // Update basic metrics
   // Fallback to main data if today/allTime missing
   const today = data.today || {};

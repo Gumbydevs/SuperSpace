@@ -149,6 +149,16 @@ app.get('/analytics', (req, res) => {
       };
     });
 
+    // Build leaderboard: sort by score descending
+    const leaderboard = Object.values(gameState.players)
+      .map(p => ({
+        name: p.name,
+        score: p.score || 0,
+        wins: p.wins || 0,
+        losses: p.losses || 0
+      }))
+      .sort((a, b) => b.score - a.score);
+
     // Transform data to match dashboard expectations
   const dashboardData = {
       // Basic metrics that dashboard expects - use real player count
@@ -187,6 +197,9 @@ app.get('/analytics', (req, res) => {
         powerups: stats.today?.powerupsCollected || 0,
         purchases: stats.today?.totalPurchases || 0,
       },
+
+      // Leaderboard for dashboard
+      leaderboard,
 
       // Recent events for live log
   recentEvents: stats.recentEvents || [],
