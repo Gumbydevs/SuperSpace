@@ -237,11 +237,33 @@
     </div>
 
     <div class="dashboard-container">
+
       <!-- Live Player Count -->
       <div class="metric-card">
         <h3>🎮 Active Players</h3>
         <div class="metric-value" id="activePlayers">0</div>
         <div class="metric-subtitle">Currently Online</div>
+      </div>
+
+      <!-- Player Names List -->
+      <div class="metric-card">
+        <h3>🧑‍🚀 Player Names</h3>
+        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Logged in & guests</div>
+      </div>
+
+      <!-- Cloud Account Logins -->
+      <div class="metric-card">
+        <h3>☁️ Cloud Logins</h3>
+        <div class="metric-value" id="cloudLogins">0</div>
+        <div class="metric-subtitle">Today</div>
+      </div>
+
+      <!-- Cloud Accounts Created/Logged In -->
+      <div class="metric-card">
+        <h3>👤 Cloud Users</h3>
+        <div id="cloudLoginUsersList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Usernames (today)</div>
       </div>
 
       <!-- Peak Players Today -->
@@ -498,40 +520,46 @@
 
       function updateMetrics(data) {
         // Update basic metrics
-        document.getElementById('activePlayers').textContent =
-          data.activePlayers || 0;
-        document.getElementById('peakPlayers').textContent =
-          data.peakPlayers || 0;
-        document.getElementById('totalSessions').textContent =
-          data.totalSessions || 0;
+        document.getElementById('activePlayers').textContent = data.activePlayers || 0;
+        document.getElementById('peakPlayers').textContent = data.peakPlayers || 0;
+        document.getElementById('totalSessions').textContent = data.totalSessions || 0;
+
+        // Player names (from debug.playerNames)
+        if (data.debug && Array.isArray(data.debug.playerNames)) {
+          const names = data.debug.playerNames.length > 0 ? data.debug.playerNames : ['(none)'];
+          document.getElementById('playerNamesList').innerHTML = names.map(n => `<div>${escapeHtml(n)}</div>`).join('');
+        } else {
+          document.getElementById('playerNamesList').innerHTML = '<em>No data</em>';
+        }
+
+        // Cloud logins (today)
+        document.getElementById('cloudLogins').textContent = data.cloudLogins || 0;
+
+        // Cloud login users (today)
+        if (Array.isArray(data.cloudLoginUsers) && data.cloudLoginUsers.length > 0) {
+          document.getElementById('cloudLoginUsersList').innerHTML = data.cloudLoginUsers.map(u => `<div>${escapeHtml(u)}</div>`).join('');
+        } else {
+          document.getElementById('cloudLoginUsersList').innerHTML = '<em>None today</em>';
+        }
 
         // Format average session time
         const avgTime = data.avgSessionTime || 0;
         const minutes = Math.floor(avgTime / 60);
         const seconds = avgTime % 60;
-        document.getElementById('avgSessionTime').textContent =
-          `${minutes}m ${seconds}s`;
+        document.getElementById('avgSessionTime').textContent = `${minutes}m ${seconds}s`;
 
         // Update game statistics
-        document.getElementById('killsToday').textContent =
-          data.killsToday || 0;
-        document.getElementById('deathsToday').textContent =
-          data.deathsToday || 0;
-        document.getElementById('shotsFired').textContent =
-          data.shotsFired || 0;
-        document.getElementById('powerupsCollected').textContent =
-          data.powerupsCollected || 0;
+        document.getElementById('killsToday').textContent = data.killsToday || 0;
+        document.getElementById('deathsToday').textContent = data.deathsToday || 0;
+        document.getElementById('shotsFired').textContent = data.shotsFired || 0;
+        document.getElementById('powerupsCollected').textContent = data.powerupsCollected || 0;
 
         // Update premium statistics
-        document.getElementById('premiumPlayers').textContent =
-          data.premiumPlayers || 0;
-        document.getElementById('storeVisits').textContent =
-          data.storeVisits || 0;
+        document.getElementById('premiumPlayers').textContent = data.premiumPlayers || 0;
+        document.getElementById('storeVisits').textContent = data.storeVisits || 0;
         document.getElementById('purchases').textContent = data.purchases || 0;
-        document.getElementById('revenue').textContent =
-          `$${(data.revenue || 0).toFixed(2)}`;
-        document.getElementById('gemsSpent').textContent =
-          `${data.gemsSpent || 0} 💎`;
+        document.getElementById('revenue').textContent = `$${(data.revenue || 0).toFixed(2)}`;
+        document.getElementById('gemsSpent').textContent = `${data.gemsSpent || 0} 💎`;
 
         // Update charts
         if (data.playerActivity) {
