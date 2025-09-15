@@ -595,26 +595,32 @@
   document.getElementById('purchases').textContent = `${(data.today && data.today.totalPurchases) || 0} / ${(data.allTime && data.allTime.totalPurchases) || 0}`;
   document.getElementById('revenue').textContent = `$${((data.today && data.today.totalSpent) || 0).toFixed(2)} / $${((data.allTime && data.allTime.totalSpent) || 0).toFixed(2)}`;
   document.getElementById('gemsSpent').textContent = `${(data.today && data.today.gemsSpent) || 0} / ${(data.allTime && data.allTime.gemsSpent) || 0} 💎`;
-      // Load all previous chat history into admin chat panel
-      async function loadAdminChatHistory() {
+      // Load all previous chat history (all players, all server chat) into admin chat panel
+      async function loadAllChatHistory() {
         try {
           const resp = await fetch('/analytics');
           if (resp.ok) {
             const data = await resp.json();
             if (data && data.recentEvents) {
-              const chatMessages = data.recentEvents.filter(e => e.eventType === 'admin_chat');
+              // Find all chat events (admin and player)
+              const chatMessages = data.recentEvents.filter(e => e.eventType === 'admin_chat' || e.eventType === 'chat');
               const container = document.getElementById('adminChatMessages');
-              container.innerHTML = chatMessages.map(msg => `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><strong>${escapeHtml(msg.data?.name || 'Admin')}:</strong> ${escapeHtml(msg.data?.message || '')}</div>`).join('');
+              container.innerHTML = chatMessages.map(msg => {
+                const name = escapeHtml(msg.data?.name || msg.playerId || 'Unknown');
+                const message = escapeHtml(msg.data?.message || msg.data?.text || msg.message || '');
+                const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '';
+                return `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><span style='color:#aaa;font-size:0.9em;'>[${ts}]</span> <strong>${name}:</strong> ${message}</div>`;
+              }).join('');
             }
           }
         } catch (e) {
-          console.error('Failed to load admin chat history:', e);
+          console.error('Failed to load all chat history:', e);
         }
       }
 
       // Call this on DOMContentLoaded
       document.addEventListener('DOMContentLoaded', function () {
-        loadAdminChatHistory();
+        loadAllChatHistory();
       });
 
         // Update charts
