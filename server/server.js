@@ -1175,11 +1175,13 @@ io.on('connection', (socket) => {
     });
 
     // Broadcast the hit effect to all clients including the target
+    // Prefer an explicit attackerId (could be an NPC id) if provided by the client
+    const resolvedAttackerId = data.attackerId || socket.id;
     io.emit('projectileHit', {
       targetId: data.targetId,
       position: data.position,
       damage: data.damage,
-      attackerId: socket.id,
+      attackerId: resolvedAttackerId,
     });
 
     // Check if player was destroyed
@@ -1233,9 +1235,11 @@ io.on('connection', (socket) => {
       //   npcType: <raw npc type string or null>
       // }
       // DEBUG: Log before emitting playerDestroyed so we can trace events
+          // Use provided attackerId when present (this allows NPC ids to be used)
+          const emitAttackerId = data.attackerId || socket.id;
           console.log('DEBUG: Emitting playerDestroyed', {
             playerId: data.targetId,
-            attackerId: socket.id,
+            attackerId: emitAttackerId,
             killerAvatar: killerInfo.killerAvatar,
             killerName: killerInfo.killerName,
             npcType: killerInfo.npcType,
@@ -1243,7 +1247,7 @@ io.on('connection', (socket) => {
 
           io.emit('playerDestroyed', {
             playerId: data.targetId,
-            attackerId: socket.id,
+            attackerId: emitAttackerId,
             killerAvatar: killerInfo.killerAvatar,
             killerName: killerInfo.killerName,
             npcType: killerInfo.npcType,
@@ -2042,13 +2046,111 @@ io.on('connection', (socket) => {
     // Forward the damage to the specific player
     const targetSocket = io.sockets.sockets.get(hitData.playerId);
     if (targetSocket) {
+      // Include attackerId if provided (the NPC id) so server can attribute kills
       targetSocket.emit('npcProjectileHit', {
         damage: hitData.damage,
         projectileType: hitData.projectileType,
+        attackerId: hitData.attackerId || null,
       });
       console.log(
         `NPC projectile hit forwarded to player ${hitData.playerId} for ${hitData.damage} damage`,
       );
+    }
+
+    // Authoritative server-side damage application for NPC projectiles
+    // This ensures kills caused by NPC projectiles are recorded and broadcast
+    // with the NPC as the attacker.
+    try {
+      if (gameState.players[hitData.playerId]) {
+        const targetPlayer = gameState.players[hitData.playerId];
+        const oldHealth = targetPlayer.health;
+        const oldShield = targetPlayer.shield;
+        let remainingDamage = hitData.damage || 0;
+
+        // Apply to shield first
+        if (targetPlayer.shield > 0) {
+          if (remainingDamage <= targetPlayer.shield) {
+            targetPlayer.shield -= remainingDamage;
+            remainingDamage = 0;
+          } else {
+            remainingDamage -= targetPlayer.shield;
+            targetPlayer.shield = 0;
+          }
+        }
+
+        // Apply remaining to health
+        if (remainingDamage > 0) {
+          targetPlayer.health -= remainingDamage;
+          if (targetPlayer.health < 0) targetPlayer.health = 0;
+        }
+
+        // Broadcast updated health/shield to everyone
+        io.emit('playerHealthUpdate', {
+          id: hitData.playerId,
+          health: targetPlayer.health,
+          shield: targetPlayer.shield,
+        });
+
+        // Broadcast projectile hit visual/effect to all clients
+        const resolvedAttackerId = hitData.attackerId || socket.id;
+        io.emit('projectileHit', {
+          targetId: hitData.playerId,
+          position: hitData.position || null,
+          damage: hitData.damage,
+          attackerId: resolvedAttackerId,
+        });
+
+        // If the player was killed by this hit, resolve killer info and emit playerDestroyed
+        if (targetPlayer.health <= 0) {
+          targetPlayer.losses = (targetPlayer.losses || 0) + 1;
+
+          // Resolve killer info (favor NPC info if attackerId refers to an NPC)
+          let killerInfo = {
+            killerAvatar: null,
+            killerName: null,
+            npcType: null,
+          };
+
+          const attackerId = hitData.attackerId || socket.id;
+          if (typeof attackerId === 'string' && !gameState.players[attackerId]) {
+            const npc = gameState.npcs.find((n) => n.id === attackerId);
+            if (npc) {
+              killerInfo.npcType = npc.type || null;
+              if (npc.type && /alien/i.test(npc.type)) killerInfo.killerName = 'Alien';
+              else if (npc.type && /dreadnaught/i.test(npc.type)) killerInfo.killerName = 'Dreadnaught';
+              else killerInfo.killerName = npc.type || 'An enemy';
+              killerInfo.killerAvatar = null;
+            }
+          } else if (gameState.players[attackerId]) {
+            killerInfo.killerAvatar = gameState.players[attackerId].avatar || 'han';
+            killerInfo.killerName = gameState.players[attackerId].name || `Player-${attackerId.substring(0,4)}`;
+          } else {
+            // fallback
+            killerInfo.killerName = 'An enemy';
+          }
+
+          console.log(`Player ${targetPlayer.name} was destroyed by ${killerInfo.killerName || attackerId}`);
+
+          // Emit playerDestroyed with the resolved attacker id
+          io.emit('playerDestroyed', {
+            playerId: hitData.playerId,
+            attackerId: attackerId,
+            killerAvatar: killerInfo.killerAvatar,
+            killerName: killerInfo.killerName,
+            npcType: killerInfo.npcType,
+          });
+
+          // Broadcast updated stats
+          io.emit('playerStatsUpdate', {
+            id: hitData.playerId,
+            score: targetPlayer.score,
+            wins: targetPlayer.wins,
+            losses: targetPlayer.losses,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error applying npcProjectileHit on server:', err);
     }
   });
 

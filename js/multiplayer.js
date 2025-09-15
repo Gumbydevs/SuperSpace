@@ -1396,6 +1396,10 @@ export class MultiplayerManager {
         console.log(
           `Received NPC projectile hit for ${data.damage} damage (${data.projectileType})`,
         );
+        // Record who damaged us (attackerId may be an NPC id)
+        if (data.attackerId) {
+          this.game.player.recordDamageFrom(data.attackerId);
+        }
         this.game.player.takeDamage(data.damage);
 
         // Create hit effect at player location
@@ -1548,14 +1552,14 @@ export class MultiplayerManager {
 
       // Determine if the killer is an NPC (Alien or Dreadnaught)
       let killerName;
-      if (data.npcType === 'alien_scout' || data.npcType === 'Alien') {
-        killerName = 'Alien';
-      } else if (
-        data.npcType === 'dreadnaught' ||
-        data.npcType === 'Dreadnaught'
-      ) {
-        killerName = 'Dreadnaught';
-      } else {
+      if (typeof data.npcType === 'string') {
+        if (/alien/i.test(data.npcType)) {
+          killerName = 'Alien';
+        } else if (/dreadnaught/i.test(data.npcType)) {
+          killerName = 'Dreadnaught';
+        }
+      }
+      if (!killerName) {
         killerName =
           data.killerName ||
           (data.attackerId === this.playerId
@@ -3012,57 +3016,35 @@ export class MultiplayerManager {
       this.respawningPlayers.delete(this.playerId);
     }, 5000);
 
-    // Send death event to server only for asteroid deaths
-    // Player vs player deaths are already handled by the server when health hits 0
+    // Only handle asteroid deaths locally. For all other deaths, rely on server's playerDestroyed event for correct killer name/type.
     if (attackerId === 'asteroid') {
       // Server will handle the announcement broadcast to all players
       this.socket.emit('playerDestroyedByAsteroid', {
         playerId: this.playerId,
       });
-    }
-    // Note: No need to emit 'playerDestroyed' for player kills - server handles this automatically
 
-    // Store current credits value
-    const currentCredits = this.game.player.credits;
 
-    // Make sure the die() method has been called to create explosion effects
-    if (!this.game.player.deathTriggered) {
-      this.game.player.die();
-    }
-
-    // Show death message based on cause
-    let deathMessage;
-    if (attackerId === 'asteroid') {
-      deathMessage = 'Destroyed by an asteroid!';
-    } else {
-      const attacker =
-        this.players[attackerId]?.name ||
-        this.playerNameCache[attackerId] ||
-        'Another player';
-      deathMessage = `Destroyed by ${attacker}!`;
-    }
-    this.showGameMessage(deathMessage, '#f44', 3000);
-
-    // Track achievements and player profile for death (with safety checks)
-    if (
-      this.game.achievements &&
-      typeof this.game.achievements.onDeath === 'function'
-    ) {
-      this.game.achievements.onDeath();
-    }
-    if (
-      this.game.playerProfile &&
-      typeof this.game.playerProfile.onDeath === 'function'
-    ) {
-      // Get killer name for nemesis tracking
-      let killerName = null;
-      if (attackerId !== 'asteroid') {
-        killerName =
-          this.players[attackerId]?.name ||
-          this.playerNameCache[attackerId] ||
-          'Unknown Player';
+      // Make sure the die() method has been called to create explosion effects
+      if (!this.game.player.deathTriggered) {
+        this.game.player.die();
       }
-      this.game.playerProfile.onDeath(killerName);
+
+      // Show death message for asteroid only
+      this.showGameMessage('Destroyed by an asteroid!', '#f44', 3000);
+
+      // Track achievements and player profile for death (with safety checks)
+      if (
+        this.game.achievements &&
+        typeof this.game.achievements.onDeath === 'function'
+      ) {
+        this.game.achievements.onDeath();
+      }
+      if (
+        this.game.playerProfile &&
+        typeof this.game.playerProfile.onDeath === 'function'
+      ) {
+        this.game.playerProfile.onDeath('asteroid');
+      }
     }
 
     // Track game end for survival time
@@ -3097,12 +3079,6 @@ export class MultiplayerManager {
         this.game.gameState = 'playing';
       }
 
-      // The credits value is already persisted via localStorage, but let's ensure
-      // it's consistent with what we had before death
-      if (this.game.player.credits !== currentCredits) {
-        this.game.player.credits = currentCredits;
-        localStorage.setItem('playerCredits', currentCredits.toString());
-      }
 
       // Notify server about respawn
       this.sendRespawn(spawnX, spawnY);

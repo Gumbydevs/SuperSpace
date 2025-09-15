@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "serve .",
+    "start": "node server/server.js",
     "lint": "eslint . --ext .js,.ts",
     "format": "prettier --write .",
     "test:unit": "jest --testPathIgnorePatterns=api/test.js"
@@ -13,7 +13,7 @@
   "author": "Gumbysoft and Matt Sherman",
   "license": "ALL RIGHTS RESERVED",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "description": "A multiplayer space shooter game inspired by SubSpace",
   "dependencies": {
     "@vercel/analytics": "^1.5.0",

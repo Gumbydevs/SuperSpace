@@ -972,6 +972,8 @@
                   playerId: targetPlayer.id,
                   damage: damage,
                   projectileType: projectile.type,
+                  // Include attackerId so the server knows which NPC fired the projectile
+                  attackerId: projectile.owner || projectile.ownerId || projectile.npcId || null,
                 });
               }
               console.log(
