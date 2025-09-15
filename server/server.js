@@ -14,8 +14,8 @@ app.get('/analytics/activity/average24h', (req, res) => {
         }
       }
     }
-    const avg = hourSums.map((sum, h) => hourCounts[h] > 0 ? sum / hourCounts[h] : 0);
-    res.json({ average24h: avg });
+  const avg = hourSums.map((sum, h) => ({ hour: h, avgCount: hourCounts[h] > 0 ? sum / hourCounts[h] : 0 }));
+  res.json(avg);
   } catch (e) {
     res.status(500).json({ error: 'Failed to compute average 24h activity' });
   }
