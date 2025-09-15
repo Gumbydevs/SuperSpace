@@ -528,8 +528,8 @@
   document.getElementById('peakPlayersToday').textContent = today.peakConcurrent ?? data.peakPlayers ?? 0;
   document.getElementById('peakPlayersAll').textContent = allTime.peakConcurrent ?? data.peakPlayers ?? 0;
   // Show today/all time for total sessions
-  document.getElementById('totalSessionsToday').textContent = (data.today && data.today.totalSessions) || 0;
-  document.getElementById('totalSessionsAll').textContent = (data.allTime && data.allTime.totalSessions) || 0;
+  document.getElementById('totalSessionsToday').textContent = today.totalSessions || 0;
+  document.getElementById('totalSessionsAll').textContent = allTime.totalSessions || 0;
 
         // Player names with session durations (side by side)
         if (Array.isArray(data.connectedPlayers) && data.connectedPlayers.length > 0) {
@@ -562,8 +562,8 @@
         document.getElementById('cloudLoginUsersList').innerHTML = html;
 
   // Format average session time (today/all time)
-  const avgTimeToday = (data.today && data.today.averageSessionDuration) || 0;
-  const avgTimeAll = (data.allTime && data.allTime.averageSessionDuration) || 0;
+  const avgTimeToday = today.averageSessionDuration || 0;
+  const avgTimeAll = allTime.averageSessionDuration || 0;
   document.getElementById('avgSessionTimeToday').textContent = formatDuration(avgTimeToday);
   document.getElementById('avgSessionTimeAll').textContent = formatDuration(avgTimeAll);
       // Utility: format seconds as h/m/s
