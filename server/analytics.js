@@ -891,6 +891,86 @@ class ServerAnalytics {
       this.saveMeta(); // Persist the new global peak
     }
 
+    // Aggregate all-time stats from all dailyStats
+    const allTime = {
+      totalSessions: 0,
+      totalKills: 0,
+      totalDeaths: 0,
+      totalShots: 0,
+      totalPurchases: 0,
+      totalSpent: 0,
+      gemsSpent: 0,
+      storeVisits: 0,
+      powerupsCollected: 0,
+      totalAchievements: 0,
+      uniquePlayers: new Set(),
+      cloudLogins: 0,
+      cloudLoginUsers: new Set(),
+      sessionDurations: [],
+      gameDurations: [],
+      lifeDurations: [],
+      peakConcurrent: 0,
+    };
+    for (const stats of this.dailyStats.values()) {
+      allTime.totalSessions += stats.totalSessions || 0;
+      allTime.totalKills += stats.totalKills || 0;
+      allTime.totalDeaths += stats.totalDeaths || 0;
+      allTime.totalShots += stats.totalShots || 0;
+      allTime.totalPurchases += stats.totalPurchases || 0;
+      allTime.totalSpent += stats.totalSpent || 0;
+      allTime.gemsSpent += stats.gemsSpent || 0;
+      allTime.storeVisits += stats.storeVisits || 0;
+      allTime.powerupsCollected += stats.powerupsCollected || 0;
+      allTime.totalAchievements += stats.totalAchievements || 0;
+      if (stats.uniquePlayers) {
+        if (stats.uniquePlayers instanceof Set) {
+          for (const p of stats.uniquePlayers) allTime.uniquePlayers.add(p);
+        } else if (Array.isArray(stats.uniquePlayers)) {
+          for (const p of stats.uniquePlayers) allTime.uniquePlayers.add(p);
+        } else if (typeof stats.uniquePlayers === 'object') {
+          for (const p of Object.keys(stats.uniquePlayers)) allTime.uniquePlayers.add(p);
+        }
+      }
+      allTime.cloudLogins += stats.cloudLogins || 0;
+      if (Array.isArray(stats.cloudLoginUsers)) {
+        for (const u of stats.cloudLoginUsers) allTime.cloudLoginUsers.add(u);
+      }
+      if (Array.isArray(stats.sessionDurations)) {
+        allTime.sessionDurations.push(...stats.sessionDurations);
+      }
+      if (Array.isArray(stats.gameDurations)) {
+        allTime.gameDurations.push(...stats.gameDurations);
+      }
+      if (Array.isArray(stats.lifeDurations)) {
+        allTime.lifeDurations.push(...stats.lifeDurations);
+      }
+      if (typeof stats.peakConcurrent === 'number') {
+        allTime.peakConcurrent = Math.max(allTime.peakConcurrent, stats.peakConcurrent);
+      }
+    }
+
+    // Format allTime for output
+    const allTimeOut = {
+      totalSessions: allTime.totalSessions,
+      totalKills: allTime.totalKills,
+      totalDeaths: allTime.totalDeaths,
+      totalShots: allTime.totalShots,
+      totalPurchases: allTime.totalPurchases,
+      totalSpent: allTime.totalSpent,
+      gemsSpent: allTime.gemsSpent,
+      storeVisits: allTime.storeVisits,
+      powerupsCollected: allTime.powerupsCollected,
+      totalAchievements: allTime.totalAchievements,
+      uniquePlayers: allTime.uniquePlayers.size,
+      cloudLogins: allTime.cloudLogins,
+      cloudLoginUsers: Array.from(allTime.cloudLoginUsers),
+      averageSessionDuration: allTime.sessionDurations.length > 0 ? allTime.sessionDurations.reduce((a, b) => a + b, 0) / allTime.sessionDurations.length : 0,
+      averageGameDuration: allTime.gameDurations.length > 0 ? allTime.gameDurations.reduce((a, b) => a + b, 0) / allTime.gameDurations.length : 0,
+      averageLifeDuration: allTime.lifeDurations.length > 0 ? allTime.lifeDurations.reduce((a, b) => a + b, 0) / allTime.lifeDurations.length : 0,
+      peakConcurrent: allTime.peakConcurrent,
+      globalPeakConcurrent: this.globalPeak || 0,
+    };
+
     return {
       today: {
         ...todayStats,
@@ -923,6 +1003,7 @@ class ServerAnalytics {
         globalPeakConcurrent: this.globalPeak || 0,
         currentConcurrent: activeSessions,
       },
+      allTime: allTimeOut,
       activeSessions,
       recentEvents: this.events.slice(-50), // Last 50 events
       totalPlayers: todayStats.uniquePlayers

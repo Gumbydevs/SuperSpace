@@ -106,6 +106,27 @@ app.get('/analytics', (req, res) => {
     // Use actual connected players count from gameState
     const actualActivePlayers = Object.keys(gameState.players).length;
 
+    // Build connected players list with session duration
+    const now = Date.now();
+    const connectedPlayers = Object.entries(gameState.players).map(([socketId, player]) => {
+      // Try to get session start time from socket.analytics if available
+      let sessionStart = null;
+      const socketObj = (io.sockets && io.sockets.sockets && io.sockets.sockets.get(socketId)) || null;
+      if (socketObj && socketObj.analytics && socketObj.analytics.startTime) {
+        sessionStart = socketObj.analytics.startTime;
+      }
+      // Fallback: use playerLastActivity as a rough estimate if no startTime
+      if (!sessionStart) {
+        sessionStart = playerLastActivity[socketId] ? now - 10000 : now; // fallback: 10s session if unknown
+      }
+      const duration = Math.floor((now - sessionStart) / 1000);
+      return {
+        name: player.name,
+        duration,
+        socketId
+      };
+    });
+
     // Transform data to match dashboard expectations
     const dashboardData = {
       // Basic metrics that dashboard expects - use real player count
@@ -115,6 +136,7 @@ app.get('/analytics', (req, res) => {
       avgSessionTime: Math.floor(
         (stats.today?.averageSessionDuration || 0) / 1000,
       ),
+      connectedPlayers, // <-- new field: array of {name, duration, socketId}
 
       // Game statistics - map to actual field names
       killsToday: stats.today?.totalKills || 0,

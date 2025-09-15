@@ -247,9 +247,9 @@
 
       <!-- Player Names List -->
       <div class="metric-card">
-        <h3>🧑‍🚀 Player Names</h3>
-        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
-        <div class="metric-subtitle">Logged in & guests</div>
+        <h3>🧑‍🚀 Player Names & Duration</h3>
+        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;display:flex;flex-direction:row;gap:24px;"></div>
+        <div class="metric-subtitle">Logged in & guests (side by side)</div>
       </div>
 
       <!-- Cloud Account Logins -->
@@ -524,12 +524,17 @@
         document.getElementById('peakPlayers').textContent = data.peakPlayers || 0;
         document.getElementById('totalSessions').textContent = data.totalSessions || 0;
 
-        // Player names (from debug.playerNames)
-        if (data.debug && Array.isArray(data.debug.playerNames)) {
-          const names = data.debug.playerNames.length > 0 ? data.debug.playerNames : ['(none)'];
-          document.getElementById('playerNamesList').innerHTML = names.map(n => `<div>${escapeHtml(n)}</div>`).join('');
+        // Player names with session durations (side by side)
+        if (Array.isArray(data.connectedPlayers) && data.connectedPlayers.length > 0) {
+          // Show names and durations in two columns, side by side
+          const nameCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;'>${escapeHtml(p.name)}</div>`).join('');
+          const durCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;color:#00ff88;'>${p.duration}s</div>`).join('');
+          document.getElementById('playerNamesList').innerHTML = `
+            <div style='flex:1;min-width:120px;'>${nameCol}</div>
+            <div style='flex:0 0 70px;text-align:right;'>${durCol}</div>
+          `;
         } else {
-          document.getElementById('playerNamesList').innerHTML = '<em>No data</em>';
+          document.getElementById('playerNamesList').innerHTML = '<em>No players connected</em>';
         }
 
         // Cloud logins (today)
