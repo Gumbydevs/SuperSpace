@@ -1515,14 +1515,14 @@ export class ShopSystem {
       } else {
         button.textContent = `Upgrade: ${price}`;
         button.disabled = (this.player.credits || 0) < price;
-        button.onclick = () => {
+        button.onclick = (e) => {
           if (
             window.game &&
             window.game.world &&
             !window.game.world.isInSafeZone(this.player)
           ) {
             this.showSafeZoneWarning(
-              event,
+              e,
               'You must be docked in a safe zone to purchase upgrades.',
             );
             return;
