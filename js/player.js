@@ -235,7 +235,12 @@ export class Player {
     this.speed = 0;
     this.maxSpeed = 400; // Maximum possible speed for the ship
     this.acceleration = 300; // How quickly the ship speeds up
-    this.rotationSpeed = 2.5; // How quickly the ship can turn (finer control)
+  this.rotationSpeed = 2.5; // Base rotation speed (used for legacy/instant rotations)
+  // Smoothed rotation controls
+  this.rotationVelocity = 0; // current angular velocity (rad/s)
+  this.rotationAccel = 8.0; // angular acceleration factor
+  this.rotationDamping = 6.0; // damping factor to reduce angular velocity when no input
+  this.precisionRotationMultiplier = 0.35; // multiplier while firing for finer control
     this.friction = 0.998; // Space-like movement with minimal friction
     this.braking = false; // Tracks if player is actively braking
     this.brakePower = 0.95; // How effective braking is (lower = stronger brakes)
@@ -379,12 +384,38 @@ export class Player {
       // Standard keyboard controls
 
       // Here we handle rotation based on player input
+      // Smooth rotation: apply angular acceleration to rotationVelocity
+      // Use precision multiplier (when firing) to allow fine aiming while holding Space
+      const isFiring = input.keys.includes('Space');
+      const precisionFactor = isFiring
+        ? this.precisionRotationMultiplier
+        : 1.0;
+
+      // Determine desired angular direction from keyboard input
+      let desiredDirection = 0; // -1 left, +1 right, 0 none
       if (input.keys.includes('ArrowLeft') || input.keys.includes('KeyA')) {
-        this.rotation -= this.rotationSpeed * deltaTime;
+        desiredDirection -= 1;
       }
       if (input.keys.includes('ArrowRight') || input.keys.includes('KeyD')) {
-        this.rotation += this.rotationSpeed * deltaTime;
+        desiredDirection += 1;
       }
+
+      // Apply angular acceleration toward desired direction
+      if (desiredDirection !== 0) {
+        // Scale acceleration by rotationAccel, base rotationSpeed and precision
+        const targetAccel = desiredDirection * this.rotationAccel * this.rotationSpeed * precisionFactor;
+        // Integrate rotation velocity
+        this.rotationVelocity += targetAccel * deltaTime;
+      } else {
+        // Apply damping to slow down rotation when no input
+        const damping = Math.max(0, 1 - this.rotationDamping * deltaTime);
+        this.rotationVelocity *= damping;
+        // Clamp very small velocities to zero to avoid drift
+        if (Math.abs(this.rotationVelocity) < 0.0005) this.rotationVelocity = 0;
+      }
+
+      // Integrate rotation from velocity
+      this.rotation += this.rotationVelocity * deltaTime;
 
       // Here we wrap rotation to stay between 0 and 2π
       this.rotation = this.rotation % (Math.PI * 2);
