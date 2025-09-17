@@ -1,25 +1,4 @@
-// Returns average player count for each hour of the day across all days
-app.get('/analytics/activity/average24h', (req, res) => {
-  try {
-    const analytics = require('./analytics');
-    const serverAnalytics = typeof analytics === 'function' ? new analytics() : analytics;
-    // Calculate average player count for each hour (0-23) across all days
-    const hourSums = Array(24).fill(0);
-    const hourCounts = Array(24).fill(0);
-    for (const stats of serverAnalytics.dailyStats.values()) {
-      if (Array.isArray(stats.hourlyActivity)) {
-        for (let h = 0; h < 24; h++) {
-          hourSums[h] += stats.hourlyActivity[h] || 0;
-          hourCounts[h] += 1;
-        }
-      }
-    }
-  const avg = hourSums.map((sum, h) => ({ hour: h, avgCount: hourCounts[h] > 0 ? sum / hourCounts[h] : 0 }));
-  res.json(avg);
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to compute average 24h activity' });
-  }
-});
+// (Moved) analytics activity route will be registered after app initialization
 // ...existing code...
 // TEMPORARY: Analytics reset endpoint (secure with secret key)
 const fs = require('fs').promises;
@@ -325,6 +304,21 @@ app.get('/analytics/report', (req, res) => {
   }
 });
 
+// Temporary admin endpoint to force-save analytics to disk (for debugging)
+// Call with POST /analytics/save to flush in-memory analytics to files
+app.post('/analytics/save', async (req, res) => {
+  try {
+    console.log('Admin: forcing analytics save to disk');
+    await analytics.saveDailyStats();
+    await analytics.savePlayerProfiles();
+    await analytics.saveMeta();
+    return res.json({ success: true, message: 'Analytics saved to disk' });
+  } catch (e) {
+    console.error('Error forcing analytics save:', e);
+    return res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.get('/analytics/hourly', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
@@ -343,6 +337,29 @@ app.get('/analytics/retention', (req, res) => {
   } catch (error) {
     console.error('Error getting retention data:', error);
     res.status(500).json({ error: 'Failed to get retention data' });
+  }
+});
+
+// Returns average player count for each hour of the day across all days
+app.get('/analytics/activity/average24h', (req, res) => {
+  try {
+    // Use the in-memory analytics instance
+    const serverAnalytics = analytics;
+    // Calculate average player count for each hour (0-23) across all days
+    const hourSums = Array(24).fill(0);
+    const hourCounts = Array(24).fill(0);
+    for (const stats of serverAnalytics.dailyStats.values()) {
+      if (Array.isArray(stats.hourlyActivity)) {
+        for (let h = 0; h < 24; h++) {
+          hourSums[h] += stats.hourlyActivity[h] || 0;
+          hourCounts[h] += 1;
+        }
+      }
+    }
+    const avg = hourSums.map((sum, h) => ({ hour: h, avgCount: hourCounts[h] > 0 ? sum / hourCounts[h] : 0 }));
+    res.json(avg);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to compute average 24h activity' });
   }
 });
 

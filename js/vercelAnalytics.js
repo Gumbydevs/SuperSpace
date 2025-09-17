@@ -86,7 +86,9 @@ class SuperSpaceAnalytics {
   async sendToCustomAnalytics(eventName, properties) {
     try {
       // Send to the Render server analytics endpoint instead of Vercel
-      await fetch('https://superspace-server.onrender.com/analytics/track', {
+      // Allow overriding analytics host in dev via global variable
+      const analyticsHost = window.SUPERSPACE_ANALYTICS_HOST || window.location.origin;
+      await fetch(analyticsHost + '/analytics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

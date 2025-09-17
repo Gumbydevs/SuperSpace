@@ -63,6 +63,38 @@ class ServerAnalytics {
         } else {
           stats.uniqueIPs = new Set();
         }
+        // Restore uniquePlayers if present
+        if (stats.uniquePlayers && Array.isArray(stats.uniquePlayers)) {
+          stats.uniquePlayers = new Set(stats.uniquePlayers);
+        } else if (stats.uniquePlayers && typeof stats.uniquePlayers === 'object' && !Array.isArray(stats.uniquePlayers)) {
+          // older files might have serialized sets as objects/empty objects
+          try {
+            stats.uniquePlayers = new Set(Object.keys(stats.uniquePlayers));
+          } catch (e) {
+            stats.uniquePlayers = new Set();
+          }
+        } else {
+          stats.uniquePlayers = new Set();
+        }
+
+        // Restore playerSessionMap: convert arrays back to Sets
+        if (stats.playerSessionMap && typeof stats.playerSessionMap === 'object') {
+          const restored = {};
+          for (const [player, sessions] of Object.entries(stats.playerSessionMap)) {
+            if (Array.isArray(sessions)) {
+              restored[player] = new Set(sessions);
+            } else if (sessions && typeof sessions === 'object') {
+              // some saved files may have empty object placeholders
+              restored[player] = new Set(Object.keys(sessions));
+            } else {
+              restored[player] = new Set();
+            }
+          }
+          stats.playerSessionMap = restored;
+        } else {
+          stats.playerSessionMap = {};
+        }
+
         // Ensure arrays exist for durations
         stats.gameDurations = stats.gameDurations || [];
         stats.sessionDurations = stats.sessionDurations || [];
@@ -623,6 +655,7 @@ class ServerAnalytics {
       uniquePlayers: new Set(),
       uniqueSessions: new Set(),
       uniqueIPs: new Set(),
+      playerSessionMap: {},
       gamesStarted: 0,
       gamesCompleted: 0,
       totalGameTime: 0,
@@ -742,10 +775,35 @@ class ServerAnalytics {
         const filepath = path.join(this.dataDir, 'daily', filename);
 
         // Convert sets to arrays for JSON serialization
+        // Convert Sets and playerSessionMap to JSON friendly structures
+        const uniquePlayersArr = stats.uniquePlayers
+          ? Array.from(stats.uniquePlayers)
+          : [];
+        const uniqueSessionsArr = stats.uniqueSessions
+          ? Array.from(stats.uniqueSessions)
+          : [];
+        const uniqueIPsArr = stats.uniqueIPs ? Array.from(stats.uniqueIPs) : [];
+
+        // Convert playerSessionMap (values are Sets) to arrays
+        const playerSessionMapOut = {};
+        if (stats.playerSessionMap && typeof stats.playerSessionMap === 'object') {
+          for (const [player, sessions] of Object.entries(stats.playerSessionMap)) {
+            if (sessions instanceof Set) {
+              playerSessionMapOut[player] = Array.from(sessions);
+            } else if (Array.isArray(sessions)) {
+              playerSessionMapOut[player] = sessions;
+            } else {
+              playerSessionMapOut[player] = [];
+            }
+          }
+        }
+
         const statsData = {
           ...stats,
-          uniqueSessions: Array.from(stats.uniqueSessions),
-          uniqueIPs: Array.from(stats.uniqueIPs),
+          uniquePlayers: uniquePlayersArr,
+          uniqueSessions: uniqueSessionsArr,
+          uniqueIPs: uniqueIPsArr,
+          playerSessionMap: playerSessionMapOut,
         };
 
         await fs.writeFile(filepath, JSON.stringify(statsData, null, 2));

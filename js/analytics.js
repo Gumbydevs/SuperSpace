@@ -16,12 +16,16 @@ class GameAnalytics {
     this.socketAvailable = false;
     try {
       if (typeof io === 'function') {
+        // Allow overriding analytics host in dev via global variable
+        const analyticsHost =
+          window.SUPERSPACE_ANALYTICS_HOST || window.location.origin;
         if (
           !window.socket ||
           !window.socket.io ||
-          window.socket.io.uri !== 'https://superspace-server.onrender.com'
+          window.socket.io.uri !== analyticsHost
         ) {
-          window.socket = io('https://superspace-server.onrender.com');
+          // Connect to the same origin (or configured host) so events persist locally
+          window.socket = io(analyticsHost);
         }
         this.socketAvailable = !!(window.socket && window.socket.emit);
       } else {
