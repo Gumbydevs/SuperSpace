@@ -238,12 +238,12 @@ export class Player {
   this.rotationSpeed = 2.5; // Base rotation speed (used for legacy/instant rotations)
   // Smoothed rotation controls
   this.rotationVelocity = 0; // current angular velocity (rad/s)
-  // Balanced tuning: responsive but capped to avoid runaway
-  this.rotationAccel = 6.0; // angular acceleration factor
-  this.rotationDamping = 8.0; // damping factor to reduce angular velocity when no input
-  this.precisionRotationMultiplier = 0.4; // multiplier while firing for finer control
-  this.maxRotationSpeed = 1.6; // rad/s maximum angular velocity (safety cap)
-  this.precisionMaxRotationMultiplier = 0.45; // when precision active, reduce the max rotation
+  // Snappier tuning: increase accel and top speed, reduce damping for responsiveness
+  this.rotationAccel = 9.0; // angular acceleration factor (higher = faster spin-up)
+  this.rotationDamping = 6.0; // damping factor to reduce angular velocity when no input (lower = less braking)
+  this.precisionRotationMultiplier = 0.6; // multiplier while firing for finer control (higher = more responsive while firing)
+  this.maxRotationSpeed = 2.4; // rad/s maximum angular velocity (safety cap) - increased for snappier turns
+  this.precisionMaxRotationMultiplier = 0.6; // when precision active, reduce the max rotation (but still responsive)
     this.friction = 0.998; // Space-like movement with minimal friction
     this.braking = false; // Tracks if player is actively braking
     this.brakePower = 0.95; // How effective braking is (lower = stronger brakes)
