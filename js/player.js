@@ -241,6 +241,8 @@ export class Player {
   this.rotationAccel = 8.0; // angular acceleration factor
   this.rotationDamping = 6.0; // damping factor to reduce angular velocity when no input
   this.precisionRotationMultiplier = 0.35; // multiplier while firing for finer control
+  this.maxRotationSpeed = 3.5; // rad/s maximum angular velocity (safety cap)
+  this.precisionMaxRotationMultiplier = 0.5; // when precision active, reduce the max rotation
     this.friction = 0.998; // Space-like movement with minimal friction
     this.braking = false; // Tracks if player is actively braking
     this.brakePower = 0.95; // How effective braking is (lower = stronger brakes)
@@ -406,6 +408,10 @@ export class Player {
         const targetAccel = desiredDirection * this.rotationAccel * this.rotationSpeed * precisionFactor;
         // Integrate rotation velocity
         this.rotationVelocity += targetAccel * deltaTime;
+        // Clamp rotation velocity to prevent runaway spinning
+        const maxVel = this.maxRotationSpeed * (isFiring ? this.precisionMaxRotationMultiplier : 1);
+        if (this.rotationVelocity > maxVel) this.rotationVelocity = maxVel;
+        if (this.rotationVelocity < -maxVel) this.rotationVelocity = -maxVel;
       } else {
         // Apply damping to slow down rotation when no input
         const damping = Math.max(0, 1 - this.rotationDamping * deltaTime);
