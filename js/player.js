@@ -403,26 +403,13 @@ export class Player {
         desiredDirection += 1;
       }
 
-      // Apply angular acceleration toward desired direction
+      // Instant rotation (no inertia): rotate immediately based on input direction
+      // Removing angular acceleration/velocity integration makes turns snap to input
       if (desiredDirection !== 0) {
-        // Scale acceleration by rotationAccel, base rotationSpeed and precision
-        const targetAccel = desiredDirection * this.rotationAccel * this.rotationSpeed * precisionFactor;
-        // Integrate rotation velocity
-        this.rotationVelocity += targetAccel * deltaTime;
-        // Clamp rotation velocity to prevent runaway spinning
-        const maxVel = this.maxRotationSpeed * (isFiring ? this.precisionMaxRotationMultiplier : 1);
-        if (this.rotationVelocity > maxVel) this.rotationVelocity = maxVel;
-        if (this.rotationVelocity < -maxVel) this.rotationVelocity = -maxVel;
-      } else {
-        // Apply damping to slow down rotation when no input
-        const damping = Math.max(0, 1 - this.rotationDamping * deltaTime);
-        this.rotationVelocity *= damping;
-        // Clamp very small velocities to zero to avoid drift
-        if (Math.abs(this.rotationVelocity) < 0.0005) this.rotationVelocity = 0;
+        // Use rotationSpeed as instantaneous turn rate (rad/s). Apply precision factor when firing.
+        const turnRate = this.rotationSpeed * precisionFactor;
+        this.rotation += desiredDirection * turnRate * deltaTime;
       }
-
-      // Integrate rotation from velocity
-      this.rotation += this.rotationVelocity * deltaTime;
 
       // Here we wrap rotation to stay between 0 and 2π
       this.rotation = this.rotation % (Math.PI * 2);
