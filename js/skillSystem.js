@@ -12,9 +12,16 @@ export class SkillSystem {
 
   // Check if player earned new skill points based on score
   updateSkillPoints() {
+    const currentAllocated = this.getAllocatedPoints();
+    
+    // If already at max allocation, no more points can be earned
+    if (currentAllocated >= this.MAX_POINTS_PER_RUN) {
+      this.skillPoints = 0;
+      return;
+    }
+    
     // Award 1 skill point per 2000 score points (increased from 1500 for balance)
     const earnedPoints = Math.floor(this.player.score / 2000);
-    const currentAllocated = this.getAllocatedPoints();
 
     const previousSkillPoints = this.skillPoints;
     
