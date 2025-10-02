@@ -50,11 +50,27 @@ async function initDatabase() {
 
 // User management functions
 async function createUser(username, passwordHash, email = null) {
-    const result = await pool.query(
-        'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING *',
-        [username, passwordHash, email]
-    );
-    return result.rows[0];
+    console.log('Database.createUser called with:', {
+        username,
+        passwordHash_length: passwordHash ? passwordHash.length : 0,
+        email,
+        passwordHash_preview: passwordHash ? passwordHash.substring(0, 100) + '...' : 'null'
+    });
+    
+    try {
+        const result = await pool.query(
+            'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING *',
+            [username, passwordHash, email]
+        );
+        console.log('User created successfully:', result.rows[0]);
+        return result.rows[0];
+    } catch (error) {
+        console.error('Database createUser error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error detail:', error.detail);
+        console.error('Error constraint:', error.constraint);
+        throw error;
+    }
 }
 
 async function getUser(username) {

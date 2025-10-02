@@ -185,7 +185,7 @@ class CloudSyncAuth {
       // Hash password and save user
       const { salt, hash } = this.hashPassword(password);
       
-      // Create user data object for database
+      // Create user data object
       const userData = {
         username: username, // Preserve original case
         salt,
@@ -195,8 +195,15 @@ class CloudSyncAuth {
         createdAt: new Date().toISOString(),
       };
 
-      // Save to database
-      await database.createUser(username.toLowerCase(), JSON.stringify(userData));
+      // Save to database - store complete user data as JSON in password_hash field
+      // (We'll use password_hash field to store all user data for backward compatibility)
+      console.log('Attempting to create user with:', {
+        username: username.toLowerCase(),
+        userData: userData,
+        dataLength: JSON.stringify(userData).length
+      });
+      
+      await database.createUser(username.toLowerCase(), JSON.stringify(userData), null);
 
       console.log(`✅ New user registered: ${username}`);
       return {
@@ -206,7 +213,12 @@ class CloudSyncAuth {
       };
     } catch (error) {
       console.error('Registration error:', error);
-      return { success: false, message: 'Server error during registration' };
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code
+      });
+      return { success: false, message: `Registration failed: ${error.message}` };
     }
   }
 

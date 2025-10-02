@@ -231,11 +231,7 @@
       <h1>🚀 SuperSpace Analytics Dashboard</h1>
       <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px;">
         <div class="status-indicator" id="statusIndicator">LIVE</div>
-        <div style="color:#cccccc;font-size:0.9em;">API:</div>
-        <input id="apiBaseInput" type="text" style="width:300px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.25);color:#fff;" placeholder="https://your-deployed-server.example.com" />
-        <button id="apiBaseSave" style="padding:6px 10px;border-radius:6px;border:none;background:#00ff88;color:#000;cursor:pointer;">Save</button>
-        <button id="apiUseOrigin" title="Set API base to current page origin" style="padding:6px 10px;border-radius:6px;border:none;background:#3399ff;color:#fff;cursor:pointer;">Use Page Origin</button>
-        <button id="apiClearSaved" title="Clear saved API base" style="padding:6px 10px;border-radius:6px;border:none;background:#ff6666;color:#fff;cursor:pointer;">Clear Saved</button>
+        <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server.onrender.com</div>
       </div>
     </div>
 
@@ -614,57 +610,13 @@
         // deployed URL change DEFAULT_API_BASE below or save an override in the
         // input field (stored to localStorage as analyticsApiBase).
         function getApiBase() {
-          const DEFAULT_API_BASE = 'https://superspace-server.onrender.com';
-          const saved = localStorage.getItem('analyticsApiBase');
-          if (saved && saved.length > 0) return saved;
-          // If the dashboard is being served from a static dev server (like Live Server on 127.0.0.1:5500)
-          // or opened via file://, prefer the deployed server by default so the
-          // dashboard pulls live production data.
-          try {
-            const o = window.location && window.location.origin ? window.location.origin : '';
-            const p = window.location && window.location.port ? window.location.port : '';
-            if (!o || o === 'null' || p === '5500' || o.includes('127.0.0.1:5500')) {
-              return DEFAULT_API_BASE;
-            }
-          } catch (e) {
-            // fallback to default
-          }
-          // Otherwise prefer the page origin if hosted on the same site, else default
-          // to the deployed server to match expected production behavior.
-          return window.location.origin && window.location.origin !== 'null' ? window.location.origin : DEFAULT_API_BASE;
+          // Always use the deployed server for analytics
+          return 'https://superspace-server.onrender.com';
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-          const input = document.getElementById('apiBaseInput');
-          const saveBtn = document.getElementById('apiBaseSave');
-          const useOriginBtn = document.getElementById('apiUseOrigin');
-          const clearBtn = document.getElementById('apiClearSaved');
-          input.value = localStorage.getItem('analyticsApiBase') || window.location.origin;
-          saveBtn.addEventListener('click', () => {
-            const v = input.value.trim();
-            if (v) {
-              localStorage.setItem('analyticsApiBase', v);
-              input.style.border = '2px solid #00ff88';
-              setTimeout(()=>input.style.border='1px solid rgba(255,255,255,0.08)', 1200);
-              fetchCloudUsers();
-            }
-          });
-          useOriginBtn.addEventListener('click', () => {
-            const origin = window.location.origin;
-            input.value = origin;
-            localStorage.setItem('analyticsApiBase', origin);
-            fetchCloudUsers();
-          });
-          clearBtn.addEventListener('click', () => {
-            localStorage.removeItem('analyticsApiBase');
-            input.value = '';
-            fetchCloudUsers();
-          });
-        });
 
       async function fetchCloudUsers() {
         // Try multiple endpoints in order of preference
-        const endpoints = ['/cloud/users', '/cloud/users/auth', '/api/cloud/users'];
+        const endpoints = ['/cloud/users', '/api/cloud/users', '/api/v1/cloud/users'];
         let lastError = null;
         
         for (const endpoint of endpoints) {
