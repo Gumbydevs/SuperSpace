@@ -32,7 +32,7 @@ export const ResetConfig = {
 
     // Preservation toggles
     preservePremiumPurchases: false,
-    preservePlayerName: false,
+    preservePlayerName: true,
     preserveSettings: false, // sound/music and similar preferences
     preservePurchasedUpgrades: false
   },

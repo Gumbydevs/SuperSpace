@@ -1128,8 +1128,8 @@ export class NPCManager {
     // For regular aliens: reward nearby player only
     if (npc.type === 'dreadnaught') {
       // DREADNAUGHT: Reward all players who damaged it
-      const creditReward = 500;
-      const gemReward = 10; // Bonus gems for dreadnaught kill
+      const creditReward = 1000;
+      const gemReward = Math.floor(Math.random() * 5) + 1; // Random 1-5 gems
       
       // Reward local player if they participated
       if (window.game && window.game.player) {
