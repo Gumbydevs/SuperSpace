@@ -256,6 +256,7 @@ export class ShipSkinSystem {
   applyHazardStripesEffect(ctx, ship, appearance, time) {
     // Crash test dummy skin - EXACT recreation based on original design
     const yellow = '#FFD700';
+    const darkYellow = '#DAA520'; // Darker golden yellow for border
     const blue = '#6495ED';
     const black = '#000000';
 
@@ -330,15 +331,42 @@ export class ShipSkinSystem {
     ctx.fillStyle = yellow;
     ctx.fill(path);
     
-    // Outer yellow border (3px outside the ship)
+    // Outer yellow border (3px outside the ship) - darker yellow
     ctx.lineWidth = 4;
-    ctx.strokeStyle = yellow;
+    ctx.strokeStyle = darkYellow;
     ctx.stroke(path);
     
     // Black outline - thin and crisp (on top of yellow)
     ctx.lineWidth = 1;
     ctx.strokeStyle = black;
     ctx.stroke(path);
+    
+    // Cover the yellow border on the nose/front section with black fill
+    ctx.fillStyle = black;
+    ctx.beginPath();
+    if (ship.currentShip === 'scout') {
+      // Fill triangle to cover front border
+      ctx.moveTo(0, -16);
+      ctx.lineTo(-5, -10);
+      ctx.lineTo(5, -10);
+      ctx.closePath();
+    } else if (ship.currentShip === 'fighter') {
+      ctx.moveTo(0, -17);
+      ctx.lineTo(-4, -11);
+      ctx.lineTo(4, -11);
+      ctx.closePath();
+    } else if (ship.currentShip === 'heavy') {
+      ctx.moveTo(0, -29);
+      ctx.lineTo(-9, -20);
+      ctx.lineTo(9, -20);
+      ctx.closePath();
+    } else {
+      ctx.moveTo(0, -21);
+      ctx.lineTo(-4, -15);
+      ctx.lineTo(4, -15);
+      ctx.closePath();
+    }
+    ctx.fill();
 
     // Now add the crash test dummy pattern with checkerboards
     ctx.save();
@@ -349,6 +377,23 @@ export class ShipSkinSystem {
     if (ship.currentShip === 'scout') {
       // Thin center vertical stripe
       ctx.fillRect(-0.5, -13, 1, 20);
+      
+      // CENTER BODY GEOMETRIC SHAPES (from original design)
+      // Upper center rectangular panels
+      ctx.fillRect(-3, -6, 2, 3);
+      ctx.fillRect(1, -6, 2, 3);
+      
+      // Mid-body horizontal rectangles
+      ctx.fillRect(-4, -2, 3, 1.5);
+      ctx.fillRect(1, -2, 3, 1.5);
+      
+      // Lower body panels
+      ctx.fillRect(-3, 0, 2, 2);
+      ctx.fillRect(1, 0, 2, 2);
+      
+      // Small accent blocks
+      ctx.fillRect(-2, 3, 1.5, 1.5);
+      ctx.fillRect(0.5, 3, 1.5, 1.5);
       
       // Thin wing vertical stripes
       ctx.fillRect(-10, -1, 1, 9);
@@ -380,10 +425,6 @@ export class ShipSkinSystem {
       // Thin nose details
       ctx.fillRect(-2, -11, 1, 2);
       ctx.fillRect(1, -11, 1, 2);
-      
-      // Body panel lines (thin)
-      ctx.fillRect(-4, 2, 1, 3);
-      ctx.fillRect(3, 2, 1, 3);
       
     } else if (ship.currentShip === 'fighter') {
       ctx.fillRect(-0.5, -14, 1, 21);
