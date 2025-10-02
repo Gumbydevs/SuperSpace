@@ -17,28 +17,27 @@ export const ResetConfig = {
 
   // Flags to control which areas are reset. true = reset/clear, false = preserve
   flags: {
-    clearDisclaimer: true,
-  // Clear the disclaimer acceptance flag to show it again
-    resetCredits: true,
-    resetShips: true,
-    resetWeapons: true,
-    resetUpgrades: true,
-    resetChallenges: true,
-    resetAchievements: true,
+    clearDisclaimer: true, // Clear the disclaimer pop up flag to show it again
+    resetCredits: true, // In-game currency
+    resetShips: true, // Owned ships and ship skins
+    resetWeapons: true, // Owned weapons
+    resetUpgrades: true, // Owned upgrades
+    resetChallenges: true, // Daily and Weekly Challenges
+    resetAchievements: true, // PLayer achievements
     resetPlayerStats: true, // score, wins, losses
-    resetGems: true,
+    resetGems: true, // Premium currency
     resetTutorialCompleted: true, // Reset tutorial completion status
     
 
     // Preservation toggles
-    preservePremiumPurchases: false,
-    preservePlayerName: true,
+    preservePremiumPurchases: false, // Permanently owned items from the premium store
+    preservePlayerName: true, // Player name
     preserveSettings: false, // sound/music and similar preferences
-    preservePurchasedUpgrades: false
+    preservePurchasedUpgrades: false // Upgrades purchased with credits
   },
 
   // Starting amount to give players after a reset (used when resetGems=true).
-  // Default starting gems given to players after a reset. Set to 5 per request.
+  // Default starting gems given to players after a reset.
   startingGems: 5,
 
   // Text used for the progress-reset modal 'continue' button. Customize this
