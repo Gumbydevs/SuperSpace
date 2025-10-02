@@ -254,11 +254,12 @@ export class ShipSkinSystem {
   }
 
   applyHazardStripesEffect(ctx, ship, appearance, time) {
-    // Crash test dummy skin - EXACT recreation based on original design
+    // Crash test dummy skin matching original image - v2
     const yellow = '#FFD700';
-    const darkYellow = '#DAA520'; // Darker golden yellow for border
     const blue = '#6495ED';
     const black = '#000000';
+    
+    console.log('HAZARD STRIPES EFFECT CALLED for', ship.currentShip);
 
     ctx.save();
     
@@ -327,160 +328,136 @@ export class ShipSkinSystem {
         break;
     }
 
-    // Fill yellow
-    ctx.fillStyle = yellow;
-    ctx.fill(path);
-    
-    // Outer yellow border (3px outside the ship) - darker yellow
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = darkYellow;
-    ctx.stroke(path);
-    
-    // Black outline - thin and crisp (on top of yellow)
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = black;
-    ctx.stroke(path);
-    
-    // Cover the yellow border on the nose/front section with black fill
-    ctx.fillStyle = black;
-    ctx.beginPath();
-    if (ship.currentShip === 'scout') {
-      // Fill triangle to cover front border
-      ctx.moveTo(0, -16);
-      ctx.lineTo(-5, -10);
-      ctx.lineTo(5, -10);
-      ctx.closePath();
-    } else if (ship.currentShip === 'fighter') {
-      ctx.moveTo(0, -17);
-      ctx.lineTo(-4, -11);
-      ctx.lineTo(4, -11);
-      ctx.closePath();
-    } else if (ship.currentShip === 'heavy') {
-      ctx.moveTo(0, -29);
-      ctx.lineTo(-9, -20);
-      ctx.lineTo(9, -20);
-      ctx.closePath();
-    } else {
-      ctx.moveTo(0, -21);
-      ctx.lineTo(-4, -15);
-      ctx.lineTo(4, -15);
-      ctx.closePath();
-    }
-    ctx.fill();
+  // Draw an outer darker yellow border first, then fill, then a thin inner black stripe
+  const hullColor = (appearance && appearance.color) || yellow;
+  const outerYellow = '#DAA520'; // slightly darker/gold for border
+  ctx.lineWidth = 2; // outer border width (slimmer)
+  ctx.strokeStyle = outerYellow;
+  ctx.stroke(path);
 
-    // Now add the crash test dummy pattern with checkerboards
+  // Fill the hull
+  ctx.fillStyle = hullColor;
+  ctx.fill(path);
+
+  // Thin inner black stripe to match crash-test dummy outline
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = black;
+  // outer black outline removed per request; keep inner overlay details only
+
+    // Windshield drawing moved to overlay stage so it's always visible on top
+
+    // Interior crash-test details are drawn as overlays to ensure they
+    // render on top of any engine flames or later effects. The overlay
+    // drawing happens after the main render pass (see drawHazardOverlays).
+
+    ctx.restore();
+  }
+
+  // Draw the black overlay details for hazard stripes last so they are
+  // always visible on top of flames / engine effects. This uses slightly
+  // thicker strokes/fills to survive downsampling and anti-aliasing.
+  drawHazardOverlays(ctx, ship, appearance) {
+    if (!appearance || appearance.effect !== 'hazard_stripes') return;
+    const black = '#000000';
+
     ctx.save();
-    ctx.clip(path);
-    
-    ctx.fillStyle = black;
-    
+    // Ensure we draw over everything
+    try { ctx.globalCompositeOperation = 'source-over'; } catch (e) {}
+
+  ctx.fillStyle = black;
+  ctx.strokeStyle = black;
+  ctx.lineWidth = 1; // keep fills/shapes tight
+
     if (ship.currentShip === 'scout') {
-      // Thin center vertical stripe
-      ctx.fillRect(-0.5, -13, 1, 20);
-      
-      // CENTER BODY GEOMETRIC SHAPES (from original design)
-      // Upper center rectangular panels
+      // Pixel-aligned, simplified overlays for scout to avoid blocky artifacts
+      // Short central stripe (1px) that stops before the thruster area
+      ctx.fillRect(-0.5, -13, 1, 11);
+
+      // Small nose triangle
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(-1.5, -12);
+      ctx.lineTo(1.5, -12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Small body blocks (subtle)
       ctx.fillRect(-3, -6, 2, 3);
       ctx.fillRect(1, -6, 2, 3);
-      
-      // Mid-body horizontal rectangles
-      ctx.fillRect(-4, -2, 3, 1.5);
-      ctx.fillRect(1, -2, 3, 1.5);
-      
-      // Lower body panels
-      ctx.fillRect(-3, 0, 2, 2);
-      ctx.fillRect(1, 0, 2, 2);
-      
-      // Small accent blocks
-      ctx.fillRect(-2, 3, 1.5, 1.5);
-      ctx.fillRect(0.5, 3, 1.5, 1.5);
-      
-      // Thin wing vertical stripes
-      ctx.fillRect(-10, -1, 1, 9);
-      ctx.fillRect(9, -1, 1, 9);
-      
-      // Checkerboard pattern on wings
-      const checkerSize = 2;
-      // Left wing checkerboard
-      for (let x = -12; x < -7; x += checkerSize) {
-        for (let y = -2; y < 6; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
-        }
-      }
-      // Right wing checkerboard
-      for (let x = 7; x < 12; x += checkerSize) {
-        for (let y = -2; y < 6; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
-        }
-      }
-      
-      // Engine blocks
-      ctx.fillRect(-7, 4, 3, 3);
-      ctx.fillRect(4, 4, 3, 3);
-      
-      // Thin nose details
+
+      // Short thin wing stripe near root (1px)
+      ctx.fillRect(-10, -1, 1, 5);
+      ctx.fillRect(9, -1, 1, 5);
+
+      // Back-wing crosses removed per request; leaving smaller checker patches and rivets below
+
+  // outer checker patch squares removed (kept inner hull details only)
+
+  // Small rivets near engines moved outward slightly
+  ctx.beginPath(); ctx.arc(-7, 5, 0.7, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6, 5, 0.7, 0, Math.PI * 2); ctx.fill();
+      // Nose vents
       ctx.fillRect(-2, -11, 1, 2);
       ctx.fillRect(1, -11, 1, 2);
-      
+    
     } else if (ship.currentShip === 'fighter') {
-      ctx.fillRect(-0.5, -14, 1, 21);
-      const checkerSize = 2;
-      for (let x = -13; x < -8; x += checkerSize) {
-        for (let y = -1; y < 7; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
+      ctx.fillRect(-0.5, -14, 1, 22);
+      const checkerSizeF = 2;
+      const fLeftX0 = -13;
+      const fLeftY0 = -1;
+      for (let cx = 0; cx < 3; cx++) {
+        for (let ry = 0; ry < 4; ry++) {
+          const xi = fLeftX0 + cx * checkerSizeF;
+          const yi = fLeftY0 + ry * checkerSizeF;
+          if ((cx + ry) % 2 === 0) ctx.fillRect(xi, yi, checkerSizeF, checkerSizeF);
         }
       }
-      for (let x = 8; x < 13; x += checkerSize) {
-        for (let y = -1; y < 7; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
+      const fRightX0 = 8;
+      for (let cx = 0; cx < 3; cx++) {
+        for (let ry = 0; ry < 4; ry++) {
+          const xi = fRightX0 + cx * checkerSizeF;
+          const yi = fLeftY0 + ry * checkerSizeF;
+          if ((cx + ry) % 2 === 0) ctx.fillRect(xi, yi, checkerSizeF, checkerSizeF);
         }
       }
-      ctx.fillRect(-8, 5, 3, 3);
-      ctx.fillRect(5, 5, 3, 3);
+      ctx.fillRect(-8, 4, 3, 3);
+      ctx.fillRect(5, 4, 3, 3);
     } else if (ship.currentShip === 'heavy') {
-      ctx.fillRect(-1, -26, 2, 36);
-      const checkerSize = 2.5;
-      for (let x = -25; x < -17; x += checkerSize) {
-        for (let y = -2; y < 8; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
+      ctx.fillRect(-1, -26, 2, 34);
+      const checkerSizeH = 3;
+      const hLeftX0 = -25;
+      for (let cx = 0; cx < 3; cx++) {
+        for (let ry = 0; ry < 4; ry++) {
+          const xi = hLeftX0 + cx * checkerSizeH;
+          const yi = -2 + ry * checkerSizeH;
+          if ((cx + ry) % 2 === 0) ctx.fillRect(xi, yi, checkerSizeH, checkerSizeH);
         }
       }
-      for (let x = 17; x < 25; x += checkerSize) {
-        for (let y = -2; y < 8; y += checkerSize) {
-          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
-            ctx.fillRect(x, y, checkerSize, checkerSize);
-          }
+      const hRightX0 = 17;
+      for (let cx = 0; cx < 3; cx++) {
+        for (let ry = 0; ry < 4; ry++) {
+          const xi = hRightX0 + cx * checkerSizeH;
+          const yi = -2 + ry * checkerSizeH;
+          if ((cx + ry) % 2 === 0) ctx.fillRect(xi, yi, checkerSizeH, checkerSizeH);
         }
       }
       ctx.fillRect(-13, 10, 4, 4);
       ctx.fillRect(9, 10, 4, 4);
     }
-    
-    ctx.restore();
 
-    // Blue windshield
-    ctx.fillStyle = blue;
+    // Draw windshield last so it stays visible above overlays
+    ctx.fillStyle = '#6495ED'; // blue
     ctx.strokeStyle = black;
     ctx.lineWidth = 1;
     ctx.beginPath();
     if (ship.currentShip === 'scout') {
-      ctx.ellipse(0, -8, 3, 4.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -8, 2.5, 3.5, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'fighter') {
-      ctx.ellipse(0, -9, 3.5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -9, 3, 4.5, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'heavy') {
-      ctx.ellipse(0, -12, 4.5, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -12, 4, 5.5, 0, 0, Math.PI * 2);
     } else {
-      ctx.ellipse(0, -10, 3.5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -10, 3, 4.5, 0, 0, Math.PI * 2);
     }
     ctx.fill();
     ctx.stroke();
@@ -536,6 +513,17 @@ export class ShipSkinSystem {
     // Use 'destination-over' so the glow is rendered behind the hull geometry
     // (this prevents the glow from overlapping the ship body).
     ctx.save();
+
+    // Small debug marker when debugging flag enabled. Does not run in normal use
+    try {
+      if (localStorage.getItem('debugShipFX') === 'true') {
+        ctx.save();
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(-3, -3, 6, 6);
+        ctx.restore();
+        console.log('shipskins: hazard_stripes debug marker drawn for', ship.currentShip);
+      }
+    } catch (e) {}
     const priorComposite = ctx.globalCompositeOperation;
     ctx.globalCompositeOperation = 'destination-over';
     const glowColor = appearance.color || '#ffd700';
@@ -809,6 +797,11 @@ export class ShipSkinSystem {
       // console.warn('shipskins: renderEngineFlame failed', e);
     }
 
+    // Draw hazard overlays inside the local ship transform so they follow the ship
+    try {
+      this.drawHazardOverlays(ctx, ship, appearance);
+    } catch (e) {}
+
     ctx.restore();
 
     // Restore original colors after rendering
@@ -850,6 +843,8 @@ export class ShipSkinSystem {
       // Non-fatal - if skins system doesn't have expected fields just skip engine trail
       // console.warn('shipskins: engine trail render skipped', e);
     }
+
+    // overlays already drawn in local space above
   }
 
   // Toggle effects preference

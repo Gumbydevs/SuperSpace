@@ -17,6 +17,7 @@ export class GameTooltips {
       "💡 TIP: Use Q and E to quickly switch between weapons during combat.",
       "💡 TIP: Press number keys (0-9) to directly select a specific weapon.",
       "💡 TIP: Afterburner consumes fuel - watch your fuel gauge!",
+      "💡 TIP: Disengage your weapons to speed energy recharge!",
       
       // Economy & Progression
       "💡 TIP: Press B to open the shop and upgrade your ship with credits.",
