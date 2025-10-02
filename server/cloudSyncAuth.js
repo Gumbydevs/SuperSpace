@@ -197,12 +197,6 @@ class CloudSyncAuth {
 
       // Save to database - store complete user data as JSON in password_hash field
       // (We'll use password_hash field to store all user data for backward compatibility)
-      console.log('Attempting to create user with:', {
-        username: username.toLowerCase(),
-        userData: userData,
-        dataLength: JSON.stringify(userData).length
-      });
-      
       await database.createUser(username.toLowerCase(), JSON.stringify(userData), null);
 
       console.log(`✅ New user registered: ${username}`);
@@ -213,11 +207,6 @@ class CloudSyncAuth {
       };
     } catch (error) {
       console.error('Registration error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        code: error.code
-      });
       return { success: false, message: `Registration failed: ${error.message}` };
     }
   }
