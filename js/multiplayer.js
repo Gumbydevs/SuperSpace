@@ -811,6 +811,34 @@ export class MultiplayerManager {
         </div>
       `;
     }
+    // Build an optional external link to full release notes / devlog when available
+    let releaseLinkHtml = '';
+    try {
+      const link = (ResetConfig.versionLinks && ResetConfig.versionLinks[this.GAME_VERSION]) || '';
+      if (link) {
+        // Sanitize minimal: trust internal config but ensure it starts with http
+        const href = String(link).trim();
+          if (href.match(/^https?:\/\//i)) {
+            // Prefer a friendly label when provided in ResetConfig.versionLinkLabels
+            let label = '';
+            try {
+              label = (ResetConfig.versionLinkLabels && ResetConfig.versionLinkLabels[this.GAME_VERSION]) || '';
+            } catch (e) {
+              label = '';
+            }
+            if (!label) label = 'Release notes / Devlog';
+            releaseLinkHtml = `
+              <div style="margin:8px 0 4px 0; text-align:left;">
+                <a href="${href}" target="_blank" rel="noopener noreferrer" style="color:#7ad1ff; font-size:12px; text-decoration:underline;">
+                  ${label}
+                </a>
+              </div>
+            `;
+          }
+      }
+    } catch (e) {
+      /* ignore errors building external link */
+    }
     try {
       const notesDebug = (ResetConfig.versionNotes && ResetConfig.versionNotes[this.GAME_VERSION]) || [];
       console.debug('Reset modal notes for', this.GAME_VERSION, notesDebug);
@@ -891,6 +919,7 @@ export class MultiplayerManager {
         </ul>
         <p style="margin:8px 0 0 0; font-size:12px; color:#888;">If you believe a paid purchase was removed accidentally, contact Gumby on Discord or via email.</p>
         </div>
+        ${releaseLinkHtml}
       </div>
         `;
   body.appendChild(message);

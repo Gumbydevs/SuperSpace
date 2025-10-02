@@ -14,6 +14,17 @@ export const ResetConfig = {
         'Improved performance and stability.'
     ]
   },
+  // Optional per-version external links (devlog / full release notes).
+  // If present, the game will show a "Read full devlog / release notes" link
+  // in the version-reset modal so players can read more about the update.
+  versionLinks: {
+    [GAME_VERSION]: 'https://gumbydev.itch.io/superspace/devlog/1064512/-superspace-dev-log-4-community-features-polish-and-whats-next'
+  },
+  // Optional friendly labels to display for per-version links. If provided,
+  // the modal will show this text instead of the raw URL.
+  versionLinkLabels: {
+    [GAME_VERSION]: 'Devlog & Release Notes-2025.10.02'
+  },
 
   // Flags to control which areas are reset. true = reset/clear, false = preserve
   flags: {
