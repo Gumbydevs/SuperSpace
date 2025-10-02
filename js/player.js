@@ -2215,6 +2215,121 @@ export class Player {
           window.game.premiumStore,
         );
 
+        // Draw weapon and upgrade visuals on top of the ship
+        if (window.game && window.game.shop) {
+          const shop = window.game.shop;
+
+          // Check for weapon upgrades
+          if (this.currentWeaponId) {
+            // Different weapon mounts based on weapon type
+            switch (this.currentWeaponId) {
+              case 'laser':
+                // Basic laser - small single mount
+                ctx.fillStyle = '#555';
+                ctx.fillRect(-2, -10, 4, 4);
+                break;
+
+              case 'dual_laser':
+                // Dual lasers - two small mounts
+                ctx.fillStyle = '#555';
+                ctx.fillRect(-6, -8, 3, 4);
+                ctx.fillRect(3, -8, 3, 4);
+                break;
+
+              case 'burst':
+                // Burst cannon - wider single mount
+                ctx.fillStyle = '#555';
+                ctx.fillRect(-4, -8, 8, 5);
+                // Barrel detail
+                ctx.fillStyle = '#333';
+                ctx.fillRect(-3, -12, 6, 4);
+                break;
+
+              case 'missile':
+                // Missile launchers on wing tips
+                ctx.fillStyle = '#444';
+                // Missile pods
+                if (
+                  this.currentShip === 'heavy' ||
+                  this.currentShip === 'cruiser'
+                ) {
+                  // Heavy ships have bigger wing-mounted missile pods
+                  ctx.fillRect(-25, -3, 6, 6);
+                  ctx.fillRect(19, -3, 6, 6);
+                } else {
+                  // Smaller ships have smaller pods on wings
+                  ctx.fillRect(-12, -3, 4, 4);
+                  ctx.fillRect(8, -3, 4, 4);
+                }
+                break;
+            }
+          }
+
+          // Check for armor upgrades
+          const armorUpgrade = shop.availableUpgrades.find(
+            (u) => u.id === 'armor',
+          );
+          if (armorUpgrade && armorUpgrade.level > 0) {
+            // Armor plating visualization
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1 + armorUpgrade.level * 0.5;
+
+            if (this.currentShip === 'heavy') {
+              // Heavy ship gets thicker hull lines
+              ctx.beginPath();
+              ctx.moveTo(-12, -15);
+              ctx.lineTo(-15, -5);
+              ctx.lineTo(-25, 0);
+              ctx.moveTo(12, -15);
+              ctx.lineTo(15, -5);
+              ctx.lineTo(25, 0);
+              ctx.stroke();
+            } else if (this.currentShip === 'fighter') {
+              // Fighter gets reinforced wings
+              ctx.beginPath();
+              ctx.moveTo(-5, -15);
+              ctx.lineTo(-18, -5);
+              ctx.lineTo(-12, 0);
+              ctx.moveTo(5, -15);
+              ctx.lineTo(18, -5);
+              ctx.lineTo(12, 0);
+              ctx.stroke();
+            } else {
+              // Default outline reinforcement
+              ctx.beginPath();
+              ctx.moveTo(0, -15);
+              ctx.lineTo(-12, 0);
+              ctx.lineTo(-8, 8);
+              ctx.lineTo(0, 7);
+              ctx.lineTo(8, 8);
+              ctx.lineTo(12, 0);
+              ctx.closePath();
+              ctx.stroke();
+            }
+          }
+
+          // Check for cargo upgrades
+          const cargoUpgrade = shop.availableUpgrades.find(
+            (u) => u.id === 'cargo',
+          );
+          if (cargoUpgrade && cargoUpgrade.level > 0) {
+            // Add cargo pods
+            ctx.fillStyle = '#777';
+
+            if (this.currentShip === 'heavy') {
+              // Heavy ship gets large central cargo bay
+              ctx.fillRect(-8, 0, 16, 10);
+            } else if (this.currentShip === 'fighter') {
+              // Fighter gets wing-mounted pods
+              ctx.fillRect(-15, 2, 6, 6);
+              ctx.fillRect(9, 2, 6, 6);
+            } else {
+              // Default gets small rear cargo pod
+              ctx.fillRect(-4, 3, 8, 5);
+            }
+          }
+        }
+
         // Ship skin system handles everything - finish rendering
         ctx.restore();
         return;
