@@ -364,6 +364,57 @@ export class ShipSkinSystem {
     // Ensure we draw over everything
     try { ctx.globalCompositeOperation = 'source-over'; } catch (e) {}
 
+    // Clip all overlays to the hull shape so nothing spills outside the ship
+    const hullPath = new Path2D();
+    switch (ship.currentShip) {
+      case 'scout':
+        hullPath.moveTo(0, -15);
+        hullPath.lineTo(-4, -10);
+        hullPath.lineTo(-12, 0);
+        hullPath.lineTo(-8, 8);
+        hullPath.lineTo(-5, 5);
+        hullPath.lineTo(0, 7);
+        hullPath.lineTo(5, 5);
+        hullPath.lineTo(8, 8);
+        hullPath.lineTo(12, 0);
+        hullPath.lineTo(4, -10);
+        hullPath.closePath();
+        break;
+      case 'fighter':
+        hullPath.moveTo(0, -16);
+        hullPath.lineTo(-3, -11);
+        hullPath.lineTo(-13, -3);
+        hullPath.lineTo(-9, 0);
+        hullPath.lineTo(-11, 9);
+        hullPath.lineTo(-3, 6);
+        hullPath.lineTo(0, 7);
+        hullPath.lineTo(3, 6);
+        hullPath.lineTo(11, 9);
+        hullPath.lineTo(9, 0);
+        hullPath.lineTo(13, -3);
+        hullPath.lineTo(3, -11);
+        hullPath.closePath();
+        break;
+      case 'heavy':
+        hullPath.moveTo(0, -28);
+        hullPath.lineTo(-8, -20);
+        hullPath.lineTo(-12, -5);
+        hullPath.lineTo(-25, 0);
+        hullPath.lineTo(-25, 5);
+        hullPath.lineTo(-18, 8);
+        hullPath.lineTo(-10, 18);
+        hullPath.lineTo(0, 15);
+        hullPath.lineTo(10, 18);
+        hullPath.lineTo(18, 8);
+        hullPath.lineTo(25, 5);
+        hullPath.lineTo(25, 0);
+        hullPath.lineTo(12, -5);
+        hullPath.lineTo(8, -20);
+        hullPath.closePath();
+        break;
+    }
+    ctx.clip(hullPath);
+
   ctx.fillStyle = black;
   ctx.strokeStyle = black;
   ctx.lineWidth = 1; // keep fills/shapes tight
@@ -385,13 +436,44 @@ export class ShipSkinSystem {
       ctx.fillRect(-3, -6, 2, 3);
       ctx.fillRect(1, -6, 2, 3);
 
-      // Short thin wing stripe near root (1px)
-      ctx.fillRect(-10, -1, 1, 5);
-      ctx.fillRect(9, -1, 1, 5);
+      // Add depth/panel lines to center body for industrial look
+      ctx.strokeStyle = black;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      // Horizontal panel lines across body
+      ctx.moveTo(-4, -3);
+      ctx.lineTo(4, -3);
+      ctx.moveTo(-5, 1);
+      ctx.lineTo(5, 1);
+      ctx.moveTo(-4, 4);
+      ctx.lineTo(4, 4);
+      // Vertical seam lines (shortened to not cover cockpit area)
+      ctx.moveTo(-2, -3);
+      ctx.lineTo(-2, 5);
+      ctx.moveTo(2, -3);
+      ctx.lineTo(2, 5);
+      ctx.stroke();
 
-      // Back-wing crosses removed per request; leaving smaller checker patches and rivets below
+      // Wing checkerboard pattern (1px cells, tight pattern matching crash-test dummy reference)
+      const wingCheckerSize = 1;
+      // Left wing checker (runs along wing from root to tip)
+      for (let x = -12; x <= -8; x += wingCheckerSize) {
+        for (let y = -2; y <= 4; y += wingCheckerSize) {
+          if ((x + y) % 2 === 0) {
+            ctx.fillRect(x, y, wingCheckerSize, wingCheckerSize);
+          }
+        }
+      }
+      // Right wing checker (mirrored)
+      for (let x = 8; x <= 12; x += wingCheckerSize) {
+        for (let y = -2; y <= 4; y += wingCheckerSize) {
+          if ((x + y) % 2 === 0) {
+            ctx.fillRect(x, y, wingCheckerSize, wingCheckerSize);
+          }
+        }
+      }
 
-  // outer checker patch squares removed (kept inner hull details only)
+      // outer wing squares removed per request
 
   // Small rivets near engines moved outward slightly
   ctx.beginPath(); ctx.arc(-7, 5, 0.7, 0, Math.PI * 2); ctx.fill();
