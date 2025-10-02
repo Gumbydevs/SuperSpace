@@ -610,21 +610,28 @@
       }
 
         // --- Cloud users registry fetch & render ---
+        // Default API base for cloud user registry. If you prefer a different
+        // deployed URL change DEFAULT_API_BASE below or save an override in the
+        // input field (stored to localStorage as analyticsApiBase).
         function getApiBase() {
+          const DEFAULT_API_BASE = 'https://superspace-server.onrender.com';
           const saved = localStorage.getItem('analyticsApiBase');
           if (saved && saved.length > 0) return saved;
           // If the dashboard is being served from a static dev server (like Live Server on 127.0.0.1:5500)
-          // or opened via file://, default to a typical local API server used during development.
+          // or opened via file://, prefer the deployed server by default so the
+          // dashboard pulls live production data.
           try {
             const o = window.location && window.location.origin ? window.location.origin : '';
             const p = window.location && window.location.port ? window.location.port : '';
             if (!o || o === 'null' || p === '5500' || o.includes('127.0.0.1:5500')) {
-              return 'http://localhost:3000';
+              return DEFAULT_API_BASE;
             }
           } catch (e) {
-            // fallback
+            // fallback to default
           }
-          return window.location.origin;
+          // Otherwise prefer the page origin if hosted on the same site, else default
+          // to the deployed server to match expected production behavior.
+          return window.location.origin && window.location.origin !== 'null' ? window.location.origin : DEFAULT_API_BASE;
         }
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -258,103 +258,112 @@ app.get('/analytics', (req, res) => {
 });
 
 // Expose cloud user registry (reads cloud_data/users.json and players)
-app.get('/cloud/users', async (req, res) => {
+async function getCloudUsersPayload() {
+  const fsPromises = require('fs').promises;
+  const cloudDir = require('path').join(__dirname, 'cloud_data');
+  const usersPath = require('path').join(cloudDir, 'users.json');
+  const tokensPath = require('path').join(cloudDir, 'tokens.json');
+
+  // Read users and tokens
+  let usersRaw = '{}';
   try {
-    const fsPromises = require('fs').promises;
-    const cloudDir = require('path').join(__dirname, 'cloud_data');
-    const usersPath = require('path').join(cloudDir, 'users.json');
-    const tokensPath = require('path').join(cloudDir, 'tokens.json');
+    usersRaw = await fsPromises.readFile(usersPath, 'utf8');
+  } catch (e) {
+    // ignore and use empty
+  }
+  let tokensRaw = '{}';
+  try {
+    tokensRaw = await fsPromises.readFile(tokensPath, 'utf8');
+  } catch (e) {
+    // ignore and use empty
+  }
 
-    // Read users and tokens
-    let usersRaw = '{}';
-    try {
-      usersRaw = await fsPromises.readFile(usersPath, 'utf8');
-    } catch (e) {
-      // ignore and use empty
-    }
-    let tokensRaw = '{}';
-    try {
-      tokensRaw = await fsPromises.readFile(tokensPath, 'utf8');
-    } catch (e) {
-      // ignore and use empty
-    }
+  const users = JSON.parse(usersRaw || '{}');
+  const tokens = JSON.parse(tokensRaw || '{}');
 
-    const users = JSON.parse(usersRaw || '{}');
-    const tokens = JSON.parse(tokensRaw || '{}');
-
-    // Map username -> latest token lastUsed
-    const userLastLogin = {};
-    for (const [token, tdata] of Object.entries(tokens)) {
-      if (tdata && tdata.username) {
-        const uname = tdata.username.toLowerCase();
-        const ts = tdata.lastUsed ? new Date(tdata.lastUsed).getTime() : 0;
-        if (!userLastLogin[uname] || ts > userLastLogin[uname]) {
-          userLastLogin[uname] = ts;
-        }
+  // Map username -> latest token lastUsed
+  const userLastLogin = {};
+  for (const [token, tdata] of Object.entries(tokens)) {
+    if (tdata && tdata.username) {
+      const uname = tdata.username.toLowerCase();
+      const ts = tdata.lastUsed ? new Date(tdata.lastUsed).getTime() : 0;
+      if (!userLastLogin[uname] || ts > userLastLogin[uname]) {
+        userLastLogin[uname] = ts;
       }
     }
+  }
 
-    // Read player files for playtime info
-    const playersDir = require('path').join(cloudDir, 'players');
-    const list = [];
-    for (const [key, u] of Object.entries(users)) {
+  // Read player files for playtime info
+  const playersDir = require('path').join(cloudDir, 'players');
+  const list = [];
+  for (const [key, u] of Object.entries(users)) {
+    try {
+      const username = (u.username || key).toString();
+      const userKey = username.toLowerCase();
+      let lastLogin = userLastLogin[userKey] ? new Date(userLastLogin[userKey]).toISOString() : null;
+
+      // Try to load player file
+      let playTimeSeconds = 0;
       try {
-        const username = (u.username || key).toString();
-        const userKey = username.toLowerCase();
-        let lastLogin = userLastLogin[userKey] ? new Date(userLastLogin[userKey]).toISOString() : null;
-
-        // Try to load player file
-        let playTimeSeconds = 0;
-        try {
-          const pf = require('path').join(playersDir, `player_${username}.json`);
-          const content = await fsPromises.readFile(pf, 'utf8').catch(() => null);
-          if (content) {
-            const pdata = JSON.parse(content);
-            // Try several common places for accumulated playtime
-            if (pdata.gameData && typeof pdata.gameData.totalPlayTime === 'number') {
-              playTimeSeconds = Math.floor(pdata.gameData.totalPlayTime);
-            } else if (pdata.gameData && typeof pdata.gameData.playTimeSeconds === 'number') {
-              playTimeSeconds = Math.floor(pdata.gameData.playTimeSeconds);
-            } else if (pdata.gameStats && typeof pdata.gameStats.totalPlayTime === 'number') {
-              playTimeSeconds = Math.floor(pdata.gameStats.totalPlayTime);
-            } else if (pdata.lastSaved) {
-              // If no explicit playtime, try to infer from createdAt -> lastSaved (not ideal)
-              const created = u.createdAt ? new Date(u.createdAt).getTime() : null;
-              const lastSaved = pdata.lastSaved ? new Date(pdata.lastSaved).getTime() : null;
-              if (created && lastSaved && lastSaved > created) {
-                playTimeSeconds = Math.floor((lastSaved - created) / 1000);
-              }
+        const pf = require('path').join(playersDir, `player_${username}.json`);
+        const content = await fsPromises.readFile(pf, 'utf8').catch(() => null);
+        if (content) {
+          const pdata = JSON.parse(content);
+          // Try several common places for accumulated playtime
+          if (pdata.gameData && typeof pdata.gameData.totalPlayTime === 'number') {
+            playTimeSeconds = Math.floor(pdata.gameData.totalPlayTime);
+          } else if (pdata.gameData && typeof pdata.gameData.playTimeSeconds === 'number') {
+            playTimeSeconds = Math.floor(pdata.gameData.playTimeSeconds);
+          } else if (pdata.gameStats && typeof pdata.gameStats.totalPlayTime === 'number') {
+            playTimeSeconds = Math.floor(pdata.gameStats.totalPlayTime);
+          } else if (pdata.lastSaved) {
+            // If no explicit playtime, try to infer from createdAt -> lastSaved (not ideal)
+            const created = u.createdAt ? new Date(u.createdAt).getTime() : null;
+            const lastSaved = pdata.lastSaved ? new Date(pdata.lastSaved).getTime() : null;
+            if (created && lastSaved && lastSaved > created) {
+              playTimeSeconds = Math.floor((lastSaved - created) / 1000);
             }
           }
-        } catch (e) {
-          // ignore
         }
-
-        list.push({
-          username,
-          createdAt: u.createdAt || null,
-          lastLogin,
-          playTimeSeconds,
-        });
       } catch (e) {
-        // ignore malformed user
+        // ignore
       }
+
+      list.push({
+        username,
+        createdAt: u.createdAt || null,
+        lastLogin,
+        playTimeSeconds,
+      });
+    } catch (e) {
+      // ignore malformed user
     }
+  }
 
-    // Sort by lastLogin desc then username
-    list.sort((a, b) => {
-      const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
-      const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
-      if (ta !== tb) return tb - ta;
-      return a.username.localeCompare(b.username);
-    });
+  // Sort by lastLogin desc then username
+  list.sort((a, b) => {
+    const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+    const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+    if (ta !== tb) return tb - ta;
+    return a.username.localeCompare(b.username);
+  });
 
-    res.json({ count: list.length, users: list });
+  return { count: list.length, users: list };
+}
+
+const cloudUsersHandler = async (req, res) => {
+  try {
+    const payload = await getCloudUsersPayload();
+    res.json(payload);
   } catch (error) {
     console.error('Failed to read cloud users:', error);
     res.status(500).json({ error: 'Failed to read cloud users' });
   }
-});
+};
+
+app.get('/cloud/users', cloudUsersHandler);
+app.get('/api/cloud/users', cloudUsersHandler);
+app.get('/api/v1/cloud/users', cloudUsersHandler);
 
 // Helper function to generate player activity data for charts
 function generatePlayerActivityData(stats) {
