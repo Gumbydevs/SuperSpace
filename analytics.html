@@ -114,6 +114,31 @@
         grid-column: span 2;
       }
 
+      .wide-users-card {
+        grid-column: span 2;
+        max-width: none;
+      }
+
+      .users-list-wide {
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 0.9em;
+        color: #fff;
+        background: rgba(0,0,0,0.12);
+        padding: 12px;
+        border-radius: 8px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 8px;
+      }
+
+      .user-item {
+        background: rgba(0, 255, 136, 0.1);
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+      }
+
       .event-log {
         grid-column: span 2;
         max-height: 400px;
@@ -269,14 +294,6 @@
         <div class="metric-subtitle">Today / All Time</div>
       </div>
 
-      <!-- Cloud Users Registry (detailed) -->
-      <div class="metric-card">
-        <h3>☁️ Cloud User Registry</h3>
-        <div id="cloudUsersCount" class="metric-value">0</div>
-        <div id="cloudUsersList" style="max-height:220px;overflow-y:auto;font-size:0.95em;color:#fff;background:rgba(0,0,0,0.12);padding:8px;border-radius:8px;"></div>
-        <div class="metric-subtitle">Shows username, last login, and accumulated playtime</div>
-      </div>
-
       <!-- Peak Players -->
       <div class="metric-card">
         <h3>📈 Peak Concurrent</h3>
@@ -430,6 +447,14 @@
         <div id="adminChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;"></div>
         <input id="adminChatInput" type="text" placeholder="Send admin message..." style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(0,255,136,0.2);" />
         <button id="adminChatSend" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#00ff88;border:none;cursor:pointer;">Send as Admin</button>
+      </div>
+
+      <!-- Cloud Users Registry (detailed) - Wide Layout -->
+      <div class="metric-card wide-users-card">
+        <h3>☁️ Cloud User Registry</h3>
+        <div id="cloudUsersCount" class="metric-value">0</div>
+        <div id="cloudUsersList" class="users-list-wide"></div>
+        <div class="metric-subtitle">Shows username, last login, and accumulated playtime</div>
       </div>
     </div>
 
@@ -641,22 +666,28 @@
         console.error('Cloud users fetch error', lastError);
         const base = getApiBase();
         const url = base.replace(/\/+$/, '') + '/cloud/users';
-        document.getElementById('cloudUsersList').innerHTML = `<div style="color:#ff8888;padding:8px;border-radius:6px;background:rgba(0,0,0,0.25)">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
+        document.getElementById('cloudUsersList').innerHTML = `<div class="user-item" style="color:#ff8888;background:rgba(255,136,136,0.1);">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
         document.getElementById('cloudUsersCount').textContent = '0';
       }        function renderCloudUsers(data) {
           if (!data || !Array.isArray(data.users)) {
-            document.getElementById('cloudUsersList').innerHTML = '<em>No cloud users</em>';
+            document.getElementById('cloudUsersList').innerHTML = '<div class="user-item"><em>No cloud users</em></div>';
             document.getElementById('cloudUsersCount').textContent = '0';
             return;
           }
           const users = data.users;
           document.getElementById('cloudUsersCount').textContent = users.length;
-          const rows = users.map(u => {
+          const userItems = users.map(u => {
             const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
             const play = formatPlayTime(u.playTimeSeconds || 0);
-            return `<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.03)"><div style="flex:1">${escapeHtml(u.username)}</div><div style="flex:0 0 220px;text-align:right;color:#00ff88">${last} &nbsp; • &nbsp; ${play}</div></div>`;
+            const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Unknown';
+            return `<div class="user-item">
+              <div style="font-weight:bold;color:#00ff88;margin-bottom:4px;">${escapeHtml(u.username)}</div>
+              <div style="font-size:0.85em;color:#ccc;">Last Login: ${last}</div>
+              <div style="font-size:0.85em;color:#ccc;">Play Time: ${play}</div>
+              <div style="font-size:0.85em;color:#ccc;">Joined: ${created}</div>
+            </div>`;
           }).join('');
-          document.getElementById('cloudUsersList').innerHTML = rows || '<em>No cloud users</em>';
+          document.getElementById('cloudUsersList').innerHTML = userItems || '<div class="user-item"><em>No cloud users</em></div>';
         }
 
         function formatPlayTime(seconds) {
