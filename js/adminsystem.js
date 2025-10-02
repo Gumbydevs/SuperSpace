@@ -57,6 +57,17 @@ export class AdminSystem {
 
     adminButton.onclick = () => this.toggleAdminPanel();
     document.body.appendChild(adminButton);
+
+    // Honor persisted visibility preference (allow hiding the floating admin button)
+    try {
+      const hidden = localStorage.getItem('adminButtonHidden') === 'true';
+      if (hidden) {
+        adminButton.style.display = 'none';
+      }
+    } catch (e) {
+      // localStorage might be unavailable in some contexts; ignore failures
+      console.warn('Could not read admin button visibility preference:', e);
+    }
   }
 
   createAdminPanel() {
@@ -188,6 +199,25 @@ export class AdminSystem {
 
     // Load default tab
     this.switchAdminTab('players');
+
+    // Initialize admin button visibility status in Tools tab if present
+    setTimeout(() => {
+      const status = document.getElementById('admin-button-visibility-status');
+      const toggleBtn = document.getElementById('admin-button-visibility');
+      if (status) {
+        let hidden = false;
+        try {
+          hidden = localStorage.getItem('adminButtonHidden') === 'true';
+        } catch (e) {
+          console.warn('Could not read admin button visibility preference:', e);
+        }
+        status.textContent = hidden ? 'Hidden' : 'Visible';
+      }
+      if (toggleBtn) {
+        // Ensure the button has an id for event delegation and accessibility
+        toggleBtn.id = 'admin-button-visibility';
+      }
+    }, 50);
   }
 
   switchAdminTab(tabName) {
@@ -492,6 +522,20 @@ export class AdminSystem {
 
     section.appendChild(debugSection);
 
+  // Admin floating button visibility control
+  const visibilitySection = document.createElement('div');
+  visibilitySection.style.cssText = 'margin-top: 20px;';
+  visibilitySection.innerHTML = `
+      <h4 style="color: #4fc3f7; margin-top: 10px;">🔒 Floating Admin Button</h4>
+      <div style="margin: 10px 0; display:flex; align-items:center; gap:10px;">
+        <label style="color:#ccc;">Show floating admin button:</label>
+        <button id="admin-button-visibility" style="background: #48f; border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Toggle</button>
+        <span id="admin-button-visibility-status" style="color:#ccc; font-size:12px;"></span>
+      </div>
+    `;
+
+  section.appendChild(visibilitySection);
+
     // Add event listeners for tool buttons
     section.addEventListener('click', (e) => {
       switch (e.target.id) {
@@ -543,10 +587,42 @@ export class AdminSystem {
         case 'max-upgrades':
           this.maxAllUpgrades();
           break;
+        case 'admin-button-visibility':
+          this.toggleAdminButtonVisibility();
+          break;
       }
     });
 
     container.appendChild(section);
+  }
+
+  // Persist and apply admin button visibility
+  setAdminButtonVisibility(hidden) {
+    try {
+      localStorage.setItem('adminButtonHidden', hidden ? 'true' : 'false');
+    } catch (e) {
+      console.warn('Could not save admin button visibility preference:', e);
+    }
+
+    const el = document.getElementById('admin-toggle');
+    if (el) {
+      el.style.display = hidden ? 'none' : '';
+    }
+
+    // Update status text inside admin panel if present
+    const status = document.getElementById('admin-button-visibility-status');
+    if (status) status.textContent = hidden ? 'Hidden' : 'Visible';
+  }
+
+  toggleAdminButtonVisibility() {
+    // Read current state and flip it
+    let hidden = false;
+    try {
+      hidden = localStorage.getItem('adminButtonHidden') === 'true';
+    } catch (e) {
+      console.warn('Could not read admin button visibility preference:', e);
+    }
+    this.setAdminButtonVisibility(!hidden);
   }
 
   // Helper methods for admin functionality

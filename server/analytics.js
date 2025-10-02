@@ -45,70 +45,75 @@ class ServerAnalytics {
 
   async loadExistingData() {
     try {
-      // Load today's stats if they exist
-      const today = this.getDateString();
-      const todayFile = path.join(this.dataDir, 'daily', `${today}.json`);
-
+      // Load all existing daily stats files so historic data contributes to all-time aggregates
+      const dailyDir = path.join(this.dataDir, 'daily');
       try {
-        const todayData = await fs.readFile(todayFile, 'utf8');
-        const stats = JSON.parse(todayData);
-        // Restore Set fields that were serialized as arrays
-        if (stats.uniqueSessions && Array.isArray(stats.uniqueSessions)) {
-          stats.uniqueSessions = new Set(stats.uniqueSessions);
-        } else {
-          stats.uniqueSessions = new Set();
-        }
-        if (stats.uniqueIPs && Array.isArray(stats.uniqueIPs)) {
-          stats.uniqueIPs = new Set(stats.uniqueIPs);
-        } else {
-          stats.uniqueIPs = new Set();
-        }
-        // Restore uniquePlayers if present
-        if (stats.uniquePlayers && Array.isArray(stats.uniquePlayers)) {
-          stats.uniquePlayers = new Set(stats.uniquePlayers);
-        } else if (stats.uniquePlayers && typeof stats.uniquePlayers === 'object' && !Array.isArray(stats.uniquePlayers)) {
-          // older files might have serialized sets as objects/empty objects
+        const files = await fs.readdir(dailyDir);
+        for (const f of files) {
+          if (!f.endsWith('.json')) continue;
+          const filePath = path.join(dailyDir, f);
           try {
-            stats.uniquePlayers = new Set(Object.keys(stats.uniquePlayers));
-          } catch (e) {
-            stats.uniquePlayers = new Set();
-          }
-        } else {
-          stats.uniquePlayers = new Set();
-        }
+            const raw = await fs.readFile(filePath, 'utf8');
+            const stats = JSON.parse(raw);
 
-        // Restore playerSessionMap: convert arrays back to Sets
-        if (stats.playerSessionMap && typeof stats.playerSessionMap === 'object') {
-          const restored = {};
-          for (const [player, sessions] of Object.entries(stats.playerSessionMap)) {
-            if (Array.isArray(sessions)) {
-              restored[player] = new Set(sessions);
-            } else if (sessions && typeof sessions === 'object') {
-              // some saved files may have empty object placeholders
-              restored[player] = new Set(Object.keys(sessions));
+            // Restore Set fields that were serialized as arrays
+            if (stats.uniqueSessions && Array.isArray(stats.uniqueSessions)) {
+              stats.uniqueSessions = new Set(stats.uniqueSessions);
             } else {
-              restored[player] = new Set();
+              stats.uniqueSessions = new Set();
             }
+            if (stats.uniqueIPs && Array.isArray(stats.uniqueIPs)) {
+              stats.uniqueIPs = new Set(stats.uniqueIPs);
+            } else {
+              stats.uniqueIPs = new Set();
+            }
+            if (stats.uniquePlayers && Array.isArray(stats.uniquePlayers)) {
+              stats.uniquePlayers = new Set(stats.uniquePlayers);
+            } else if (stats.uniquePlayers && typeof stats.uniquePlayers === 'object' && !Array.isArray(stats.uniquePlayers)) {
+              try {
+                stats.uniquePlayers = new Set(Object.keys(stats.uniquePlayers));
+              } catch (e) {
+                stats.uniquePlayers = new Set();
+              }
+            } else {
+              stats.uniquePlayers = new Set();
+            }
+
+            // Restore playerSessionMap values to Sets
+            if (stats.playerSessionMap && typeof stats.playerSessionMap === 'object') {
+              const restored = {};
+              for (const [player, sessions] of Object.entries(stats.playerSessionMap)) {
+                if (Array.isArray(sessions)) {
+                  restored[player] = new Set(sessions);
+                } else if (sessions && typeof sessions === 'object') {
+                  restored[player] = new Set(Object.keys(sessions));
+                } else {
+                  restored[player] = new Set();
+                }
+              }
+              stats.playerSessionMap = restored;
+            } else {
+              stats.playerSessionMap = {};
+            }
+
+            stats.gameDurations = stats.gameDurations || [];
+            stats.sessionDurations = stats.sessionDurations || [];
+            stats.lifeDurations = stats.lifeDurations || [];
+            stats.currentConcurrent = stats.currentConcurrent || 0;
+            stats.peakConcurrent = stats.peakConcurrent || 0;
+
+            const dateKey = stats.date || f.replace('.json', '');
+            this.dailyStats.set(dateKey, stats);
+          } catch (e) {
+            console.warn('Analytics: failed to load daily file', filePath, e);
           }
-          stats.playerSessionMap = restored;
-        } else {
-          stats.playerSessionMap = {};
         }
-
-        // Ensure arrays exist for durations
-        stats.gameDurations = stats.gameDurations || [];
-        stats.sessionDurations = stats.sessionDurations || [];
-        stats.lifeDurations = stats.lifeDurations || [];
-        // Ensure concurrent counters exist
-        stats.currentConcurrent = stats.currentConcurrent || 0;
-        stats.peakConcurrent = stats.peakConcurrent || 0;
-
-        this.dailyStats.set(today, stats);
-        console.log(`Loaded existing stats for ${today}`);
       } catch (e) {
-        // File doesn't exist, create new daily stats
+        // directory may not exist or be empty - create empty current day
+        const today = this.getDateString();
         this.dailyStats.set(today, this.createEmptyDayStats());
       }
+
       // attempt to load meta (globalPeak) if present
       try {
         const metaPath = path.join(this.dataDir, 'meta.json');
@@ -271,7 +276,6 @@ class ServerAnalytics {
     if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
 
     stats.uniquePlayers.add(playerId);
-    stats.totalSessions++;
     console.log(`Analytics: Added new player ${playerId} to daily stats`);
   }
 
@@ -286,7 +290,6 @@ class ServerAnalytics {
     if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
 
     // Player already exists, just increment session count
-    stats.totalSessions++;
     console.log(
       `Analytics: Added new session for returning player ${playerId}`,
     );
@@ -369,8 +372,10 @@ class ServerAnalytics {
       case 'game_end':
         stats.gamesCompleted++;
         if (event.data.duration) {
-          stats.totalGameTime += event.data.duration;
-          stats.gameDurations.push(event.data.duration);
+          // store game durations in seconds instead of milliseconds
+          const gsecs = Math.round(event.data.duration / 1000);
+          stats.totalGameTime += gsecs;
+          stats.gameDurations.push(gsecs);
         }
         if (event.data.shipType) {
           if (!stats.shipUsage[event.data.shipType]) {
@@ -383,9 +388,9 @@ class ServerAnalytics {
         // Record session duration but don't manually decrement concurrent
         // (we use sessions.size directly now)
         if (event.data && event.data.sessionDuration) {
-          stats.totalSessionTime =
-            (stats.totalSessionTime || 0) + event.data.sessionDuration;
-          stats.sessionDurations.push(event.data.sessionDuration);
+          const secs = Math.round(event.data.sessionDuration / 1000);
+          stats.totalSessionTime = (stats.totalSessionTime || 0) + secs;
+          stats.sessionDurations.push(secs);
         }
         break;
 
@@ -472,6 +477,54 @@ class ServerAnalytics {
         } catch (e) {
           // ignore
         }
+        break;
+      // Tutorial related events
+      case 'tutorial_started':
+        try {
+          if (!stats.tutorial) stats.tutorial = { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+          stats.tutorial.started = (stats.tutorial.started || 0) + 1;
+        } catch (e) {}
+        break;
+      case 'tutorial_completed':
+        try {
+          if (!stats.tutorial) stats.tutorial = { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+          stats.tutorial.completed = (stats.tutorial.completed || 0) + 1;
+          const dur = event.data && event.data.totalDurationSeconds ? Number(event.data.totalDurationSeconds) : null;
+          if (dur != null) stats.tutorial.completionDurations.push(dur);
+          // merge provided step durations
+          if (event.data && event.data.stepDurations && typeof event.data.stepDurations === 'object') {
+            for (const [sid, sdur] of Object.entries(event.data.stepDurations)) {
+              if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+              stats.tutorial.stepDurations[sid].push(Number(sdur));
+            }
+          }
+        } catch (e) {}
+        break;
+      case 'tutorial_quit':
+        try {
+          if (!stats.tutorial) stats.tutorial = { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+          const lastStep = event.data && event.data.lastStepId ? String(event.data.lastStepId) : 'unknown';
+          stats.tutorial.quitCounts[lastStep] = (stats.tutorial.quitCounts[lastStep] || 0) + 1;
+          const qdur = event.data && event.data.totalDurationSeconds ? Number(event.data.totalDurationSeconds) : null;
+          if (qdur != null) stats.tutorial.quitDurations.push(qdur);
+          if (event.data && event.data.stepDurations && typeof event.data.stepDurations === 'object') {
+            for (const [sid, sdur] of Object.entries(event.data.stepDurations)) {
+              if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+              stats.tutorial.stepDurations[sid].push(Number(sdur));
+            }
+          }
+        } catch (e) {}
+        break;
+      case 'tutorial_step_duration':
+        try {
+          if (!stats.tutorial) stats.tutorial = { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+          const sid = event.data && event.data.stepId ? String(event.data.stepId) : 'unknown';
+          const dur = event.data && event.data.durationSeconds ? Number(event.data.durationSeconds) : null;
+          if (dur != null) {
+            if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+            stats.tutorial.stepDurations[sid].push(dur);
+          }
+        } catch (e) {}
         break;
     }
   }
@@ -651,6 +704,15 @@ class ServerAnalytics {
   createEmptyDayStats() {
     return {
       date: this.getDateString(),
+      // Tutorial-specific aggregates
+      tutorial: {
+        started: 0,
+        completed: 0,
+        completionDurations: [], // seconds
+        quitCounts: {}, // stepId -> count
+        quitDurations: [], // seconds
+        stepDurations: {}, // stepId -> [seconds]
+      },
       totalSessions: 0,
       uniquePlayers: new Set(),
       uniqueSessions: new Set(),
@@ -869,10 +931,11 @@ class ServerAnalytics {
       // Update player profile
       const profile = this.playerProfiles.get(playerId);
       if (profile && event.data && event.data.sessionDuration) {
-        profile.totalPlayTime += event.data.sessionDuration;
+        const secs = Math.round(event.data.sessionDuration / 1000);
+        profile.totalPlayTime += secs;
         profile.longestSession = Math.max(
           profile.longestSession,
-          event.data.sessionDuration,
+          secs,
         );
       }
 
@@ -884,16 +947,9 @@ class ServerAnalytics {
       if (this.dailyStats.has(day)) {
         const stats = this.dailyStats.get(day);
         stats.sessionDurations = stats.sessionDurations || [];
-        stats.sessionDurations.push(
-          event.data && event.data.sessionDuration
-            ? event.data.sessionDuration
-            : 0,
-        );
-        stats.totalSessionTime =
-          (stats.totalSessionTime || 0) +
-          (event.data && event.data.sessionDuration
-            ? event.data.sessionDuration
-            : 0);
+        const secs = event.data && event.data.sessionDuration ? Math.round(event.data.sessionDuration / 1000) : 0;
+        stats.sessionDurations.push(secs);
+        stats.totalSessionTime = (stats.totalSessionTime || 0) + secs;
       }
 
       // Remove session and refresh today's concurrent counter
@@ -1029,6 +1085,54 @@ class ServerAnalytics {
       globalPeakConcurrent: this.globalPeak || 0,
     };
 
+    // Build tutorialStats aggregation (today + all time)
+    const tutorialToday = (todayStats && todayStats.tutorial) ? todayStats.tutorial : { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+    // Aggregate all-time tutorial stats across dailyStats
+    const tutorialAll = { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+    for (const stats of this.dailyStats.values()) {
+      if (stats.tutorial) {
+        tutorialAll.started += stats.tutorial.started || 0;
+        tutorialAll.completed += stats.tutorial.completed || 0;
+        if (Array.isArray(stats.tutorial.completionDurations)) tutorialAll.completionDurations.push(...stats.tutorial.completionDurations);
+        if (Array.isArray(stats.tutorial.quitDurations)) tutorialAll.quitDurations.push(...stats.tutorial.quitDurations);
+        if (stats.tutorial.quitCounts) {
+          for (const [k, v] of Object.entries(stats.tutorial.quitCounts)) {
+            tutorialAll.quitCounts[k] = (tutorialAll.quitCounts[k] || 0) + v;
+          }
+        }
+        if (stats.tutorial.stepDurations) {
+          for (const [sid, arr] of Object.entries(stats.tutorial.stepDurations)) {
+            if (!tutorialAll.stepDurations[sid]) tutorialAll.stepDurations[sid] = [];
+            if (Array.isArray(arr)) tutorialAll.stepDurations[sid].push(...arr);
+          }
+        }
+      }
+    }
+
+    function avg(arr) {
+      if (!Array.isArray(arr) || arr.length === 0) return 0;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    const tutorialStats = {
+      today: {
+        started: tutorialToday.started || 0,
+        completed: tutorialToday.completed || 0,
+        avgCompletionSeconds: avg(tutorialToday.completionDurations),
+        avgQuitSeconds: avg(tutorialToday.quitDurations),
+        quitCounts: tutorialToday.quitCounts || {},
+        stepDurations: tutorialToday.stepDurations || {},
+      },
+      allTime: {
+        started: tutorialAll.started || 0,
+        completed: tutorialAll.completed || 0,
+        avgCompletionSeconds: avg(tutorialAll.completionDurations),
+        avgQuitSeconds: avg(tutorialAll.quitDurations),
+        quitCounts: tutorialAll.quitCounts || {},
+        stepDurations: tutorialAll.stepDurations || {},
+      },
+    };
+
     return {
       today: {
         ...todayStats,
@@ -1062,6 +1166,7 @@ class ServerAnalytics {
         currentConcurrent: activeSessions,
       },
       allTime: allTimeOut,
+      tutorialStats,
       activeSessions,
       recentEvents: this.events.slice(-50), // Last 50 events
       totalPlayers: todayStats.uniquePlayers

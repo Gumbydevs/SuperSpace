@@ -280,6 +280,17 @@
         <div class="metric-subtitle">Today / All Time</div>
       </div>
 
+      <!-- Tutorial Funnel -->
+      <div class="metric-card">
+        <h3>🧭 Tutorial Funnel</h3>
+        <div class="metric-value" style="font-size:1em;line-height:1.4;">
+          <div>Started: <strong><span id="tutorialStartedToday">0</span></strong> / <strong><span id="tutorialStartedAll">0</span></strong></div>
+          <div>Step Shown: <strong><span id="tutorialStepShownToday">0</span></strong> / <strong><span id="tutorialStepShownAll">0</span></strong></div>
+          <div>Step Completed: <strong><span id="tutorialStepCompletedToday">0</span></strong> / <strong><span id="tutorialStepCompletedAll">0</span></strong></div>
+        </div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
       <!-- Average Session Time -->
       <div class="metric-card">
         <h3>⏱️ Avg Session</h3>
@@ -303,6 +314,25 @@
         </div>
       </div>
 
+      <!-- Tutorial Insights (new) -->
+      <div class="metric-card large-chart">
+        <h3>🧭 Tutorial Insights</h3>
+        <div style="display:flex;gap:12px;align-items:stretch;">
+          <div style="flex:1;min-width:280px;height:260px;">
+            <div class="chart-container" style="height:100%;">
+              <canvas id="tutorialQuitChart"></canvas>
+            </div>
+          </div>
+          <div style="flex:1;min-width:260px;color:#fff;">
+            <div style="font-size:0.95em;margin-bottom:8px;color:#00ff88;">Per-step average duration (s)</div>
+            <div id="tutorialStepTable" style="max-height:220px;overflow:auto;background:rgba(0,0,0,0.15);padding:8px;border-radius:6px;color:#fff;font-size:0.95em;">
+              <em>No tutorial timing data yet</em>
+            </div>
+          </div>
+        </div>
+        <div class="metric-subtitle">Quit-distribution and per-step timings (Today / All Time)</div>
+      </div>
+
       <!-- Detailed Statistics -->
       <div class="metric-card">
         <h3>🎯 Game Statistics</h3>
@@ -322,6 +352,14 @@
           <div class="stat-item">
             <div class="stat-label">Power-ups</div>
             <div class="stat-value"><span id="powerupsCollectedToday">0</span> / <span id="powerupsCollectedAll">0</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Tutorial Avg Complete</div>
+            <div class="stat-value"><span id="tutorialAvgComplete">0s</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Tutorial Most Quit Step</div>
+            <div class="stat-value"><span id="tutorialMostQuit">-</span></div>
           </div>
         </div>
       </div>
@@ -387,7 +425,7 @@
     <script>
       // Socket.IO client for admin chat (loaded dynamically below)
       let socket = null;
-      let playerActivityChart, gameEventsChart;
+      let playerActivityChart, gameEventsChart, tutorialQuitChart;
       let eventData = [];
       let chartData = {
         labels: [],
@@ -530,6 +568,30 @@
             },
           },
         });
+
+        // Tutorial Quit Distribution Chart (initial empty)
+        try {
+          const tutCtx = document.getElementById('tutorialQuitChart')?.getContext('2d');
+          if (tutCtx) {
+            tutorialQuitChart = new Chart(tutCtx, {
+              type: 'bar',
+              data: {
+                labels: [],
+                datasets: [{ label: 'Quit Count', data: [], backgroundColor: 'rgba(255,99,132,0.8)' }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                  y: { ticks: { color: '#ffffff', precision: 0 }, beginAtZero: true }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to initialize tutorialQuitChart', e);
+        }
       }
 
       // --- Challenge definitions for rendering ---
@@ -685,6 +747,80 @@
   document.getElementById('shotsFiredAll').textContent = allTime.totalShots || 0;
   document.getElementById('powerupsCollectedToday').textContent = today.powerupsCollected || 0;
   document.getElementById('powerupsCollectedAll').textContent = allTime.powerupsCollected || 0;
+
+  // Tutorial timing/quit stats
+  const tut = data.tutorialStats || { today: {}, allTime: {} };
+  const avgToday = tut.today ? (tut.today.avgCompletionSeconds || 0) : 0;
+  const avgAll = tut.allTime ? (tut.allTime.avgCompletionSeconds || 0) : 0;
+  document.getElementById('tutorialAvgComplete').textContent = formatDuration(Math.round(avgToday)) + ' / ' + formatDuration(Math.round(avgAll));
+  // Most common quit step (choose today if available, otherwise allTime)
+  const quitCounts = (tut.today && tut.today.quitCounts && Object.keys(tut.today.quitCounts).length>0) ? tut.today.quitCounts : (tut.allTime && tut.allTime.quitCounts ? tut.allTime.quitCounts : {});
+  let mostQuit = '-';
+  if (quitCounts && Object.keys(quitCounts).length>0) {
+    let max = -1; let key = null;
+    for (const [k,v] of Object.entries(quitCounts)) {
+      if (v > max) { max = v; key = k; }
+    }
+    mostQuit = key + ` (${max})`;
+  }
+  document.getElementById('tutorialMostQuit').textContent = mostQuit;
+
+  // Populate tutorial step durations table
+  try {
+    const tableContainer = document.getElementById('tutorialStepTable');
+    const stepDurationsToday = tut.today && tut.today.stepDurations ? tut.today.stepDurations : {};
+    const stepDurationsAll = tut.allTime && tut.allTime.stepDurations ? tut.allTime.stepDurations : {};
+    const allStepIds = new Set([...Object.keys(stepDurationsToday), ...Object.keys(stepDurationsAll)]);
+    if (allStepIds.size === 0) {
+      tableContainer.innerHTML = '<em>No tutorial timing data yet</em>';
+    } else {
+      let html = '<table style="width:100%;color:#fff;border-collapse:collapse;font-size:0.95em;">';
+      html += '<thead><tr><th style="text-align:left">Step</th><th>Today (s)</th><th>All Time (s)</th></tr></thead><tbody>';
+      for (const sid of Array.from(allStepIds)) {
+        const todayArr = Array.isArray(stepDurationsToday[sid]) ? stepDurationsToday[sid] : [];
+        const allArr = Array.isArray(stepDurationsAll[sid]) ? stepDurationsAll[sid] : [];
+        const avg = arr => (arr.length>0?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0);
+        html += `<tr><td style="padding:4px 6px">${escapeHtml(sid)}</td><td style="padding:4px 6px;color:#00ff88">${avg(todayArr)}</td><td style="padding:4px 6px">${avg(allArr)}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      tableContainer.innerHTML = html;
+    }
+  } catch (e) {
+    console.warn('Failed to render tutorialStepTable', e);
+  }
+
+  // Populate tutorialQuitChart with quitCounts (today if available else allTime)
+  try {
+    if (tutorialQuitChart) {
+      const qcounts = (tut.today && tut.today.quitCounts && Object.keys(tut.today.quitCounts).length>0) ? tut.today.quitCounts : (tut.allTime && tut.allTime.quitCounts ? tut.allTime.quitCounts : {});
+      const labels = Object.keys(qcounts);
+      const values = labels.map(l => qcounts[l] || 0);
+      tutorialQuitChart.data.labels = labels;
+      tutorialQuitChart.data.datasets[0].data = values;
+      tutorialQuitChart.update('none');
+    }
+  } catch (e) {
+    console.warn('Failed to update tutorialQuitChart', e);
+  }
+
+  // --- Tutorial funnel counts (events emitted by client tutorial.js)
+  // eventCounts may live under today.eventCounts and allTime.eventCounts depending on server response
+  const todayEvents = today.eventCounts || {};
+  const allTimeEvents = allTime.eventCounts || {};
+
+  const tStartedToday = todayEvents['tutorial_started'] || 0;
+  const tStartedAll = allTimeEvents['tutorial_started'] || 0;
+  const tShownToday = todayEvents['tutorial_step_shown'] || 0;
+  const tShownAll = allTimeEvents['tutorial_step_shown'] || 0;
+  const tCompletedToday = todayEvents['tutorial_step_completed'] || 0;
+  const tCompletedAll = allTimeEvents['tutorial_step_completed'] || 0;
+
+  document.getElementById('tutorialStartedToday').textContent = tStartedToday;
+  document.getElementById('tutorialStartedAll').textContent = tStartedAll;
+  document.getElementById('tutorialStepShownToday').textContent = tShownToday;
+  document.getElementById('tutorialStepShownAll').textContent = tShownAll;
+  document.getElementById('tutorialStepCompletedToday').textContent = tCompletedToday;
+  document.getElementById('tutorialStepCompletedAll').textContent = tCompletedAll;
 
   // Update premium statistics (today/all time)
   document.getElementById('premiumPlayers').textContent = `${today.premiumPlayers || 0} / ${allTime.premiumPlayers || 0}`;

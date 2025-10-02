@@ -46,9 +46,24 @@ body {
   padding: 0;
 }
 
-/* Prevent zoom on all elements */
+/* Prevent zoom on all elements and disable text selection globally */
 * {
   touch-action: manipulation;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+/* Allow text selection only in input fields and textareas */
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
 }
 
 body {
@@ -84,6 +99,11 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 #hud {
@@ -99,6 +119,11 @@ body {
   justify-content: space-between;
   padding: 20px;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 #stats {
@@ -108,6 +133,11 @@ body {
   text-shadow:
     0 0 5px #00f,
     0 0 10px #00f;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 #minimap-container {
@@ -155,6 +185,10 @@ button {
   min-height: 44px;
   min-width: 44px;
   padding: 10px 15px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 button:hover {
@@ -181,6 +215,11 @@ h1.superspace-title {
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 .launch-subtext {
   color: #8cf;
@@ -194,6 +233,11 @@ h1.superspace-title {
     0 0 16px #fff;
   text-align: center;
   text-transform: uppercase;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
 }
 
 /* Unified Options/Instructions Overlay - Space Theme Improvements */
@@ -236,6 +280,26 @@ h1.superspace-title {
 /* Custom futuristic scrollbar */
 .options-panel::-webkit-scrollbar {
   width: 8px;
+}
+
+/* Small icon button used in options overlay */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #eaf2ff;
+  font-size: 14px;
+  padding: 0;
+}
+.icon-btn:hover {
+  border-color: #77f;
+  box-shadow: 0 0 8px rgba(119,119,255,0.2);
 }
 
 .options-panel::-webkit-scrollbar-track {
@@ -300,19 +364,25 @@ h1.superspace-title {
 }
 .slider-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-  margin-left: 15px; /* Move the entire row right by 15px */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 10px;
+  margin-left: 0;
+  width: 100%;
 }
 .slider-row label {
-  min-width: 90px; /* Set a minimum width to align sliders */
+  min-width: auto;
   text-align: left;
   font-family: 'Orbitron', monospace;
   font-weight: 500;
   font-size: 0.9em;
   color: #d6e8ff;
   text-shadow: 0 0 2px #33f3;
+}
+.slider-row input[type="range"] {
+  width: 100%;
+  max-width: 280px;
 }
 .audio-spacer {
   height: 8px;
@@ -328,6 +398,30 @@ h1.superspace-title {
   color: #d6e8ff;
   text-shadow: 0 0 2px #33f3;
 }
+
+/* Disclaimer details small container used in the development notice */
+.disclaimer-details {
+  background: rgba(255, 255, 255, 0.03); /* subtle light contrast against black */
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-top: 10px;
+  max-width: 680px;
+}
+.disclaimer-details .disclaimer-lead,
+.disclaimer-details .disclaimer-ack {
+  font-size: 0.85em; /* slightly smaller than body text */
+  margin: 6px 0;
+  line-height: 1.3;
+  color: #dfefff;
+}
+.disclaimer-details .disclaimer-list {
+  font-size: 0.85em;
+  margin: 6px 0 8px 18px;
+  padding: 0;
+  color: #dfefff;
+}
+
 input[type='range'] {
   width: 120px;
   accent-color: #33f;
@@ -337,25 +431,23 @@ input[type='range'] {
 }
 .close-btn {
   position: absolute;
-  top: 12px;
-  right: 16px;
-  background: #222b;
+  top: 8px; /* move up a little */
+  right: 12px; /* snug into the top-right corner */
+  background: transparent; /* remove circular background */
   color: #fff;
   border: none;
-  font-size: 1.5em;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  font-size: 1.6em; /* larger X for visibility */
+  border-radius: 0; /* no circle */
+  width: auto;
+  height: auto;
+  padding: 4px 6px; /* small clickable area */
   cursor: pointer;
-  box-shadow: 0 0 8px #33f8;
-  transition:
-    background 0.2s,
-    color 0.2s;
-  z-index: 2;
+  box-shadow: none; /* no glowing circle */
+  transition: color 0.12s ease;
+  z-index: 50; /* ensure it sits above panel border */
 }
 .close-btn:hover {
-  background: #33f;
-  color: #fff;
+  color: #33f; /* change color on hover */
 }
 
 #pilot-name {
@@ -413,8 +505,10 @@ input[type='range'] {
 
 .avatar-option.selected {
   background: rgba(51, 51, 255, 0.25);
-  border-color: #4af;
-  box-shadow: 0 0 10px rgba(68, 175, 255, 0.6);
+  border-color: #4af !important;
+  border-width: 3px !important;
+  box-shadow: 0 0 15px rgba(68, 175, 255, 0.8), 0 0 25px rgba(68, 175, 255, 0.4) !important;
+  transform: scale(1.05);
 }
 
 .avatar-option.disabled {
@@ -1161,11 +1255,11 @@ input[type='range'] {
 
   /* Close button mobile adjustments */
   .close-btn {
-    top: 8px;
-    right: 8px;
-    width: 40px;
-    height: 40px;
-    font-size: 1.3em;
+    top: 6px;
+    right: 6px;
+    width: auto;
+    height: auto;
+    font-size: 1.4em;
   }
 
   /* HUD adjustments for mobile - avoid touch control overlap */

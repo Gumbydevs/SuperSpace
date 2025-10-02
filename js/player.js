@@ -28,41 +28,94 @@ export class Player {
       const relVelY = this.velocity.y;
       // Calculate impact force
       const impactForce = Math.sqrt(relVelX * relVelX + relVelY * relVelY);
-      // Calculate impulse (how strongly we bounce)
-      const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
-      // Apply impulse in the direction away from collision
-      const impulseX = nx * impulseStrength;
-      const impulseY = ny * impulseStrength;
+      
+      // Check if Impact Deflector is active
+      if (this.impactDeflector.active) {
+        // Impact Deflector prevents damage and enhances bounce
+        const enhancedBounceStrength = this.bounceStrength * this.impactDeflector.bounceStrength;
+        const impulseStrength = (1 + enhancedBounceStrength) * impactForce * 0.8; // Stronger bounce
+        
+        // Apply enhanced impulse in the direction away from collision
+        const impulseX = nx * impulseStrength;
+        const impulseY = ny * impulseStrength;
+        this.velocity.x = impulseX;
+        this.velocity.y = impulseY;
+        
+        // No damage taken with deflector active!
+        
+        // Play special deflector collision sound with pitch randomization (like normal asteroid hits)
+        if (soundManager) {
+          soundManager.play('hit', {
+            volume: 0.5,
+            playbackRate: 1.5 + Math.random() * 0.8, // Pitch randomization: 1.5 to 2.3
+            position: { x: this.x, y: this.y },
+          });
+        }
+        
+        // Create special deflector impact effect
+        if (window.game && window.game.world) {
+          const impactX = this.x - (nx * this.impactDeflector.radius) / 2;
+          const impactY = this.y - (ny * this.impactDeflector.radius) / 2;
+          // Create a more dramatic effect for deflector impacts
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              window.game.world.createCollisionEffect(
+                impactX + (Math.random() - 0.5) * 20,
+                impactY + (Math.random() - 0.5) * 20
+              );
+            }, i * 50);
+          }
+        }
+        
+        // Broadcast deflector impact to other players
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+          window.game.multiplayer.socket.emit('impactDeflectorImpact', {
+            playerId: window.game.multiplayer.playerId,
+            x: this.x,
+            y: this.y,
+            asteroidX: asteroid.x,
+            asteroidY: asteroid.y,
+          });
+        }
+      } else {
+        // Normal collision handling without deflector
+        // Calculate impulse (how strongly we bounce)
+        const impulseStrength = (1 + this.bounceStrength) * impactForce * 0.5;
+        // Apply impulse in the direction away from collision
+        const impulseX = nx * impulseStrength;
+        const impulseY = ny * impulseStrength;
 
-      // Apply to this player
-      this.velocity.x = impulseX;
-      this.velocity.y = impulseY;
-      // Take damage based on impact force
-      if (impactForce > 100) {
-        const damage = Math.max(5, impactForce * 0.1);
-        // Record that damage is from asteroid collision for analytics
-        this.recordDamageFrom('asteroid');
-        this.takeDamage(damage);
-      } else if (impactForce > 10) {
-        // Apply at least minimal damage for smaller bumps
-        // Record that damage is from asteroid collision for analytics
-        this.recordDamageFrom('asteroid');
-        this.takeDamage(5);
+        // Apply to this player
+        this.velocity.x = impulseX;
+        this.velocity.y = impulseY;
+        // Take damage based on impact force
+        if (impactForce > 100) {
+          const damage = Math.max(5, impactForce * 0.1);
+          // Record that damage is from asteroid collision for analytics
+          this.recordDamageFrom('asteroid');
+          this.takeDamage(damage);
+        } else if (impactForce > 10) {
+          // Apply at least minimal damage for smaller bumps
+          // Record that damage is from asteroid collision for analytics
+          this.recordDamageFrom('asteroid');
+          this.takeDamage(5);
+        }
+        // Play collision sound
+        if (soundManager) {
+          soundManager.play('hit', {
+            volume: 0.4,
+            playbackRate: 1.2,
+            position: { x: this.x, y: this.y },
+          });
+        }
+        // Create visual impact effect
+        if (window.game && window.game.world) {
+          const impactX = this.x - (nx * this.collisionRadius) / 2;
+          const impactY = this.y - (ny * this.collisionRadius) / 2;
+          window.game.world.createCollisionEffect(impactX, impactY);
+        }
       }
-      // Play collision sound
-      if (soundManager) {
-        soundManager.play('hit', {
-          volume: 0.4,
-          playbackRate: 1.2,
-          position: { x: this.x, y: this.y },
-        });
-      }
-      // Create visual impact effect
-      if (window.game && window.game.world) {
-        const impactX = this.x - (nx * this.collisionRadius) / 2;
-        const impactY = this.y - (ny * this.collisionRadius) / 2;
-        window.game.world.createCollisionEffect(impactX, impactY);
-      }
+      
       // Set cooldown to prevent multiple collisions
       this.collisionCooldown = this.collisionCooldownTime;
       return true; // Collision occurred
@@ -179,25 +232,62 @@ export class Player {
   }
   // Set ship skin and notify multiplayer
   setShipSkin(skinId) {
-    this.shipSkin = skinId;
-    // Prefer using the centralized ShipSkinSystem so stats and challenge checks run
+    // Attempt to set via centralized ShipSkinSystem which enforces ownership.
+    let applied = false;
     try {
       if (window.game && window.game.shipSkins && typeof window.game.shipSkins.setActiveSkin === 'function') {
-        window.game.shipSkins.setActiveSkin(this.currentShip || 'scout', skinId);
+        applied = window.game.shipSkins.setActiveSkin(this.currentShip || 'scout', skinId);
       } else {
+        // No centralized system available; allow local change but mark applied true
         localStorage.setItem('selectedShipSkin', skinId);
+        applied = true;
       }
     } catch (e) {
-      // fallback
-      localStorage.setItem('selectedShipSkin', skinId);
+      // On error, do not apply or broadcast to avoid leaking exclusive skins
+      console.warn('Error applying ship skin:', e);
+      applied = false;
     }
 
-    if (
-      window.game &&
-      window.game.multiplayer &&
-      window.game.multiplayer.connected
-    ) {
-      window.game.multiplayer.sendShipSkinUpdate(skinId);
+    if (applied) {
+      this.shipSkin = skinId;
+      if (
+        window.game &&
+        window.game.multiplayer &&
+        window.game.multiplayer.connected
+      ) {
+        window.game.multiplayer.sendShipSkinUpdate(skinId);
+      }
+    } else {
+      // Revert to previous selection in UI/localStorage if equip failed
+      const prev = localStorage.getItem('selectedShipSkin') || 'none';
+      this.shipSkin = prev;
+      if (window.game && window.game.ui) {
+        window.game.ui.showMessage('Cannot equip skin: not owned or restricted.', '#f84');
+      }
+    }
+  }
+
+  // Ensure currently equipped skin is valid for the current ship type; if not, clear it.
+  ensureSkinMatchesShip() {
+    try {
+      const current = this.shipSkin || localStorage.getItem('selectedShipSkin') || 'none';
+      if (!current || current === 'none') return true;
+      const premiumStore = window.game && window.game.premiumStore ? window.game.premiumStore : null;
+      if (!premiumStore) return true; // cannot validate without store
+      const skinData = premiumStore.shipSkins.find((s) => s.id === current);
+      if (!skinData) {
+        // Skin unknown - clear it for safety
+        this.setShipSkin('none');
+        return false;
+      }
+      if (skinData.shipType !== (this.currentShip || 'scout')) {
+        // Equipped skin doesn't match current ship - revert to default
+        this.setShipSkin('none');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      return true; // on error, avoid blocking gameplay
     }
   }
 
@@ -251,8 +341,13 @@ export class Player {
     this.height = 30; // Ship collision height
     this.velocity = { x: 0, y: 0 }; // Current movement vector
     this.visible = true; // Whether to render the ship (false when destroyed)
-    // Ship color - load from localStorage or use default blue
-    this.shipColor = localStorage.getItem('playerShipColor') || '#7d7d7d';
+    // Ship color - load from localStorage or use random palette color
+    if (!localStorage.getItem('playerShipColor')) {
+      const paletteColors = ['#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff'];
+      const randomColor = paletteColors[Math.floor(Math.random() * paletteColors.length)];
+      localStorage.setItem('playerShipColor', randomColor);
+    }
+  this.shipColor = localStorage.getItem('playerShipColor');
     this.engineColor = localStorage.getItem('playerEngineColor') || '#f66';
     this.color = this.shipColor; // Multiplayer color reference
     // Ship skin - load from localStorage
@@ -335,6 +430,21 @@ export class Player {
     this.thrustLevel = 0; // Current visual size of engine flame (0-1)
     this.targetThrustLevel = 0; // Target size based on throttle input
     this.thrustTransitionSpeed = 2.0; // How quickly flame grows/shrinks
+    
+    // Impact Deflector System - defensive collision bubble
+    this.impactDeflector = {
+      active: false, // Whether the deflector is currently deployed
+      duration: 0.8, // Maximum duration in seconds (brief deployment)
+      remainingTime: 0, // Time left for current deployment
+      energyCost: 30, // Energy cost to activate
+      cooldown: 2.0, // Cooldown between uses in seconds
+      cooldownRemaining: 0, // Time left on cooldown
+      radius: 35, // Visual and collision radius when active
+      opacity: 0.8, // Visual opacity (0-1)
+      pulseSpeed: 8.0, // Speed of visual pulsing effect
+      bounceStrength: 1.5, // How strongly asteroids bounce off (multiplier)
+      lastActivation: 0, // Timestamp of last activation
+    };
   }
 
   // Credits property with setter to auto-update shop UI
@@ -500,19 +610,80 @@ export class Player {
       );
     }
 
+    // Handle Impact Deflector activation (Left Control or Tab key)
+    const deflectorRequested = input.keys.includes('ControlLeft') || input.keys.includes('Tab');
+    
+    if (deflectorRequested && 
+        this.energy >= this.impactDeflector.energyCost && 
+        this.impactDeflector.cooldownRemaining <= 0 && 
+        !this.impactDeflector.active) {
+      // Activate the impact deflector
+      this.impactDeflector.active = true;
+      this.impactDeflector.remainingTime = this.impactDeflector.duration;
+      this.impactDeflector.lastActivation = Date.now();
+      
+      // Drain energy for activation
+      this.energy = Math.max(0, this.energy - this.impactDeflector.energyCost);
+      
+      // Play activation sound
+      if (soundManager) {
+        soundManager.play('weaponswitch', {
+          volume: 0.4,
+          playbackRate: 1.8,
+          position: { x: this.x, y: this.y },
+        });
+      }
+      
+      // Broadcast deflector activation to other players
+      if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+        window.game.multiplayer.socket.emit('impactDeflectorActivated', {
+          playerId: window.game.multiplayer.playerId,
+          x: this.x,
+          y: this.y,
+          duration: this.impactDeflector.duration,
+        });
+      }
+    }
+    
+    // Update impact deflector
+    if (this.impactDeflector.active) {
+      this.impactDeflector.remainingTime -= deltaTime;
+      
+      // Deactivate when time runs out
+      if (this.impactDeflector.remainingTime <= 0) {
+        this.impactDeflector.active = false;
+        this.impactDeflector.cooldownRemaining = this.impactDeflector.cooldown;
+        
+        // Broadcast deflector deactivation to other players
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+          window.game.multiplayer.socket.emit('impactDeflectorDeactivated', {
+            playerId: window.game.multiplayer.playerId,
+          });
+        }
+      }
+    }
+    
+    // Update impact deflector cooldown
+    if (this.impactDeflector.cooldownRemaining > 0) {
+      this.impactDeflector.cooldownRemaining -= deltaTime;
+    }
+
     // Here we check if player is braking (using down arrow)
     this.braking =
       input.keys.includes('ArrowDown') || input.keys.includes('KeyS');
 
     // Here we apply physics based on whether the player is braking or coasting
+    // Use frame-rate independent damping: v *= pow(dampingFactor, deltaTime)
     if (this.braking) {
-      // Apply stronger deceleration when braking
-      this.velocity.x *= this.brakePower;
-      this.velocity.y *= this.brakePower;
+      // Apply stronger deceleration when braking (frame-rate independent)
+      const frameIndependentBrake = Math.pow(this.brakePower, deltaTime * 60); // 60 = target FPS normalization
+      this.velocity.x *= frameIndependentBrake;
+      this.velocity.y *= frameIndependentBrake;
     } else {
-      // Apply minimal friction when coasting (near-zero in space)
-      this.velocity.x *= this.friction;
-      this.velocity.y *= this.friction;
+      // Apply minimal friction when coasting (near-zero in space, frame-rate independent)
+      const frameIndependentFriction = Math.pow(this.friction, deltaTime * 60);
+      this.velocity.x *= frameIndependentFriction;
+      this.velocity.y *= frameIndependentFriction;
     }
 
     // Here we cap velocity to the maximum speed (with afterburner boost)
@@ -703,6 +874,11 @@ export class Player {
         if (weaponIcon) {
           this.updateWeaponIcon(weaponIcon, this.currentWeapon);
         }
+        
+        // Notify tutorial system of weapon change
+        if (window.game && window.game.tutorialSystem && typeof window.game.tutorialSystem.onWeaponChanged === 'function') {
+          window.game.tutorialSystem.onWeaponChanged();
+        }
       }
     }
 
@@ -819,6 +995,11 @@ export class Player {
             const weaponIcon = document.getElementById('weapon-icon');
             if (weaponIcon) {
               this.updateWeaponIcon(weaponIcon, this.currentWeapon);
+            }
+            
+            // Notify tutorial system of weapon change
+            if (window.game && window.game.tutorialSystem && typeof window.game.tutorialSystem.onWeaponChanged === 'function') {
+              window.game.tutorialSystem.onWeaponChanged();
             }
           }
         }
@@ -1182,6 +1363,8 @@ export class Player {
     // Update energy bar display in UI
     if (window.game && window.game.ui) {
       window.game.ui.updateEnergyBar(this.energy, this.maxEnergy);
+      // Update Impact Deflector indicator
+      window.game.ui.updateImpactDeflectorIndicator(this);
     }
 
     // Here we handle shield recharge after not taking damage for a while
@@ -1335,6 +1518,11 @@ export class Player {
     // Track no-damage survival for challenges
     if (window.game && window.game.playerProfile && typeof window.game.playerProfile.onDamageTaken === 'function') {
       window.game.playerProfile.onDamageTaken();
+    }
+
+    // Notify tutorial system of damage taken
+    if (window.game && window.game.tutorialSystem && typeof window.game.tutorialSystem.onDamageTaken === 'function') {
+      window.game.tutorialSystem.onDamageTaken();
     }
 
     // Record time of damage for shield recharge delay
@@ -1989,6 +2177,9 @@ export class Player {
     // Render mining beam (before ship so it appears behind)
     this.renderMiningBeam(ctx);
 
+    // Render Impact Deflector (before ship so it appears behind)
+    this.renderImpactDeflector(ctx);
+
     // Here we draw the player's ship
     if (this.visible) {
       ctx.save();
@@ -1996,10 +2187,8 @@ export class Player {
       ctx.rotate(this.rotation);
       // ...existing code for shield and electric effects...
 
-      // Draw ship geometry (original or default)
-      // ...existing code for ship geometry...
-
-      // Use ship skins system for consistent rendering with premium skins (AFTER geometry, BEFORE flames)
+      // Draw ship geometry using ship skin system (which handles both skins and defaults)
+      // The ship skin system will render either the equipped skin OR the default ship geometry
       if (window.game && window.game.shipSkins) {
         const tempShip = {
           x: 0,
@@ -2025,6 +2214,10 @@ export class Player {
           tempShip,
           window.game.premiumStore,
         );
+
+        // Ship skin system handles everything - finish rendering
+        ctx.restore();
+        return;
       }
 
       // --- Dynamic engine flame rendering for all ships/skins ---
@@ -3397,6 +3590,59 @@ export class Player {
       ctx.arc(fragment.x, fragment.y, fragment.size, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    ctx.restore();
+  }
+
+  renderImpactDeflector(ctx) {
+    if (!this.impactDeflector.active) return;
+
+    ctx.save();
+
+    // Calculate deflector visual properties
+    const timeLeft = this.impactDeflector.remainingTime;
+    const totalDuration = this.impactDeflector.duration;
+    const pulse = Math.sin(Date.now() / 1000 * this.impactDeflector.pulseSpeed) * 0.3 + 0.7;
+    
+    // Deflector fades out as it expires
+    const baseOpacity = this.impactDeflector.opacity * (timeLeft / totalDuration);
+    const deflectorOpacity = baseOpacity * pulse;
+    
+    // Create radial gradient for deflector effect (cyan/electric blue energy field)
+    const deflectorRadius = this.impactDeflector.radius;
+    const deflectorGradient = ctx.createRadialGradient(
+      this.x, this.y, deflectorRadius * 0.4,
+      this.x, this.y, deflectorRadius
+    );
+    deflectorGradient.addColorStop(0, `rgba(0, 255, 255, ${deflectorOpacity * 0.1})`);
+    deflectorGradient.addColorStop(0.7, `rgba(0, 200, 255, ${deflectorOpacity * 0.6})`);
+    deflectorGradient.addColorStop(1, `rgba(0, 150, 255, 0)`);
+
+    // Draw the deflector field
+    ctx.fillStyle = deflectorGradient;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, deflectorRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Add energy crackling effect around the perimeter
+    const crackleCount = 8;
+    for (let i = 0; i < crackleCount; i++) {
+      const angle = (i / crackleCount) * Math.PI * 2 + Date.now() / 500;
+      const crackleRadius = deflectorRadius + Math.sin(Date.now() / 200 + i) * 3;
+      const crackleX = this.x + Math.cos(angle) * crackleRadius;
+      const crackleY = this.y + Math.sin(angle) * crackleRadius;
+      
+      ctx.strokeStyle = `rgba(100, 255, 255, ${deflectorOpacity * 0.8})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(crackleX - 2, crackleY - 2);
+      ctx.lineTo(crackleX + 2, crackleY + 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(crackleX + 2, crackleY - 2);
+      ctx.lineTo(crackleX - 2, crackleY + 2);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }

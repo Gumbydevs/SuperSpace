@@ -17,6 +17,7 @@ import { ShipSkinSystem } from './shipskins.js';
 import { AvatarManager } from './avatarmanager.js';
 import { PayPalIntegration } from './paypal-integration.js';
 import { MarvinAssistant } from './marvin.js';
+import { TutorialSystem } from './tutorial.js';
 import Chat from './chat.js';
 
 // Main Game class that coordinates all game systems and components
@@ -57,6 +58,11 @@ class Game {
     this.premiumStore = new PremiumStore(this.player); // Premium monetization store
     this.shipSkins = new ShipSkinSystem(); // Ship skin system
     this.avatarManager = new AvatarManager(this.premiumStore); // Avatar manager with premium support
+    try {
+      window.avatarManagerInstance = this.avatarManager;
+    } catch (e) {
+      /* ignore */
+    }
     this.marvinAssistant = new MarvinAssistant(); // Marvin the Robot assistant for notifications
     this.paypalIntegration = new PayPalIntegration(this.premiumStore); // PayPal payment system
 
@@ -69,6 +75,7 @@ class Game {
     this.skillSystem = new SkillSystem(this.player);
     this.challengeSystem = new ChallengeSystem(this.player, this.playerProfile);
     this.npcManager = new NPCManager(this.world, this.soundManager); // NPC enemies and AI
+    this.tutorialSystem = new TutorialSystem(this); // Tutorial system for new players
     this.lastTime = 0; // Used for calculating delta time between frames
     this.gameState = 'menu'; // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
     this.thrusterSoundActive = false; // Tracks if thruster sound is currently playing
@@ -76,6 +83,8 @@ class Game {
     // Make systems globally accessible
     window.admin = this.adminSystem;
     window.npcManager = this.npcManager; // Make NPC manager accessible for admin tools
+    window.tutorialSystem = this.tutorialSystem; // Make tutorial system accessible for testing
+    window.game = this; // Make game accessible for testing
 
     // Initialize multiplayer system (but don't connect yet)
     this.multiplayer = new MultiplayerManager(this);
@@ -123,6 +132,7 @@ class Game {
     // Here we create UI controls for mute, music, and shop
     this.createMuteButton();
     this.createMusicButton();
+  this.createOptionsGearButton();
     this.createShopButton();
     this.createPremiumStoreButton();
     this.createMobileChatButton();
@@ -331,6 +341,34 @@ class Game {
     document.body.appendChild(musicBtn);
   }
 
+  // Create an options gear button to open the options overlay (desktop)
+  createOptionsGearButton() {
+    const gearBtn = document.createElement('button');
+    gearBtn.textContent = '⚙️';
+    gearBtn.id = 'options-gear-btn-top';
+
+    // Style similar to music button and position left of it
+    gearBtn.style.position = 'absolute';
+    gearBtn.style.top = '26px';
+    gearBtn.style.right = '104px'; // left of music (music at 52, mute at 0)
+    gearBtn.style.zIndex = '1002';
+    gearBtn.style.background = 'rgba(0, 0, 50, 0.7)';
+    gearBtn.style.color = 'white';
+    gearBtn.style.border = '1px solid #33f';
+    gearBtn.style.borderRadius = '5px';
+    gearBtn.style.padding = '5px 10px';
+    gearBtn.style.cursor = 'pointer';
+    gearBtn.style.fontSize = '16px';
+
+    gearBtn.onclick = () => {
+      if (window.game && window.game.ui && window.game.ui.showOptionsOverlay) {
+        window.game.ui.showOptionsOverlay();
+      }
+    };
+
+    document.body.appendChild(gearBtn);
+  }
+
   // Here we create a shop button to access the in-game store
   createShopButton() {
     const shopBtn = document.createElement('button');
@@ -506,6 +544,11 @@ class Game {
     // Only allow shop access when playing
     if (this.gameState === 'playing') {
       this.shop.toggleShop();
+      
+      // Notify tutorial system that shop was opened
+      if (this.tutorialSystem) {
+        this.tutorialSystem.onShopOpened();
+      }
     }
   }
   togglePremiumStore() {
@@ -579,6 +622,14 @@ class Game {
   // Refresh player data after cloud sync
   refreshPlayerDataFromLocalStorage() {
     if (this.player) {
+      // If a forced reset of player stats is configured, do not reload playerStats into memory
+      let skipReloadPlayerStats = false;
+      try {
+        if (typeof ResetConfig !== 'undefined' && ResetConfig.flags && ResetConfig.flags.resetPlayerStats) {
+          skipReloadPlayerStats = true;
+        }
+      } catch (e) {}
+
       // Reload credits
       const savedCredits = localStorage.getItem('playerCredits');
       if (savedCredits) {
@@ -593,6 +644,21 @@ class Game {
           this.multiplayer.playerName = savedName;
           console.log('🔄 Refreshed player name from cloud:', savedName);
         }
+      }
+
+      // Reload playerStats into PlayerProfile unless reset is requested
+      if (!skipReloadPlayerStats && this.playerProfile) {
+        try {
+          const saved = localStorage.getItem('playerStats');
+          if (saved) {
+            // Merge saved stats into in-memory profile
+            try {
+              const parsed = JSON.parse(saved);
+              this.playerProfile.stats = { ...this.playerProfile.stats, ...parsed };
+              console.log('🔄 Refreshed playerStats from cloud/localStorage');
+            } catch (e) {}
+          }
+        } catch (e) {}
       }
 
       // Update UI if it exists
@@ -928,6 +994,11 @@ class Game {
     // Show gameplay UI elements
     this.ui.setGameplayUIVisibility(true);
 
+    // Notify tutorial system that game has started
+    if (this.tutorialSystem) {
+      this.tutorialSystem.onGameStarted();
+    }
+
     // Show online player status in both locations when game starts
     const serverInfo = document.getElementById('server-info');
     if (serverInfo) serverInfo.style.display = '';
@@ -960,6 +1031,11 @@ class Game {
             server_url: serverUrl,
             game_state: this.gameState,
           });
+          
+          // Notify tutorial system that player has entered the world and connected
+          if (this.tutorialSystem) {
+            this.tutorialSystem.onWorldEntered();
+          }
         })
         .catch((error) => {
           console.error('Failed to connect to multiplayer server:', error);
@@ -1025,6 +1101,11 @@ class Game {
       this.npcManager.update(deltaTime, this.player);
       this.npcManager.updateNPCProjectiles(deltaTime, this.player);
       this.npcManager.checkProjectileCollisions(this.player);
+
+      // Update tutorial system
+      if (this.tutorialSystem) {
+        this.tutorialSystem.update();
+      }
 
       // Update multiplayer status and send player position to server
       if (this.multiplayer && this.multiplayer.connected) {
@@ -1253,6 +1334,60 @@ class Game {
             this.ctx.arc(0, 0, glowSize * 0.9, 0, Math.PI * 2);
             this.ctx.fill();
           }
+        }
+
+        this.ctx.restore();
+      }
+
+      // Render Impact Deflector if active
+      if (this.player.impactDeflector && this.player.impactDeflector.active) {
+        this.ctx.save();
+        this.ctx.translate(this.player.x, this.player.y);
+
+        // Calculate deflector visual properties
+        const timeLeft = this.player.impactDeflector.remainingTime;
+        const totalDuration = this.player.impactDeflector.duration;
+        const progress = 1 - (timeLeft / totalDuration); // 0 to 1 as it expires
+        const pulse = Math.sin(Date.now() / 1000 * this.player.impactDeflector.pulseSpeed) * 0.3 + 0.7;
+        
+        // Deflector fades out as it expires
+        const baseOpacity = this.player.impactDeflector.opacity * (timeLeft / totalDuration);
+        const deflectorOpacity = baseOpacity * pulse;
+        
+        // Create radial gradient for deflector effect (cyan/electric blue energy field)
+        const deflectorRadius = this.player.impactDeflector.radius;
+        const deflectorGradient = this.ctx.createRadialGradient(
+          0, 0, deflectorRadius * 0.4,
+          0, 0, deflectorRadius
+        );
+        deflectorGradient.addColorStop(0, `rgba(0, 255, 255, ${deflectorOpacity * 0.1})`);
+        deflectorGradient.addColorStop(0.7, `rgba(0, 200, 255, ${deflectorOpacity * 0.6})`);
+        deflectorGradient.addColorStop(1, `rgba(0, 150, 255, 0)`);
+
+        // Draw the deflector field
+        this.ctx.fillStyle = deflectorGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, deflectorRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Add energy crackling effect around the perimeter
+        const crackleCount = 8;
+        for (let i = 0; i < crackleCount; i++) {
+          const angle = (i / crackleCount) * Math.PI * 2 + Date.now() / 500;
+          const crackleRadius = deflectorRadius + Math.sin(Date.now() / 200 + i) * 3;
+          const crackleX = Math.cos(angle) * crackleRadius;
+          const crackleY = Math.sin(angle) * crackleRadius;
+          
+          this.ctx.strokeStyle = `rgba(100, 255, 255, ${deflectorOpacity * 0.8})`;
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(crackleX - 2, crackleY - 2);
+          this.ctx.lineTo(crackleX + 2, crackleY + 2);
+          this.ctx.stroke();
+          this.ctx.beginPath();
+          this.ctx.moveTo(crackleX + 2, crackleY - 2);
+          this.ctx.lineTo(crackleX - 2, crackleY + 2);
+          this.ctx.stroke();
         }
 
         this.ctx.restore();
@@ -1639,7 +1774,7 @@ class Game {
         const speed = 40 + Math.random() * 150;
         const size = 1 + Math.random() * 4;
         const debrisColors = [
-          '#7d7d7d',
+          '#33f',
           '#66f',
           '#f66',
           '#999',
@@ -1841,8 +1976,12 @@ class Game {
     const deltaTime = (currentTime - this.lastTime) / 1000;
     this.lastTime = currentTime;
 
+    // Cap deltaTime to prevent physics explosions from frame hitches or first frame issues
+    // Maximum 0.1 seconds (10 FPS minimum) to prevent wild velocity/friction calculations
+    const cappedDeltaTime = Math.min(deltaTime, 0.1);
+
     // Update game state and render
-    this.update(deltaTime);
+    this.update(cappedDeltaTime);
     this.render();
 
     // Request next animation frame to continue the loop

@@ -130,7 +130,8 @@ export class ChallengeSystem {
           done = this.profile.stats.totalCreditsSpent >= 5000;
           break;
         case 'fly_10km':
-          done = this.profile.stats.totalDistance >= 10000;
+          // This challenge is "in one session" — prefer sessionDistance when available
+          done = (this.profile.stats.sessionDistance || 0) >= 10000;
           break;
         case 'chat_1':
           done = this.profile.stats.chatMessagesSent >= 1;
@@ -186,7 +187,13 @@ export class ChallengeSystem {
           done = this.profile.stats.uniqueShopItemsBought >= 3;
           break;
         case 'explore_50km':
-          done = this.profile.stats.totalDistance >= 50000;
+          // Weekly cumulative exploration should use totalDistance, but to avoid
+          // accidental completions immediately after a full reset/connect where
+          // totalDistance might be preserved or repopulated, prefer totalDistance
+          // while allowing sessionDistance to contribute during a session.
+          const totalDist = this.profile.stats.totalDistance || 0;
+          const sessionDist = this.profile.stats.sessionDistance || 0;
+          done = (totalDist >= 50000) || (sessionDist >= 50000);
           break;
         case 'defeat_5_bosses':
           done = this.profile.stats.bossesDefeated >= 5;
@@ -215,18 +222,27 @@ export class ChallengeSystem {
         this.sessionNotified[challengeType] =
           this.sessionNotified[challengeType] || [];
         this.notified[challengeType] = this.notified[challengeType] || [];
+        // Only show the popup when the challenge has just become completed in this run
+        // (i.e., wasn't already completed before). This prevents repeated toasts
+        // on page reloads for previously-completed challenges.
         if (done && !this.sessionNotified[challengeType].includes(ch.id)) {
           this.sessionNotified[challengeType].push(ch.id);
           if (!this.notified[challengeType].includes(ch.id)) {
             this.notified[challengeType].push(ch.id);
           }
-          if (window && window.console)
-            console.log(
-              'Challenge complete (showing popup):',
-              ch.id,
-              challengeType,
-            );
-          this.showChallengeComplete(ch, challengeType);
+          if (!alreadyCompleted) {
+            if (window && window.console)
+              console.log(
+                'Challenge complete (showing popup):',
+                ch.id,
+                challengeType,
+              );
+            this.showChallengeComplete(ch, challengeType);
+          } else {
+            // Already completed earlier; do not re-show popup, but ensure badge/UI updates
+            if (window && window.console)
+              console.log('Challenge already completed previously; skipping popup:', ch.id, challengeType);
+          }
         }
       } catch (e) {
         // ignore DOM errors but attempt to continue
@@ -581,6 +597,14 @@ export class ChallengeSystem {
       element.appendChild(icon);
       element.appendChild(content);
       container.appendChild(element);
+      // Play reward sound when the challenge completion popup appears
+      try {
+        if (window && window.game && window.game.soundManager && typeof window.game.soundManager.play === 'function') {
+          window.game.soundManager.play('powerup', { volume: 1.0 });
+        }
+      } catch (e) {
+        // ignore sound errors
+      }
       if (!window.marvinAssistant) {
         window.marvinAssistant = new MarvinAssistant();
       }
@@ -588,6 +612,20 @@ export class ChallengeSystem {
       setTimeout(() => {
         if (element.parentNode) element.parentNode.removeChild(element);
       }, 4000);
+      // Immediately update the shop challenge badge so players see the
+      // numeric indicator as soon as a challenge completes.
+      try {
+        if (window && window.game && window.game.shop && typeof window.game.shop.updateChallengeTabBadge === 'function') {
+          window.game.shop.updateChallengeTabBadge();
+        }
+        // Also set a hover tooltip for the shop badge if it exists
+        const shopBadge = document.getElementById('shop-challenge-badge');
+        if (shopBadge) {
+          shopBadge.title = `${type.toUpperCase()} challenge ready — click to view`;
+        }
+      } catch (e) {
+        // ignore UI update errors
+      }
     } catch (e) {
       console.error('[ChallengePopup] Popup error:', e);
     }

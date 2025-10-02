@@ -12,7 +12,8 @@ class CloudSyncService {
       'playerCredits',
       'highScore',
       'settings',
-      'achievements',
+      // Keep achievements out of the automatic clear list so we can merge notified state
+      //'achievements',
       'playerName',
       'selectedAvatar',
       'selectedShip',
@@ -284,6 +285,22 @@ class CloudSyncService {
 
   // Merge cloud data with local data
   mergeGameData(cloudData) {
+    // If a forced reset of player stats is configured, do not restore playerStats from cloud
+    let skipRestorePlayerStats = false;
+    // Also optionally skip restoring ship appearance when resetShips is enabled
+    let skipRestoreShipAppearance = false;
+    try {
+      if (typeof ResetConfig !== 'undefined' && ResetConfig.flags && ResetConfig.flags.resetPlayerStats) {
+        skipRestorePlayerStats = true;
+        console.log('☁️ Skipping playerStats restore due to ResetConfig.flags.resetPlayerStats');
+      }
+      if (typeof ResetConfig !== 'undefined' && ResetConfig.flags && ResetConfig.flags.resetShips) {
+        skipRestoreShipAppearance = true;
+        console.log('☁️ Skipping ship appearance restore due to ResetConfig.flags.resetShips');
+      }
+    } catch (e) {
+      // ignore
+    }
     for (const [key, value] of Object.entries(cloudData)) {
       // Skip auth tokens
       if (key.includes('auth_token') || key.includes('username')) {
@@ -307,9 +324,54 @@ class CloudSyncService {
           'highScore',
           Math.max(localScore, cloudScore).toString(),
         );
-      } else {
-        // For most other data, cloud takes precedence
-        localStorage.setItem(key, value);
+        } else {
+        // Special-case achievements: merge per-achievement fields to preserve notified flags
+        if (key === 'achievements') {
+          try {
+            const cloudObj = JSON.parse(value || '{}');
+            const localStr = localStorage.getItem('achievements');
+            const localObj = localStr ? JSON.parse(localStr) : {};
+
+            const merged = {};
+            const ids = new Set([
+              ...Object.keys(localObj || {}),
+              ...Object.keys(cloudObj || {}),
+            ]);
+
+            ids.forEach((id) => {
+              const l = localObj[id] || {};
+              const c = cloudObj[id] || {};
+
+              const progressL = parseInt(l.progress || 0, 10) || 0;
+              const progressC = parseInt(c.progress || 0, 10) || 0;
+
+              merged[id] = {
+                progress: Math.max(progressL, progressC),
+                unlocked: !!(l.unlocked || c.unlocked),
+                // Preserve notified if either side has it true (don't accidentally clear)
+                notified: !!(l.notified || c.notified),
+              };
+            });
+
+            localStorage.setItem('achievements', JSON.stringify(merged));
+          } catch (e) {
+            console.warn('Failed to merge achievements from cloud:', e);
+            // Fallback to overwrite if merge fails
+            localStorage.setItem(key, value);
+          }
+        } else {
+          // Respect reset override: playerStats and ship appearance
+          if (skipRestorePlayerStats && key === 'playerStats') {
+            // intentionally skip restoring playerStats from cloud
+            continue;
+          }
+          if (skipRestoreShipAppearance && (key === 'selectedShipSkin' || key === 'playerShipColor' || key === 'selected_ship_skin')) {
+            // intentionally skip restoring ship skin/color when ships were reset
+            continue;
+          }
+          // For most other data, cloud takes precedence
+          localStorage.setItem(key, value);
+        }
       }
     }
 

@@ -1,7 +1,11 @@
 /**
  * Analytics Debug Helper
  * Add this script to help debug analytics issues
+ * PRODUCTION MODE: Debug logging disabled
  */
+
+// Production flag - set to true to disable debug logging
+const PRODUCTION_MODE = true;
 
 // Override fetch to monitor analytics requests
 const originalFetch = window.fetch;
@@ -11,26 +15,32 @@ window.fetch = function (...args) {
 
   // Check if this is an analytics request
   if (url && url.includes('/analytics/track')) {
-    console.log('📡 ANALYTICS REQUEST:', url, options);
+    if (!PRODUCTION_MODE) {
+      console.log('📡 ANALYTICS REQUEST:', url, options);
+    }
 
     // Call original fetch and monitor response
     return originalFetch
       .apply(this, args)
       .then((response) => {
-        if (response.ok) {
-          console.log('✅ ANALYTICS REQUEST SUCCESS:', url, response.status);
-        } else {
-          console.error(
-            '❌ ANALYTICS REQUEST FAILED:',
-            url,
-            response.status,
-            response.statusText,
-          );
+        if (!PRODUCTION_MODE) {
+          if (response.ok) {
+            console.log('✅ ANALYTICS REQUEST SUCCESS:', url, response.status);
+          } else {
+            console.error(
+              '❌ ANALYTICS REQUEST FAILED:',
+              url,
+              response.status,
+              response.statusText,
+            );
+          }
         }
         return response;
       })
       .catch((error) => {
-        console.error('❌ ANALYTICS REQUEST ERROR:', url, error);
+        if (!PRODUCTION_MODE) {
+          console.error('❌ ANALYTICS REQUEST ERROR:', url, error);
+        }
         throw error;
       });
   }
@@ -39,18 +49,20 @@ window.fetch = function (...args) {
   return originalFetch.apply(this, args);
 };
 
-// Override console.log to also log analytics calls
+// Override console.log to also log analytics calls (DISABLED IN PRODUCTION)
 const originalConsoleLog = console.log;
-console.log = function (...args) {
-  if (args[0] && args[0].includes && args[0].includes('🎯')) {
-    // This is an analytics log, make it stand out
-    originalConsoleLog.apply(console, ['🔥 ANALYTICS:', ...args]);
-  } else {
-    originalConsoleLog.apply(console, args);
-  }
-};
+if (!PRODUCTION_MODE) {
+  console.log = function (...args) {
+    if (args[0] && args[0].includes && args[0].includes('🎯')) {
+      // This is an analytics log, make it stand out
+      originalConsoleLog.apply(console, ['🔥 ANALYTICS:', ...args]);
+    } else {
+      originalConsoleLog.apply(console, args);
+    }
+  };
+}
 
-// Create debug tracker to monitor analytics calls
+// Create debug tracker to monitor analytics calls (DISABLED IN PRODUCTION)
 window.analyticsDebugTracker = {
   calls: [],
   trackCall: function (method, args) {
@@ -61,13 +73,16 @@ window.analyticsDebugTracker = {
       windowAnalyticsExists: !!window.analytics,
     };
     this.calls.push(call);
-    console.log(
-      '🔥 ANALYTICS CALL:',
-      method,
-      args,
-      'window.analytics exists:',
-      !!window.analytics,
-    );
+    
+    if (!PRODUCTION_MODE) {
+      console.log(
+        '🔥 ANALYTICS CALL:',
+        method,
+        args,
+        'window.analytics exists:',
+        !!window.analytics,
+      );
+    }
 
     // Keep only last 50 calls
     if (this.calls.length > 50) {
@@ -87,9 +102,11 @@ window.analyticsDebugTracker = {
   },
 };
 
-// Monitor window.analytics usage
+// Monitor window.analytics usage (DISABLED IN PRODUCTION)
 if (window.analytics) {
-  console.log('🔥 ANALYTICS: window.analytics is available at page load');
+  if (!PRODUCTION_MODE) {
+    console.log('🔥 ANALYTICS: window.analytics is available at page load');
+  }
 
   // Wrap analytics methods to track calls
   const originalTrack = window.analytics.track;
@@ -99,34 +116,42 @@ if (window.analytics) {
   };
 
   const originalTrackWeaponFired = window.analytics.trackWeaponFired;
-  window.analytics.trackWeaponFired = function (...args) {
-    window.analyticsDebugTracker.trackCall('trackWeaponFired', args);
-    return originalTrackWeaponFired.apply(this, args);
-  };
+  if (originalTrackWeaponFired) {
+    window.analytics.trackWeaponFired = function (...args) {
+      window.analyticsDebugTracker.trackCall('trackWeaponFired', args);
+      return originalTrackWeaponFired.apply(this, args);
+    };
+  }
 
   const originalTrackPlayerDied = window.analytics.trackPlayerDied;
-  window.analytics.trackPlayerDied = function (...args) {
-    window.analyticsDebugTracker.trackCall('trackPlayerDied', args);
-    return originalTrackPlayerDied.apply(this, args);
-  };
+  if (originalTrackPlayerDied) {
+    window.analytics.trackPlayerDied = function (...args) {
+      window.analyticsDebugTracker.trackCall('trackPlayerDied', args);
+      return originalTrackPlayerDied.apply(this, args);
+    };
+  }
 } else {
-  console.log('🔥 ANALYTICS: window.analytics is NOT available at page load');
+  if (!PRODUCTION_MODE) {
+    console.log('🔥 ANALYTICS: window.analytics is NOT available at page load');
+  }
 
-  // Monitor for when it becomes available
-  let checkCount = 0;
-  const checkInterval = setInterval(() => {
-    checkCount++;
-    if (window.analytics) {
-      console.log(
-        `🔥 ANALYTICS: window.analytics became available after ${checkCount * 100}ms`,
-      );
-      clearInterval(checkInterval);
-    } else if (checkCount > 100) {
-      // Stop checking after 10 seconds
-      console.log('🔥 ANALYTICS: window.analytics never became available');
-      clearInterval(checkInterval);
-    }
-  }, 100);
+  // Monitor for when it becomes available (DISABLED IN PRODUCTION)
+  if (!PRODUCTION_MODE) {
+    let checkCount = 0;
+    const checkInterval = setInterval(() => {
+      checkCount++;
+      if (window.analytics) {
+        console.log(
+          `🔥 ANALYTICS: window.analytics became available after ${checkCount * 100}ms`,
+        );
+        clearInterval(checkInterval);
+      } else if (checkCount > 100) {
+        // Stop checking after 10 seconds
+        console.log('🔥 ANALYTICS: window.analytics never became available');
+        clearInterval(checkInterval);
+      }
+    }, 100);
+  }
 }
 
 // Add helper function to test analytics manually

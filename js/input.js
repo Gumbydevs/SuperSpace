@@ -40,6 +40,8 @@ export class InputHandler {
           'ArrowRight',
           'ShiftLeft',
           'ShiftRight',
+          'ControlLeft',
+          'Tab',
           'KeyW',
           'KeyA',
           'KeyS',
@@ -177,6 +179,13 @@ export class InputHandler {
     afterburnerButton.innerHTML = '🚀';
     touchUI.appendChild(afterburnerButton);
 
+    // Create Impact Deflector button
+    const deflectorButton = document.createElement('div');
+    deflectorButton.id = 'deflector-button';
+    deflectorButton.className = 'touch-button deflector-button';
+    deflectorButton.innerHTML = '🛡️';
+    touchUI.appendChild(deflectorButton);
+
     // Create brake/stop button (mobile equivalent of down arrow)
     const brakeButton = document.createElement('div');
     brakeButton.id = 'brake-button';
@@ -238,6 +247,23 @@ export class InputHandler {
       if (index > -1) {
         this.keys.splice(index, 1);
         afterburnerButton.classList.remove('active');
+      }
+    });
+
+    // Add Impact Deflector button events
+    deflectorButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (!this.keys.includes('ControlLeft')) {
+        this.keys.push('ControlLeft');
+        deflectorButton.classList.add('active');
+        // Remove it after a short delay to simulate a keypress
+        setTimeout(() => {
+          const index = this.keys.indexOf('ControlLeft');
+          if (index > -1) {
+            this.keys.splice(index, 1);
+            deflectorButton.classList.remove('active');
+          }
+        }, 100);
       }
     });
 
@@ -376,6 +402,22 @@ export class InputHandler {
             #afterburner-button.active {
                 background-color: rgba(255, 200, 100, 0.6);
                 box-shadow: 0 0 15px rgba(255, 200, 100, 0.8);
+            }
+            
+            #deflector-button {
+                /* place above the afterburner button */
+                bottom: calc(var(--touch-gap, 30px) + var(--touch-gap-large, 100px) * 2);
+                right: var(--touch-gap, 30px);
+                width: 60px;
+                height: 60px;
+                background-color: rgba(0, 255, 255, 0.3);
+                border-color: rgba(0, 255, 255, 0.6);
+            }
+            
+            #deflector-button:active,
+            #deflector-button.active {
+                background-color: rgba(0, 255, 255, 0.6);
+                box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
             }
             
             #brake-button {
@@ -520,6 +562,7 @@ export class InputHandler {
       fireButton: fireButton,
       weaponButton: weaponButton,
       afterburnerButton: afterburnerButton,
+      deflectorButton: deflectorButton,
       menuButton: menuButton,
       brakeButton: brakeButton,
     };

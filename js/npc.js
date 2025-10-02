@@ -557,6 +557,7 @@ export class NPCManager {
     if (Date.now() - dreadnaught.lastPlayerContact > 60000) {
       // 1 minute without players
       dreadnaught.state = 'leaving';
+      dreadnaught.leavingRotationSet = false; // Reset flag so rotation can be set once
     }
 
     // Movement AI based on state
@@ -571,7 +572,11 @@ export class NPCManager {
       const dx = targetX - dreadnaught.x;
       const dy = targetY - dreadnaught.y;
 
-      dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+      // Only update rotation once when starting to leave, not every frame
+      if (!dreadnaught.leavingRotationSet) {
+        dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+        dreadnaught.leavingRotationSet = true;
+      }
       dreadnaught.velocity.x =
         Math.cos(dreadnaught.rotation - Math.PI / 2) *
         dreadnaught.speed *
@@ -632,7 +637,8 @@ export class NPCManager {
           }
           // intentionally do not update rotation while paused
         } else {
-          dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+          // Don't update rotation to prevent flipping - keep current facing direction
+          // dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
           dreadnaught.velocity.x =
             Math.cos(dreadnaught.rotation - Math.PI / 2) *
             dreadnaught.speed *
@@ -666,7 +672,7 @@ export class NPCManager {
       const minSafeDistance = safeZone.size / 2 + 400;
 
       if (distanceToSafeZone < minSafeDistance) {
-        // Move away from safe zone
+        // Move away from safe zone but don't update rotation to prevent flipping
         const awayAngle = Math.atan2(
           dreadnaught.y - safeZone.y,
           dreadnaught.x - safeZone.x,
@@ -675,7 +681,7 @@ export class NPCManager {
           Math.cos(awayAngle) * dreadnaught.speed * deltaTime;
         dreadnaught.velocity.y =
           Math.sin(awayAngle) * dreadnaught.speed * deltaTime;
-        dreadnaught.rotation = awayAngle + Math.PI / 2;
+        // Don't update rotation: dreadnaught.rotation = awayAngle + Math.PI / 2;
       } else {
         // Normal circle strafe pattern around world center to avoid jitter near (0,0)
         const circleAngle = Date.now() / 5000;
@@ -689,7 +695,8 @@ export class NPCManager {
         const dx = targetX - dreadnaught.x;
         const dy = targetY - dreadnaught.y;
 
-        dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+        // Don't update rotation to prevent flipping - keep current facing direction
+        // dreadnaught.rotation = Math.atan2(dy, dx) + Math.PI / 2;
         dreadnaught.velocity.x = dx * 0.1 * deltaTime;
         dreadnaught.velocity.y = dy * 0.1 * deltaTime;
       }

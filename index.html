@@ -19,14 +19,14 @@
     <script>
       // Simple Vercel Analytics setup without external dependencies
       window.vercelTrack = function (event, data) {
-        console.log('✅ Vercel Analytics (fallback):', event, data);
+        // console.log('✅ Vercel Analytics (fallback):', event, data); // Production: disabled
         // This will be replaced by actual Vercel Analytics when available
       };
 
       // Try to load Vercel Analytics
       if (typeof window.va !== 'undefined') {
         window.vercelTrack = (event, data) => window.va('track', event, data);
-        console.log('✅ Vercel Analytics loaded via window.va');
+        // console.log('✅ Vercel Analytics loaded via window.va'); // Production: disabled
       }
     </script>
     <script src="js/vercelAnalytics.js"></script>
@@ -77,22 +77,19 @@
         <p>
           <strong>SuperSpace</strong> is a hobby project in constant
           development.<br /><br />
-          <b
-            >Best experienced on desktop. Mobile support is being worked ona and
-            will improve!</b
-          ><br /><br />
-          Please be aware that you may experience:
+          <b>Best experienced on desktop in a browser at
+            fullscreen or the largest available width. Mobile support is being worked on and will improve!</b>
         </p>
-        <ul class="disclaimer-list">
-          <li>Game crashes and freezes</li>
-          <li>Server downtime and disconnections</li>
-          <li>Loss of progress and statistics</li>
-          <li>Frequent updates and changes</li>
-        </ul>
-        <p>
-          By continuing, you acknowledge that this is an experimental game and
-          accept these limitations.
-        </p>
+        <div class="disclaimer-details">
+          <p class="disclaimer-lead">Please be aware that you may experience:</p>
+          <ul class="disclaimer-list">
+            <li>Game crashes and freezes</li>
+            <li>Server downtime and disconnections</li>
+            <li>Loss of progress and statistics</li>
+            <li>Frequent updates and changes</li>
+          </ul>
+          <p class="disclaimer-ack">By continuing, you acknowledge that this is an experimental game and accept these conditions.</p>
+        </div>
         <div class="disclaimer-actions">
           <label class="checkbox-label">
             <input type="checkbox" id="dont-show-again" /> Don't show this again
@@ -130,8 +127,8 @@
               href="https://buymeacoffee.com/gumbydev"
               target="_blank"
               rel="noopener"
-              >☕ Support</a
-            >
+              >☕ Support The Game</a>
+            
           </div>
           <div class="links">
             <a href="https://discord.gg/8vcPr9WK" target="_blank" rel="noopener"
@@ -143,7 +140,7 @@
       <!-- Unified Options/Instructions Overlay -->
       <div id="options-overlay" class="hidden">
         <div class="options-panel">
-          <h2>Options & Controls</h2>
+          <h2>Player Options</h2>
           <button id="close-options-btn" class="close-btn">✕</button>
           <div class="section">
             <div class="section">
@@ -173,27 +170,12 @@
                   <button id="rename-btn" class="rename-btn">
                     Change Name
                   </button>
+                  <!-- Cloud Sync from Options -->
+                  <button id="open-cloud-sync-btn" class="profile-btn">
+                    4be Cloud Sync
+                  </button>
                 </div>
               </div>
-            </div>
-            <div class="section">
-              <h3>Instructions</h3>
-              <ul class="instructions-list">
-                <li>
-                  Destroy asteroids and enemy ships to earn points and credits.
-                </li>
-                <li>
-                  Visit the shop (B) to upgrade your ship with new weapons and
-                  ships.
-                </li>
-                <li>
-                  Hold Left Shift for afterburner speed boost (uses energy).
-                </li>
-                <li>
-                  Switch weapons with Q/E or use number keys 0-9 for direct
-                  selection.
-                </li>
-              </ul>
             </div>
             <div class="section">
               <h3>Controls (Desktop)</h3>
@@ -209,6 +191,10 @@
                 <li>
                   <span class="control-action">Afterburner:</span>
                   <span class="control-key">Left Shift (hold)</span>
+                </li>
+                <li>
+                  <span class="control-action">Impact Deflector:</span>
+                  <span class="control-key">Left Ctrl / Tab</span>
                 </li>
                 <li>
                   <span class="control-action">Weapon Switch:</span>
@@ -246,10 +232,11 @@
             </div>
             <div class="section">
               <h3>Audio</h3>
-              <label
-                ><input type="checkbox" id="music-toggle" checked /> Music
-                On/Off</label
-              >
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label
+                  ><input type="checkbox" id="music-toggle" checked /> Music
+                  On/Off</label
+              </div>
               <div class="audio-spacer"></div>
               <div class="slider-row">
                 <label for="music-volume">Music Volume</label>
@@ -257,7 +244,7 @@
                   type="range"
                   id="music-volume"
                   min="0"
-                  max="1"
+                  max="3"
                   step="0.01"
                   value="0.7"
                 />
@@ -496,6 +483,8 @@
     <!-- Cloud Sync System -->
     <script src="js/cloudSync.js"></script>
     <script src="js/accountUI.js"></script>
+    <!-- Ship Skin Notifications -->
+    <script src="js/shipSkinNotifications.js"></script>
     <script src="js/game.js" type="module"></script>
   </body>
 </html>

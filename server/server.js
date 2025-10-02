@@ -2046,6 +2046,56 @@ io.on('connection', (socket) => {
     );
   });
 
+  // Handle Impact Deflector activation events
+  socket.on('impactDeflectorActivated', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+
+    // Relay the deflector activation to all other clients
+    socket.broadcast.emit('impactDeflectorActivated', {
+      playerId: socket.id,
+      x: data.x,
+      y: data.y,
+      duration: data.duration,
+    });
+
+    console.log(
+      `Impact Deflector activated by player ${socket.id} at (${data.x}, ${data.y})`,
+    );
+  });
+
+  // Handle Impact Deflector deactivation events
+  socket.on('impactDeflectorDeactivated', (data) => {
+    // Update activity timestamp  
+    playerLastActivity[socket.id] = Date.now();
+
+    // Relay the deflector deactivation to all other clients
+    socket.broadcast.emit('impactDeflectorDeactivated', {
+      playerId: socket.id,
+    });
+
+    console.log(`Impact Deflector deactivated by player ${socket.id}`);
+  });
+
+  // Handle Impact Deflector collision events
+  socket.on('impactDeflectorImpact', (data) => {
+    // Update activity timestamp
+    playerLastActivity[socket.id] = Date.now();
+
+    // Relay the deflector impact effect to all other clients
+    socket.broadcast.emit('impactDeflectorImpact', {
+      playerId: socket.id,
+      x: data.x,
+      y: data.y,
+      asteroidX: data.asteroidX,
+      asteroidY: data.asteroidY,
+    });
+
+    console.log(
+      `Impact Deflector collision by player ${socket.id} at (${data.x}, ${data.y})`,
+    );
+  });
+
   // Handle NPC spawn events
   socket.on('npcSpawn', (npcData) => {
     playerLastActivity[socket.id] = Date.now();

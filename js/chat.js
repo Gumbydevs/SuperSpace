@@ -35,6 +35,23 @@ export default class Chat {
         // Only show toast if the chat window is not visible
         if (!this.isVisible) {
           this.showToast(data.name, data.message);
+          // Also forward to the main game message area so it definitely pops up on-screen
+          try {
+            const color = data.isSystem ? '#8cf' : '#fff';
+            if (
+              window.game &&
+              window.game.multiplayer &&
+              typeof window.game.multiplayer.showGameMessage === 'function'
+            ) {
+              window.game.multiplayer.showGameMessage(
+                `${data.name ? data.name + ': ' : ''}${data.message}`,
+                color,
+                5000,
+              );
+            }
+          } catch (e) {
+            // ignore failures (server/client version mismatch possible)
+          }
         }
       });
     }

@@ -184,6 +184,9 @@ export class AchievementSystem {
           if (data[id]) {
             achievement.progress = data[id].progress || 0;
             achievement.unlocked = data[id].unlocked || false;
+            // Keep track whether we've already shown the notification for this achievement
+            // If the achievement is already unlocked on load, assume it was already shown
+            achievement.notified = achievement.unlocked || data[id].notified || false;
           }
         }
       } catch (e) {
@@ -198,6 +201,8 @@ export class AchievementSystem {
       data[id] = {
         progress: achievement.progress,
         unlocked: achievement.unlocked,
+        // Persist whether the achievement notification has been shown so we don't replay toasts
+        notified: !!achievement.notified,
       };
     }
     localStorage.setItem('achievements', JSON.stringify(data));
@@ -247,8 +252,12 @@ export class AchievementSystem {
       this.player.score += achievement.points;
     }
 
-    // Show notification
-    this.showNotification(achievement);
+    // Show notification only if it hasn't been shown before
+    if (!achievement.notified) {
+      this.showNotification(achievement);
+      // Mark as notified so it won't be shown again across sessions
+      achievement.notified = true;
+    }
 
     // Play achievement sound
     if (window.game && window.game.soundManager) {
@@ -263,6 +272,9 @@ export class AchievementSystem {
   }
 
   showNotification(achievement) {
+    // Defensive: don't show the same notification more than once
+    if (achievement.notified) return;
+
     const notification = {
       achievement,
       timestamp: Date.now(),
@@ -280,6 +292,14 @@ export class AchievementSystem {
         this.updateNotificationDisplay();
       }
     }, notification.duration);
+
+    // Persist notification state immediately
+    try {
+      achievement.notified = true;
+      this.saveProgress();
+    } catch (e) {
+      // ignore if save fails
+    }
   }
 
   createNotificationUI() {

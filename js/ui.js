@@ -10,6 +10,12 @@ export class UI {
 
     // Initialize Avatar Manager
     this.avatarManager = new AvatarManager();
+    // Expose globally so other modules (notifyNewSkin) can call into it if needed
+    try {
+      window.avatarManagerInstance = this.avatarManager;
+    } catch (e) {
+      /* ignore */
+    }
 
     // Set up avatar change callback to notify multiplayer
     this.avatarManager.onAvatarChange = (newAvatar) => {
@@ -92,7 +98,30 @@ export class UI {
     if (this.sfxVolume) {
       this.sfxVolume.addEventListener('input', (e) => {
         if (window.game && window.game.soundManager) {
-          window.game.soundManager.setSfxVolume(parseFloat(e.target.value));
+          const vol = parseFloat(e.target.value);
+          // Ensure audio context is resumed (user interaction requirement)
+          try {
+            if (window.game.soundManager && window.game.soundManager.resumeAudio) {
+              window.game.soundManager.resumeAudio();
+            }
+          } catch (err) {
+            /* ignore */
+          }
+
+          window.game.soundManager.setSfxVolume(vol);
+
+          // Play a short sample (laser) so user can gauge loudness.
+          // Throttle so rapid slider moves don't spawn many sounds.
+          if (!this._lastSfxSample || Date.now() - this._lastSfxSample > 120) {
+            this._lastSfxSample = Date.now();
+            try {
+              if (window.game && window.game.soundManager && window.game.soundManager.isSoundLoaded('laser')) {
+                window.game.soundManager.play('laser', { volume: 0.9 });
+              }
+            } catch (err) {
+              console.error('Error playing sfx sample:', err);
+            }
+          }
         }
       });
     }
@@ -957,6 +986,88 @@ export class UI {
     }
   }
 
+  // Update Impact Deflector status indicator
+  updateImpactDeflectorIndicator(player) {
+    // Create or update the deflector indicator in the UI
+    let deflectorIndicator = document.getElementById('deflector-indicator');
+    
+    if (!deflectorIndicator) {
+      // Create the indicator element if it doesn't exist
+      deflectorIndicator = document.createElement('div');
+      deflectorIndicator.id = 'deflector-indicator';
+      deflectorIndicator.style.position = 'absolute';
+  // Shifted down 40px originally; now nudged up 10px to sit better over status panel
+  deflectorIndicator.style.top = this.isMobileDevice ? '85px' : '105px';
+      deflectorIndicator.style.left = '10px';
+      deflectorIndicator.style.padding = '4px 8px';
+      deflectorIndicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      deflectorIndicator.style.border = '1px solid #0ff';
+      deflectorIndicator.style.borderRadius = '4px';
+      deflectorIndicator.style.color = '#0ff';
+      deflectorIndicator.style.fontSize = this.isMobileDevice ? '10px' : '12px';
+      deflectorIndicator.style.fontFamily = 'monospace';
+      deflectorIndicator.style.display = 'none';
+      deflectorIndicator.style.zIndex = '1000';
+      document.body.appendChild(deflectorIndicator);
+    }
+
+    if (player.impactDeflector) {
+      if (player.impactDeflector.active) {
+        // Show active deflector with remaining time
+        const timeLeft = Math.max(0, player.impactDeflector.remainingTime);
+        deflectorIndicator.textContent = `DEFLECTOR: ${timeLeft.toFixed(1)}s`;
+        // Position the indicator over the status panel (shield/health) when available
+        const statusPanel = document.getElementById('status-panel');
+        if (statusPanel) {
+          const rect = statusPanel.getBoundingClientRect();
+          // Ensure it's rendered so we can measure its height without flashing on-screen
+          deflectorIndicator.style.display = 'block';
+          deflectorIndicator.style.visibility = 'hidden';
+          const popupRect = deflectorIndicator.getBoundingClientRect();
+          const padding = 8; // gap between popup and status panel
+          deflectorIndicator.style.left = `${Math.round(rect.left)}px`;
+          // Place the indicator fully above the status panel
+          deflectorIndicator.style.top = `${Math.round(rect.top - popupRect.height - padding)}px`;
+          deflectorIndicator.style.visibility = 'visible';
+        } else {
+          // Fallback to previous top-left position if status panel not present
+          deflectorIndicator.style.top = this.isMobileDevice ? '85px' : '105px';
+          deflectorIndicator.style.left = '10px';
+          deflectorIndicator.style.display = 'block';
+        }
+        deflectorIndicator.style.color = '#0ff';
+        deflectorIndicator.style.borderColor = '#0ff';
+      } else if (player.impactDeflector.cooldownRemaining > 0) {
+        // Show cooldown remaining
+        const cooldownLeft = Math.max(0, player.impactDeflector.cooldownRemaining);
+        deflectorIndicator.textContent = `DEFLECTOR: ${cooldownLeft.toFixed(1)}s`;
+        // Position the indicator over the status panel (shield/health) when available
+        const statusPanel = document.getElementById('status-panel');
+        if (statusPanel) {
+          const rect = statusPanel.getBoundingClientRect();
+          deflectorIndicator.style.display = 'block';
+          deflectorIndicator.style.visibility = 'hidden';
+          const popupRect = deflectorIndicator.getBoundingClientRect();
+          const padding = 8;
+          deflectorIndicator.style.left = `${Math.round(rect.left)}px`;
+          deflectorIndicator.style.top = `${Math.round(rect.top - popupRect.height - padding)}px`;
+          deflectorIndicator.style.visibility = 'visible';
+        } else {
+          deflectorIndicator.style.top = this.isMobileDevice ? '85px' : '105px';
+          deflectorIndicator.style.left = '10px';
+          deflectorIndicator.style.display = 'block';
+        }
+        deflectorIndicator.style.color = '#888';
+        deflectorIndicator.style.borderColor = '#888';
+      } else {
+        // Ready to use - show ready indicator briefly or hide
+        deflectorIndicator.style.display = 'none';
+      }
+    } else {
+      deflectorIndicator.style.display = 'none';
+    }
+  }
+
   showOptionsOverlay() {
     if (this.optionsOverlay) {
       this.optionsOverlay.classList.remove('hidden');
@@ -966,10 +1077,33 @@ export class UI {
           this.avatarManager.initialize();
         }, 50);
       }
+      // Refresh tutorial toggle from storage
+      if (this.tutorialToggle) {
+        try {
+          const stored = localStorage.getItem('tutorialEnabled');
+          if (stored !== null) this.tutorialToggle.checked = stored === 'true';
+        } catch (e) {
+          // ignore
+        }
+      }
     }
   }
   hideOptionsOverlay() {
     if (this.optionsOverlay) this.optionsOverlay.classList.add('hidden');
+  }
+
+  // Ensure a central method exists to update the top-left credits display
+  updateCreditsDisplay() {
+    try {
+      const creditsEl = document.getElementById('credits');
+      if (creditsEl) {
+        // Use the canonical player object if available
+        const creditsVal = (window.game && window.game.player && typeof window.game.player.credits !== 'undefined') ? window.game.player.credits : (window.game && window.game.player ? window.game.player.credits : null);
+        creditsEl.textContent = creditsVal !== null ? creditsVal : (window.shopSystem && shopSystem.player ? shopSystem.player.credits : '0');
+      }
+    } catch (e) {
+      // ignore DOM errors
+    }
   }
 
   // Render fire rate boost timer on canvas

@@ -9,6 +9,11 @@ export class ShopSystem {
     this.tabElements = {};
 
     // Load ship ownership from localStorage
+    
+    // Randomize scout default color from the palette
+    const paletteColors = ['#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff'];
+    const scoutDefaultColor = paletteColors[Math.floor(Math.random() * paletteColors.length)];
+    
     this.availableShips = [
       {
         id: 'scout',
@@ -23,8 +28,8 @@ export class ShopSystem {
           handling: 4.0,
           armor: 1.0,
         },
-        appearance: {
-          color: '#7d7d7d',
+          appearance: {
+          color: scoutDefaultColor,
           shape: 'triangle',
         },
       },
@@ -114,7 +119,7 @@ export class ShopSystem {
           cooldown: 0.06, // Extremely rapid
           speed: 800,
           range: 600,
-          energyCost: 5,
+          energyCost: 2,
         },
       },
       {
@@ -159,7 +164,7 @@ export class ShopSystem {
         stats: {
           damage: 26, // Split the difference between original 35 and nerfed 18
           cooldown: 0.38, // Slower
-          speed: 400, // Reduced from 500 for easier dodging
+          speed: 450, // Slightly increased for better responsiveness
           range: 1000,
           energyCost: 15,
           homing: true,
@@ -512,6 +517,12 @@ export class ShopSystem {
       if (this.player.health < this.player.maxHealth) {
         this.player.health = this.player.maxHealth;
       }
+      // Validate equipped skin matches this ship type; clear if not
+      try {
+        if (window.game && window.game.player && typeof window.game.player.ensureSkinMatchesShip === 'function') {
+          window.game.player.ensureSkinMatchesShip();
+        }
+      } catch (e) {}
     }
 
     // Load currently equipped weapon
@@ -535,6 +546,17 @@ export class ShopSystem {
         this.player.weaponIndex = index;
         this.player.currentWeapon = weapon.name;
         this.player.fireCooldownTime = weapon.stats.cooldown;
+        // Ensure HUD reflects the actual starting weapon immediately
+        try {
+          const weaponElement = document.getElementById('weapons');
+          if (weaponElement) weaponElement.textContent = this.player.currentWeapon;
+          const weaponIcon = document.getElementById('weapon-icon');
+          if (weaponIcon && this.player.updateWeaponIcon) {
+            this.player.updateWeaponIcon(weaponIcon, this.player.currentWeapon);
+          }
+        } catch (e) {
+          // ignore DOM errors during initialization
+        }
       }
     }
   }
@@ -731,13 +753,17 @@ export class ShopSystem {
         return;
       const tab = this.tabElements['challenges'];
       const cs = window.game.challengeSystem;
-      // count completed but unclaimed
-      const dailyUnclaimed = (cs.completed.daily || []).filter(
-        (id) => !(cs.claimed.daily || []).includes(id),
-      ).length;
-      const weeklyUnclaimed = (cs.completed.weekly || []).filter(
-        (id) => !(cs.claimed.weekly || []).includes(id),
-      ).length;
+      // count completed but unclaimed, but only for challenges that are in the active pools
+      const activeDaily = Array.isArray(cs.currentDaily) ? cs.currentDaily : [];
+      const activeWeekly = Array.isArray(cs.currentWeekly) ? cs.currentWeekly : [];
+
+      const dailyUnclaimed = (cs.completed.daily || [])
+        .filter((id) => activeDaily.includes(id))
+        .filter((id) => !(cs.claimed.daily || []).includes(id)).length;
+
+      const weeklyUnclaimed = (cs.completed.weekly || [])
+        .filter((id) => activeWeekly.includes(id))
+        .filter((id) => !(cs.claimed.weekly || []).includes(id)).length;
       const total = dailyUnclaimed + weeklyUnclaimed;
 
       // remove existing badge
@@ -760,6 +786,55 @@ export class ShopSystem {
         tab.style.boxShadow = '0 0 8px rgba(255,204,0,0.45)';
       } else {
         tab.style.boxShadow = 'none';
+      }
+
+      // Also update a small numeric badge on the Shop button so players
+      // see at-a-glance how many challenges are claimable without opening
+      // the shop. This is purely visual and uses the same `total` value.
+      try {
+        const shopBtn = document.getElementById('shop-btn');
+        if (shopBtn) {
+          // Ensure the shop button can anchor an absolute badge
+          if (!shopBtn.style.position || shopBtn.style.position === '') {
+            shopBtn.style.position = 'relative';
+          }
+
+          let shopBadge = document.getElementById('shop-challenge-badge');
+          if (total > 0) {
+            if (!shopBadge) {
+              shopBadge = document.createElement('div');
+              shopBadge.id = 'shop-challenge-badge';
+              shopBadge.style.position = 'absolute';
+              // Position the badge so its center aligns with the left border line of the shop button
+              shopBadge.style.top = '50%';
+              shopBadge.style.left = '0';
+              shopBadge.style.transform = 'translate(-50%, -50%)';
+              shopBadge.style.minWidth = '18px';
+              shopBadge.style.height = '18px';
+              shopBadge.style.padding = '0 6px';
+              shopBadge.style.background = '#ffcc00';
+              shopBadge.style.color = '#000';
+              shopBadge.style.borderRadius = '12px';
+              shopBadge.style.fontWeight = '700';
+              shopBadge.style.fontSize = '12px';
+              shopBadge.style.display = 'flex';
+              shopBadge.style.alignItems = 'center';
+              shopBadge.style.justifyContent = 'center';
+              shopBadge.style.boxShadow = '0 0 6px rgba(255,204,0,0.6)';
+              shopBadge.style.zIndex = '1003';
+              shopBtn.appendChild(shopBadge);
+            }
+            shopBadge.textContent = total > 99 ? '99+' : String(total);
+            shopBadge.style.display = 'flex';
+          } else {
+            if (shopBadge && shopBadge.parentNode) {
+              shopBadge.parentNode.removeChild(shopBadge);
+            }
+          }
+        }
+      } catch (e) {
+        // Non-fatal UI update failure
+        console.warn('Failed to update shop challenge badge', e);
       }
     } catch (e) {
       // ignore
@@ -1644,6 +1719,15 @@ export class ShopSystem {
       }
       // Render today's persisted daily challenges
       const dailyIds = dailyState[dailyKey];
+      // Sync active daily pool with ChallengeSystem so UI and badge logic match
+      try {
+        if (window.game && window.game.challengeSystem) {
+          window.game.challengeSystem.currentDaily = Array.isArray(dailyIds) ? dailyIds.slice() : [];
+          if (typeof window.game.challengeSystem.saveState === 'function') {
+            window.game.challengeSystem.saveState();
+          }
+        }
+      } catch (e) {}
       const dailyChallenges = CHALLENGES.daily.filter((ch) => dailyIds.includes(ch.id));
       dailyChallenges.forEach((challenge) => {
         const challengeCard = this.createChallengeCard(
@@ -1704,6 +1788,13 @@ export class ShopSystem {
         const weeklyState = JSON.parse(weeklyStateRaw);
         weeklyState[weekKey] = weeklyPool.slice(0, weeklyCount).map((ch) => ch.id);
         localStorage.setItem('weekly_challenge_rotation', JSON.stringify(weeklyState));
+        // Sync active weekly pool with ChallengeSystem
+        if (window.game && window.game.challengeSystem) {
+          window.game.challengeSystem.currentWeekly = Array.isArray(weeklyState[weekKey]) ? weeklyState[weekKey].slice() : [];
+          if (typeof window.game.challengeSystem.saveState === 'function') {
+            window.game.challengeSystem.saveState();
+          }
+        }
       } catch (e) {
         // ignore storage errors
       }
@@ -1742,15 +1833,25 @@ export class ShopSystem {
         let totalAwarded = 0;
         let totalGems = 0;
         let totalCredits = 0;
-        CHALLENGES.daily.concat(CHALLENGES.weekly).forEach((ch) => {
-          const type = CHALLENGES.daily.find((d) => d.id === ch.id)
-            ? 'daily'
-            : 'weekly';
+        // Only consider challenges that are currently active in the ChallengeSystem
+        const activeDaily = Array.isArray(challengeSystem.currentDaily)
+          ? challengeSystem.currentDaily.slice()
+          : [];
+        const activeWeekly = Array.isArray(challengeSystem.currentWeekly)
+          ? challengeSystem.currentWeekly.slice()
+          : [];
+        const activeIds = activeDaily.concat(activeWeekly);
+
+        activeIds.forEach((id) => {
+          const type = activeDaily.includes(id) ? 'daily' : 'weekly';
           if (
-            challengeSystem.completed[type].includes(ch.id) &&
-            !(challengeSystem.claimed[type] || []).includes(ch.id)
+            (challengeSystem.completed[type] || []).includes(id) &&
+            !((challengeSystem.claimed[type] || []).includes(id))
           ) {
-            const awarded = challengeSystem.claimChallenge(type, ch.id);
+            // Find the challenge metadata from CHALLENGES to get reward/gems info
+            const ch = (CHALLENGES[type] || []).find((c) => c.id === id);
+            if (!ch) return;
+            const awarded = challengeSystem.claimChallenge(type, id);
             if (awarded > 0) {
               totalAwarded += awarded;
               totalCredits += ch.reward || 0;
@@ -1768,6 +1869,23 @@ export class ShopSystem {
           const creditsEl = document.getElementById('shop-credits');
           if (creditsEl)
             creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+          
+          // Update main UI credits and gems display (outside shop)
+          if (window.game && window.game.ui && typeof window.game.ui.updateCreditsDisplay === 'function') {
+            window.game.ui.updateCreditsDisplay();
+          }
+          if (window.game && window.game.premiumStore && typeof window.game.premiumStore.updateGemDisplay === 'function') {
+            window.game.premiumStore.updateGemDisplay();
+          }
+          // Direct DOM fallback: update the visible top-left counters immediately
+          try {
+            const mainCredits = document.getElementById('credits');
+            if (mainCredits) mainCredits.textContent = this.player.credits || 0;
+            const mainGems = document.getElementById('gems');
+            if (mainGems) mainGems.textContent = (window.game && window.game.premiumStore) ? window.game.premiumStore.spaceGems : 0;
+          } catch (e) {
+            // ignore DOM errors
+          }
 
           // Show Marvin popup for total reward
           let rewardMsg = `<div style='font-size:1.1em;margin-bottom:4px;'>You claimed multiple rewards!</div>`;
@@ -1821,12 +1939,22 @@ export class ShopSystem {
     // Determine visibility after content is rendered
     setTimeout(() => {
       try {
-        const dailyUnclaimed = (challengeSystem.completed.daily || []).filter(
-          (id) => !(challengeSystem.claimed.daily || []).includes(id),
-        ).length;
-        const weeklyUnclaimed = (challengeSystem.completed.weekly || []).filter(
-          (id) => !(challengeSystem.claimed.weekly || []).includes(id),
-        ).length;
+        const activeDaily = Array.isArray(challengeSystem.currentDaily)
+          ? challengeSystem.currentDaily
+          : [];
+        const activeWeekly = Array.isArray(challengeSystem.currentWeekly)
+          ? challengeSystem.currentWeekly
+          : [];
+
+        const dailyUnclaimed = (challengeSystem.completed.daily || [])
+          .filter((id) => activeDaily.includes(id))
+          .filter((id) => !(challengeSystem.claimed.daily || []).includes(id))
+          .length;
+
+        const weeklyUnclaimed = (challengeSystem.completed.weekly || [])
+          .filter((id) => activeWeekly.includes(id))
+          .filter((id) => !(challengeSystem.claimed.weekly || []).includes(id))
+          .length;
         const total = dailyUnclaimed + weeklyUnclaimed;
         if (total > 0) claimAllSmall.style.display = 'inline-block';
       } catch (e) {}
@@ -2076,10 +2204,28 @@ export class ShopSystem {
           if (window.game && window.game.soundManager) {
             window.game.soundManager.play('powerup', { volume: 1.0 });
           }
-          // update credits display
+          // update credits display in shop
           const creditsEl = document.getElementById('shop-credits');
           if (creditsEl)
             creditsEl.textContent = `Credits: ${this.player.credits || 0}`;
+          
+          // Update main UI credits display (outside shop)
+          if (window.game && window.game.ui && typeof window.game.ui.updateCreditsDisplay === 'function') {
+            window.game.ui.updateCreditsDisplay();
+          }
+          
+          // Update main UI gems display if premiumStore exists
+          if (window.game && window.game.premiumStore && typeof window.game.premiumStore.updateGemDisplay === 'function') {
+            window.game.premiumStore.updateGemDisplay();
+          }
+          // Direct DOM fallback: update the visible top-left counters immediately
+          try {
+            const mainCredits = document.getElementById('credits');
+            if (mainCredits) mainCredits.textContent = this.player.credits || 0;
+            const mainGems = document.getElementById('gems');
+            if (mainGems) mainGems.textContent = (window.game && window.game.premiumStore) ? window.game.premiumStore.spaceGems : 0;
+          } catch (e) {}
+          
           // update this card visuals
           claimBtn.disabled = true;
           claimBtn.style.opacity = '0.6';
@@ -2573,7 +2719,7 @@ export class ShopSystem {
     // Add note about premium skins
     const premiumNote = document.createElement('div');
     premiumNote.textContent =
-      '✨ Want more styles? Check out Premium Skins below!';
+      '✨ Want more styles? Check out the Premium Store!';
     premiumNote.style.fontSize = '12px';
     premiumNote.style.color = '#FFD700';
     premiumNote.style.textAlign = 'center';
@@ -2587,8 +2733,8 @@ export class ShopSystem {
     const shipSkinsSection = document.createElement('div');
     shipSkinsSection.style.marginBottom = '20px';
 
-    // Get current ship type first
-    const currentShipType = this.player.shipType || 'scout'; // Default to scout
+    // Get current ship type - use currentShip property (not shipType!)
+    const currentShipType = this.player.currentShip || 'scout';
 
     const shipSkinsLabel = document.createElement('div');
     shipSkinsLabel.textContent = `🌟 Premium Ship Skins - ${currentShipType.charAt(0).toUpperCase() + currentShipType.slice(1)}`;
@@ -2631,14 +2777,18 @@ export class ShopSystem {
       // Add "No Skin" option
       const noSkinButton = document.createElement('button');
       noSkinButton.className = 'skin-selection-button';
+  // Mark as a skin-selection target so global listeners can clear new-skin badges
+  noSkinButton.dataset.skin = 'none';
       noSkinButton.style.padding = '8px';
       noSkinButton.style.border =
-        currentSkin === 'none' ? '2px solid #FFD700' : '1px solid #555';
+        currentSkin === 'none' ? '2px solid #4af' : '1px solid #555';
       noSkinButton.style.borderRadius = '4px';
       noSkinButton.style.backgroundColor = 'rgba(0, 20, 40, 0.8)';
       noSkinButton.style.color = '#fff';
       noSkinButton.style.cursor = 'pointer';
       noSkinButton.style.fontSize = '12px';
+      noSkinButton.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+      noSkinButton.style.fontWeight = '600';
       noSkinButton.textContent = 'Default';
 
       noSkinButton.onclick = () => {
@@ -2648,7 +2798,7 @@ export class ShopSystem {
         skinsGrid.querySelectorAll('button').forEach((btn) => {
           btn.style.border = '1px solid #555';
         });
-        noSkinButton.style.border = '2px solid #FFD700';
+        noSkinButton.style.border = '2px solid #4af';
 
         drawShipPreview();
 
@@ -2666,28 +2816,44 @@ export class ShopSystem {
       ownedSkins.forEach((skinId) => {
         const skinButton = document.createElement('button');
         skinButton.className = 'skin-selection-button';
+        // Tag the button with its skin id so notification handlers can detect selections
+        skinButton.dataset.skin = skinId;
         skinButton.style.padding = '8px';
         skinButton.style.border =
-          currentSkin === skinId ? '2px solid #FFD700' : '1px solid #555';
+          currentSkin === skinId ? '2px solid #4af' : '1px solid #555';
         skinButton.style.borderRadius = '4px';
         skinButton.style.backgroundColor = 'rgba(0, 20, 40, 0.8)';
         skinButton.style.color = '#fff';
         skinButton.style.cursor = 'pointer';
         skinButton.style.fontSize = '12px';
+        skinButton.style.fontFamily = "'Orbitron', 'Arial', sans-serif";
+        skinButton.style.fontWeight = '600';
 
-        // Get skin name
-        const skinNames = {
-          scout_stealth: 'Stealth Scout',
-          scout_neon: 'Neon Scout',
-          fighter_crimson: 'Crimson Fighter',
-          fighter_void: 'Void Fighter',
-          heavy_titan: 'Titan Heavy',
-          heavy_phoenix: 'Phoenix Heavy',
-          stealth_shadow: 'Shadow Stealth',
-          stealth_ghost: 'Ghost Stealth',
-        };
+        // Get skin display name - prefer the premium store definition so
+        // skins like 'scout_playtester' can have a friendly name.
+        let skinDisplayName = skinId;
+        try {
+          const skinDef = window.game && window.game.premiumStore && window.game.premiumStore.shipSkins.find((s) => s.id === skinId);
+          if (skinDef && skinDef.name) {
+            skinDisplayName = skinDef.name;
+          } else {
+            const skinNames = {
+              scout_stealth: 'Stealth Scout',
+              scout_neon: 'Neon Scout',
+              fighter_crimson: 'Crimson Fighter',
+              fighter_void: 'Void Fighter',
+              heavy_titan: 'Titan Heavy',
+              heavy_phoenix: 'Phoenix Heavy',
+              stealth_shadow: 'Shadow Stealth',
+              stealth_ghost: 'Ghost Stealth',
+            };
+            skinDisplayName = skinNames[skinId] || skinId;
+          }
+        } catch (e) {
+          skinDisplayName = skinId;
+        }
 
-        skinButton.textContent = skinNames[skinId] || skinId;
+        skinButton.textContent = skinDisplayName;
 
         skinButton.onclick = () => {
           this.player.setShipSkin(skinId);
@@ -2696,7 +2862,7 @@ export class ShopSystem {
           skinsGrid.querySelectorAll('button').forEach((btn) => {
             btn.style.border = '1px solid #555';
           });
-          skinButton.style.border = '2px solid #FFD700';
+          skinButton.style.border = '2px solid #4af';
 
           drawShipPreview();
 
@@ -2766,10 +2932,11 @@ export class ShopSystem {
     effectsSection.appendChild(effectsLabel);
 
     const effectsToggle = document.createElement('button');
-    const effectsEnabled =
-      localStorage.getItem('shipSkinEffectsEnabled') === null
-        ? true
-        : localStorage.getItem('shipSkinEffectsEnabled') === 'true';
+    // Default FX to ON if not set
+    if (localStorage.getItem('shipSkinEffectsEnabled') === null) {
+      localStorage.setItem('shipSkinEffectsEnabled', 'true');
+    }
+    const effectsEnabled = localStorage.getItem('shipSkinEffectsEnabled') === 'true';
     const setBtnState = () => {
       const enabled = localStorage.getItem('shipSkinEffectsEnabled') === 'true';
       effectsToggle.textContent = enabled ? 'Effects: ON' : 'Effects: OFF';
@@ -2903,6 +3070,13 @@ export class ShopSystem {
 
     // Draw initial ship preview
     drawShipPreview();
+    
+    // Refresh skin notification highlights after rendering
+    setTimeout(() => {
+      if (window.shipSkinNotifications) {
+        window.shipSkinNotifications.refresh();
+      }
+    }, 100);
   }
 
   toggleShop() {
@@ -2913,6 +3087,16 @@ export class ShopSystem {
       container.classList.remove('hidden');
       this.updateShopContent();
       this.updateChallengeTabBadge();
+
+      // Tutorial notifications
+      if (window.game && window.game.tutorialSystem) {
+        // Check if player is in safe zone for safe zone shop tutorial
+        if (window.game.world && window.game.world.isInSafeZone(this.player)) {
+          window.game.tutorialSystem.onSafeZoneShopOpened();
+        } else {
+          window.game.tutorialSystem.onShopOpened();
+        }
+      }
 
       // Track shop opened
       if (window.analytics) {
@@ -3117,6 +3301,16 @@ export class ShopSystem {
     ) {
       window.game.achievements.onShopPurchase('weapon', weapon.price);
     }
+    
+    // Notify tutorial system of weapon purchase
+    if (
+      window.game &&
+      window.game.tutorialSystem &&
+      typeof window.game.tutorialSystem.onWeaponPurchased === 'function'
+    ) {
+      window.game.tutorialSystem.onWeaponPurchased();
+    }
+    
     if (
       window.game &&
       window.game.playerProfile &&

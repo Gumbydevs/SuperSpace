@@ -566,8 +566,13 @@
         const dy = player.y - asteroid.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Collision occurs when player is within asteroid radius plus player collision radius
-        if (distance < asteroid.radius + player.collisionRadius) {
+        // Use Impact Deflector radius if active, otherwise normal collision radius
+        const effectiveCollisionRadius = (player.impactDeflector && player.impactDeflector.active) 
+          ? player.impactDeflector.radius 
+          : player.collisionRadius;
+
+        // Collision occurs when player is within asteroid radius plus effective collision radius
+        if (distance < asteroid.radius + effectiveCollisionRadius) {
           // Handle collision effects (bounce, damage, etc.)
           player.handleAsteroidCollision(asteroid, soundManager);
         }
@@ -686,6 +691,16 @@
             ) {
               window.game.achievements.onAsteroidDestroyed();
             }
+            
+            // Notify tutorial system of asteroid destruction
+            if (
+              window.game &&
+              window.game.tutorialSystem &&
+              typeof window.game.tutorialSystem.onAsteroidDestroyed === 'function'
+            ) {
+              window.game.tutorialSystem.onAsteroidDestroyed();
+            }
+            
             if (
               window.game &&
               window.game.playerProfile &&
@@ -1366,13 +1381,14 @@
       velocityY: velocityY + (Math.random() - 0.5) * 20,
       size: size,
       originalSize: size,
-      opacity: 0.7,
+      opacity: 0.9,
       life: 1.0,
       maxLife: duration,
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * 1.0,
+      // Use darker greys / near-black so smoke reads as smoke (not yellow)
       color:
-        Math.random() > 0.5 ? 'rgba(40, 40, 40, 0.7)' : 'rgba(70, 70, 70, 0.7)',
+        Math.random() > 0.5 ? 'rgba(60, 60, 60, 0.9)' : 'rgba(90, 90, 90, 0.8)',
 
       update(deltaTime) {
         // Move particle
@@ -2170,9 +2186,9 @@
           ctx.rotate(particle.rotation);
         }
 
-        // Fade out as lifetime decreases
-        ctx.globalAlpha = particle.life;
-        ctx.fillStyle = particle.color;
+  // Fade out as lifetime decreases; respect particle.opacity set at creation
+  ctx.globalAlpha = particle.life * (particle.opacity || 1);
+  ctx.fillStyle = particle.color;
 
         // Different drawing for different particle types
         if (particle.color === '#ffbb00') {

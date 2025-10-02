@@ -1,5 +1,6 @@
 import { KillAnnouncer } from './killannouncer.js';
 import { containsProfanity } from './profaneFilter.js';
+import ResetConfig from './resetConfig.js';
 
 export class MultiplayerManager {
   constructor(game) {
@@ -7,18 +8,67 @@ export class MultiplayerManager {
     this.socket = null;
     this.connected = false;
     this.players = {};
+    console.log('MultiplayerManager: constructor start');
+  // Safety: by default automatic destructive resets are disabled for production.
+  // However, during local development we want the old behavior where bumping
+  // the GAME_VERSION triggers the reset automatically. Enable auto-reset when
+  // running on localhost, file://, or when a dev query flag or global debug
+  // flag is present.
+  try {
+    const isLocalhost = typeof location !== 'undefined' && (
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1' ||
+      location.protocol === 'file:'
+    );
+    const hasForceQuery = typeof location !== 'undefined' && location.search && location.search.indexOf('forceReset=1') !== -1;
+    const globalDebugFlag = typeof window !== 'undefined' && window.DEBUG_ALLOW_RESET === true;
+    this.allowAutomaticReset = !!(isLocalhost || hasForceQuery || globalDebugFlag);
+  } catch (e) {
+    // If any of the above checks fail (rare), default to safe behavior (disabled)
+    this.allowAutomaticReset = false;
+  }
     // Track last displayed leaderboard state for real-time updates
     this.lastLeaderboardState = '';
     this.playerId = null;
 
-    // Game version for progress reset system - UPDATE THIS WHEN YOU WANT TO RESET EVERYONE'S PROGRESS
-    this.GAME_VERSION = '2025.09.14.001'; // Format: YYYY.MM.DD.increment
+    // Game version for progress reset system - now authoritative in ResetConfig
+  this.GAME_VERSION = (ResetConfig && ResetConfig.GAME_VERSION) || '2025.09.30.001';
+  console.log('Version wiring: ResetConfig.GAME_VERSION=', ResetConfig.GAME_VERSION, '-> multiplayer.this.GAME_VERSION=', this.GAME_VERSION, 'stored localStorage.gameVersion=', localStorage.getItem('gameVersion'));
 
-    // Flag to track if a reset occurred during this session
+  // Flag to track if a reset occurred during this session
     this.resetOccurred = false;
 
     // Check for version reset before loading any data
-    this.checkAndHandleVersionReset();
+    try {
+      this.checkAndHandleVersionReset();
+    } catch (e) {
+      console.error('Error during checkAndHandleVersionReset():', e);
+    }
+
+    // Expose console helpers ONLY when an explicit debug flag is set to avoid
+    // polluting the global namespace in normal usage. Developers can enable
+    // this by setting `window.DEBUG_ALLOW_RESET = true` in their dev console.
+    try {
+      if (typeof window !== 'undefined' && window.DEBUG_ALLOW_RESET === true) {
+        // window.forceGameVersionReset() will run the reset check immediately
+        window.forceGameVersionReset = () => {
+          if (window.game && window.game.multiplayer) {
+            window.game.multiplayer.runVersionResetCheck(true);
+          } else {
+            console.warn('forceGameVersionReset: game.multiplayer not available yet');
+          }
+        };
+        // window.previewVersionReset() will show a dry-run preview of preserved/removed keys
+        window.previewVersionReset = () => {
+          if (window.game && window.game.multiplayer && typeof window.game.multiplayer.previewVersionReset === 'function') {
+            return window.game.multiplayer.previewVersionReset();
+          }
+          console.warn('previewVersionReset: game.multiplayer.previewVersionReset not available yet');
+        };
+      }
+    } catch (e) {
+      // ignore
+    }
 
     // Initialize our kill announcer system
     this.killAnnouncer = new KillAnnouncer();
@@ -63,12 +113,14 @@ export class MultiplayerManager {
   checkAndHandleVersionReset() {
     const storedVersion = localStorage.getItem('gameVersion');
 
-    // If no stored version or version has changed, reset progress
-    if (!storedVersion || storedVersion !== this.GAME_VERSION) {
+    // Only reset progress when there is an existing stored version and it differs
+    // and automatic resets are explicitly allowed. This prevents accidental
+    // destructive clears during development or by mistake.
+    if (this.allowAutomaticReset && storedVersion && storedVersion !== this.GAME_VERSION) {
       console.log('🔄 Game version changed - resetting player progress...');
 
       // Store old version for logging
-      const oldVersion = storedVersion || 'Unknown';
+      const oldVersion = storedVersion;
 
       // Set reset flag
       this.resetOccurred = true;
@@ -77,6 +129,10 @@ export class MultiplayerManager {
       this.resetPlayerProgress(oldVersion);
 
       // Update stored version to current
+      localStorage.setItem('gameVersion', this.GAME_VERSION);
+    } else if (!storedVersion) {
+      // If no stored version exists, just set it so future version bumps can be detected
+      console.log('ℹ️ No stored gameVersion detected. Setting current version for future checks.');
       localStorage.setItem('gameVersion', this.GAME_VERSION);
     }
   }
@@ -142,37 +198,93 @@ export class MultiplayerManager {
       console.log(`  ${key}: ${localStorage.getItem(key)}`);
     }
 
-    // List of localStorage keys to explicitly preserve (keep player name and basic settings)
-    // Added many common variants used by shops/legacy code to avoid accidental removal
-    const explicitPreserve = [
-      'playerName',
-      'player_name',
-      'name', // name variants
-      'hasSetName',
-      'has_set_name', // flag variants
-      'gameVersion',
-      'game_version',
-      'soundEnabled',
-      'musicEnabled',
-      'selectedAvatar',
-      'selected_avatar',
-      'selectedShipSkin',
-      'selected_ship_skin',
-      'shipSkinEffectsEnabled',
-      // Common shop/purchase/ownership keys (whitelist)
-      'ownedSkins',
-      'ownedAvatars',
-      'purchasedSkins',
-      'purchasedAvatars',
-      'ownedShipSkins',
-      'owned_items',
-      'premiumPurchases',
-      'purchases',
-      'shop_owned',
-      'shop_purchased',
-      'entitlements',
-      'purchase_history',
-    ];
+    // --- Grant pre-release playtester premium entitlements ---
+    try {
+      const stored = localStorage.getItem('premiumPurchases');
+      let purchases = { avatars: [], skins: [], purchaseHistory: [] };
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          purchases.avatars = Array.isArray(parsed.avatars) ? parsed.avatars : [];
+          purchases.skins = Array.isArray(parsed.skins) ? parsed.skins : [];
+          purchases.purchaseHistory = Array.isArray(parsed.purchaseHistory) ? parsed.purchaseHistory : (Array.isArray(parsed.purchase_history) ? parsed.purchase_history : []);
+          // keep other keys if present
+          Object.assign(purchases, parsed);
+        } catch (e) {
+          console.warn('Could not parse existing premiumPurchases, recreating:', e);
+        }
+      }
+
+      // Entitlement IDs
+      const playAv = 'playtester_dummy';
+      const playSkin = 'scout_playtester';
+
+      // Grant avatar if not already present
+      if (!purchases.avatars.includes(playAv)) {
+        purchases.avatars.push(playAv);
+        purchases.purchaseHistory = purchases.purchaseHistory || [];
+        purchases.purchaseHistory.push({ type: 'avatar', id: playAv, name: 'Playtester Dummy', cost: 0, currency: 'gift', timestamp: Date.now() });
+      }
+
+      // Grant skin if not already present
+      if (!purchases.skins.includes(playSkin)) {
+        purchases.skins.push(playSkin);
+        purchases.purchaseHistory = purchases.purchaseHistory || [];
+        purchases.purchaseHistory.push({ type: 'skin', id: playSkin, name: 'Playtester Scout', cost: 0, currency: 'gift', timestamp: Date.now() });
+        // Notify UI about new skin so shop/appearance badges show up.
+        // If the notification system hasn't initialized yet,
+        // persist the notification to localStorage so it can be picked up later.
+        try {
+          if (typeof window !== 'undefined' && window.notifyNewShipSkin) {
+            window.notifyNewShipSkin(playSkin);
+          } else {
+            // Fallback: write to localStorage 'newShipSkins' array so notification system can pick it up on init
+            try {
+              const raw = localStorage.getItem('newShipSkins') || '[]';
+              const arr = JSON.parse(raw);
+              if (!arr.includes(playSkin)) {
+                arr.push(playSkin);
+                localStorage.setItem('newShipSkins', JSON.stringify(arr));
+              }
+            } catch (e) {
+              /* ignore */
+            }
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
+      // Save back to localStorage in the normalized shape used elsewhere
+      localStorage.setItem('premiumPurchases', JSON.stringify(purchases));
+
+      // Also write legacy/explicit keys to make ResetConfig preservation logic happy
+      // ownedAvatars / purchasedAvatars
+      try {
+        const ownedAv = JSON.parse(localStorage.getItem('ownedAvatars') || '[]');
+        if (!ownedAv.includes(playAv)) {
+          ownedAv.push(playAv);
+          localStorage.setItem('ownedAvatars', JSON.stringify(ownedAv));
+        }
+      } catch (e) {}
+
+      try {
+        const ownedSk = JSON.parse(localStorage.getItem('ownedSkins') || '[]');
+        if (!ownedSk.includes(playSkin)) {
+          ownedSk.push(playSkin);
+          localStorage.setItem('ownedSkins', JSON.stringify(ownedSk));
+        }
+      } catch (e) {}
+
+      console.log('🎁 Playtester entitlements granted (premium avatar + skin)');
+    } catch (e) {
+      console.warn('Error granting playtester entitlements:', e);
+    }
+
+    // Use explicit preserve keys from ResetConfig so the set is editable in one place
+    const explicitPreserve = Array.isArray(ResetConfig.explicitPreserveKeys)
+      ? ResetConfig.explicitPreserveKeys.slice()
+      : [];
 
     // Also preserve any premium/skin/avatar/purchase related keys so paid purchases are not lost
     const preservedData = {};
@@ -206,13 +318,53 @@ export class MultiplayerManager {
 
     console.log('💾 Preserving data:', preservedData);
 
-    // Clear all localStorage
-    localStorage.clear();
+    // Ensure we explicitly preserve upgrade/ship/weapon keys when appropriate
+    try {
+      // Upgrade keys used by shop.js
+      const upgradeIdsToPreserve = ['engine', 'shield', 'energy', 'armor', 'cargo', 'weapon'];
+      if (ResetConfig.flags.preservePurchasedUpgrades || !ResetConfig.flags.resetUpgrades) {
+        upgradeIdsToPreserve.forEach((id) => {
+          const k = `upgrade_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
 
-    // Restore preserved data
-    Object.keys(preservedData).forEach((key) => {
-      localStorage.setItem(key, preservedData[key]);
-    });
+      // Ship ownership keys: preserve when resetShips is false
+      const shipIdsToPreserve = ['scout', 'interceptor', 'destroyer', 'cruiser'];
+      if (!ResetConfig.flags.resetShips) {
+        shipIdsToPreserve.forEach((id) => {
+          const k = `ship_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Weapon ownership keys: preserve when resetWeapons is false
+      const weaponIdsToPreserve = [
+        'disengaged',
+        'laser',
+        'plasma',
+        'rocket',
+        'railgun',
+        'seeker',
+        'mine',
+        'disruptor',
+      ];
+      if (!ResetConfig.flags.resetWeapons) {
+        weaponIdsToPreserve.forEach((id) => {
+          const k = `weapon_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+    } catch (e) {
+      console.warn('Error while adding explicit preserved upgrade/ship/weapon keys:', e);
+    }
+
+  // NOTE: we no longer clear all localStorage. Instead we remove specific keys
+  // based on the reset flags below. This makes toggles deterministic and avoids
+  // accidental deletion of unrelated keys.
 
     // Ensure in-memory player name / flag are restored so UI won't show a reset name
     try {
@@ -239,28 +391,62 @@ export class MultiplayerManager {
       );
     }
 
-    // Explicitly reset key game progress items
+    // Explicitly reset key game progress items - obey ResetConfig.flags
     // Reset credits (handle both legacy and current keys)
-    localStorage.setItem('playerCredits', '0'); // Reset credits to 0
-    localStorage.setItem('credits', '0');
-    localStorage.setItem('currentShip', 'scout'); // Reset to default ship
-    localStorage.removeItem('playerShipColor'); // Remove custom ship color
-    localStorage.removeItem('playerEngineColor'); // Remove custom engine color
+    if (ResetConfig.flags.resetCredits) {
+      localStorage.setItem('playerCredits', '0'); // Reset credits to 0
+      localStorage.setItem('credits', '0');
+    }
 
-    // Reset all ship ownership (but do not remove premium skins or purchased ownership keys)
-    const shipIds = ['scout', 'interceptor', 'destroyer', 'cruiser'];
+    // Reset gems (premium currency) when configured
+    try {
+      if (ResetConfig.flags.resetGems) {
+        // Use startingGems from ResetConfig when available, default to 0
+        const start = typeof ResetConfig.startingGems === 'number' ? ResetConfig.startingGems : 0;
+        localStorage.setItem('spaceGems', String(start));
+        // Also write common alternate keys for compatibility
+        try { localStorage.setItem('gems', String(start)); } catch (e) {}
+        try { localStorage.setItem('gem_balance', String(start)); } catch (e) {}
+        console.log(`💎 Space Gems reset to ${start}`);
+      }
+    } catch (e) {
+      console.warn('Error resetting gems during progress reset:', e);
+    }
+
+    if (ResetConfig.flags.resetShips) {
+      localStorage.setItem('currentShip', 'scout'); // Reset to default ship
+      localStorage.removeItem('playerShipColor'); // Remove custom ship color
+      localStorage.removeItem('playerEngineColor'); // Remove custom engine color
+      // Also ensure any selected ship skin is reset to none when ships are reset
+      try {
+        localStorage.setItem('selectedShipSkin', 'none');
+        localStorage.setItem('selected_ship_skin', 'none');
+        localStorage.setItem('selectedShip', 'scout');
+        // Randomly select one of the available palette colors for the scout
+        const paletteColors = ['#33f', '#4f4', '#f44', '#ff4', '#f4f', '#4ff'];
+        const randomColor = paletteColors[Math.floor(Math.random() * paletteColors.length)];
+        localStorage.setItem('playerShipColor', randomColor);
+      } catch (e) {
+        // ignore storage errors
+      }
+    }
+
+  // Reset all ship ownership (but do not remove premium skins or purchased ownership keys)
+  // Include all ship IDs used by the shop so purchased ships are correctly cleared
+  const shipIds = ['scout', 'fighter', 'heavy', 'stealth', 'interceptor', 'destroyer', 'cruiser'];
     shipIds.forEach((shipId) => {
       if (shipId !== 'scout') {
-        // Keep scout as owned
-        // Only remove the basic ownership flag if it exists and is not a premium/owned list
+        // Keep scout as owned. Only remove basic ownership flags if resetShips is true
         const key = `ship_${shipId}`;
-        if (
-          localStorage.getItem(key) &&
-          !/skin|avatar|premium|purchase|purchased|owned/i.test(key)
-        ) {
-          localStorage.removeItem(key);
-        } else {
-          // If it's a premium-owned marker like purchasedSkins or ownedAvatars, keep it
+        if (ResetConfig.flags.resetShips) {
+          // Only remove if the key is not part of the preserved data (paid/preserved entitlements)
+          if (
+            localStorage.getItem(key) &&
+            !/skin|avatar|premium|purchase|purchased|owned/i.test(key) &&
+            !(key in preservedData)
+          ) {
+            localStorage.removeItem(key);
+          }
         }
       }
     });
@@ -279,40 +465,113 @@ export class MultiplayerManager {
     weaponIds.forEach((weaponId) => {
       if (weaponId !== 'disengaged') {
         // Keep disengaged as owned
-        localStorage.removeItem(`weapon_${weaponId}`);
+        if (ResetConfig.flags.resetWeapons) {
+          const wkey = `weapon_${weaponId}`;
+          // Do not remove if this weapon key was preserved
+          if (!(wkey in preservedData)) {
+            localStorage.removeItem(wkey);
+          }
+        }
       }
     });
 
-    // Reset all upgrade levels
-    const upgradeIds = ['engine', 'armor', 'shield', 'weapon'];
+    // Reset all upgrade values (use the same keys shop.js writes: upgrade_<id>)
+    const upgradeIds = ['engine', 'shield', 'energy', 'armor', 'cargo', 'weapon'];
     upgradeIds.forEach((upgradeId) => {
-      localStorage.removeItem(`upgrade_${upgradeId}_level`);
+      const ukey = `upgrade_${upgradeId}`;
+      if (ResetConfig.flags.resetUpgrades) {
+        // If preservePurchasedUpgrades is enabled, do NOT remove upgrade keys here
+        // (we treat preservation of upgrades as an explicit override).
+        if (ResetConfig.flags.preservePurchasedUpgrades) {
+          // preserve all upgrade_<id> keys (no-op)
+        } else {
+          // Default: remove upgrade keys (existing behavior)
+          localStorage.removeItem(ukey);
+        }
+      }
     });
 
     // Reset challenges state (persisted and in-memory)
     try {
-      localStorage.removeItem('challenge_state');
-      if (window.game && window.game.challengeSystem) {
-        try {
-          const cs = window.game.challengeSystem;
-          cs.completed = { daily: [], weekly: [] };
-          cs.claimed = { daily: [], weekly: [] };
-          cs.notified = { daily: [], weekly: [] };
-          cs.sessionNotified = { daily: [], weekly: [] };
-          cs.lastDailyReset = null;
-          cs.lastWeeklyReset = null;
-          // Persist cleared state
-          if (typeof cs.saveState === 'function') cs.saveState();
-          console.log('🏁 Challenges cleared (local + memory)');
-        } catch (e) {
-          console.warn('Could not fully reset in-memory challenges:', e);
+      if (ResetConfig.flags.resetChallenges) {
+        localStorage.removeItem('challenge_state');
+        if (window.game && window.game.challengeSystem) {
+          try {
+            const cs = window.game.challengeSystem;
+            cs.completed = { daily: [], weekly: [] };
+            cs.claimed = { daily: [], weekly: [] };
+            cs.notified = { daily: [], weekly: [] };
+            cs.sessionNotified = { daily: [], weekly: [] };
+            cs.lastDailyReset = null;
+            cs.lastWeeklyReset = null;
+            // Persist cleared state
+            if (typeof cs.saveState === 'function') cs.saveState();
+            console.log('🏁 Challenges cleared (local + memory)');
+          } catch (e) {
+            console.warn('Could not fully reset in-memory challenges:', e);
+          }
+        } else {
+          console.log('🏁 Challenges cleared from localStorage');
         }
       } else {
-        console.log('🏁 Challenges cleared from localStorage');
+        console.log('🏁 Challenges preserved due to ResetConfig');
       }
     } catch (e) {
-      console.warn('Error clearing challenges during reset:', e);
+      console.warn('Error handling challenges during reset:', e);
     }
+
+    // Reset tutorial completion status when configured
+    try {
+      if (ResetConfig.flags.resetTutorialCompleted) {
+        // Remove persisted tutorial completion flag(s)
+        try { localStorage.removeItem('tutorialCompleted'); } catch (e) {}
+        try { localStorage.removeItem('tutorial_completed'); } catch (e) {}
+        try { localStorage.removeItem('tutorialEnabled'); } catch (e) {}
+
+        // If a TutorialSystem instance exists in-memory, reset its state
+        if (this.game && this.game.tutorialSystem) {
+          try {
+            // Prefer an explicit reset method if available
+            if (typeof this.game.tutorialSystem.resetTutorial === 'function') {
+              this.game.tutorialSystem.resetTutorial();
+            } else {
+              // Otherwise, update known properties so tutorial will run again
+              this.game.tutorialSystem.completedTutorial = false;
+              if (typeof this.game.tutorialSystem.getCompletedStatus === 'function') {
+                // Ensure future checks read from localStorage
+                // markTutorialCompleted sets localStorage; we just clear completed flag
+              }
+            }
+            console.log('📘 Tutorial completion status reset');
+          } catch (e) {
+            console.warn('Could not reset in-memory tutorialSystem:', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error while clearing tutorial completion status during reset:', e);
+    }
+
+      // Explicitly reset persisted playerStats if requested
+      try {
+        if (ResetConfig.flags.resetPlayerStats) {
+          localStorage.removeItem('playerStats');
+          localStorage.removeItem('player_stats'); // legacy key
+          console.log('🧾 playerStats cleared due to ResetConfig');
+          // If a PlayerProfile instance exists in-memory, reset to defaults
+          if (window.game && window.game.playerProfile && typeof window.game.playerProfile.resetStats === 'function') {
+            try {
+              // resetStats will clear all stats to defaults and save them
+              window.game.playerProfile.resetStats();
+              console.log('🧾 In-memory PlayerProfile reset to defaults');
+            } catch (e) {
+              console.warn('Could not reset in-memory playerProfile:', e);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error while clearing playerStats during reset:', e);
+      }
 
     console.log('🔄 Reset completed. New localStorage:');
     for (let i = 0; i < localStorage.length; i++) {
@@ -342,18 +601,80 @@ export class MultiplayerManager {
       console.log('🔄 Resetting game player data...');
       this.game.player._credits = 0;
       this.game.player.currentShip = 'scout';
+      try {
+        if (typeof this.game.player.ensureSkinMatchesShip === 'function') this.game.player.ensureSkinMatchesShip();
+      } catch (e) {}
       this.game.player.score = 0;
       this.game.player.wins = 0;
       this.game.player.losses = 0;
 
       // Reset ship appearance to saved values or defaults
       this.game.player.shipColor =
-        localStorage.getItem('playerShipColor') || '#7d7d7d';
+        localStorage.getItem('playerShipColor') || '#33f';
       this.game.player.engineColor =
         localStorage.getItem('playerEngineColor') || '#f66';
       this.game.player.color = this.game.player.shipColor;
 
       console.log('✅ Game player data reset complete');
+    }
+
+    // Ensure premiumStore reflects reset gems immediately
+    try {
+      if (this.game && this.game.premiumStore) {
+        // Reload from localStorage using the store's loader if available
+        if (typeof this.game.premiumStore.loadSpaceGems === 'function') {
+          this.game.premiumStore.spaceGems = this.game.premiumStore.loadSpaceGems();
+        } else if (typeof this.game.premiumStore.spaceGems === 'number') {
+          this.game.premiumStore.spaceGems = parseInt(localStorage.getItem('spaceGems') || 0, 10);
+        }
+        // Trigger a save/UI update
+        if (typeof this.game.premiumStore.saveSpaceGems === 'function') this.game.premiumStore.saveSpaceGems();
+        console.log('💎 premiumStore.spaceGems synchronized with localStorage');
+      }
+    } catch (e) {
+      console.warn('Could not synchronize premiumStore after reset:', e);
+    }
+
+    // Optionally send a server-side analytics reset request if configured.
+    // This is an ADMIN/dev-only toggle: it will only run automatically when
+    // ResetConfig.flags.resetAnalytics is true AND automatic resets are allowed
+    // (this.allowAutomaticReset). That prevents accidental resets in production.
+    const doAnalyticsReset = ResetConfig && ResetConfig.flags && ResetConfig.flags.resetAnalytics;
+    if (doAnalyticsReset) {
+      if (this.allowAutomaticReset) {
+        try {
+          console.log('ResetConfig.flags.resetAnalytics enabled and allowAutomaticReset true — sending analytics reset request to server');
+          fetch('https://superspace-server.onrender.com/analytics/reset', {
+            method: 'POST',
+            headers: {
+              'x-analytics-secret': 'superspaceRESET_8f7c2b1e4d9a'
+            }
+          })
+            .then((res) => {
+              if (res.ok) {
+                console.log('Analytics reset request succeeded (server)');
+                if (this.game && this.game.ui && typeof this.game.ui.showMessage === 'function') {
+                  this.game.ui.showMessage('Server analytics reset requested successfully.', '#4CAF50');
+                }
+              } else {
+                console.warn('Analytics reset request returned status', res.status);
+                if (this.game && this.game.ui && typeof this.game.ui.showMessage === 'function') {
+                  this.game.ui.showMessage('Analytics reset request failed: ' + res.status, '#f44336');
+                }
+              }
+            })
+            .catch((err) => {
+              console.error('Analytics reset request failed', err);
+              if (this.game && this.game.ui && typeof this.game.ui.showMessage === 'function') {
+                this.game.ui.showMessage('Analytics reset network error', '#f44336');
+              }
+            });
+        } catch (e) {
+          console.error('Error initiating analytics reset request:', e);
+        }
+      } else {
+        console.log('ResetConfig.flags.resetAnalytics is true but automatic resets are not allowed in this environment; analytics reset skipped.');
+      }
     }
 
     // Show reset notification
@@ -363,7 +684,25 @@ export class MultiplayerManager {
   }
 
   // Show a prominent notification about progress reset
-  showProgressResetNotification(oldVersion) {
+  showProgressResetNotification(oldVersion, force = false) {
+    // If DOM or game UI isn't ready yet, retry a few times before creating the modal
+    if (!force && (!document || !document.body || !(this.game && this.game.ui))) {
+      let attempts = 0;
+      const tryShow = () => {
+        attempts++;
+        if (document && document.body && this.game && this.game.ui) {
+          this.showProgressResetNotification(oldVersion, true);
+        } else if (attempts < 10) {
+          setTimeout(tryShow, 250);
+        } else {
+          // Final attempt: force showing the modal even if UI still not present
+          this.showProgressResetNotification(oldVersion, true);
+        }
+      };
+      setTimeout(tryShow, 250);
+      return;
+    }
+
     // Create modal backdrop
     const backdrop = document.createElement('div');
     backdrop.id = 'progress-reset-modal';
@@ -379,55 +718,186 @@ export class MultiplayerManager {
     backdrop.style.zIndex = '10000';
     backdrop.style.animation = 'fadeIn 0.3s ease-in';
 
-    // Create modal dialog
-    const dialog = document.createElement('div');
-    dialog.style.backgroundColor = '#1a1a2e';
-    dialog.style.color = '#fff';
-    dialog.style.borderRadius = '15px';
-    dialog.style.padding = '30px';
-    dialog.style.maxWidth = '500px';
-    dialog.style.width = '90%';
-    dialog.style.boxShadow = '0 0 30px rgba(0, 100, 255, 0.3)';
-    dialog.style.border = '2px solid #4a90ff';
-    dialog.style.textAlign = 'center';
-    dialog.style.transform = 'scale(0.8)';
-    dialog.style.animation = 'modalPop 0.3s ease-out forwards';
+    // Prevent the page behind the modal from scrolling while modal is open
+    try {
+      document.body.style.overflow = 'hidden';
+    } catch (e) {}
+
+  // Create modal dialog
+  const dialog = document.createElement('div');
+  dialog.style.backgroundColor = '#1a1a2e';
+  dialog.style.color = '#fff';
+  dialog.style.borderRadius = '12px';
+  dialog.style.padding = '18px';
+  dialog.style.maxWidth = '820px';
+  dialog.style.width = '90%';
+  dialog.style.boxShadow = '0 0 30px rgba(0, 100, 255, 0.3)';
+  dialog.style.border = '2px solid #4a90ff';
+  dialog.style.textAlign = 'center';
+  dialog.style.transform = 'scale(0.98)';
+  dialog.style.animation = 'modalPop 0.25s ease-out forwards';
+
+  // Create inner scrollable body to contain content
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+  body.style.padding = '6px 6px 4px 6px';
+  body.style.overflow = 'auto';
+  body.style.flex = '1 1 auto';
 
     // Create title
     const title = document.createElement('h2');
-    title.innerHTML = '🚀 MAJOR UPDATE DETECTED! 🚀';
-    title.style.margin = '0 0 20px 0';
-    title.style.color = '#ff6b6b';
-    title.style.fontSize = '24px';
+    title.innerHTML = '🚀 UPDATE DETECTED! 🚀';
+  title.style.margin = '0 0 8px 0';
+  title.style.color = '#ff6b6b';
+  title.style.fontSize = '16px';
     title.style.textShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
     dialog.appendChild(title);
 
+    // Insert version info directly under the title for clearer visibility
+    try {
+      const versionInfo = document.createElement('div');
+  versionInfo.style.margin = '4px 0 8px 0';
+  versionInfo.style.fontSize = '12px';
+      versionInfo.style.color = '#ffd36b';
+      versionInfo.style.textAlign = 'center';
+      versionInfo.innerHTML = `
+        <div style="font-weight:700;">New Game Version: <span style="color:#ffd36b; margin-left:6px;">${this.GAME_VERSION}</span></div>
+        <div style="font-size:12px; color:#ccc; margin-top:4px;">Previous: ${oldVersion || 'None'}</div>
+      `;
+      dialog.appendChild(versionInfo);
+    } catch (e) {
+      // If anything goes wrong rendering the version block, silently continue
+      console.warn('Could not render version info in reset modal:', e);
+    }
+
     // Create message
     const message = document.createElement('div');
-    message.innerHTML = `
-            <p style="margin: 10px 0; font-size: 16px; color: #ccc;">
-                SuperSpace has been updated with major improvements!
-            </p>
-            <p style="margin: 10px 0; font-size: 14px; color: #aaa;">
-                Your progress has been reset to ensure compatibility with the new features.
-            </p>
-            <p style="margin: 10px 0; font-size: 13px; color: #fff;">
-                <strong>New Game Version:</strong> <span style="color: #ffd36b;">${this.GAME_VERSION}</span>
-            </p>
-            <p style="margin: 6px 0 15px 0; font-size: 12px; color: #888;">
-                Previous: ${oldVersion}
-            </p>
-            <div style="margin: 20px 0; padding: 15px; background: rgba(255, 107, 107, 0.1); border-radius: 10px; border-left: 4px solid #ff6b6b;">
-                <p style="margin: 0; font-size: 14px; color: #ffcc00;">
-                    ⚡ Your pilot name, avatars, and any premium skins/purchases have been preserved!
-                </p>
-            </div>
+
+    // Build release notes HTML using ResetConfig.versionNotes if available
+    let releaseNotesHtml = '';
+    try {
+      const notes = (ResetConfig.versionNotes && ResetConfig.versionNotes[this.GAME_VERSION]) || [];
+      if (notes && Array.isArray(notes) && notes.length) {
+        releaseNotesHtml = `
+          <div style="margin:8px 0 10px 0; text-align:left;">
+            <p style="margin:0 0 6px 0; font-size:11px; color:#ffd36b; font-weight:700;">Release Notes</p>
+            <ul style="margin:6px 0 0 18px; color:#ccc; font-size:10px; line-height:1.4;">
+              ${notes.map((n) => `<li>${n}</li>`).join('')}
+            </ul>
+          </div>
         `;
-    dialog.appendChild(message);
+      } else {
+        // Fallback when no release notes are provided
+        releaseNotesHtml = `
+          <div style="margin:6px 0 10px 0; text-align:left;">
+            <p style="margin:0 0 6px 0; font-size:10px; color:#ffd36b; font-weight:600;">Release Notes</p>
+            <p style="margin:4px 0 0 0; font-size:10px; color:#ccc;">No release notes provided for this version.</p>
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.warn('Could not render release notes:', e);
+      releaseNotesHtml = `
+        <div style="margin:6px 0 10px 0; text-align:left;">
+          <p style="margin:0 0 6px 0; font-size:10px; color:#ffd36b; font-weight:600;">Release Notes</p>
+          <p style="margin:4px 0 0 0; font-size:10px; color:#ccc;">Release notes unavailable.</p>
+        </div>
+      `;
+    }
+    try {
+      const notesDebug = (ResetConfig.versionNotes && ResetConfig.versionNotes[this.GAME_VERSION]) || [];
+      console.debug('Reset modal notes for', this.GAME_VERSION, notesDebug);
+    } catch (e) {
+      /* ignore */
+    }
+
+    message.innerHTML = `
+      <p style="margin: 6px 0; font-size: 12px; color: #ccc;">
+        SuperSpace has been updated with improvements!
+      </p>
+      <p style="margin: 6px 0; font-size: 11px; color: #aaa;">
+        Your progress may have been reset to ensure compatibility with the new features. See details belwow.
+      </p>
+    <div style="margin: 16px 0; padding: 0; text-align:left;">
+    ${releaseNotesHtml}
+  <div class="preserve-reset-box" style="margin-top:6px; margin-bottom:12px; padding: 12px; background: rgba(255, 107, 107, 0.06); border-radius: 10px; border-left: 4px solid #ff6b6b;">
+        <p style="margin:0 0 8px 0; font-size:13px; color:#ffd36b; font-weight:600;">What was preserved</p>
+        <ul style="margin:0 0 10px 18px; color:#ccc; font-size:13px; text-align:left;">
+          ${(() => {
+            const preserved = [];
+            // Premium purchases should be shown first
+            if (ResetConfig.flags.preservePremiumPurchases) preserved.push('<li>Premium purchases, owned skins/avatars, and common shop entitlements</li>');
+            // Ship ownership preservation
+            if (!ResetConfig.flags.resetShips) preserved.push('<li>Ship ownership & customizations</li>');
+            // Weapon ownership preservation
+            if (!ResetConfig.flags.resetWeapons) preserved.push('<li>Weapon ownership</li>');
+            // Combine player name and general preferences into one line
+            if (ResetConfig.flags.preservePlayerName || ResetConfig.flags.preserveSettings) preserved.push('<li>Player name & General preferences</li>');
+            // Show purchased-upgrades preserved when enabled
+            if (ResetConfig.flags.preservePurchasedUpgrades) preserved.push('<li>Purchased upgrades</li>');
+            // Gems (premium currency) preservation — show current stored amount when preserved
+            if (!ResetConfig.flags.resetGems) {
+              try {
+                const cur = localStorage.getItem('spaceGems') || localStorage.getItem('gems') || localStorage.getItem('gem_balance') || '0';
+                preserved.push(`<li>Space Gems (premium currency) — preserved: ${String(cur)}</li>`);
+              } catch (e) {
+                preserved.push('<li>Space Gems (premium currency)</li>');
+              }
+            }
+            if (!preserved.length) preserved.push('<li>None (full reset)</li>');
+            return preserved.join('');
+          })()}
+        </ul>
+        <p style="margin:0; font-size:13px; color:#ffb3a7;">What was reset</p>
+        <ul style="margin:6px 0 0 18px; color:#ccc; font-size:13px; text-align:left;">
+          ${(() => {
+            const resetItems = [];
+            if (ResetConfig.flags.resetCredits) resetItems.push('<li>Credits reset to 0</li>');
+            // Ship upgrades reset behaviour
+            if (ResetConfig.flags.resetUpgrades) {
+              if (ResetConfig.flags.preservePurchasedUpgrades) {
+                resetItems.push('<li>Ship upgrades (core levels reset; purchased upgrades preserved)</li>');
+              } else {
+                resetItems.push('<li>Ship upgrades</li>');
+              }
+            }
+            // Ship ownership reset behaviour
+            if (ResetConfig.flags.resetShips) {
+              resetItems.push('<li>Ship ownership & customizations</li>');
+            }
+            // Weapon ownership reset behaviour
+            if (ResetConfig.flags.resetWeapons) {
+              resetItems.push('<li>Weapon ownership</li>');
+            }
+            if (ResetConfig.flags.resetChallenges) resetItems.push('<li>Daily &amp; Weekly Challenges</li>');
+            if (ResetConfig.flags.resetGems) {
+              const start = typeof ResetConfig.startingGems === 'number' ? ResetConfig.startingGems : 0;
+              resetItems.push(`<li>Space Gems (premium currency) — reset to ${start}</li>`);
+            }
+            // Premium purchases removal (if configured to not preserve)
+            if (!ResetConfig.flags.preservePremiumPurchases) resetItems.push('<li>Premium purchases and entitlements removed</li>');
+            if (ResetConfig.flags.resetAchievements) resetItems.push('<li>Achievement progress</li>');
+            if (ResetConfig.flags.resetPlayerStats) resetItems.push('<li>Player stats (score, wins, losses)</li>');
+            if (!resetItems.length) resetItems.push('<li>None (preserve all progress)</li>');
+            return resetItems.join('');
+          })()}
+        </ul>
+        <p style="margin:8px 0 0 0; font-size:12px; color:#888;">If you believe a paid purchase was removed accidentally, contact Gumby on Discord or via email.</p>
+        </div>
+      </div>
+        `;
+  body.appendChild(message);
 
     // Create continue button
     const continueBtn = document.createElement('button');
-    continueBtn.textContent = '🎯 Continue Playing';
+    // Use configurable button text from ResetConfig when available
+    try {
+      continueBtn.textContent = ResetConfig && typeof ResetConfig.continueButtonText === 'string'
+        ? ResetConfig.continueButtonText
+        : '🎯 Continue Playing';
+    } catch (e) {
+      continueBtn.textContent = '🎯 Continue Playing';
+    }
     continueBtn.style.padding = '12px 24px';
     continueBtn.style.borderRadius = '8px';
     continueBtn.style.border = 'none';
@@ -437,7 +907,7 @@ export class MultiplayerManager {
     continueBtn.style.fontWeight = 'bold';
     continueBtn.style.cursor = 'pointer';
     continueBtn.style.transition = 'all 0.2s ease';
-    continueBtn.style.marginTop = '20px';
+  continueBtn.style.marginTop = '10px';
 
     // Button hover effects
     continueBtn.onmouseover = () => {
@@ -450,6 +920,8 @@ export class MultiplayerManager {
     };
 
     continueBtn.onclick = () => {
+      // Restore page scrolling before removing modal
+      try { document.body.style.overflow = ''; } catch (e) {}
       document.body.removeChild(backdrop);
       // Force refresh the game state after reset
       this.refreshGameStateAfterReset();
@@ -459,29 +931,115 @@ export class MultiplayerManager {
       }, 100);
     };
 
-    dialog.appendChild(continueBtn);
-    backdrop.appendChild(dialog);
+  // Append controls at the bottom (fixed inside dialog)
+  const controls = document.createElement('div');
+  controls.style.flex = '0 0 auto';
+  controls.style.display = 'flex';
+  controls.style.justifyContent = 'center';
+  controls.appendChild(continueBtn);
+
+  dialog.appendChild(body);
+  dialog.appendChild(controls);
+  backdrop.appendChild(dialog);
 
     // Add CSS animations if not already present
-    if (!document.getElementById('progress-reset-styles')) {
-      const styles = document.createElement('style');
-      styles.id = 'progress-reset-styles';
-      styles.textContent = `
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes modalPop {
-                    from { transform: scale(0.8); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
-                }
-            `;
-      document.head.appendChild(styles);
-    }
+  if (!document.getElementById('progress-reset-styles')) {
+    const styles = document.createElement('style');
+    styles.id = 'progress-reset-styles';
+    styles.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes modalPop {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        #progress-reset-modal > div { /* dialog */
+          max-width: 860px;
+          width: calc(100% - 80px);
+          max-height: 78vh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+          padding: 12px; /* tighten outer padding */
+        }
+        #progress-reset-modal .modal-body {
+          overflow: auto;
+          padding-right: 10px;
+          -webkit-overflow-scrolling: touch;
+          word-wrap: break-word;
+        }
+        /* Ensure the page behind doesn't show a separate scrollbar while modal is open */
+        body[style*="overflow: hidden"] { overflow: hidden !important; }
+        #progress-reset-modal .preserve-reset-box {
+          max-height: 36vh; /* a bit less than half to keep proportions */
+          overflow: auto;
+          padding-right: 6px;
+          padding-bottom: 12px; /* extra breathing room at bottom so text isn't slammed */
+        }
+        @media (max-width: 900px) {
+          #progress-reset-modal > div { max-width: 96%; width: calc(100% - 32px); padding: 10px; }
+          /* Slightly smaller on narrow screens */
+          #progress-reset-modal .modal-body { font-size: 11px; }
+          #progress-reset-modal h2 { font-size: 16px; margin-bottom:6px; }
+        }
+  /* Slightly smaller, denser text for the modal (reduced to help fit) */
+  /* Reduced by ~4px to fit content as requested (clamped for readability) */
+  #progress-reset-modal h2 { font-size: 12px !important; }
+  #progress-reset-modal .modal-body { font-size: 9px !important; line-height: 1.28; }
+  #progress-reset-modal p { font-size: 9px; line-height: 1.28; margin: 6px 0; }
+  #progress-reset-modal ul { font-size: 8px; line-height: 1.24; margin: 6px 0; }
+        #progress-reset-modal li { white-space: normal; }
+  #progress-reset-modal button { font-size: 14px !important; }
+          /* Make the preserved/reset box text noticeably smaller (override inline styles) */
+          #progress-reset-modal .preserve-reset-box { font-size: 9px !important; }
+          #progress-reset-modal .preserve-reset-box p { font-size: 9px !important; margin: 4px 0 !important; }
+          #progress-reset-modal .preserve-reset-box ul { font-size: 8px !important; margin: 4px 0 !important; }
+          #progress-reset-modal .preserve-reset-box li { font-size: 8px !important; line-height: 1.15 !important; }
+        /* Slim scrollbar inside modal */
+        #progress-reset-modal .modal-body::-webkit-scrollbar { width: 10px; }
+        #progress-reset-modal .modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 6px; }
+      `;
+    document.head.appendChild(styles);
+  }
 
     document.body.appendChild(backdrop);
 
     // Dialog stays open until user clicks continue - no auto-close timeout
+
+    // Auto-scale modal content to avoid vertical scrolling when possible.
+    // We run this in a timeout so layout has settled and measurements are accurate.
+    setTimeout(() => {
+      try {
+        const contentEl = dialog.querySelector('.modal-body');
+        if (!contentEl) return;
+
+        // Available height inside the dialog (account for controls area at bottom)
+        const dialogInnerHeight = dialog.clientHeight || (window.innerHeight * 0.78);
+        const controlsHeight = 90; // approximate height reserved for title/buttons
+        const available = Math.max(100, dialogInnerHeight - controlsHeight);
+
+        const contentHeight = contentEl.scrollHeight;
+        if (contentHeight > available) {
+          let scale = available / contentHeight;
+          // Clamp to reasonable bounds so text remains readable
+          const minScale = 0.75;
+          if (scale < minScale) scale = minScale;
+          if (scale > 1) scale = 1;
+
+          contentEl.style.transformOrigin = 'top center';
+          contentEl.style.transition = 'transform 160ms ease-out';
+          contentEl.style.transform = `scale(${scale})`;
+
+          // Slightly increase bottom padding so scaled content doesn't butt up against controls
+          contentEl.style.paddingBottom = '14px';
+        }
+      } catch (e) {
+        /* ignore scaling errors */
+      }
+    }, 60);
 
     // Also log to console for debugging
     console.log(
@@ -517,6 +1075,30 @@ export class MultiplayerManager {
           `💰 Credits display updated to: ${this.game.player.credits}`,
         );
       }
+    }
+
+    // Reload gems from premiumStore/localStorage and update UI
+    try {
+      if (this.game && this.game.premiumStore) {
+        if (typeof this.game.premiumStore.loadSpaceGems === 'function') {
+          this.game.premiumStore.spaceGems = this.game.premiumStore.loadSpaceGems();
+        } else {
+          this.game.premiumStore.spaceGems = parseInt(localStorage.getItem('spaceGems') || 0, 10);
+        }
+        if (typeof this.game.premiumStore.saveSpaceGems === 'function') this.game.premiumStore.saveSpaceGems();
+      }
+      const gemsEl = document.getElementById('gems');
+      if (gemsEl) {
+        const val = (this.game && this.game.premiumStore && typeof this.game.premiumStore.spaceGems === 'number') ? this.game.premiumStore.spaceGems : parseInt(localStorage.getItem('spaceGems') || 0, 10);
+        gemsEl.textContent = String(val);
+        console.log(`💎 Gems display updated to: ${val}`);
+      }
+      // Update shop UI if present
+      if (this.game && this.game.shop && typeof this.game.shop.updateShopContent === 'function') {
+        this.game.shop.updateShopContent();
+      }
+    } catch (e) {
+      console.warn('Error updating gems UI after reset:', e);
     }
 
     // Refresh UI elements
@@ -588,6 +1170,147 @@ export class MultiplayerManager {
     console.log('🔄 Version Info:');
     console.log(`  Current: ${this.GAME_VERSION}`);
     console.log(`  Stored: ${localStorage.getItem('gameVersion')}`);
+  }
+
+  // Temporarily enable automatic resets (runtime only) - useful for dev testing
+  enableAutomaticResetTemp() {
+    console.log('⚠️ Temporary: Enabling automatic version-reset for this session');
+    this.allowAutomaticReset = true;
+  }
+
+  // Disable automatic resets again
+  disableAutomaticResetTemp() {
+    console.log('🔒 Automatic version-reset disabled for this session');
+    this.allowAutomaticReset = false;
+  }
+
+  // Run the version reset check on-demand. If forceImmediate is true, it will
+  // run even if allowAutomaticReset is false (useful for local forcing).
+  runVersionResetCheck(forceImmediate = false) {
+    try {
+      const storedVersion = localStorage.getItem('gameVersion');
+      console.log('Running version reset check. Stored:', storedVersion, 'Current:', this.GAME_VERSION);
+      if (forceImmediate || this.allowAutomaticReset) {
+        if (storedVersion && storedVersion !== this.GAME_VERSION) {
+          console.log('Version mismatch detected, performing reset...');
+          this.resetOccurred = true;
+          this.resetPlayerProgress(storedVersion);
+          localStorage.setItem('gameVersion', this.GAME_VERSION);
+        } else if (!storedVersion) {
+          console.log('No stored version; setting current version.');
+          localStorage.setItem('gameVersion', this.GAME_VERSION);
+        } else {
+          console.log('Versions match; no reset needed.');
+        }
+      } else {
+        console.log('Automatic resets are disabled. To force in dev, call runVersionResetCheck(true) or enableAutomaticResetTemp() first.');
+      }
+    } catch (e) {
+      console.error('Error running version reset check:', e);
+    }
+  }
+
+  // Dry-run helper: compute which keys would be preserved and which would be removed
+  // without mutating localStorage. Use this to preview a reset safely.
+  previewVersionReset() {
+    try {
+      const explicitPreserve = Array.isArray(ResetConfig.explicitPreserveKeys)
+        ? ResetConfig.explicitPreserveKeys.slice()
+        : [];
+
+      const preserveRegex = /(?:\bskin\b|\bavatar\b|premium|purchase|purch|purchased|owned|own|entitlement|shop|purchase_history|purchasedItems|ownedItems)/i;
+
+      const preservedData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        if (!key) continue;
+        if (explicitPreserve.includes(key)) {
+          preservedData[key] = value;
+          continue;
+        }
+        const lowerKey = key.toLowerCase();
+        if (explicitPreserve.some((k) => k.toLowerCase() === lowerKey)) {
+          preservedData[key] = value;
+          continue;
+        }
+        if (preserveRegex.test(key)) {
+          preservedData[key] = value;
+          continue;
+        }
+      }
+
+      // Add upgrade keys when preservation is requested or reset is disabled
+      const upgradeIdsToPreserve = ['engine', 'shield', 'energy', 'armor', 'cargo', 'weapon'];
+      if (ResetConfig.flags.preservePurchasedUpgrades || !ResetConfig.flags.resetUpgrades) {
+        upgradeIdsToPreserve.forEach((id) => {
+          const k = `upgrade_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Ship keys
+      const shipIdsToPreserve = ['scout', 'fighter', 'heavy', 'stealth', 'interceptor', 'destroyer', 'cruiser'];
+      if (!ResetConfig.flags.resetShips) {
+        shipIdsToPreserve.forEach((id) => {
+          const k = `ship_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Weapon keys
+      const weaponIdsToPreserve = ['disengaged','laser','plasma','rocket','railgun','seeker','mine','disruptor'];
+      if (!ResetConfig.flags.resetWeapons) {
+        weaponIdsToPreserve.forEach((id) => {
+          const k = `weapon_${id}`;
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Preserve player stats when resetPlayerStats is disabled
+      if (!ResetConfig.flags.resetPlayerStats) {
+        const pst = localStorage.getItem('playerStats');
+        if (pst !== null && !('playerStats' in preservedData)) preservedData['playerStats'] = pst;
+      }
+
+      // Preserve credits when resetCredits is disabled
+      if (!ResetConfig.flags.resetCredits) {
+        ['playerCredits', 'credits'].forEach((k) => {
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Preserve gems when resetGems is disabled
+      if (!ResetConfig.flags.resetGems) {
+        ['spaceGems', 'gems', 'gem_balance'].forEach((k) => {
+          const v = localStorage.getItem(k);
+          if (v !== null && !(k in preservedData)) preservedData[k] = v;
+        });
+      }
+
+      // Now compute which keys would be removed by a reset: everything not in preservedData
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (!(key in preservedData)) toRemove.push(key);
+      }
+
+      console.group('Reset preview');
+      console.log('Flags:', ResetConfig.flags);
+      console.log('Preserved keys (%d):', Object.keys(preservedData).length, preservedData);
+      console.log('Would remove keys (%d):', toRemove.length, toRemove);
+      console.groupEnd();
+
+      return { preserved: preservedData, toRemove };
+    } catch (e) {
+      console.error('previewVersionReset error:', e);
+      return { preserved: {}, toRemove: [] };
+    }
   }
 
   connect(serverUrl = 'http://localhost:3000') {
@@ -1296,6 +2019,56 @@ export class MultiplayerManager {
       } else {
         // Handle shield disruption for remote players (visual effects only)
         this.handleRemoteShieldDisruption(data.targetId, data.duration);
+      }
+    });
+
+    // Handle Impact Deflector activation events
+    this.socket.on('impactDeflectorActivated', (data) => {
+      if (data.playerId !== this.playerId) {
+        // Handle remote player impact deflector activation
+        const remotePlayer = this.players[data.playerId];
+        if (remotePlayer) {
+          if (!remotePlayer.impactDeflector) {
+            remotePlayer.impactDeflector = {
+              active: false,
+              duration: 0.8,
+              remainingTime: 0,
+              radius: 35,
+            };
+          }
+          remotePlayer.impactDeflector.active = true;
+          remotePlayer.impactDeflector.remainingTime = data.duration || 0.8;
+        }
+      }
+    });
+
+    // Handle Impact Deflector deactivation events  
+    this.socket.on('impactDeflectorDeactivated', (data) => {
+      if (data.playerId !== this.playerId) {
+        // Handle remote player impact deflector deactivation
+        const remotePlayer = this.players[data.playerId];
+        if (remotePlayer && remotePlayer.impactDeflector) {
+          remotePlayer.impactDeflector.active = false;
+          remotePlayer.impactDeflector.remainingTime = 0;
+        }
+      }
+    });
+
+    // Handle Impact Deflector collision events
+    this.socket.on('impactDeflectorImpact', (data) => {
+      if (data.playerId !== this.playerId) {
+        // Show visual effect for remote player deflector impacts
+        if (this.game.world) {
+          // Create special deflector impact effect
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              this.game.world.createCollisionEffect(
+                data.x + (Math.random() - 0.5) * 20,
+                data.y + (Math.random() - 0.5) * 20
+              );
+            }, i * 50);
+          }
+        }
       }
     });
 
@@ -2016,6 +2789,12 @@ export class MultiplayerManager {
           localStorage.getItem('shipSkinEffectsEnabled') === null
             ? true
             : localStorage.getItem('shipSkinEffectsEnabled') === 'true',
+        // Impact Deflector state for remote players
+        impactDeflector: this.game.player.impactDeflector ? {
+          active: this.game.player.impactDeflector.active,
+          remainingTime: this.game.player.impactDeflector.remainingTime,
+          duration: this.game.player.impactDeflector.duration,
+        } : null,
       };
 
       // Debug: Log when sending significant stat changes
@@ -2102,6 +2881,17 @@ export class MultiplayerManager {
 
     // Update and clean up remote projectiles
     Object.values(this.players).forEach((player) => {
+      // Update Impact Deflector timer for remote players
+      if (player.impactDeflector && player.impactDeflector.active) {
+        player.impactDeflector.remainingTime -= deltaTime;
+        
+        // Deactivate when time runs out
+        if (player.impactDeflector.remainingTime <= 0) {
+          player.impactDeflector.active = false;
+          player.impactDeflector.remainingTime = 0;
+        }
+      }
+
       if (player.projectiles && Array.isArray(player.projectiles)) {
         // Update each remote projectile's position and effects
         player.projectiles = player.projectiles.filter((projectile) => {
@@ -2397,6 +3187,8 @@ export class MultiplayerManager {
   handleRemoteShipSkinUpdate(playerId, skinId) {
     if (this.players[playerId]) {
       this.players[playerId].shipSkin = skinId;
+      // Debug: log skin updates
+      console.log(`[Multiplayer] Remote player ${playerId} equipped skin: ${skinId}`);
       // Refresh player list to show skin badge
       this.updatePlayerList();
     }
@@ -2530,6 +3322,23 @@ export class MultiplayerManager {
       }
       if (playerData.skinEffectsEnabled !== undefined) {
         player.skinEffectsEnabled = !!playerData.skinEffectsEnabled;
+      }
+
+      // Update Impact Deflector state for remote players
+      if (playerData.impactDeflector !== undefined) {
+        if (!player.impactDeflector) {
+          player.impactDeflector = {
+            active: false,
+            duration: 0.8,
+            remainingTime: 0,
+            radius: 35,
+          };
+        }
+        if (playerData.impactDeflector) {
+          player.impactDeflector.active = playerData.impactDeflector.active;
+          player.impactDeflector.remainingTime = playerData.impactDeflector.remainingTime;
+          player.impactDeflector.duration = playerData.impactDeflector.duration;
+        }
       }
 
       // Debug: Log stat updates
@@ -2801,6 +3610,33 @@ export class MultiplayerManager {
       console.log(
         `✅ Added remote projectile to player ${playerId} (${this.players[playerId].name}). Total: ${this.players[playerId].projectiles.length}`,
       );
+
+      // Play firing sound for remote projectile so nearby players hear the launch.
+      // Do not attempt to play if this event is actually from our own player.
+      try {
+        if (playerId !== this.playerId && this.game && this.game.soundManager) {
+          const sm = this.game.soundManager;
+          const soundMap = {
+            laser: 'laser',
+            burst: 'burst',
+            missile: 'missile',
+            plasma: 'plasma',
+            quantum: 'quantum',
+            rocket: 'mortar',
+            railgun: 'railgun',
+            mininglaser: 'laser',
+            mine: 'powerup',
+          };
+          const soundName = soundMap[projectile.type] || 'laser';
+          // Play at the projectile spawn position; SoundManager handles panning/volume.
+          sm.play(soundName, {
+            volume: 0.5, // moderate volume for remote launches
+            position: { x: projectile.x, y: projectile.y },
+          });
+        }
+      } catch (e) {
+        console.warn('Error playing remote projectile sound:', e);
+      }
     } else {
       console.warn(
         `❌ Cannot add remote projectile - player ${playerId} not found or destroyed`,
@@ -4391,6 +5227,59 @@ export class MultiplayerManager {
         ctx.restore();
       }
 
+      // Render Impact Deflector for remote players if active
+      if (player.impactDeflector && player.impactDeflector.active) {
+        ctx.save();
+        ctx.translate(player.x, player.y);
+
+        // Calculate deflector visual properties for remote player
+        const timeLeft = player.impactDeflector.remainingTime || 0.5; // Fallback if not synced
+        const totalDuration = player.impactDeflector.duration || 0.8;
+        const pulse = Math.sin(Date.now() / 1000 * 8.0) * 0.3 + 0.7; // Same pulse speed as local
+        
+        // Deflector fades out as it expires
+        const baseOpacity = 0.8 * (timeLeft / totalDuration);
+        const deflectorOpacity = baseOpacity * pulse;
+        
+        // Create radial gradient for deflector effect (cyan/electric blue energy field)
+        const deflectorRadius = 35; // Same as local player
+        const deflectorGradient = ctx.createRadialGradient(
+          0, 0, deflectorRadius * 0.4,
+          0, 0, deflectorRadius
+        );
+        deflectorGradient.addColorStop(0, `rgba(0, 255, 255, ${deflectorOpacity * 0.1})`);
+        deflectorGradient.addColorStop(0.7, `rgba(0, 200, 255, ${deflectorOpacity * 0.6})`);
+        deflectorGradient.addColorStop(1, `rgba(0, 150, 255, 0)`);
+
+        // Draw the deflector field
+        ctx.fillStyle = deflectorGradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, deflectorRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Add energy crackling effect around the perimeter
+        const crackleCount = 8;
+        for (let i = 0; i < crackleCount; i++) {
+          const angle = (i / crackleCount) * Math.PI * 2 + Date.now() / 500;
+          const crackleRadius = deflectorRadius + Math.sin(Date.now() / 200 + i) * 3;
+          const crackleX = Math.cos(angle) * crackleRadius;
+          const crackleY = Math.sin(angle) * crackleRadius;
+          
+          ctx.strokeStyle = `rgba(100, 255, 255, ${deflectorOpacity * 0.8})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(crackleX - 2, crackleY - 2);
+          ctx.lineTo(crackleX + 2, crackleY + 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(crackleX + 2, crackleY - 2);
+          ctx.lineTo(crackleX - 2, crackleY + 2);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
       // Render remote player's mining beam
       if (player.miningBeam && player.miningBeam.active) {
         ctx.save();
@@ -4474,6 +5363,14 @@ export class MultiplayerManager {
           x: 0, // Already translated
           y: 0,
           angle: 0, // Already rotated
+          rotation: 0, // Already rotated
+          // Convert velocity object to vx/vy for engine trail rendering
+          vx: player.velocity ? player.velocity.x || 0 : 0,
+          vy: player.velocity ? player.velocity.y || 0 : 0,
+          // Calculate speed from velocity
+          speed: player.velocity 
+            ? Math.sqrt((player.velocity.x || 0) ** 2 + (player.velocity.y || 0) ** 2)
+            : 0,
           getShipColor: () => player.shipColor || player.color || '#f00',
           getEngineColor: () => player.engineColor || '#6ff',
         };

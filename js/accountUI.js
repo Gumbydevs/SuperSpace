@@ -70,9 +70,10 @@ class AccountUI {
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      /* Must be above the options overlay (which uses z-index:10000) */
+      z-index: 11001;
             display: none;
             align-items: center;
             justify-content: center;
@@ -269,6 +270,22 @@ class AccountUI {
       this.showCloudSyncPanel();
     });
 
+    // Also wire the options-overlay cloud sync button if present
+    const optionsCloudBtn = document.getElementById('open-cloud-sync-btn');
+    if (optionsCloudBtn) {
+      optionsCloudBtn.addEventListener('click', () => {
+        // If AccountUI instance exists and cloud sync is available, open panel
+        this.showCloudSyncPanel();
+      });
+      // Keep label in sync with main menu button
+      const status = this.cloudSync.getSyncStatus();
+      if (status.isLoggedIn) {
+        optionsCloudBtn.textContent = status.username;
+      } else {
+        optionsCloudBtn.textContent = 'Cloud Sync';
+      }
+    }
+
     // Close button
     document
       .getElementById('close-cloud-sync')
@@ -372,6 +389,15 @@ class AccountUI {
       this.cloudSyncButton.innerHTML = 'CLOUD SYNC';
       this.cloudSyncButton.style.background =
         'linear-gradient(135deg, #4a90e2, #357abd)';
+    }
+    // Also update the options overlay button if present
+    const optionsCloudBtn = document.getElementById('open-cloud-sync-btn');
+    if (optionsCloudBtn) {
+      if (status.isLoggedIn) {
+        optionsCloudBtn.textContent = status.username;
+      } else {
+        optionsCloudBtn.textContent = 'Cloud Sync';
+      }
     }
   }
 
@@ -540,10 +566,11 @@ class AccountUI {
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Ensure recovery key modal sits above cloud sync and options overlays */
+      z-index: 12000;
         `;
 
     keyOverlay.innerHTML = `
@@ -669,10 +696,11 @@ class AccountUI {
             width: 100%;
             height: 100%;
             background: rgba(0,0,0,0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Ensure password reset modal sits above cloud sync and options overlays */
+      z-index: 12000;
         `;
 
     resetOverlay.innerHTML = `

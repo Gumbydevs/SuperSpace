@@ -62,6 +62,7 @@ export class SoundManager {
     this.generateRailgunSound();
     this.generatePulseSound();
     this.generateWeaponSwitchSound();
+    this.generateRobotChatterSound();
     console.log('All sounds generated successfully');
   }
 
@@ -73,6 +74,12 @@ export class SoundManager {
   // Here we play a specified sound with optional parameters
   play(name, options = {}) {
     if (!this.audioContext || this.isMuted) return;
+
+    // Special handling for procedural robot chatter
+    if (name === 'robotchatter') {
+      this.playProceduralRobotChatter(options);
+      return;
+    }
 
     const sound = this.sounds[name];
     if (!sound) {
@@ -302,6 +309,161 @@ export class SoundManager {
       this.masterGainNode.gain.value = this.isMuted ? 0 : 0.5;
     }
     return this.isMuted;
+  }
+
+  // Play procedurally generated robot chatter with randomization each time
+  playProceduralRobotChatter(options = {}) {
+    if (!this.audioContext || this.isMuted) return;
+
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 0.9 + Math.random() * 0.6; // Random duration 0.9-1.5s
+    const length = Math.floor(sampleRate * duration);
+    const buffer = this.audioContext.createBuffer(1, length, sampleRate);
+    const channelData = buffer.getChannelData(0);
+
+    // Randomly generate syllable patterns for unique chatter each time
+    const numSyllables = 4 + Math.floor(Math.random() * 5); // 4-8 syllables
+    const syllables = [];
+    let currentTime = 0;
+    
+    for (let s = 0; s < numSyllables; s++) {
+      const sylDuration = 0.10 + Math.random() * 0.12; // 100-220ms per syllable
+      const gap = 0.03 + Math.random() * 0.06; // 30-90ms gap
+      
+      syllables.push({
+        start: currentTime,
+        duration: sylDuration,
+        pitch: 0.85 + Math.random() * 0.4, // More consistent pitch 0.85-1.25
+        intensity: 0.75 + Math.random() * 0.25, // More consistent volume 0.75-1.0
+        vowelType: Math.floor(Math.random() * 5), // Random vowel sound
+        intonation: Math.random() > 0.5 ? 1 : -1 // Rising or falling pitch
+      });
+      
+      currentTime += sylDuration + gap;
+    }
+
+    // Generate the waveform
+    for (let i = 0; i < length; i++) {
+      const t = i / sampleRate;
+      let amplitude = 0;
+
+      // Find current syllable
+      let currentSyllable = null;
+      let syllableTime = 0;
+      for (const syl of syllables) {
+        if (t >= syl.start && t < syl.start + syl.duration) {
+          currentSyllable = syl;
+          syllableTime = (t - syl.start) / syl.duration;
+          break;
+        }
+      }
+
+      if (currentSyllable) {
+        // Smooth envelope for each syllable - more natural speech
+        let envelope = 0;
+        if (syllableTime < 0.15) {
+          envelope = Math.sin((syllableTime / 0.15) * Math.PI * 0.5); // Smooth attack
+        } else if (syllableTime < 0.75) {
+          envelope = 1.0; // Sustain
+        } else {
+          envelope = Math.cos(((syllableTime - 0.75) / 0.25) * Math.PI * 0.5); // Smooth release
+        }
+        envelope *= currentSyllable.intensity;
+
+        // More humanlike vowel formants (closer to actual speech)
+        const vowelFormants = [
+          [300, 870, 2240],  // "ee" - happy sound
+          [400, 1700, 2600], // "ay" - bright sound
+          [490, 1350, 1690], // "eh" - neutral sound
+          [350, 640, 2700],  // "oo" - cute sound
+          [640, 1190, 2390]  // "ah" - open sound
+        ];
+        
+        const formantSet = vowelFormants[currentSyllable.vowelType];
+        const pitchMod = currentSyllable.pitch;
+        
+        // Add subtle pitch variation within syllable for natural speech melody
+        const pitchBend = syllableTime * currentSyllable.intonation * 0.08;
+        const finalPitch = pitchMod * (1.0 + pitchBend);
+        
+        // Gentle vibrato for organic robot voice
+        const vibrato = 1.0 + Math.sin(t * 12) * 0.015;
+        
+        const formant1 = formantSet[0] * finalPitch * vibrato;
+        const formant2 = formantSet[1] * finalPitch * vibrato;
+        const formant3 = formantSet[2] * finalPitch * vibrato;
+
+        // Fundamental frequency (the "voice" pitch)
+        const fundamental = 220 * finalPitch * vibrato;
+
+        // Create harmonically rich tone (like a voice)
+        // Use multiple harmonics with decreasing amplitude
+        amplitude += Math.sin(2 * Math.PI * fundamental * t) * 0.40;      // Fundamental
+        amplitude += Math.sin(2 * Math.PI * fundamental * 2 * t) * 0.25;  // 2nd harmonic
+        amplitude += Math.sin(2 * Math.PI * fundamental * 3 * t) * 0.15;  // 3rd harmonic
+        amplitude += Math.sin(2 * Math.PI * fundamental * 4 * t) * 0.08;  // 4th harmonic
+
+        // Add formant resonances (vowel character) - much subtler
+        amplitude += Math.sin(2 * Math.PI * formant1 * t) * 0.08;
+        amplitude += Math.sin(2 * Math.PI * formant2 * t) * 0.05;
+        amplitude += Math.sin(2 * Math.PI * formant3 * t) * 0.03;
+
+        // Very light consonant articulation at syllable starts (not noise bursts)
+        if (syllableTime < 0.02) {
+          const consonantTone = Math.sin(2 * Math.PI * 1200 * t) * (1.0 - syllableTime / 0.02);
+          amplitude += consonantTone * 0.12;
+        }
+
+        // Subtle digital/robotic character with bit reduction (not random noise)
+        // Quantize the amplitude slightly for digital effect
+        const bitDepth = 32;
+        amplitude = Math.round(amplitude * bitDepth) / bitDepth;
+
+        // Light ring modulation for robotic timbre
+        const roboticFreq = 95; // Fixed frequency for consistent robot character
+        const ringMod = Math.sin(2 * Math.PI * roboticFreq * t);
+        amplitude *= (1.0 + ringMod * 0.15); // Subtle effect
+
+        // Apply envelope
+        channelData[i] = amplitude * envelope * 0.35; // Normalized volume
+      } else {
+        // Clean silence between syllables
+        channelData[i] = 0;
+      }
+    }
+
+    // Add very subtle reverb for space/depth
+    const echoDelay = Math.floor(sampleRate * 0.08);
+    const echoAmount = 0.08;
+    for (let i = echoDelay; i < length; i++) {
+      channelData[i] += channelData[i - echoDelay] * echoAmount;
+    }
+
+    // Gentle normalization to prevent clipping
+    let maxAmplitude = 0;
+    for (let i = 0; i < length; i++) {
+      maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+    }
+    if (maxAmplitude > 0.95) {
+      const normalizeRatio = 0.95 / maxAmplitude;
+      for (let i = 0; i < length; i++) {
+        channelData[i] *= normalizeRatio;
+      }
+    }
+
+    // Play the generated buffer
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+
+    const gainNode = this.audioContext.createGain();
+    const baseVolume = options.volume || 1.0;
+    const sfxVolume = this._sfxVolume !== undefined ? this._sfxVolume : 0.7;
+    gainNode.gain.value = baseVolume * sfxVolume;
+
+    source.connect(gainNode);
+    gainNode.connect(this.masterGainNode);
+
+    source.start(this.audioContext.currentTime);
   }
 
   // Here we create a white noise buffer for various sound effects
@@ -1010,8 +1172,9 @@ export class SoundManager {
     };
 
     // Create ambient music gain node
-    this.ambientMusicGain = this.audioContext.createGain();
-    this.ambientMusicGain.gain.value = 0.8; // Increased from 0.4 for better balance with SFX
+  this.ambientMusicGain = this.audioContext.createGain();
+  // Set a higher base gain to give more headroom for the UI slider
+  this.ambientMusicGain.gain.value = 1.0; // base multiplier (was 0.8)
     this.ambientMusicGain.connect(this.masterGainNode);
   }
 
@@ -1670,6 +1833,115 @@ export class SoundManager {
     this.sounds['weaponswitch'] = buffer;
   }
 
+  // Generate a synthesized humanoid robot chatter sound
+  generateRobotChatterSound() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 1.2; // Longer duration for more "words"
+    const length = sampleRate * duration;
+    const buffer = this.audioContext.createBuffer(1, length, sampleRate);
+    const channelData = buffer.getChannelData(0);
+
+    // Create a robotic voice-like chatter with multiple frequency components
+    // Simulates synthesized speech with digital artifacts and garbled words
+
+    // Define "syllable" patterns to create speech-like rhythm
+    const syllables = [
+      { start: 0.0, duration: 0.15, pitch: 1.0, intensity: 0.9 },
+      { start: 0.16, duration: 0.12, pitch: 1.3, intensity: 0.7 },
+      { start: 0.30, duration: 0.18, pitch: 0.8, intensity: 1.0 },
+      { start: 0.50, duration: 0.10, pitch: 1.5, intensity: 0.6 },
+      { start: 0.62, duration: 0.20, pitch: 1.1, intensity: 0.85 },
+      { start: 0.84, duration: 0.14, pitch: 0.9, intensity: 0.75 },
+      { start: 1.0, duration: 0.15, pitch: 1.2, intensity: 0.65 }
+    ];
+
+    for (let i = 0; i < length; i++) {
+      const t = i / sampleRate;
+      let amplitude = 0;
+
+      // Find which syllable we're in
+      let currentSyllable = null;
+      let syllableTime = 0;
+      for (const syl of syllables) {
+        if (t >= syl.start && t < syl.start + syl.duration) {
+          currentSyllable = syl;
+          syllableTime = (t - syl.start) / syl.duration;
+          break;
+        }
+      }
+
+      if (currentSyllable) {
+        // Envelope for each syllable - creates word-like separation
+        let envelope = 0;
+        if (syllableTime < 0.1) {
+          envelope = syllableTime / 0.1; // Quick attack
+        } else if (syllableTime < 0.7) {
+          envelope = 1.0; // Sustain
+        } else {
+          envelope = (1.0 - syllableTime) / 0.3; // Release
+        }
+        envelope *= currentSyllable.intensity;
+
+        // Vary formants based on syllable to create different "vowel" sounds
+        const pitchMod = currentSyllable.pitch;
+        const wobble = Math.sin(t * 60 + currentSyllable.start * 10) * 20;
+        
+        const formant1 = (250 + wobble) * pitchMod + Math.sin(t * 45) * 40;
+        const formant2 = (600 + wobble * 1.5) * pitchMod + Math.sin(t * 38) * 60;
+        const formant3 = (1050 + wobble * 0.8) * pitchMod + Math.sin(t * 32) * 90;
+        const formant4 = (1800 + wobble * 0.5) * pitchMod; // Higher formant for clarity
+
+        // Add carrier frequency with modulation for robotic effect
+        const carrier = 180 + Math.sin(t * 30) * 50 + Math.cos(t * 22) * 30;
+
+        // Mix the formants with different weights
+        amplitude += Math.sin(2 * Math.PI * formant1 * t) * 0.32;
+        amplitude += Math.sin(2 * Math.PI * formant2 * t) * 0.28;
+        amplitude += Math.sin(2 * Math.PI * formant3 * t) * 0.18;
+        amplitude += Math.sin(2 * Math.PI * formant4 * t) * 0.12;
+        amplitude += Math.sin(2 * Math.PI * carrier * t) * 0.22;
+
+        // Add consonant-like noise bursts at syllable starts
+        if (syllableTime < 0.05) {
+          amplitude += (Math.random() - 0.5) * 0.35 * (1.0 - syllableTime / 0.05);
+        }
+
+        // Digital glitching effect - more pronounced
+        if (i % 3 === 0) {
+          amplitude += (Math.random() - 0.5) * 0.15;
+        }
+
+        // Add vocoder-like effect with multiple ring modulations
+        const ringMod1 = Math.sin(2 * Math.PI * 85 * t);
+        const ringMod2 = Math.sin(2 * Math.PI * 130 * t);
+        amplitude *= (1.0 + ringMod1 * 0.25 + ringMod2 * 0.15);
+
+        // Garble effect - random pitch shifts and distortions
+        if (Math.random() < 0.02) {
+          amplitude *= 1.0 + (Math.random() - 0.5) * 0.4;
+        }
+
+        // Apply envelope
+        channelData[i] = amplitude * envelope * 0.55; // Increased from 0.3 to 0.55
+      } else {
+        // Silence between syllables with occasional digital artifacts
+        if (Math.random() < 0.01) {
+          channelData[i] = (Math.random() - 0.5) * 0.08;
+        } else {
+          channelData[i] = 0;
+        }
+      }
+    }
+
+    // Add subtle reverb/echo effect by mixing delayed signal
+    const echoDelay = Math.floor(sampleRate * 0.08); // 80ms delay
+    for (let i = echoDelay; i < length; i++) {
+      channelData[i] += channelData[i - echoDelay] * 0.15;
+    }
+
+    this.sounds['robotchatter'] = buffer;
+  }
+
   // Use this method to ensure audio context is resumed after user interaction
   // Browsers require user interaction to start audio playback
   resumeAudio() {
@@ -1680,7 +1952,9 @@ export class SoundManager {
 
   setMusicEnabled(enabled) {
     if (this.ambientMusicGain) {
-      this.ambientMusicGain.gain.value = enabled ? this._musicVolume || 0.8 : 0;
+      // Use a stronger multiplier so enabling music applies a noticeable volume
+      const vol = this._musicVolume !== undefined ? this._musicVolume : 0.8;
+      this.ambientMusicGain.gain.value = enabled ? vol * 1.2 : 0;
     }
     this._musicEnabled = enabled;
   }
@@ -1690,8 +1964,10 @@ export class SoundManager {
       this.ambientMusicGain &&
       (this._musicEnabled === undefined || this._musicEnabled)
     ) {
-      // Apply the volume with the higher base multiplier
-      this.ambientMusicGain.gain.value = vol * 0.8;
+      // Apply a larger multiplier to give the UI slider more 'juice'
+      // Slider values up to 3 will therefore increase music loudness significantly
+      const multiplier = 1.2; // base GUI multiplier
+      this.ambientMusicGain.gain.value = vol * multiplier;
     }
   }
   setSfxVolume(vol) {

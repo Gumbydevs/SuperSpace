@@ -4,6 +4,9 @@
  * Clean, modern analytics using Vercel Analytics with comprehensive game metrics
  */
 
+// Production mode flag - set to true to disable debug logging
+const ANALYTICS_PRODUCTION_MODE = true;
+
 class SuperSpaceAnalytics {
   constructor() {
     this.sessionStartTime = Date.now();
@@ -20,7 +23,9 @@ class SuperSpaceAnalytics {
     this.pvpEngaged = false; // Has player fought (kill OR death)
     // Initialize tracking
     this.initializeTracking();
-    console.log('SuperSpace Vercel Analytics initialized');
+    if (!ANALYTICS_PRODUCTION_MODE) {
+      console.log('SuperSpace Vercel Analytics initialized');
+    }
   }
 
   // Utility Methods
@@ -104,11 +109,13 @@ class SuperSpaceAnalytics {
   }
 
   initializeTracking() {
-    // Debug Vercel Analytics setup
-    console.log('≡ƒöì Checking Vercel Analytics setup:');
-    console.log('window.va available:', typeof window.va);
-    console.log('window.gtag available:', typeof window.gtag);
-    console.log('_vercel available:', typeof window._vercel);
+    // Check for Vercel Analytics availability (disabled debug in production)
+    if (!ANALYTICS_PRODUCTION_MODE) {
+      console.log('🔍 Checking Vercel Analytics setup:');
+      console.log('window.va available:', typeof window.va);
+      console.log('window.gtag available:', typeof window.gtag);
+      console.log('_vercel available:', typeof window._vercel);
+    }
 
     // Track session start
     this.track('session_start', {
@@ -450,4 +457,6 @@ window.analyticsDebug = {
   track: (event, props) => window.analytics.track(event, props),
 };
 
-console.log('SuperSpace Vercel Analytics loaded');
+if (!ANALYTICS_PRODUCTION_MODE) {
+  console.log('SuperSpace Vercel Analytics loaded');
+}

@@ -34,6 +34,16 @@ export class PremiumStore {
         drawMethod: 'drawGorf',
       },
       {
+        id: 'longjohn',
+        name: 'Long John',
+        description: 'Legendary space pirate with an eyepatch',
+        gemPrice: 120,
+        realPrice: 1.99,
+        owned: false,
+        rarity: 'epic',
+        drawMethod: 'drawLongJohn',
+      },
+      {
         id: 'astronaut_gold',
         name: 'Golden Astronaut',
         description: 'Luxurious golden space suit for elite pilots',
@@ -83,6 +93,19 @@ export class PremiumStore {
         rarity: 'legendary',
         drawMethod: 'drawNeonWarrior',
       },
+      // Playtester exclusive avatar (gifted to pre-release players)
+      {
+        id: 'playtester_dummy',
+        name: 'Test Dummy',
+        description: 'Special pre-release crash-test dummy pilot — exclusive to playtesters',
+        gemPrice: 0,
+        realPrice: 0,
+        owned: false,
+        rarity: 'exclusive',
+        drawMethod: 'drawCrashDummy',
+        // Do not show this exclusive, granted avatar in the public Premium Store
+        storeVisible: false,
+      },
     ];
 
     // Ship skins (cosmetic variations)
@@ -117,6 +140,25 @@ export class PremiumStore {
           accent: '#0080ff',
           effect: 'glow',
         },
+      },
+
+      // Playtester exclusive scout skin (gifted)
+      {
+        id: 'scout_playtester',
+        name: 'Test Dummy',
+        description: 'Black & hazard-yellow crash-test paint — awarded to pre-release playtesters',
+        shipType: 'scout',
+        gemPrice: 0,
+        realPrice: 0,
+        owned: false,
+        rarity: 'exclusive',
+        appearance: {
+          color: '#ffd700',
+          accent: '#000000',
+          effect: 'hazard_stripes',
+        },
+        // Gifted exclusive - do not list in the public Premium Store
+        storeVisible: false,
       },
 
       // Fighter Skins
@@ -272,7 +314,19 @@ export class PremiumStore {
     const stored = localStorage.getItem('premiumPurchases');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Normalize structure to ensure expected arrays exist
+        return {
+          avatars: Array.isArray(parsed.avatars) ? parsed.avatars : [],
+          skins: Array.isArray(parsed.skins) ? parsed.skins : [],
+          purchaseHistory: Array.isArray(parsed.purchaseHistory)
+            ? parsed.purchaseHistory
+            : parsed.purchase_history && Array.isArray(parsed.purchase_history)
+            ? parsed.purchase_history
+            : [],
+          // keep any other keys present to avoid losing data
+          ...parsed,
+        };
       } catch (e) {
         console.error('Failed to load premium purchases:', e);
       }
@@ -291,15 +345,33 @@ export class PremiumStore {
     );
   }
 
+  // Ensure HUD gem display can be updated centrally
+  updateGemDisplay() {
+    try {
+      // Persist gems and update visible HUD
+      this.saveSpaceGems();
+      const gemsEl = document.getElementById('gems');
+      if (gemsEl) gemsEl.textContent = this.spaceGems;
+    } catch (e) {
+      // ignore errors
+    }
+  }
+
   updateOwnedStatus() {
     // Update avatar ownership
+    const ownedAvatars = (this.premiumPurchases && Array.isArray(this.premiumPurchases.avatars))
+      ? this.premiumPurchases.avatars
+      : [];
     this.premiumAvatars.forEach((avatar) => {
-      avatar.owned = this.premiumPurchases.avatars.includes(avatar.id);
+      avatar.owned = ownedAvatars.includes(avatar.id);
     });
 
     // Update skin ownership
+    const ownedSkins = (this.premiumPurchases && Array.isArray(this.premiumPurchases.skins))
+      ? this.premiumPurchases.skins
+      : [];
     this.shipSkins.forEach((skin) => {
-      skin.owned = this.premiumPurchases.skins.includes(skin.id);
+      skin.owned = ownedSkins.includes(skin.id);
     });
   }
 
@@ -477,9 +549,10 @@ export class PremiumStore {
   getCurrentTabItems() {
     switch (this.currentTab) {
       case 'avatars':
-        return this.premiumAvatars;
+        // Exclude store-hidden items (like playtester gifts) from public listing
+        return this.premiumAvatars.filter((a) => a.storeVisible !== false);
       case 'skins':
-        return this.shipSkins;
+        return this.shipSkins.filter((s) => s.storeVisible !== false);
       case 'gems':
         return this.gemPackages;
       default:
@@ -859,23 +932,121 @@ export class PremiumStore {
           previewCtx.globalAlpha = 0.8; // More visible than before
         }
 
+        // Helper: draw hazard pattern (black/yellow checkers + circular targets)
+        function drawHazardPattern(ctx, shipColor, accentColor) {
+          // Preview hazard pattern that matches in-game: apply checker only to wings
+          const square = 10; // base square before scaling
+          // Make squares larger so pattern is clearly visible in preview
+          const squareSize = Math.max(3, Math.round(square * 0.45));
+
+          // Helper to draw checker grid in a box
+          const drawCheckerInBox = (minX, minY, maxX, maxY) => {
+            const w = maxX - minX;
+            const h = maxY - minY;
+            const cols = Math.max(2, Math.ceil((w + squareSize * 2) / squareSize));
+            const rows = Math.max(2, Math.ceil((h + squareSize * 2) / squareSize));
+        const totalW = cols * squareSize;
+        const totalH = rows * squareSize;
+        const startX = Math.round(minX - (totalW - w) / 2);
+        const startY = Math.round(minY - (totalH - h) / 2);
+
+            const fadeRadius = Math.max(10, (maxX - minX) * 0.45);
+            const minAlpha = 0.12; // slightly stronger base visibility
+
+            for (let r = 0; r < rows; r++) {
+              for (let c = 0; c < cols; c++) {
+                const xx = Math.round(startX + c * squareSize);
+                const yy = Math.round(startY + r * squareSize);
+                const parity = (c + r) & 1;
+                const cx = xx + squareSize * 0.5;
+                const cy = yy + squareSize * 0.5;
+                const dist = Math.hypot(cx, cy);
+                const t = Math.max(0, Math.min(1, dist / fadeRadius));
+                const alpha = minAlpha + (1 - minAlpha) * t;
+
+                const prevAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = parity === 0 ? shipColor : accentColor;
+                ctx.fillRect(xx, yy, squareSize, squareSize);
+                ctx.globalAlpha = prevAlpha;
+              }
+            }
+          };
+
+          // Wing polygons for preview (match shipskins shapes)
+          const wings = [
+            [
+              { x: -12, y: 0 },
+              { x: -8, y: 8 },
+              { x: -5, y: 5 },
+              { x: -12, y: 4 },
+            ],
+            [
+              { x: 12, y: 0 },
+              { x: 8, y: 8 },
+              { x: 5, y: 5 },
+              { x: 12, y: 4 },
+            ],
+          ];
+
+          ctx.save();
+          wings.forEach((pts) => {
+            const p = new Path2D();
+            p.moveTo(pts[0].x, pts[0].y);
+            let minX = pts[0].x,
+              maxX = pts[0].x,
+              minY = pts[0].y,
+              maxY = pts[0].y;
+            for (let i = 1; i < pts.length; i++) {
+              p.lineTo(pts[i].x, pts[i].y);
+              minX = Math.min(minX, pts[i].x);
+              maxX = Math.max(maxX, pts[i].x);
+              minY = Math.min(minY, pts[i].y);
+              maxY = Math.max(maxY, pts[i].y);
+            }
+            p.closePath();
+            ctx.save();
+            ctx.clip(p);
+            drawCheckerInBox(minX, minY, maxX, maxY);
+            // Sheen limited to wing area
+            ctx.globalCompositeOperation = 'overlay';
+            const sheen = ctx.createLinearGradient(minX, minY, maxX, maxY);
+            sheen.addColorStop(0, 'rgba(255,255,255,0.07)');
+            sheen.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+            sheen.addColorStop(1, 'rgba(0,0,0,0.02)');
+            ctx.fillStyle = sheen;
+            ctx.fillRect(Math.round(minX), Math.round(minY), Math.round(maxX - minX), Math.round(maxY - minY));
+            ctx.restore();
+          });
+          ctx.restore();
+        }
+
         // Draw the ACTUAL ship shape based on ship type using your game's exact code
         if (item.shipType === 'scout') {
-          // EXACT scout ship from your game
+          // EXACT scout ship from your game (use Path2D so we can clip the pattern)
+          const shipPath = new Path2D();
+          shipPath.moveTo(0, -15); // front nose
+          shipPath.lineTo(-4, -10); // left nose edge
+          shipPath.lineTo(-12, 0); // left wing tip
+          shipPath.lineTo(-8, 8); // left rear corner
+          shipPath.lineTo(-5, 5); // left engine mount
+          shipPath.lineTo(0, 7); // center bottom
+          shipPath.lineTo(5, 5); // right engine mount
+          shipPath.lineTo(8, 8); // right rear corner
+          shipPath.lineTo(12, 0); // right wing tip
+          shipPath.lineTo(4, -10); // right nose edge
+          shipPath.closePath();
+
           previewCtx.fillStyle = shipColor;
-          previewCtx.beginPath();
-          previewCtx.moveTo(0, -15); // front nose
-          previewCtx.lineTo(-4, -10); // left nose edge
-          previewCtx.lineTo(-12, 0); // left wing tip
-          previewCtx.lineTo(-8, 8); // left rear corner
-          previewCtx.lineTo(-5, 5); // left engine mount
-          previewCtx.lineTo(0, 7); // center bottom
-          previewCtx.lineTo(5, 5); // right engine mount
-          previewCtx.lineTo(8, 8); // right rear corner
-          previewCtx.lineTo(12, 0); // right wing tip
-          previewCtx.lineTo(4, -10); // right nose edge
-          previewCtx.closePath();
-          previewCtx.fill();
+          previewCtx.fill(shipPath);
+
+          // If hazard pattern requested, clip to ship and draw pattern
+          if (item.appearance.effect === 'hazard_stripes') {
+            previewCtx.save();
+            previewCtx.clip(shipPath);
+            drawHazardPattern(previewCtx, shipColor, accentColor);
+            previewCtx.restore();
+          }
 
           // Cockpit canopy
           previewCtx.fillStyle = 'rgba(130, 200, 255, 0.7)';
@@ -893,23 +1064,30 @@ export class PremiumStore {
           previewCtx.lineTo(4, -8);
           previewCtx.stroke();
         } else if (item.shipType === 'fighter') {
-          // EXACT fighter ship from your game - no background boxes
+          const shipPath = new Path2D();
+          shipPath.moveTo(0, -16); // Front nose tip (scaled for preview)
+          shipPath.lineTo(-3, -11); // Left side of nose
+          shipPath.lineTo(-13, -3); // Left wing tip
+          shipPath.lineTo(-9, 0); // Left wing inner edge
+          shipPath.lineTo(-11, 9); // Left rear wing
+          shipPath.lineTo(-3, 6); // Left engine mount
+          shipPath.lineTo(0, 7); // Center bottom
+          shipPath.lineTo(3, 6); // Right engine mount
+          shipPath.lineTo(11, 9); // Right rear wing
+          shipPath.lineTo(9, 0); // Right wing inner edge
+          shipPath.lineTo(13, -3); // Right wing tip
+          shipPath.lineTo(3, -11); // Right side of nose
+          shipPath.closePath();
+
           previewCtx.fillStyle = shipColor;
-          previewCtx.beginPath();
-          previewCtx.moveTo(0, -16); // Front nose tip (scaled for preview)
-          previewCtx.lineTo(-3, -11); // Left side of nose
-          previewCtx.lineTo(-13, -3); // Left wing tip
-          previewCtx.lineTo(-9, 0); // Left wing inner edge
-          previewCtx.lineTo(-11, 9); // Left rear wing
-          previewCtx.lineTo(-3, 6); // Left engine mount
-          previewCtx.lineTo(0, 7); // Center bottom
-          previewCtx.lineTo(3, 6); // Right engine mount
-          previewCtx.lineTo(11, 9); // Right rear wing
-          previewCtx.lineTo(9, 0); // Right wing inner edge
-          previewCtx.lineTo(13, -3); // Right wing tip
-          previewCtx.lineTo(3, -11); // Right side of nose
-          previewCtx.closePath();
-          previewCtx.fill();
+          previewCtx.fill(shipPath);
+
+          if (item.appearance.effect === 'hazard_stripes') {
+            previewCtx.save();
+            previewCtx.clip(shipPath);
+            drawHazardPattern(previewCtx, shipColor, accentColor);
+            previewCtx.restore();
+          }
 
           // Cockpit
           previewCtx.fillStyle = 'rgba(180, 230, 255, 0.7)';
@@ -935,25 +1113,32 @@ export class PremiumStore {
           previewCtx.closePath();
           previewCtx.fill();
         } else if (item.shipType === 'heavy') {
-          // EXACT heavy ship from your game - no background boxes
+          const shipPath = new Path2D();
+          shipPath.moveTo(0, -18); // Nose tip (scaled for preview)
+          shipPath.lineTo(-5, -13); // Left front angled edge
+          shipPath.lineTo(-8, -3); // Left mid-hull
+          shipPath.lineTo(-16, 0); // Left wing tip
+          shipPath.lineTo(-16, 3); // Left wing corner
+          shipPath.lineTo(-12, 5); // Left wing inner
+          shipPath.lineTo(-6, 11); // Left engine mount
+          shipPath.lineTo(0, 9); // Bottom center
+          shipPath.lineTo(6, 11); // Right engine mount
+          shipPath.lineTo(12, 5); // Right wing inner
+          shipPath.lineTo(16, 3); // Right wing corner
+          shipPath.lineTo(16, 0); // Right wing tip
+          shipPath.lineTo(8, -3); // Right mid-hull
+          shipPath.lineTo(5, -13); // Right front angled edge
+          shipPath.closePath();
+
           previewCtx.fillStyle = shipColor;
-          previewCtx.beginPath();
-          previewCtx.moveTo(0, -18); // Nose tip (scaled for preview)
-          previewCtx.lineTo(-5, -13); // Left front angled edge
-          previewCtx.lineTo(-8, -3); // Left mid-hull
-          previewCtx.lineTo(-16, 0); // Left wing tip
-          previewCtx.lineTo(-16, 3); // Left wing corner
-          previewCtx.lineTo(-12, 5); // Left wing inner
-          previewCtx.lineTo(-6, 11); // Left engine mount
-          previewCtx.lineTo(0, 9); // Bottom center
-          previewCtx.lineTo(6, 11); // Right engine mount
-          previewCtx.lineTo(12, 5); // Right wing inner
-          previewCtx.lineTo(16, 3); // Right wing corner
-          previewCtx.lineTo(16, 0); // Right wing tip
-          previewCtx.lineTo(8, -3); // Right mid-hull
-          previewCtx.lineTo(5, -13); // Right front angled edge
-          previewCtx.closePath();
-          previewCtx.fill();
+          previewCtx.fill(shipPath);
+
+          if (item.appearance.effect === 'hazard_stripes') {
+            previewCtx.save();
+            previewCtx.clip(shipPath);
+            drawHazardPattern(previewCtx, shipColor, accentColor);
+            previewCtx.restore();
+          }
 
           // Heavy armor plating
           previewCtx.strokeStyle = accentColor;
@@ -980,23 +1165,30 @@ export class PremiumStore {
           previewCtx.rect(9, -1, 5, 2);
           previewCtx.fill();
         } else if (item.shipType === 'stealth') {
-          // EXACT stealth ship from your game - with MORE VISIBLE colors
+          const shipPath = new Path2D();
+          shipPath.moveTo(0, -16); // Nose tip (scaled for preview)
+          shipPath.lineTo(-2, -12); // Narrow front section
+          shipPath.lineTo(-12, -4); // Left wing edge
+          shipPath.lineTo(-6, 4); // Left mid-wing
+          shipPath.lineTo(-9, 12); // Left wing extension
+          shipPath.lineTo(-4, 9); // Left engine
+          shipPath.lineTo(0, 8); // Center
+          shipPath.lineTo(4, 9); // Right engine
+          shipPath.lineTo(9, 12); // Right wing extension
+          shipPath.lineTo(6, 4); // Right mid-wing
+          shipPath.lineTo(12, -4); // Right wing edge
+          shipPath.lineTo(2, -12); // Narrow front section
+          shipPath.closePath();
+
           previewCtx.fillStyle = shipColor;
-          previewCtx.beginPath();
-          previewCtx.moveTo(0, -16); // Nose tip (scaled for preview)
-          previewCtx.lineTo(-2, -12); // Narrow front section
-          previewCtx.lineTo(-12, -4); // Left wing edge
-          previewCtx.lineTo(-6, 4); // Left mid-wing
-          previewCtx.lineTo(-9, 12); // Left wing extension
-          previewCtx.lineTo(-4, 9); // Left engine
-          previewCtx.lineTo(0, 8); // Center
-          previewCtx.lineTo(4, 9); // Right engine
-          previewCtx.lineTo(9, 12); // Right wing extension
-          previewCtx.lineTo(6, 4); // Right mid-wing
-          previewCtx.lineTo(12, -4); // Right wing edge
-          previewCtx.lineTo(2, -12); // Narrow front section
-          previewCtx.closePath();
-          previewCtx.fill();
+          previewCtx.fill(shipPath);
+
+          if (item.appearance.effect === 'hazard_stripes') {
+            previewCtx.save();
+            previewCtx.clip(shipPath);
+            drawHazardPattern(previewCtx, shipColor, accentColor);
+            previewCtx.restore();
+          }
 
           // Add visible outline to prevent unfair advantage
           previewCtx.strokeStyle = accentColor;

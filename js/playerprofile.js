@@ -45,6 +45,8 @@ export class PlayerProfile {
   uniqueShopItemsBought: 0,
   uniqueShopItems: [],
   rareGemsCollected: 0,
+      // Session-scoped metrics (reset at game start)
+      sessionDistance: 0,
     };
 
     this.loadStats();
@@ -71,6 +73,54 @@ export class PlayerProfile {
     this.stats.sessionStartTime = now;
 
     localStorage.setItem('playerStats', JSON.stringify(this.stats));
+  }
+
+  resetStats() {
+    // Reset all stats to default values
+    this.stats = {
+      totalPlayTime: 0,
+      totalDistance: 0,
+      totalShots: 0,
+      totalHits: 0,
+      gamesPlayed: 0,
+      totalWins: 0,
+      totalLosses: 0,
+      totalKills: 0,
+      totalDeaths: 0,
+      highestScore: 0,
+      longestSurvival: 0,
+      favoriteWeapon: 'Basic Laser',
+      weaponStats: {},
+      sessionStartTime: Date.now(),
+      totalCreditsEarned: 0,
+      totalCreditsSpent: 0,
+      asteroidsDestroyed: 0,
+      averageAccuracy: 0,
+      nemesis: null,
+      nemesisKills: 0,
+      killedByPlayers: {},
+      noDamageSurvival: 0,
+      weaponsUpgraded: 0,
+      topScorer10min: false,
+      powerupsCollected: 0,
+      bombsUsed: 0,
+      chatMessagesSent: 0,
+      skinsEquipped: 0,
+      projectilesEvaded: 0,
+      sectorsVisited: [],
+      artifactsScanned: 0,
+      bossesDefeated: 0,
+      shieldActivations: 0,
+      noDeathStreak: 0,
+      uniqueShopItemsBought: 0,
+      uniqueShopItems: [],
+      rareGemsCollected: 0,
+      sessionDistance: 0,
+    };
+    
+    // Save the reset stats
+    this.saveStats();
+    console.log('🧾 PlayerProfile stats reset to defaults');
   }
 
   // Update playtime (called from game loop)
@@ -143,6 +193,8 @@ export class PlayerProfile {
   onGameStart() {
     this.stats.gamesPlayed++;
     this.currentGameStartTime = Date.now();
+    // Reset session-scoped metrics
+    this.stats.sessionDistance = 0;
     this._noDamageStart = Date.now();
     this._lastDamageTime = null;
     this._noDamageInterval = setInterval(() => {
@@ -183,6 +235,7 @@ export class PlayerProfile {
         this.stats.noDamageSurvival = this.stats.noDamageSurvivalSession;
       }
       this.stats.noDamageSurvivalSession = 0;
+      // keep sessionDistance as-is for post-game display, but it's reset on next onGameStart
     }
     this.saveStats();
   }
@@ -242,6 +295,7 @@ export class PlayerProfile {
 
   onDistanceTraveled(distance) {
     this.stats.totalDistance += distance;
+    this.stats.sessionDistance = (this.stats.sessionDistance || 0) + distance;
     this.saveStats();
     if (window.game && window.game.challengeSystem) {
       window.game.challengeSystem.check('daily');
@@ -764,9 +818,10 @@ export class PlayerProfile {
   }
 
   formatDistance(units) {
-    if (units < 1000) return units.toFixed(0) + ' units';
-    if (units < 1000000) return (units / 1000).toFixed(1) + 'K units';
-    return (units / 1000000).toFixed(1) + 'M units';
+    // Convert in-game units to kilometers for player-facing displays.
+    // 1,000 units = 1 km. Show one decimal place for readability.
+    const km = (units || 0) / 1000;
+    return `${km.toFixed(1)} km`;
   }
 
   getWinRate() {
@@ -930,10 +985,11 @@ export class PlayerProfile {
       // Save the reset stats
       this.saveStats();
 
-      // Show success message and reload
+      // Show success message and reload (accurate summary)
       alert(
         '✅ Progress Reset Complete!\n\n' +
-          'All game data has been permanently deleted.\n' +
+          'Most progression data (credits, upgrades, challenges, achievements) has been reset.\n' +
+          'Player name, selected avatar, and premium purchases/ownership should have been preserved.\n' +
           'The page will now reload to apply changes.',
       );
 

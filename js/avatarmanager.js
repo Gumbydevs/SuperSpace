@@ -16,6 +16,7 @@ export class AvatarManager {
       'cyber_pilot',
       'galaxy_explorer',
       'neon_warrior',
+      'playtester_dummy',
     ];
     this.premiumStore = premiumStore;
     this.initialized = false;
@@ -34,6 +35,12 @@ export class AvatarManager {
     if (avatarOptions.length > 0) {
       this.setupAvatarSelection();
       this.setupModalControls();
+      // Setup new-ship-skin notification badges and listeners
+      try {
+        this.setupSkinNotifications();
+      } catch (e) {
+        console.warn('setupSkinNotifications failed', e);
+      }
       console.log('About to setup premium avatars...');
       this.setupPremiumAvatars();
       this.drawAllAvatars();
@@ -67,6 +74,8 @@ export class AvatarManager {
       { id: 'cyber_pilot', name: 'Cyber-X' },
       { id: 'galaxy_explorer', name: 'Nova Star' },
       { id: 'neon_warrior', name: 'Neon Ghost' },
+      // Playtester-only avatar (not shown in public store)
+      { id: 'playtester_dummy', name: 'Test Dummy' },
     ];
 
     console.log('Available premium avatars:', premiumAvatarData.length);
@@ -297,6 +306,11 @@ export class AvatarManager {
         if (!option.classList.contains('disabled')) {
           this.tempSelection = avatarType;
           this.updateModalSelection();
+
+          // Play robot chatter sound if Marvin is selected
+          if (avatarType === 'robot' && window.game?.soundManager) {
+            window.game.soundManager.playProceduralRobotChatter({ volume: 0.6 });
+          }
         }
       });
     });
@@ -1576,6 +1590,45 @@ export class AvatarManager {
         ctx.fillStyle = '#00ffff';
         ctx.fillRect(5, 12, 6, 1);
         break;
+      case 'playtester_dummy': // Test Dummy mini avatar
+        // Background
+        ctx.fillStyle = '#000010';
+        ctx.fillRect(0, 0, 16, 16);
+        // Yellow head
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(3, 2, 10, 9);
+        // Head highlight
+        ctx.fillStyle = '#ffed4e';
+        ctx.fillRect(4, 3, 8, 1);
+        // Eyes
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(5, 5, 2, 2);
+        ctx.fillRect(9, 5, 2, 2);
+        // Mouth
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(5, 8, 6, 1);
+        // Yellow torso with checkerboard
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(3, 11, 10, 4);
+        // Checkerboard pattern
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(4, 11, 1, 1);
+        ctx.fillRect(6, 11, 1, 1);
+        ctx.fillRect(8, 11, 1, 1);
+        ctx.fillRect(10, 11, 1, 1);
+        ctx.fillRect(5, 12, 1, 1);
+        ctx.fillRect(7, 12, 1, 1);
+        ctx.fillRect(9, 12, 1, 1);
+        ctx.fillRect(11, 12, 1, 1);
+        ctx.fillRect(4, 13, 1, 1);
+        ctx.fillRect(6, 13, 1, 1);
+        ctx.fillRect(8, 13, 1, 1);
+        ctx.fillRect(10, 13, 1, 1);
+        ctx.fillRect(5, 14, 1, 1);
+        ctx.fillRect(7, 14, 1, 1);
+        ctx.fillRect(9, 14, 1, 1);
+        ctx.fillRect(11, 14, 1, 1);
+        break;
     }
 
     // Return the canvas as data URL for use in player list
@@ -1617,6 +1670,9 @@ export class AvatarManager {
         break;
       case 'neon_warrior':
         this.drawNeonWarrior(ctx, size);
+        break;
+      case 'playtester_dummy':
+        this.drawCrashDummy(ctx, size);
         break;
       default:
         // Fallback to default avatar if unknown
@@ -1834,6 +1890,73 @@ export class AvatarManager {
     ctx.fillRect(18 * scale, 18 * scale, 2 * scale, 1 * scale);
   }
 
+  drawCrashDummy(ctx, size) {
+    const scale = size / 24;
+
+    // Dark background for premium look
+    ctx.fillStyle = '#000010';
+    ctx.fillRect(0, 0, size, size);
+
+    // Yellow head block (slightly brighter yellow like the references)
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(6 * scale, 4 * scale, 12 * scale, 12 * scale);
+
+    // Head shading/highlight for dimension
+    ctx.fillStyle = '#ffed4e';
+    ctx.fillRect(7 * scale, 5 * scale, 10 * scale, 1 * scale);
+
+    // Simple square eyes (black like test dummies)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(8 * scale, 9 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(14 * scale, 9 * scale, 2 * scale, 2 * scale);
+
+    // Longer horizontal mouth line (crash test dummy style)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(8 * scale, 13 * scale, 8 * scale, 1 * scale);
+    // Add a bit of depth to the mouth
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(9 * scale, 14 * scale, 6 * scale, 1 * scale);
+
+    // Yellow neck
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(9 * scale, 16 * scale, 6 * scale, 2 * scale);
+
+    // Neck segmentation lines (joint markers)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(9 * scale, 16 * scale, 6 * scale, 1 * scale);
+    ctx.fillRect(9 * scale, 17 * scale, 6 * scale, 1 * scale);
+
+    // Neck segmentation lines (joint markers)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(9 * scale, 16 * scale, 6 * scale, 1 * scale);
+    ctx.fillRect(9 * scale, 17 * scale, 6 * scale, 1 * scale);
+
+    // Yellow torso/body base (wider to accommodate border)
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(6 * scale, 18 * scale, 12 * scale, 6 * scale);
+
+    // Yellow vertical borders on sides
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(6 * scale, 18 * scale, 1 * scale, 6 * scale); // Left border
+    ctx.fillRect(17 * scale, 18 * scale, 1 * scale, 6 * scale); // Right border
+
+    // Even checkerboard pattern on torso (like your reference image)
+    ctx.fillStyle = '#000000';
+    // Row 1 (y=18-19)
+    ctx.fillRect(7 * scale, 18 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(11 * scale, 18 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(15 * scale, 18 * scale, 2 * scale, 2 * scale);
+    
+    // Row 2 (y=20-21)
+    ctx.fillRect(9 * scale, 20 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(13 * scale, 20 * scale, 2 * scale, 2 * scale);
+    
+    // Row 3 (y=22-23)
+    ctx.fillRect(7 * scale, 22 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(11 * scale, 22 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(15 * scale, 22 * scale, 2 * scale, 2 * scale);
+  }
+
   // Draw profile avatar (for UI display)
   drawProfileAvatar() {
     const profileCanvas = document.getElementById('profileAvatarCanvas');
@@ -1849,5 +1972,236 @@ export class AvatarManager {
         this.drawAvatar(canvas, this.selectedAvatar);
       }
     });
+  }
+
+  // ---------------------------------------------
+  // Skin notification helpers
+  // ---------------------------------------------
+  setupSkinNotifications() {
+    // Ensure style for badges exists
+    this._injectBadgeStyle();
+
+    // Ensure internal state exists
+    if (!this._newSkinsKey) this._newSkinsKey = 'newSkins';
+
+    // Render badges based on stored state
+    this._renderBadges();
+
+    // Listen for clicks on skin items to clear notifications when selected
+    if (!this._skinClickHandler) {
+      this._skinClickHandler = (e) => this._onSkinClickListener(e);
+      document.addEventListener('click', this._skinClickHandler, true);
+    }
+
+    // Expose a simple global helper so other modules can notify about new skins
+    try {
+      if (!window.notifyNewSkin) {
+        window.notifyNewSkin = (skinId) => {
+          try {
+            const mgr = window.avatarManagerInstance; // convenience if used
+            if (mgr && typeof mgr.addNewSkin === 'function') {
+              mgr.addNewSkin(skinId);
+            } else {
+              // fallback to localStorage-only approach
+              const raw = localStorage.getItem('newSkins') || '[]';
+              const arr = JSON.parse(raw);
+              if (!arr.includes(skinId)) {
+                arr.push(skinId);
+                localStorage.setItem('newSkins', JSON.stringify(arr));
+              }
+            }
+            // attempt to re-render badges
+            try {
+              if (mgr && typeof mgr._renderBadges === 'function') mgr._renderBadges();
+            } catch (e) {
+              /* ignore */
+            }
+          } catch (e) {
+            console.warn('notifyNewSkin failed', e);
+          }
+        };
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  _getNewSkins() {
+    try {
+      const raw = localStorage.getItem(this._newSkinsKey) || '[]';
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  _setNewSkins(arr) {
+    try {
+      localStorage.setItem(this._newSkinsKey, JSON.stringify(arr || []));
+    } catch (e) {
+      /* ignore */
+    }
+    this._renderBadges();
+  }
+
+  addNewSkin(skinId) {
+    if (!skinId) return;
+    const arr = this._getNewSkins();
+    if (!arr.includes(skinId)) {
+      arr.push(skinId);
+      this._setNewSkins(arr);
+    }
+  }
+
+  addNewSkins(skinIds) {
+    if (!Array.isArray(skinIds)) return;
+    const arr = this._getNewSkins();
+    skinIds.forEach((s) => {
+      if (s && !arr.includes(s)) arr.push(s);
+    });
+    this._setNewSkins(arr);
+  }
+
+  clearNewSkin(skinId) {
+    if (!skinId) return;
+    const arr = this._getNewSkins().filter((s) => s !== skinId);
+    this._setNewSkins(arr);
+  }
+
+  clearAllNewSkins() {
+    this._setNewSkins([]);
+  }
+
+  _findShopSelector() {
+    const candidates = [
+      '#shopTab',
+      '#shopBtn',
+      "button[id*='shop']",
+      ".tab-shop",
+      "[data-tab='shop']",
+      "[data-tabid='shop']",
+      "[data-tab-id='shop']",
+      ".tab[data-tabid='shop']",
+      '#premiumBtn',
+    ];
+    for (const s of candidates) {
+      try {
+        const el = document.querySelector(s);
+        if (el) return el;
+      } catch (e) {
+        // ignore invalid selectors
+      }
+    }
+    return null;
+  }
+
+  _findAppearanceSelector() {
+    const candidates = [
+      '#appearanceTab',
+      '#appearanceBtn',
+      ".tab-appearance",
+      "[data-tab='appearance']",
+      "#avatarTab",
+      "#profileAppearance",
+      "[data-tabid='appearance']",
+      ".tab[data-tabid='appearance']",
+    ];
+    for (const s of candidates) {
+      try {
+        const el = document.querySelector(s);
+        if (el) return el;
+      } catch (e) {
+        // ignore
+      }
+    }
+    return null;
+  }
+
+  _renderBadges() {
+    try {
+      const newSkins = this._getNewSkins();
+      const count = newSkins.length;
+
+      // Shop badge
+      const shopEl = this._findShopSelector();
+      if (shopEl) {
+        let badge = shopEl.querySelector('.new-badge');
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'new-badge';
+          badge.setAttribute('aria-hidden', 'true');
+          // place as last child for visual overlay
+          shopEl.appendChild(badge);
+          shopEl.style.position = shopEl.style.position || 'relative';
+        }
+        badge.textContent = count > 0 ? String(count) : '';
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+
+      // Appearance badge (user-facing appearance tab)
+      const appEl = this._findAppearanceSelector();
+      if (appEl) {
+        let badge = appEl.querySelector('.new-badge');
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'new-badge';
+          badge.setAttribute('aria-hidden', 'true');
+          appEl.appendChild(badge);
+          appEl.style.position = appEl.style.position || 'relative';
+        }
+        // For appearance, we show count of skins specifically not-yet-viewed there.
+        // For simplicity keep same count as shop (most cases 1)
+        badge.textContent = count > 0 ? String(count) : '';
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    } catch (e) {
+      console.warn('renderBadges failed', e);
+    }
+  }
+
+  _injectBadgeStyle() {
+    if (document.getElementById('new-badge-style')) return;
+    const style = document.createElement('style');
+    style.id = 'new-badge-style';
+    style.innerHTML = `
+      .new-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 6px;
+        background: #ff3b30;
+        color: #fff;
+        font-weight: 700;
+        font-size: 12px;
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        line-height: 18px;
+        z-index: 10060;
+        pointer-events: none;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  _onSkinClickListener(e) {
+    try {
+      const el = e.target.closest && e.target.closest('[data-skin]');
+      if (!el) return;
+      const skinId = el.dataset.skin;
+      if (!skinId) return;
+      const current = this._getNewSkins();
+      if (current.includes(skinId)) {
+        // Clear only this skin's badge
+        this.clearNewSkin(skinId);
+      }
+    } catch (err) {
+      /* ignore */
+    }
   }
 }
