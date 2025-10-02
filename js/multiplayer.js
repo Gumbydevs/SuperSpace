@@ -22,7 +22,14 @@ export class MultiplayerManager {
     );
     const hasForceQuery = typeof location !== 'undefined' && location.search && location.search.indexOf('forceReset=1') !== -1;
     const globalDebugFlag = typeof window !== 'undefined' && window.DEBUG_ALLOW_RESET === true;
-    this.allowAutomaticReset = !!(isLocalhost || hasForceQuery || globalDebugFlag);
+    
+    // PRODUCTION RESET ENABLED: Allow auto-reset in production for major updates
+    const isProduction = typeof location !== 'undefined' && (
+      location.hostname.includes('vercel.app') ||
+      location.hostname.includes('superspace')
+    );
+    
+    this.allowAutomaticReset = !!(isLocalhost || hasForceQuery || globalDebugFlag || isProduction);
   } catch (e) {
     // If any of the above checks fail (rare), default to safe behavior (disabled)
     this.allowAutomaticReset = false;

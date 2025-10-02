@@ -19,6 +19,7 @@ import { PayPalIntegration } from './paypal-integration.js';
 import { MarvinAssistant } from './marvin.js';
 import { TutorialSystem } from './tutorial.js';
 import Chat from './chat.js';
+import ResetConfig from './resetConfig.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
