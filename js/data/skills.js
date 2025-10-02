@@ -1,13 +1,6 @@
 // Skill tree definitions and player skill management
 export const SKILLS = [
   {
-    id: 'accuracy',
-    name: 'Accuracy',
-    description: 'Increase weapon accuracy by 5%',
-    maxPoints: 5,
-    prerequisite: null,
-  },
-  {
     id: 'shieldBoost',
     name: 'Shield Boost',
     description: 'Increase shield capacity by 10%',
@@ -26,7 +19,7 @@ export const SKILLS = [
     name: 'Fire Rate',
     description: 'Reduce weapon cooldown by 10%',
     maxPoints: 3,
-    prerequisite: 'accuracy',
+    prerequisite: null, // Removed accuracy prerequisite
   },
   {
     id: 'thrusterPower',

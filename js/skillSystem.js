@@ -16,12 +16,19 @@ export class SkillSystem {
     const earnedPoints = Math.floor(this.player.score / 1500);
     const currentAllocated = this.getAllocatedPoints();
 
+    const previousSkillPoints = this.skillPoints;
+    
     // Only give points up to the max per run
     this.skillPoints = Math.min(
       earnedPoints - currentAllocated,
       this.MAX_POINTS_PER_RUN - currentAllocated,
     );
     if (this.skillPoints < 0) this.skillPoints = 0;
+    
+    // Update badge if skill points changed
+    if (this.skillPoints !== previousSkillPoints && window.game && window.game.shop) {
+      window.game.shop.updateSkillsTabBadge();
+    }
   }
 
   // Allocate a point to a skill if possible
@@ -40,17 +47,27 @@ export class SkillSystem {
     this.skillPoints--;
     // Apply skill effects, e.g.:
     switch (skill.id) {
-      case 'accuracy':
-        this.player.accuracyBonus = (this.player.accuracyBonus || 0) + 0.05;
-        break;
       case 'shieldBoost':
-        this.player.shieldCapacity += this.player.shieldCapacity * 0.1;
+        // Calculate the increase amount (10% of current capacity)
+        const shieldIncrease = this.player.shieldCapacity * 0.1;
+        this.player.shieldCapacity += shieldIncrease;
+        // Also increase current shield by the same amount (up to new max)
+        this.player.shield = Math.min(
+          this.player.shield + shieldIncrease,
+          this.player.shieldCapacity
+        );
         break;
       case 'energyRegen':
         this.player.energyRegen += 1;
         break;
       case 'fireRate':
-        this.player.fireRateBonus = (this.player.fireRateBonus || 0) + 0.1;
+        // Store original fire cooldown time if not already stored
+        if (!this.player.baseFireCooldownTime) {
+          this.player.baseFireCooldownTime = this.player.fireCooldownTime;
+        }
+        // Reduce cooldown by 10% (multiply by 0.9)
+        this.player.baseFireCooldownTime *= 0.9;
+        this.player.fireCooldownTime = this.player.baseFireCooldownTime;
         break;
       case 'thrusterPower':
         this.player.acceleration += this.player.acceleration * 0.15;

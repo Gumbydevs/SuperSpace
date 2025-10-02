@@ -740,6 +740,8 @@ export class ShopSystem {
 
     // Update challenges tab badge whenever content refreshes
     this.updateChallengeTabBadge();
+    // Update skills tab badge whenever content refreshes
+    this.updateSkillsTabBadge();
   }
 
   updateChallengeTabBadge() {
@@ -788,56 +790,129 @@ export class ShopSystem {
         tab.style.boxShadow = 'none';
       }
 
-      // Also update a small numeric badge on the Shop button so players
-      // see at-a-glance how many challenges are claimable without opening
-      // the shop. This is purely visual and uses the same `total` value.
-      try {
-        const shopBtn = document.getElementById('shop-btn');
-        if (shopBtn) {
-          // Ensure the shop button can anchor an absolute badge
-          if (!shopBtn.style.position || shopBtn.style.position === '') {
-            shopBtn.style.position = 'relative';
-          }
-
-          let shopBadge = document.getElementById('shop-challenge-badge');
-          if (total > 0) {
-            if (!shopBadge) {
-              shopBadge = document.createElement('div');
-              shopBadge.id = 'shop-challenge-badge';
-              shopBadge.style.position = 'absolute';
-              // Position the badge so its center aligns with the left border line of the shop button
-              shopBadge.style.top = '50%';
-              shopBadge.style.left = '0';
-              shopBadge.style.transform = 'translate(-50%, -50%)';
-              shopBadge.style.minWidth = '18px';
-              shopBadge.style.height = '18px';
-              shopBadge.style.padding = '0 6px';
-              shopBadge.style.background = '#ffcc00';
-              shopBadge.style.color = '#000';
-              shopBadge.style.borderRadius = '12px';
-              shopBadge.style.fontWeight = '700';
-              shopBadge.style.fontSize = '12px';
-              shopBadge.style.display = 'flex';
-              shopBadge.style.alignItems = 'center';
-              shopBadge.style.justifyContent = 'center';
-              shopBadge.style.boxShadow = '0 0 6px rgba(255,204,0,0.6)';
-              shopBadge.style.zIndex = '1003';
-              shopBtn.appendChild(shopBadge);
-            }
-            shopBadge.textContent = total > 99 ? '99+' : String(total);
-            shopBadge.style.display = 'flex';
-          } else {
-            if (shopBadge && shopBadge.parentNode) {
-              shopBadge.parentNode.removeChild(shopBadge);
-            }
-          }
-        }
-      } catch (e) {
-        // Non-fatal UI update failure
-        console.warn('Failed to update shop challenge badge', e);
-      }
+      // Update the shop button badge (combines challenges + skill points)
+      this.updateShopButtonBadge();
     } catch (e) {
       // ignore
+    }
+  }
+
+  updateSkillsTabBadge() {
+    try {
+      if (
+        !this.tabElements ||
+        !this.tabElements['skills'] ||
+        !window.game ||
+        !window.game.skillSystem
+      )
+        return;
+      
+      const tab = this.tabElements['skills'];
+      const skillSystem = window.game.skillSystem;
+      const availablePoints = skillSystem.skillPoints || 0;
+
+      // remove existing badge
+      const existing = tab.querySelector('.skills-badge');
+      if (existing) existing.remove();
+
+      if (availablePoints > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'skills-badge';
+        badge.textContent = availablePoints;
+        badge.style.background = '#ffcc00';
+        badge.style.color = '#000';
+        badge.style.padding = '2px 6px';
+        badge.style.borderRadius = '10px';
+        badge.style.marginLeft = '8px';
+        badge.style.fontWeight = '700';
+        badge.style.fontSize = '0.9em';
+        tab.appendChild(badge);
+        // subtle highlight
+        tab.style.boxShadow = '0 0 8px rgba(255,204,0,0.45)';
+      } else {
+        tab.style.boxShadow = 'none';
+      }
+
+      // Also update the Shop button badge to include skill points
+      // We'll combine challenge count and skill points in one badge on the left
+      this.updateShopButtonBadge();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  updateShopButtonBadge() {
+    // Update the shop button badge with combined count of challenges + skill points
+    try {
+      const shopBtn = document.getElementById('shop-btn');
+      if (!shopBtn) return;
+
+      // Get challenge count
+      let challengeTotal = 0;
+      if (window.game && window.game.challengeSystem) {
+        const cs = window.game.challengeSystem;
+        const activeDaily = Array.isArray(cs.currentDaily) ? cs.currentDaily : [];
+        const activeWeekly = Array.isArray(cs.currentWeekly) ? cs.currentWeekly : [];
+
+        const dailyUnclaimed = (cs.completed.daily || [])
+          .filter((id) => activeDaily.includes(id))
+          .filter((id) => !(cs.claimed.daily || []).includes(id)).length;
+
+        const weeklyUnclaimed = (cs.completed.weekly || [])
+          .filter((id) => activeWeekly.includes(id))
+          .filter((id) => !(cs.claimed.weekly || []).includes(id)).length;
+        
+        challengeTotal = dailyUnclaimed + weeklyUnclaimed;
+      }
+
+      // Get skill points
+      let skillPoints = 0;
+      if (window.game && window.game.skillSystem) {
+        skillPoints = window.game.skillSystem.skillPoints || 0;
+      }
+
+      const total = challengeTotal + skillPoints;
+
+      // Ensure the shop button can anchor an absolute badge
+      if (!shopBtn.style.position || shopBtn.style.position === '') {
+        shopBtn.style.position = 'relative';
+      }
+
+      let shopBadge = document.getElementById('shop-challenge-badge');
+      if (total > 0) {
+        if (!shopBadge) {
+          shopBadge = document.createElement('div');
+          shopBadge.id = 'shop-challenge-badge';
+          shopBadge.style.position = 'absolute';
+          // Position the badge so its center aligns with the left border line of the shop button
+          shopBadge.style.top = '50%';
+          shopBadge.style.left = '0';
+          shopBadge.style.transform = 'translate(-50%, -50%)';
+          shopBadge.style.minWidth = '18px';
+          shopBadge.style.height = '18px';
+          shopBadge.style.padding = '0 6px';
+          shopBadge.style.background = '#ffcc00';
+          shopBadge.style.color = '#000';
+          shopBadge.style.borderRadius = '12px';
+          shopBadge.style.fontWeight = '700';
+          shopBadge.style.fontSize = '12px';
+          shopBadge.style.display = 'flex';
+          shopBadge.style.alignItems = 'center';
+          shopBadge.style.justifyContent = 'center';
+          shopBadge.style.boxShadow = '0 0 6px rgba(255,204,0,0.6)';
+          shopBadge.style.zIndex = '1003';
+          shopBtn.appendChild(shopBadge);
+        }
+        shopBadge.textContent = total > 99 ? '99+' : String(total);
+        shopBadge.style.display = 'flex';
+      } else {
+        if (shopBadge && shopBadge.parentNode) {
+          shopBadge.parentNode.removeChild(shopBadge);
+        }
+      }
+    } catch (e) {
+      // Non-fatal UI update failure
+      console.warn('Failed to update shop button badge', e);
     }
   }
 
@@ -1476,6 +1551,7 @@ export class ShopSystem {
       button.onclick = () => {
         if (skillSystem.allocate(skill.id)) {
           this.updateShopContent();
+          this.updateSkillsTabBadge();
         }
       };
 
@@ -1738,6 +1814,7 @@ export class ShopSystem {
         dailySection.appendChild(challengeCard);
       });
       this.updateChallengeTabBadge();
+      this.updateSkillsTabBadge();
     });
 
     // Weekly Challenges Section
@@ -1807,6 +1884,7 @@ export class ShopSystem {
         weeklySection.appendChild(challengeCard);
       });
       this.updateChallengeTabBadge();
+      this.updateSkillsTabBadge();
     });
 
     container.appendChild(dailySection);
@@ -1928,6 +2006,7 @@ export class ShopSystem {
         }
         this.updateShopContent();
         this.updateChallengeTabBadge();
+        this.updateSkillsTabBadge();
       });
     };
 
@@ -2232,6 +2311,7 @@ export class ShopSystem {
           // Refresh the shop content to reflect new state
           this.updateShopContent();
           this.updateChallengeTabBadge();
+          this.updateSkillsTabBadge();
 
           // Show challenge reward popup using the same notification system as challenge completion
           try {
@@ -3087,6 +3167,7 @@ export class ShopSystem {
       container.classList.remove('hidden');
       this.updateShopContent();
       this.updateChallengeTabBadge();
+      this.updateSkillsTabBadge();
 
       // Tutorial notifications
       if (window.game && window.game.tutorialSystem) {
