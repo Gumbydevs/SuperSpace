@@ -20,6 +20,11 @@ async function initDatabase() {
             )
         `);
 
+        // Migrate password_hash column to TEXT to support JSON storage
+        await pool.query(`
+            ALTER TABLE users ALTER COLUMN password_hash TYPE TEXT
+        `);
+
         await pool.query(`
             CREATE TABLE IF NOT EXISTS auth_tokens (
                 id SERIAL PRIMARY KEY,
