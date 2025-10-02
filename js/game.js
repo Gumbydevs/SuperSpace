@@ -134,6 +134,20 @@ class Game {
       }
     });
 
+    // Add touch event handling for mobile devices
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Prevent default touch behavior
+      const rect = this.canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+
+      // Handle premium store touches
+      if (this.premiumStore.handleClick(x, y, this.canvas)) {
+        return; // Touch was handled by premium store
+      }
+    });
+
     // Set up event listeners for menu buttons
     document.getElementById('play-btn').addEventListener('click', () => {
       // Track UI interaction
@@ -159,7 +173,6 @@ class Game {
   this.createOptionsGearButton();
     this.createShopButton();
     this.createPremiumStoreButton();
-    this.createMobileChatButton();
     this.createAdminButton();
 
     // Set up keyboard shortcuts
@@ -468,61 +481,6 @@ class Game {
 
     // Append the button once
     document.body.appendChild(premiumBtn);
-  }
-
-  // Here we create a mobile chat button for touch devices
-  createMobileChatButton() {
-    const chatBtn = document.createElement('button');
-    chatBtn.textContent = '💬 Chat';
-    chatBtn.id = 'mobile-chat-btn';
-    chatBtn.style.position = 'absolute';
-    chatBtn.style.top = '188px'; // Position below premium button (152px + 36px spacing)
-    chatBtn.style.right = '0px';
-    chatBtn.style.zIndex = '1002';
-    chatBtn.style.background = 'rgba(0, 50, 0, 0.7)';
-    chatBtn.style.color = 'white';
-    chatBtn.style.border = '1px solid #4f4';
-    chatBtn.style.borderRadius = '5px';
-    chatBtn.style.padding = '6px 12px';
-    chatBtn.style.cursor = 'pointer';
-    chatBtn.style.display = 'none'; // Hidden by default, shown only on mobile when playing
-    chatBtn.style.fontWeight = 'normal';
-    chatBtn.style.fontSize = '14px';
-
-    // Add hover effect
-    chatBtn.onmouseenter = () => {
-      chatBtn.style.background = 'rgba(0, 70, 0, 0.9)';
-      chatBtn.style.transform = 'scale(1.02)';
-    };
-    chatBtn.onmouseleave = () => {
-      chatBtn.style.background = 'rgba(0, 50, 0, 0.7)';
-      chatBtn.style.transform = 'scale(1)';
-    };
-
-    // Click toggles the chat
-    chatBtn.onclick = () => this.toggleMobileChat();
-
-    // Match width with other buttons
-    try {
-      const premiumBtn = document.getElementById('premium-btn');
-      if (premiumBtn) {
-        const premiumWidth = premiumBtn.offsetWidth || 90;
-        chatBtn.style.width = premiumWidth + 'px';
-      } else {
-        chatBtn.style.width = '90px';
-      }
-    } catch (e) {
-      chatBtn.style.width = '90px';
-    }
-
-    document.body.appendChild(chatBtn);
-  }
-
-  // Toggle chat for mobile users
-  toggleMobileChat() {
-    if (this.gameState === 'playing') {
-      this.chat.toggleChat();
-    }
   }
 
   // Here we create an admin button for game management
@@ -1008,12 +966,6 @@ class Game {
 
     // Show premium store button
     document.getElementById('premium-btn').style.display = 'block';
-
-    // Show mobile chat button only on touch devices
-    const mobileChatBtn = document.getElementById('mobile-chat-btn');
-    if (mobileChatBtn && this.input.isTouchDevice) {
-      mobileChatBtn.style.display = 'block';
-    }
 
     // Show gameplay UI elements
     this.ui.setGameplayUIVisibility(true);
@@ -1542,11 +1494,6 @@ class Game {
       // Hide premium store button
       document.getElementById('premium-btn').style.display = 'none';
 
-      // Hide mobile chat button
-      const mobileChatBtn = document.getElementById('mobile-chat-btn');
-      if (mobileChatBtn) {
-        mobileChatBtn.style.display = 'none';
-      }
     }, 3000); // 3 second delay to see explosion and ship parts
   }
 

@@ -550,6 +550,18 @@ export class PremiumStore {
   // Toggle store display
   toggleStore() {
     this.storeOpen = !this.storeOpen;
+    
+    // Hide/show game UI elements to prevent overlap
+    if (window.game && window.game.ui) {
+      if (this.storeOpen) {
+        // Hide game UI when store opens
+        this.hideGameUIForStore();
+      } else {
+        // Restore game UI when store closes
+        this.showGameUIAfterStore();
+      }
+    }
+    
     if (this.storeOpen) {
       this.updateOwnedStatus();
 
@@ -558,6 +570,70 @@ export class PremiumStore {
         window.analytics.trackStoreVisit('premium_store');
       }
     }
+  }
+
+  // Hide game UI elements that interfere with the premium store
+  hideGameUIForStore() {
+    // Boost game canvas z-index to appear above all UI elements
+    const gameCanvas = document.getElementById('gameCanvas');
+    if (gameCanvas) {
+      gameCanvas.style.zIndex = '10000';
+    }
+    
+    // Hide right-side buttons and panels
+    const elementsToHide = [
+      'status-panel',
+      'minimap-container', 
+      'player-list',
+      'mute-btn',
+      'options-btn',
+      'premium-btn'
+    ];
+    
+    elementsToHide.forEach(id => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.style.display = 'none';
+      }
+    });
+    
+    // Also hide any other UI overlays
+    const overlays = document.querySelectorAll('.ui-overlay, .game-ui-panel');
+    overlays.forEach(overlay => {
+      overlay.style.display = 'none';
+    });
+  }
+
+  // Restore game UI elements after premium store closes
+  showGameUIAfterStore() {
+    // Restore game canvas original z-index
+    const gameCanvas = document.getElementById('gameCanvas');
+    if (gameCanvas) {
+      gameCanvas.style.zIndex = '1';
+    }
+    
+    // Restore right-side buttons and panels
+    const elementsToShow = [
+      { id: 'status-panel', display: 'flex' },
+      { id: 'minimap-container', display: 'block' },
+      { id: 'player-list', display: 'block' },
+      { id: 'mute-btn', display: 'block' },
+      { id: 'options-btn', display: 'block' },
+      { id: 'premium-btn', display: 'block' }
+    ];
+    
+    elementsToShow.forEach(({id, display}) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.style.display = display;
+      }
+    });
+    
+    // Restore other UI overlays  
+    const overlays = document.querySelectorAll('.ui-overlay, .game-ui-panel');
+    overlays.forEach(overlay => {
+      overlay.style.display = '';
+    });
   }
 
   // Switch store tabs
@@ -584,43 +660,53 @@ export class PremiumStore {
   render(ctx, canvas) {
     if (!this.storeOpen) return;
 
-    // Responsive scale relative to min dimension so it fits various window sizes
-    const baseScale = 0.75; // slightly larger base
-    const minDim = Math.min(canvas.width, canvas.height);
-    // If screen small shrink more
-    const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
+    // Enhanced responsive scale for better mobile support
+    const isMobile = canvas.width < 600 || canvas.height < 700;
+    const isTablet = canvas.width < 900 || canvas.height < 900;
+    
+    let baseScale, dynamicFactor;
+    if (isMobile) {
+      baseScale = 0.7; // Significantly reduced from 0.9 to 0.7 for mobile
+      dynamicFactor = 0.85; // Reduced from 0.95 to 0.85
+    } else if (isTablet) {
+      baseScale = 0.8;
+      dynamicFactor = 0.8;
+    } else {
+      baseScale = 0.75;
+      dynamicFactor = 1;
+    }
+    
     const scale = baseScale * dynamicFactor;
     const scaledWidthBase = Math.min(
       Math.floor(canvas.width * scale),
-      canvas.width - 40,
+      canvas.width - (isMobile ? 20 : 40), // Less margin on mobile
     );
     const scaledHeightBase = Math.min(
       Math.floor(canvas.height * scale),
-      canvas.height - 40,
+      canvas.height - (isMobile ? 20 : 40), // Less margin on mobile
     );
 
     // Determine required height to fit tabs + grid + footers so outer box always encloses items
     const items = this.getCurrentTabItems();
-    const itemHeight = 100; // must match renderStoreContent's itemHeight
-    const itemWidth = 240;
-    const spacing = 30;
-    const availableInner = scaledWidthBase - 40;
+    const itemHeight = isMobile ? 65 : 100; // Even smaller items on mobile (was 80)
+    const itemWidth = isMobile ? 160 : 240; // Even narrower items on mobile (was 180)
+    const spacing = isMobile ? 10 : 30; // Even less spacing on mobile (was 15)
+    const availableInner = scaledWidthBase - (isMobile ? 20 : 40);
     const itemsPerRow = Math.max(
       1,
       Math.floor((availableInner + spacing) / (itemWidth + spacing)),
     );
     const rows = Math.max(1, Math.ceil(items.length / itemsPerRow));
-    const gridHeight = rows * (itemHeight + 25) - 25; // total rows height (no extra gap after last)
+    const gridHeight = rows * (itemHeight + (isMobile ? 10 : 25)) - (isMobile ? 10 : 25); // Even tighter spacing
 
-    // Estimate header and footer heights used in render
-    // Increase header/footer to ensure outer border encloses tabs, header and instructions
-    const headerHeight = 200; // from top to where grid starts (approx offsetY + 170 minus offsetY)
-    const footerHeight = 140; // allow space for instructions, close button area etc.
+    // Adjust header and footer heights for mobile
+    const headerHeight = isMobile ? 120 : 200; // Even smaller header (was 140)
+    const footerHeight = isMobile ? 60 : 140; // Even smaller footer (was 80)
 
     const neededHeight = headerHeight + gridHeight + footerHeight;
 
     const scaledHeight = Math.min(
-      canvas.height - 40,
+      canvas.height - (isMobile ? 20 : 40),
       Math.max(scaledHeightBase, neededHeight),
     );
     const scaledWidth = scaledWidthBase;
@@ -631,48 +717,51 @@ export class PremiumStore {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Sci-fi border effect (scaled and centered)
+    // Sci-fi border effect (scaled and centered) - thinner on mobile
     ctx.strokeStyle = '#00ffff';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = isMobile ? 2 : 3;
+    const borderMargin = isMobile ? 10 : 20;
     ctx.strokeRect(
-      offsetX + 20,
-      offsetY + 20,
-      scaledWidth - 40,
-      scaledHeight - 40,
+      offsetX + borderMargin,
+      offsetY + borderMargin,
+      scaledWidth - borderMargin * 2,
+      scaledHeight - borderMargin * 2,
     );
 
     // Inner border
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
+    const innerMargin = isMobile ? 12 : 25;
     ctx.strokeRect(
-      offsetX + 25,
-      offsetY + 25,
-      scaledWidth - 50,
-      scaledHeight - 50,
+      offsetX + innerMargin,
+      offsetY + innerMargin,
+      scaledWidth - innerMargin * 2,
+      scaledHeight - innerMargin * 2,
     );
 
-    // Store header - match game typography
+    // Store header - match game typography (responsive font sizes)
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px Orbitron, Arial, sans-serif'; // Slightly smaller font
+    ctx.font = `bold ${isMobile ? '18px' : '24px'} Orbitron, Arial, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText('PREMIUM STORE', canvas.width / 2, offsetY + 55);
+    ctx.fillText('PREMIUM STORE', canvas.width / 2, offsetY + (isMobile ? 35 : 55));
 
     // Subtitle
     ctx.fillStyle = '#00ffff';
-    ctx.font = '14px Orbitron, Arial, sans-serif'; // Smaller subtitle
+    ctx.font = `${isMobile ? '11px' : '14px'} Orbitron, Arial, sans-serif`;
     ctx.fillText(
       'COSMETIC UPGRADES & SPACE GEMS',
       canvas.width / 2,
-      offsetY + 75,
+      offsetY + (isMobile ? 50 : 75),
     );
 
-    // Space Gems display - sci-fi style (scaled)
-    const gemsBoxWidth = 160;
-    const gemsBoxHeight = 25;
+    // Space Gems display - sci-fi style (responsive sizing)
+    const gemsBoxWidth = isMobile ? 140 : 160;
+    const gemsBoxHeight = isMobile ? 20 : 25;
+    const gemsBoxY = offsetY + (isMobile ? 60 : 85);
     ctx.fillStyle = '#000000';
     ctx.fillRect(
       canvas.width / 2 - gemsBoxWidth / 2,
-      offsetY + 85,
+      gemsBoxY,
       gemsBoxWidth,
       gemsBoxHeight,
     );
@@ -680,21 +769,21 @@ export class PremiumStore {
     ctx.lineWidth = 2;
     ctx.strokeRect(
       canvas.width / 2 - gemsBoxWidth / 2,
-      offsetY + 85,
+      gemsBoxY,
       gemsBoxWidth,
       gemsBoxHeight,
     );
 
     ctx.fillStyle = '#00ffff';
-    ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller gem display
+    ctx.font = `bold ${isMobile ? '11px' : '14px'} Orbitron, Arial, sans-serif`;
     ctx.fillText(
       `💎 ${this.spaceGems} SPACE GEMS`,
       canvas.width / 2,
-      offsetY + 100,
+      gemsBoxY + (isMobile ? 14 : 17),
     );
 
     // Tab buttons - game style
-    this.renderTabs(ctx, canvas, offsetX, offsetY, scale);
+    this.renderTabs(ctx, canvas, offsetX, offsetY, scale, isMobile);
 
     // Store content
     this.renderStoreContent(ctx, canvas, offsetX, offsetY, scale);
@@ -733,31 +822,32 @@ export class PremiumStore {
       this._effectsToggleBounds = null;
     }
 
-    // Close button - sci-fi style (scaled and repositioned)
-    const closeButtonWidth = 50;
-    const closeButtonHeight = 28;
+    // Close button - sci-fi style (responsive sizing) - Larger on mobile for better touch
+    const closeButtonWidth = isMobile ? 60 : 50; // Increased from 40 to 60 on mobile
+    const closeButtonHeight = isMobile ? 35 : 28; // Increased from 22 to 35 on mobile
+    const closeButtonMargin = isMobile ? 10 : 20;
     ctx.fillStyle = '#ff3333';
     ctx.fillRect(
-      offsetX + scaledWidth - closeButtonWidth - 20,
-      offsetY + 25,
+      offsetX + scaledWidth - closeButtonWidth - closeButtonMargin,
+      offsetY + (isMobile ? 15 : 25),
       closeButtonWidth,
       closeButtonHeight,
     );
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.strokeRect(
-      offsetX + scaledWidth - closeButtonWidth - 20,
-      offsetY + 25,
+      offsetX + scaledWidth - closeButtonWidth - closeButtonMargin,
+      offsetY + (isMobile ? 15 : 25),
       closeButtonWidth,
       closeButtonHeight,
     );
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller close button text
+    ctx.font = `bold ${isMobile ? '12px' : '14px'} Orbitron, Arial, sans-serif`; // Larger font on mobile
     ctx.textAlign = 'center';
     ctx.fillText(
       'CLOSE',
-      offsetX + scaledWidth - closeButtonWidth / 2 - 20,
-      offsetY + 42,
+      offsetX + scaledWidth - closeButtonWidth / 2 - closeButtonMargin,
+      offsetY + (isMobile ? 33 : 42), // Adjusted for larger button
     );
 
     // Instructions - match game style (scaled)
@@ -776,57 +866,67 @@ export class PremiumStore {
     );
   }
 
-  renderTabs(ctx, canvas, offsetX, offsetY, scale) {
+  renderTabs(ctx, canvas, offsetX, offsetY, scale, isMobile = false) {
     const tabs = [
       { id: 'avatars', name: 'AVATARS', icon: '👨‍🚀' },
       { id: 'skins', name: 'SHIP SKINS', icon: '🚀' },
       { id: 'gems', name: 'SPACE GEMS', icon: '💎' },
     ];
 
-    const tabWidth = 120; // Smaller tabs
+    const tabWidth = isMobile ? 80 : 120; // Smaller tabs on mobile
     // Center tabs inside the scaled store area so tabs align with store content
     const scaledWidth = Math.min(
       Math.floor(canvas.width * scale),
-      canvas.width - 40,
+      canvas.width - (isMobile ? 20 : 40),
     );
     const startX =
       offsetX + Math.floor((scaledWidth - tabs.length * tabWidth) / 2);
 
     tabs.forEach((tab, index) => {
       const x = startX + index * tabWidth;
-      const y = offsetY + 120; // Adjusted for scaled layout
+      const y = offsetY + (isMobile ? 85 : 120); // Adjusted for mobile layout
       const isActive = this.currentTab === tab.id;
 
       // Tab background - sci-fi style
       ctx.fillStyle = isActive ? '#003366' : '#001122';
-      ctx.fillRect(x, y, tabWidth - 10, 32); // Smaller tab height
+      const tabHeight = isMobile ? 24 : 32;
+      ctx.fillRect(x, y, tabWidth - (isMobile ? 5 : 10), tabHeight);
 
       // Tab border
       ctx.strokeStyle = isActive ? '#00ffff' : '#666666';
-      ctx.lineWidth = isActive ? 3 : 1;
-      ctx.strokeRect(x, y, tabWidth - 10, 32);
+      ctx.lineWidth = isActive ? (isMobile ? 2 : 3) : 1;
+      ctx.strokeRect(x, y, tabWidth - (isMobile ? 5 : 10), tabHeight);
 
-      // Tab text - Orbitron font (smaller)
+      // Tab text - Orbitron font (responsive sizing)
       ctx.fillStyle = isActive ? '#00ffff' : '#ffffff';
-      ctx.font = `${isActive ? 'bold ' : ''}12px Orbitron, Arial, sans-serif`;
+      ctx.font = `${isActive ? 'bold ' : ''}${isMobile ? '9px' : '12px'} Orbitron, Arial, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, y + 20);
+      
+      if (isMobile) {
+        // Mobile: show only icon to save space
+        ctx.fillText(tab.icon, x + (tabWidth - 5) / 2, y + tabHeight / 2 + 3);
+      } else {
+        // Desktop: show icon and name
+        ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, y + 20);
+      }
     });
   }
 
   renderStoreContent(ctx, canvas, offsetX, offsetY, scale) {
     const items = this.getCurrentTabItems();
-    const startY = offsetY + 170; // Adjusted for scaled layout
-    const itemHeight = 100; // Smaller item height
-    const itemWidth = 240; // Base item width
-    const spacing = 30; // Base spacing
+    const isMobile = canvas.width < 600 || canvas.height < 700;
+    
+    const startY = offsetY + (isMobile ? 100 : 170); // Moved up even more (was 110)
+    const itemHeight = isMobile ? 65 : 100; // Even smaller items on mobile
+    const itemWidth = isMobile ? 160 : 240; // Even narrower items on mobile
+    const spacing = isMobile ? 10 : 30; // Even less spacing on mobile
 
     // Compute scaled store area and derive how many items fit per row dynamically
     const scaledWidth = Math.min(
       Math.floor(canvas.width * scale),
-      canvas.width - 40,
+      canvas.width - (isMobile ? 20 : 40),
     );
-    const availableInner = scaledWidth - 40; // padding inside scaled area
+    const availableInner = scaledWidth - (isMobile ? 20 : 40); // padding inside scaled area
     const itemsPerRow = Math.max(
       1,
       Math.floor((availableInner + spacing) / (itemWidth + spacing)),
@@ -838,23 +938,23 @@ export class PremiumStore {
       // Center the grid inside the scaled area using offsetX
       const gridWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
       const startX =
-        offsetX + 20 + Math.floor((scaledWidth - 40 - gridWidth) / 2);
+        offsetX + (isMobile ? 10 : 20) + Math.floor((scaledWidth - (isMobile ? 20 : 40) - gridWidth) / 2);
       const x = startX + col * (itemWidth + spacing);
-      const y = startY + row * (itemHeight + 25); // Smaller row spacing
+      const y = startY + row * (itemHeight + (isMobile ? 10 : 25)); // Even smaller row spacing on mobile
 
-      this.renderStoreItem(ctx, item, x, y, itemWidth, itemHeight);
+      this.renderStoreItem(ctx, item, x, y, itemWidth, itemHeight, isMobile);
     });
   }
 
-  renderStoreItem(ctx, item, x, y, width, height) {
+  renderStoreItem(ctx, item, x, y, width, height, isMobile = false) {
     // Item background - sci-fi panel style
     const isOwned = item.owned || item.gems !== undefined;
     ctx.fillStyle = isOwned ? '#002200' : '#111122';
     ctx.fillRect(x, y, width, height);
 
-    // Item border - sci-fi style
+    // Item border - sci-fi style (thinner on mobile)
     ctx.strokeStyle = isOwned ? '#00ff00' : '#00ffff';
-    ctx.lineWidth = isOwned ? 3 : 2;
+    ctx.lineWidth = isOwned ? (isMobile ? 2 : 3) : (isMobile ? 1 : 2);
     ctx.strokeRect(x, y, width, height);
 
     // Inner border
@@ -862,46 +962,48 @@ export class PremiumStore {
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 3, y + 3, width - 6, height - 6);
 
-    // Item content - Orbitron font (scaled down)
+    // Item content - Orbitron font (responsive sizing)
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px Orbitron, Arial, sans-serif'; // Smaller main font
+    ctx.font = `bold ${isMobile ? '11px' : '13px'} Orbitron, Arial, sans-serif`;
     ctx.textAlign = 'left';
 
     if (item.gems !== undefined) {
       // Gem package
-      ctx.fillText(item.name.toUpperCase(), x + 12, y + 20);
-      ctx.font = '10px Orbitron, Arial, sans-serif'; // Smaller description
+      ctx.fillText(item.name.toUpperCase(), x + 12, y + (isMobile ? 16 : 20));
+      ctx.font = `${isMobile ? '8px' : '10px'} Orbitron, Arial, sans-serif`;
       ctx.fillStyle = '#cccccc';
-      ctx.fillText(item.description, x + 12, y + 35);
+      ctx.fillText(item.description, x + 12, y + (isMobile ? 28 : 35));
 
       ctx.fillStyle = '#00ffff';
-      ctx.font = 'bold 14px Orbitron, Arial, sans-serif'; // Smaller gem count
+      ctx.font = `bold ${isMobile ? '11px' : '14px'} Orbitron, Arial, sans-serif`;
       ctx.fillText(
         `💎 ${item.gems}${item.bonus > 0 ? ` + ${item.bonus} BONUS` : ''}`,
         x + 12,
-        y + 55,
+        y + (isMobile ? 42 : 55),
       );
 
       ctx.fillStyle = '#ffff00';
-      ctx.font = 'bold 16px Orbitron, Arial, sans-serif'; // Smaller price
-      ctx.fillText(`$${item.price}`, x + 12, y + 75);
+      ctx.font = `bold ${isMobile ? '13px' : '16px'} Orbitron, Arial, sans-serif`;
+      ctx.fillText(`$${item.price}`, x + 12, y + (isMobile ? 58 : 75));
 
       if (item.popular) {
         ctx.fillStyle = '#ff4444';
-        ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller popular text
-        ctx.fillText('POPULAR!', x + width - 70, y + 15);
+        ctx.font = `bold ${isMobile ? '8px' : '10px'} Orbitron, Arial, sans-serif`;
+        ctx.fillText('POPULAR!', x + width - (isMobile ? 50 : 70), y + (isMobile ? 12 : 15));
       }
 
-      // Purchase button (smaller)
-      const btnX = x + width - 80;
-      const btnY = y + height - 28;
+      // Purchase button (responsive sizing)
+      const btnW = isMobile ? 50 : 65;
+      const btnH = isMobile ? 16 : 20;
+      const btnX = x + width - btnW - (isMobile ? 8 : 15);
+      const btnY = y + height - btnH - (isMobile ? 6 : 8);
       ctx.fillStyle = '#006600';
-      ctx.fillRect(btnX, btnY, 65, 20);
+      ctx.fillRect(btnX, btnY, btnW, btnH);
       ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 2;
-      ctx.strokeRect(btnX, btnY, 65, 20);
+      ctx.strokeRect(btnX, btnY, btnW, btnH);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px Orbitron, Arial, sans-serif'; // Smaller button text
+      ctx.font = `bold ${isMobile ? '8px' : '10px'} Orbitron, Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('BUY NOW', btnX + 32, btnY + 13);
     } else {
@@ -1364,26 +1466,42 @@ export class PremiumStore {
   // Handle clicks on store items
   handleClick(x, y, canvas) {
     if (!this.storeOpen) return false;
-    // Recompute the same dynamic scale and offsets used by render so hitboxes align
-    const baseScale = 0.75; // must match render's baseScale
-    const minDim = Math.min(canvas.width, canvas.height);
-    const dynamicFactor = minDim < 900 ? 0.55 : minDim < 1200 ? 0.65 : 1;
+    
+    // Debug logging for mobile click issues
+    console.log(`Premium store click at: ${x}, ${y} | Canvas: ${canvas.width}x${canvas.height}`);
+    
+    // Use same mobile detection and responsive logic as render method
+    const isMobile = canvas.width < 600 || canvas.height < 700;
+    const isTablet = canvas.width < 900 || canvas.height < 900;
+    
+    let baseScale, dynamicFactor;
+    if (isMobile) {
+      baseScale = 0.9;
+      dynamicFactor = 0.95;
+    } else if (isTablet) {
+      baseScale = 0.8;
+      dynamicFactor = 0.8;
+    } else {
+      baseScale = 0.75;
+      dynamicFactor = 1;
+    }
+    
     const scale = baseScale * dynamicFactor;
     const scaledWidthBase = Math.min(
       Math.floor(canvas.width * scale),
-      canvas.width - 40,
+      canvas.width - (isMobile ? 20 : 40),
     );
     const scaledHeightBase = Math.min(
       Math.floor(canvas.height * scale),
-      canvas.height - 40,
+      canvas.height - (isMobile ? 20 : 40),
     );
 
-    // Recompute grid metrics used in render for consistent height
+    // Recompute grid metrics using mobile-responsive values
     const gridItemsForHeight = this.getCurrentTabItems();
-    const gridItemHeight = 100; // must match renderStoreContent's itemHeight
-    const gridItemWidth = 240;
-    const gridSpacing = 30;
-    const availableInnerBase = scaledWidthBase - 40;
+    const gridItemHeight = isMobile ? 65 : 100; // Match aggressive mobile scaling
+    const gridItemWidth = isMobile ? 160 : 240; // Match aggressive mobile scaling
+    const gridSpacing = isMobile ? 10 : 30; // Match aggressive mobile scaling
+    const availableInnerBase = scaledWidthBase - (isMobile ? 20 : 40);
     const itemsPerRowBase = Math.max(
       1,
       Math.floor(
@@ -1394,50 +1512,57 @@ export class PremiumStore {
       1,
       Math.ceil(gridItemsForHeight.length / itemsPerRowBase),
     );
-    const gridHeight = rowsBase * (gridItemHeight + 25) - 25;
+    const gridHeight = rowsBase * (gridItemHeight + (isMobile ? 10 : 25)) - (isMobile ? 10 : 25);
 
-    const headerHeight = 200;
-    const footerHeight = 140;
+    const headerHeight = isMobile ? 120 : 200; // Match aggressive mobile scaling
+    const footerHeight = isMobile ? 60 : 140; // Match aggressive mobile scaling
     const neededHeight = headerHeight + gridHeight + footerHeight;
 
     const scaledHeight = Math.min(
-      canvas.height - 40,
+      canvas.height - (isMobile ? 20 : 40),
       Math.max(scaledHeightBase, neededHeight),
     );
     const scaledWidth = scaledWidthBase;
     const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
     const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
 
-    // Close button - updated position (matches render method)
-    const closeButtonWidth = 50;
-    const closeButtonHeight = 28;
-    const closeX = offsetX + scaledWidth - closeButtonWidth - 20;
-    const closeY = offsetY + 25;
+    // Close button - responsive sizing (matches render method) - Larger on mobile for better touch
+    const closeButtonWidth = isMobile ? 60 : 50; // Increased from 40 to 60 on mobile
+    const closeButtonHeight = isMobile ? 35 : 28; // Increased from 22 to 35 on mobile
+    const closeButtonMargin = isMobile ? 10 : 20;
+    const closeX = offsetX + scaledWidth - closeButtonWidth - closeButtonMargin;
+    const closeY = offsetY + (isMobile ? 15 : 25);
+    
+    // Debug close button bounds
+    console.log(`Close button bounds: ${closeX}, ${closeY}, ${closeX + closeButtonWidth}, ${closeY + closeButtonHeight} | isMobile: ${isMobile}`);
+    
     if (
       x >= closeX &&
       x <= closeX + closeButtonWidth &&
       y >= closeY &&
       y <= closeY + closeButtonHeight
     ) {
+      console.log('Close button clicked!');
       this.toggleStore();
       return true;
     }
 
-    // Tab buttons - updated positions (matches render method)
+    // Tab buttons - responsive sizing (matches render method)
     const tabs = ['avatars', 'skins', 'gems'];
-    const tabWidth = 120; // Smaller tabs
+    const tabWidth = isMobile ? 80 : 120;
     const tabStartX =
       offsetX + Math.floor((scaledWidth - tabs.length * tabWidth) / 2);
 
     for (let i = 0; i < tabs.length; i++) {
       const tabX = tabStartX + i * tabWidth;
-      const tabY = offsetY + 120; // Adjusted for scaled layout
+      const tabY = offsetY + (isMobile ? 85 : 120);
+      const tabHeight = isMobile ? 24 : 32;
 
       if (
         x >= tabX &&
-        x <= tabX + tabWidth - 10 &&
+        x <= tabX + tabWidth - (isMobile ? 5 : 10) &&
         y >= tabY &&
-        y <= tabY + 32
+        y <= tabY + tabHeight
       ) {
         // Smaller tab height
         this.setTab(tabs[i]);
@@ -1447,27 +1572,32 @@ export class PremiumStore {
 
     // Store items - updated positions (matches render method)
     const items = this.getCurrentTabItems();
-    const startYItems = offsetY + 170; // Adjusted for scaled layout
-    const itemHeight = 100; // Base item height
-    const itemWidth = 240; // Base item width
-    const spacing = 30; // Base spacing
+    const startYItems = offsetY + (isMobile ? 100 : 170); // Match aggressive mobile scaling
+    const itemHeight = isMobile ? 65 : 100; // Match aggressive mobile scaling
+    const itemWidth = isMobile ? 160 : 240; // Match aggressive mobile scaling  
+    const spacing = isMobile ? 10 : 30; // Match aggressive mobile spacing
 
     // Compute how many items per row using same logic as renderStoreContent
-    const availableInner = scaledWidth - 40;
+    const availableInner = scaledWidth - (isMobile ? 20 : 40);
     const itemsPerRow = Math.max(
       1,
       Math.floor((availableInner + spacing) / (itemWidth + spacing)),
     );
     const gridWidth = itemsPerRow * itemWidth + (itemsPerRow - 1) * spacing;
     const startXItems =
-      offsetX + 20 + Math.floor((scaledWidth - 40 - gridWidth) / 2);
+      offsetX + (isMobile ? 10 : 20) + Math.floor((scaledWidth - (isMobile ? 20 : 40) - gridWidth) / 2);
 
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
       const row = Math.floor(index / itemsPerRow);
       const col = index % itemsPerRow;
       const itemX = startXItems + col * (itemWidth + spacing);
-      const itemY = startYItems + row * (itemHeight + 25);
+      const itemY = startYItems + row * (itemHeight + (isMobile ? 10 : 25)); // Match aggressive mobile spacing
+
+      // Debug item bounds
+      if (index === 0) { // Only log first item to avoid spam
+        console.log(`Item ${index} bounds: ${itemX}, ${itemY}, ${itemX + itemWidth}, ${itemY + itemHeight}`);
+      }
 
       if (
         x >= itemX &&
@@ -1475,6 +1605,7 @@ export class PremiumStore {
         y >= itemY &&
         y <= itemY + itemHeight
       ) {
+        console.log(`Item ${index} clicked: ${item.name}`);
         // Click is inside the item box. Decide intent:
         // - For gem packages: only trigger purchase when clicking the small BUY NOW button
         // - For non-owned avatars/skins: only trigger purchase when clicking the PURCHASE button
