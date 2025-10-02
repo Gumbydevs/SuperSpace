@@ -254,13 +254,12 @@ export class ShipSkinSystem {
   }
 
   applyHazardStripesEffect(ctx, ship, appearance, time) {
-    // Crash test dummy skin: bright yellow body with blue windshield and black outline
-    const yellow = '#FFD700'; // Bright yellow
-    const blue = '#6495ED'; // Cornflower blue for windshield
+    // Crash test dummy skin - EXACT recreation based on original design
+    const yellow = '#FFD700';
+    const blue = '#6495ED';
     const black = '#000000';
 
     ctx.save();
-    // NOTE: Do NOT translate/rotate here - caller has already positioned the context
     
     // Build hull path
     const path = new Path2D();
@@ -327,37 +326,123 @@ export class ShipSkinSystem {
         break;
     }
 
-    // Fill with bright yellow base (entire hull)
+    // Fill yellow
     ctx.fillStyle = yellow;
     ctx.fill(path);
-
-    // Draw the 1px black stripe INSIDE the yellow edge
-    ctx.lineWidth = 2; // 2px so 1px shows as inner border
-    ctx.strokeStyle = black;
-    ctx.stroke(path);
     
-    // Draw outer yellow border to create yellow/black/yellow effect
-    ctx.lineWidth = 3;
+    // Outer yellow border (3px outside the ship)
+    ctx.lineWidth = 4;
     ctx.strokeStyle = yellow;
     ctx.stroke(path);
+    
+    // Black outline - thin and crisp (on top of yellow)
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = black;
+    ctx.stroke(path);
 
-    // Draw the blue windshield/cockpit
+    // Now add the crash test dummy pattern with checkerboards
+    ctx.save();
+    ctx.clip(path);
+    
+    ctx.fillStyle = black;
+    
+    if (ship.currentShip === 'scout') {
+      // Thin center vertical stripe
+      ctx.fillRect(-0.5, -13, 1, 20);
+      
+      // Thin wing vertical stripes
+      ctx.fillRect(-10, -1, 1, 9);
+      ctx.fillRect(9, -1, 1, 9);
+      
+      // Checkerboard pattern on wings
+      const checkerSize = 2;
+      // Left wing checkerboard
+      for (let x = -12; x < -7; x += checkerSize) {
+        for (let y = -2; y < 6; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      // Right wing checkerboard
+      for (let x = 7; x < 12; x += checkerSize) {
+        for (let y = -2; y < 6; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      
+      // Engine blocks
+      ctx.fillRect(-7, 4, 3, 3);
+      ctx.fillRect(4, 4, 3, 3);
+      
+      // Thin nose details
+      ctx.fillRect(-2, -11, 1, 2);
+      ctx.fillRect(1, -11, 1, 2);
+      
+      // Body panel lines (thin)
+      ctx.fillRect(-4, 2, 1, 3);
+      ctx.fillRect(3, 2, 1, 3);
+      
+    } else if (ship.currentShip === 'fighter') {
+      ctx.fillRect(-0.5, -14, 1, 21);
+      const checkerSize = 2;
+      for (let x = -13; x < -8; x += checkerSize) {
+        for (let y = -1; y < 7; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      for (let x = 8; x < 13; x += checkerSize) {
+        for (let y = -1; y < 7; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      ctx.fillRect(-8, 5, 3, 3);
+      ctx.fillRect(5, 5, 3, 3);
+    } else if (ship.currentShip === 'heavy') {
+      ctx.fillRect(-1, -26, 2, 36);
+      const checkerSize = 2.5;
+      for (let x = -25; x < -17; x += checkerSize) {
+        for (let y = -2; y < 8; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      for (let x = 17; x < 25; x += checkerSize) {
+        for (let y = -2; y < 8; y += checkerSize) {
+          if ((Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0) {
+            ctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      ctx.fillRect(-13, 10, 4, 4);
+      ctx.fillRect(9, 10, 4, 4);
+    }
+    
+    ctx.restore();
+
+    // Blue windshield
     ctx.fillStyle = blue;
     ctx.strokeStyle = black;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     if (ship.currentShip === 'scout') {
-      // Small oval windshield for scout
-      ctx.ellipse(0, -8, 3.5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -8, 3, 4.5, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'fighter') {
-      ctx.ellipse(0, -9, 4, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -9, 3.5, 5, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'heavy') {
-      ctx.ellipse(0, -12, 5, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -12, 4.5, 6, 0, 0, Math.PI * 2);
     } else {
-      ctx.ellipse(0, -10, 4, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -10, 3.5, 5, 0, 0, Math.PI * 2);
     }
     ctx.fill();
-    ctx.stroke(); // Black outline on windshield
+    ctx.stroke();
 
     ctx.restore();
   }
