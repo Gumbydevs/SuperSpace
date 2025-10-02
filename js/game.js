@@ -20,6 +20,7 @@ import { MarvinAssistant } from './marvin.js';
 import { TutorialSystem } from './tutorial.js';
 import Chat from './chat.js';
 import ResetConfig from './resetConfig.js';
+import { GameTooltips } from './gameTooltips.js';
 
 // Main Game class that coordinates all game systems and components
 class Game {
@@ -91,6 +92,9 @@ class Game {
     this.multiplayer = new MultiplayerManager(this);
     this.chat = new Chat(this.input);
     this.multiplayerConnected = false;
+    
+    // Initialize tooltip system (starts showing tips after game begins)
+    this.tooltips = new GameTooltips(this.chat);
 
     // Store a reference to the UI for other classes to access
     window.gameUI = this.ui;
@@ -998,6 +1002,11 @@ class Game {
     // Notify tutorial system that game has started
     if (this.tutorialSystem) {
       this.tutorialSystem.onGameStarted();
+    }
+    
+    // Start showing tooltips (if tutorial is completed)
+    if (this.tooltips && localStorage.getItem('tutorialCompleted') === 'true') {
+      this.tooltips.start();
     }
 
     // Show online player status in both locations when game starts

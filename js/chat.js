@@ -144,6 +144,25 @@ export default class Chat {
     this.chatMessages.appendChild(messageElement);
     this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
   }
+  
+  // Display a local-only message (not sent to server, useful for tooltips)
+  displayLocalMessage(message, type = 'system') {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message');
+    if (type === 'system') {
+      messageElement.style.color = '#ffeb3b';
+      messageElement.style.fontStyle = 'italic';
+    }
+    messageElement.textContent = message;
+    
+    this.chatMessages.appendChild(messageElement);
+    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    
+    // Limit message history
+    while (this.chatMessages.children.length > 50) {
+      this.chatMessages.removeChild(this.chatMessages.firstChild);
+    }
+  }
 
   showToast(name, message) {
     const toastElement = document.createElement('div');
