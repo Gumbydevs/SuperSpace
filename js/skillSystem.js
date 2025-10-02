@@ -12,8 +12,8 @@ export class SkillSystem {
 
   // Check if player earned new skill points based on score
   updateSkillPoints() {
-    // Award 1 skill point per 1500 score points (increased from 1000 for balance)
-    const earnedPoints = Math.floor(this.player.score / 1500);
+    // Award 1 skill point per 2000 score points (increased from 1500 for balance)
+    const earnedPoints = Math.floor(this.player.score / 2000);
     const currentAllocated = this.getAllocatedPoints();
 
     const previousSkillPoints = this.skillPoints;
@@ -48,14 +48,17 @@ export class SkillSystem {
     // Apply skill effects, e.g.:
     switch (skill.id) {
       case 'shieldBoost':
-        // Calculate the increase amount (10% of current capacity)
-        const shieldIncrease = this.player.shieldCapacity * 0.1;
-        this.player.shieldCapacity += shieldIncrease;
-        // Also increase current shield by the same amount (up to new max)
-        this.player.shield = Math.min(
-          this.player.shield + shieldIncrease,
-          this.player.shieldCapacity
-        );
+        // If player has shields, increase them by 10%
+        if (this.player.shieldCapacity > 0) {
+          const shieldIncrease = this.player.shieldCapacity * 0.1;
+          this.player.shieldCapacity += shieldIncrease;
+          // Also increase current shield by the same amount (up to new max)
+          this.player.shield = Math.min(
+            this.player.shield + shieldIncrease,
+            this.player.shieldCapacity
+          );
+        }
+        // If player doesn't have shields yet, the boost will be applied when they get shields
         break;
       case 'energyRegen':
         this.player.energyRegen += 1;
@@ -85,5 +88,16 @@ export class SkillSystem {
 
   getAllocatedPoints() {
     return this.skills.reduce((sum, s) => sum + s.points, 0);
+  }
+
+  // Apply shield skill boosts to a base shield capacity
+  getModifiedShieldCapacity(baseCapacity) {
+    const shieldSkill = this.skills.find((s) => s.id === 'shieldBoost');
+    if (!shieldSkill || shieldSkill.points === 0) {
+      return baseCapacity;
+    }
+    // Each point adds 10% to base capacity
+    const multiplier = 1 + (shieldSkill.points * 0.1);
+    return baseCapacity * multiplier;
   }
 }

@@ -1,4 +1,4 @@
-﻿export class World {
+export class World {
   // Generate an array of new powerups
   generatePowerups(count = 1) {
     const powerups = [];
@@ -525,7 +525,7 @@
     }
     const vertices = [];
     for (let i = 0; i < count; i++) {
-      // Calculate angle for this vertex (evenly distributed around 360°)
+      // Calculate angle for this vertex (evenly distributed around 360�)
       const angle = (i / count) * Math.PI * 2;
       // Vary the radius to create an irregular shape
       const radius = 1 + (randomFunc() * irregularity * 2 - irregularity);
@@ -772,7 +772,7 @@
 
             // Send destruction data to server for other players
             if (multiplayerAvailable) {
-              console.log('🚀 Sending asteroid destruction to server:', {
+              console.log('?? Sending asteroid destruction to server:', {
                 asteroid: asteroid.id,
                 fragments: fragmentsCreated.length,
                 powerups: powerupsCreated.length,
@@ -1565,8 +1565,17 @@
       case 'shield':
         // Add shield capacity if player doesn't have it yet
         if (player.shieldCapacity === 0) {
-          player.shieldCapacity = 50;
-          player.shield = 50;
+          // Start with base 50, then apply skill boosts
+          const baseShieldCapacity = 50;
+          let finalCapacity = baseShieldCapacity;
+          
+          // Apply shield boost skill multiplier if available
+          if (window.game && window.game.skillSystem) {
+            finalCapacity = window.game.skillSystem.getModifiedShieldCapacity(baseShieldCapacity);
+          }
+          
+          player.shieldCapacity = finalCapacity;
+          player.shield = finalCapacity;
 
           // Show message about new capability
           if (window.game && window.game.multiplayer) {
@@ -1707,20 +1716,8 @@
 
         // Update weapon icon based on new weapon
         const weaponIcon = document.getElementById('weapon-icon');
-        if (weaponIcon) {
-          switch (player.currentWeapon) {
-            case 'Basic Laser':
-              weaponIcon.innerHTML = 'ðŸ”«';
-              break;
-            case 'Burst Cannon':
-              weaponIcon.innerHTML = 'ðŸ’¥';
-              break;
-            case 'Seeker Missile':
-              weaponIcon.innerHTML = 'ðŸš€';
-              break;
-            default:
-              weaponIcon.innerHTML = 'ðŸ”«';
-          }
+        if (weaponIcon && player.updateWeaponIcon) {
+          player.updateWeaponIcon(weaponIcon, player.currentWeapon);
         }
         break;
 

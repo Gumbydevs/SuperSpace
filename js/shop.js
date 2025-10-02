@@ -119,7 +119,7 @@ export class ShopSystem {
           cooldown: 0.06, // Extremely rapid
           speed: 800,
           range: 600,
-          energyCost: 2,
+          energyCost: 3, // Increased from 2 for balance
         },
       },
       {
@@ -454,8 +454,13 @@ export class ShopSystem {
             break;
 
           case 'shield':
-            this.player.shieldCapacity = effects.shieldCapacity;
-            this.player.shield = effects.shieldCapacity;
+            let baseShieldCapacity = effects.shieldCapacity;
+            // Apply skill boosts if available
+            if (window.game && window.game.skillSystem) {
+              baseShieldCapacity = window.game.skillSystem.getModifiedShieldCapacity(baseShieldCapacity);
+            }
+            this.player.shieldCapacity = baseShieldCapacity;
+            this.player.shield = baseShieldCapacity;
             break;
 
           case 'energy':
@@ -1504,7 +1509,7 @@ export class ShopSystem {
                 Points allocated this run: ${skillSystem.getAllocatedPoints()}/${skillSystem.MAX_POINTS_PER_RUN}
             </div>
             <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-                Earn 1 skill point per 1500 score points
+                Earn 1 skill point per 2000 score points
             </div>
         `;
     container.appendChild(infoDiv);
@@ -3534,20 +3539,28 @@ export class ShopSystem {
         break;
 
       case 'shield':
-        this.player.shieldCapacity = effects.shieldCapacity;
+        let baseShieldCapacity = effects.shieldCapacity;
+        // Apply skill boosts if available
+        if (window.game && window.game.skillSystem) {
+          baseShieldCapacity = window.game.skillSystem.getModifiedShieldCapacity(effects.shieldCapacity);
+        }
+        this.player.shieldCapacity = baseShieldCapacity;
         // Initialize shield value if not present
         if (this.player.shield === undefined) {
-          this.player.shield = effects.shieldCapacity;
+          this.player.shield = baseShieldCapacity;
         } else {
           // Add the difference to current shield value
-          const increase =
-            effects.shieldCapacity -
-            (upgrade.level > 1
-              ? upgrade.getEffect(upgrade.level - 1).shieldCapacity
-              : 0);
+          const previousCapacity = upgrade.level > 1
+            ? upgrade.getEffect(upgrade.level - 1).shieldCapacity
+            : 0;
+          let previousCapacityWithBoost = previousCapacity;
+          if (window.game && window.game.skillSystem) {
+            previousCapacityWithBoost = window.game.skillSystem.getModifiedShieldCapacity(previousCapacity);
+          }
+          const increase = baseShieldCapacity - previousCapacityWithBoost;
           this.player.shield = Math.min(
             this.player.shield + increase,
-            effects.shieldCapacity,
+            baseShieldCapacity,
           );
         }
         break;
