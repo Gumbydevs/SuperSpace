@@ -10,16 +10,35 @@ const path = require('path');
 const cors = require('cors');
 const ServerAnalytics = require('./analytics');
 const CloudSyncAuth = require('./cloudSyncAuth');
+const database = require('./database');
 
 // Create the Express app and HTTP server
 const app = express();
 const server = http.createServer(app);
 
+// Initialize database first
+async function initializeDatabase() {
+  try {
+    if (process.env.DATABASE_URL) {
+      await database.initDatabase();
+      console.log('✅ Database initialized successfully');
+      return true;
+    } else {
+      console.log('⚠️  No DATABASE_URL found - using file-based storage (data will be lost on redeploys!)');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize database:', error);
+    console.log('⚠️  Falling back to file-based storage (data will be lost on redeploys!)');
+    return false;
+  }
+}
+
 // Initialize analytics
 const analytics = new ServerAnalytics();
 
-// Initialize cloud sync auth
-const cloudAuth = new CloudSyncAuth();
+// Initialize cloud sync auth (after database)
+let cloudAuth;
 
 // Log buffer for debugging (keep last 100 log entries)
 const logBuffer = [];
@@ -257,98 +276,141 @@ app.get('/analytics', (req, res) => {
   }
 });
 
-// Expose cloud user registry (reads cloud_data/users.json and players)
+// Expose cloud user registry (uses database when available, falls back to files)
 async function getCloudUsersPayload() {
-  const fsPromises = require('fs').promises;
-  const cloudDir = require('path').join(__dirname, 'cloud_data');
-  const usersPath = require('path').join(cloudDir, 'users.json');
-  const tokensPath = require('path').join(cloudDir, 'tokens.json');
-
-  // Read users and tokens
-  let usersRaw = '{}';
   try {
-    usersRaw = await fsPromises.readFile(usersPath, 'utf8');
-  } catch (e) {
-    // ignore and use empty
-  }
-  let tokensRaw = '{}';
-  try {
-    tokensRaw = await fsPromises.readFile(tokensPath, 'utf8');
-  } catch (e) {
-    // ignore and use empty
-  }
+    // Try database first if available
+    if (process.env.DATABASE_URL) {
+      try {
+        const playerStats = await database.getPlayerStats();
+        
+        const list = playerStats.map(player => {
+          return {
+            username: player.username,
+            lastLogin: player.lastLogin,
+            playtime: {
+              hours: player.playTime.hours,
+              minutes: player.playTime.minutes,
+              seconds: player.playTime.seconds,
+              totalMs: player.playTime.total
+            }
+          };
+        });
 
-  const users = JSON.parse(usersRaw || '{}');
-  const tokens = JSON.parse(tokensRaw || '{}');
-
-  // Map username -> latest token lastUsed
-  const userLastLogin = {};
-  for (const [token, tdata] of Object.entries(tokens)) {
-    if (tdata && tdata.username) {
-      const uname = tdata.username.toLowerCase();
-      const ts = tdata.lastUsed ? new Date(tdata.lastUsed).getTime() : 0;
-      if (!userLastLogin[uname] || ts > userLastLogin[uname]) {
-        userLastLogin[uname] = ts;
+        return {
+          count: list.length,
+          users: list,
+          source: 'database'
+        };
+      } catch (dbError) {
+        console.log('Database not available, falling back to files:', dbError.message);
       }
     }
-  }
 
-  // Read player files for playtime info
-  const playersDir = require('path').join(cloudDir, 'players');
-  const list = [];
-  for (const [key, u] of Object.entries(users)) {
+    // Fallback to file-based system
+    const fsPromises = require('fs').promises;
+    const cloudDir = require('path').join(__dirname, 'cloud_data');
+    const usersPath = require('path').join(cloudDir, 'users.json');
+    const tokensPath = require('path').join(cloudDir, 'tokens.json');
+
+    // Read users and tokens
+    let usersRaw = '{}';
     try {
-      const username = (u.username || key).toString();
-      const userKey = username.toLowerCase();
-      let lastLogin = userLastLogin[userKey] ? new Date(userLastLogin[userKey]).toISOString() : null;
+      usersRaw = await fsPromises.readFile(usersPath, 'utf8');
+    } catch (e) {
+      // ignore and use empty
+    }
+    let tokensRaw = '{}';
+    try {
+      tokensRaw = await fsPromises.readFile(tokensPath, 'utf8');
+    } catch (e) {
+      // ignore and use empty
+    }
 
-      // Try to load player file
-      let playTimeSeconds = 0;
+    const users = JSON.parse(usersRaw || '{}');
+    const tokens = JSON.parse(tokensRaw || '{}');
+
+    // Map username -> latest token lastUsed
+    const userLastLogin = {};
+    for (const [token, tdata] of Object.entries(tokens)) {
+      if (tdata && tdata.username) {
+        const uname = tdata.username.toLowerCase();
+        const ts = tdata.lastUsed ? new Date(tdata.lastUsed).getTime() : 0;
+        if (!userLastLogin[uname] || ts > userLastLogin[uname]) {
+          userLastLogin[uname] = ts;
+        }
+      }
+    }
+
+    // Read player files for playtime info
+    const playersDir = require('path').join(cloudDir, 'players');
+    const list = [];
+    for (const [key, u] of Object.entries(users)) {
       try {
-        const pf = require('path').join(playersDir, `player_${username}.json`);
-        const content = await fsPromises.readFile(pf, 'utf8').catch(() => null);
-        if (content) {
-          const pdata = JSON.parse(content);
-          // Try several common places for accumulated playtime
-          if (pdata.gameData && typeof pdata.gameData.totalPlayTime === 'number') {
-            playTimeSeconds = Math.floor(pdata.gameData.totalPlayTime);
-          } else if (pdata.gameData && typeof pdata.gameData.playTimeSeconds === 'number') {
-            playTimeSeconds = Math.floor(pdata.gameData.playTimeSeconds);
-          } else if (pdata.gameStats && typeof pdata.gameStats.totalPlayTime === 'number') {
-            playTimeSeconds = Math.floor(pdata.gameStats.totalPlayTime);
-          } else if (pdata.lastSaved) {
-            // If no explicit playtime, try to infer from createdAt -> lastSaved (not ideal)
-            const created = u.createdAt ? new Date(u.createdAt).getTime() : null;
-            const lastSaved = pdata.lastSaved ? new Date(pdata.lastSaved).getTime() : null;
-            if (created && lastSaved && lastSaved > created) {
-              playTimeSeconds = Math.floor((lastSaved - created) / 1000);
+        const username = (u.username || key).toString();
+        const userKey = username.toLowerCase();
+        let lastLogin = userLastLogin[userKey] ? new Date(userLastLogin[userKey]).toISOString() : null;
+
+        // Try to load player file
+        let playTimeSeconds = 0;
+        try {
+          const pf = require('path').join(playersDir, `player_${username}.json`);
+          const content = await fsPromises.readFile(pf, 'utf8').catch(() => null);
+          if (content) {
+            const pdata = JSON.parse(content);
+            // Try several common places for accumulated playtime
+            if (pdata.gameData && typeof pdata.gameData.totalPlayTime === 'number') {
+              playTimeSeconds = Math.floor(pdata.gameData.totalPlayTime);
+            } else if (pdata.gameData && typeof pdata.gameData.playTimeSeconds === 'number') {
+              playTimeSeconds = Math.floor(pdata.gameData.playTimeSeconds);
+            } else if (pdata.gameStats && typeof pdata.gameStats.totalPlayTime === 'number') {
+              playTimeSeconds = Math.floor(pdata.gameStats.totalPlayTime);
+            } else if (pdata.lastSaved) {
+              // If no explicit playtime, try to infer from createdAt -> lastSaved (not ideal)
+              const created = u.createdAt ? new Date(u.createdAt).getTime() : null;
+              const lastSaved = pdata.lastSaved ? new Date(pdata.lastSaved).getTime() : null;
+              if (created && lastSaved && lastSaved > created) {
+                playTimeSeconds = Math.floor((lastSaved - created) / 1000);
+              }
             }
           }
+        } catch (e) {
+          // ignore
         }
+
+        list.push({
+          username,
+          createdAt: u.createdAt || null,
+          lastLogin,
+          playTimeSeconds,
+        });
       } catch (e) {
-        // ignore
+        // ignore malformed user
       }
-
-      list.push({
-        username,
-        createdAt: u.createdAt || null,
-        lastLogin,
-        playTimeSeconds,
-      });
-    } catch (e) {
-      // ignore malformed user
     }
+
+    // Sort by lastLogin desc then username
+    list.sort((a, b) => {
+      const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+      const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+      if (ta !== tb) return tb - ta;
+      return a.username.localeCompare(b.username);
+    });
+
+    return { 
+      count: list.length, 
+      users: list,
+      source: 'files'
+    };
+  } catch (error) {
+    console.error('Error getting cloud users:', error);
+    return {
+      count: 0,
+      users: [],
+      error: error.message,
+      source: 'error'
+    };
   }
-
-  // Sort by lastLogin desc then username
-  list.sort((a, b) => {
-    const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
-    const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
-    if (ta !== tb) return tb - ta;
-    return a.username.localeCompare(b.username);
-  });
-
-  return { count: list.length, users: list };
 }
 
 const cloudUsersHandler = async (req, res) => {
@@ -2782,7 +2844,20 @@ setInterval(
 // Start the server with graceful EADDRINUSE handling
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-function startServer(port) {
+async function startServer(port) {
+  // Initialize database (optional)
+  const databaseAvailable = await initializeDatabase();
+  
+  // Initialize cloud auth
+  cloudAuth = new CloudSyncAuth();
+  
+  if (databaseAvailable) {
+    console.log('🚀 Starting with DATABASE persistence - user data will survive redeploys!');
+  } else {
+    console.log('⚠️  Starting with FILE persistence - user data WILL BE LOST on redeploys!');
+    console.log('🔧 To fix: Set DATABASE_URL environment variable with PostgreSQL connection string');
+  }
+  
   server.once('error', (err) => {
     if (err && err.code === 'EADDRINUSE') {
       console.error(`Port ${port} is already in use.`);
@@ -2814,7 +2889,15 @@ function startServer(port) {
   });
 }
 
-startServer(PORT);
+// Start the server with database initialization
+(async () => {
+  try {
+    await startServer(PORT);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+})();
 
 // Secure reset endpoint for analytics data (POST only, requires header)
 app.post('/analytics/reset', async (req, res) => {

@@ -1,11 +1,13 @@
 /**
- * Simple file-based authentication and cloud sync for SuperSpace
- * No database required - uses JSON files for storage
+ * Database-based authentication and cloud sync for SuperSpace
+ * Uses PostgreSQL for persistent data storage
  */
 
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
+const database = require('./database');
+
 // Optionally emit analytics events if analytics module is available
 let analytics = null;
 try {
@@ -19,9 +21,13 @@ try {
 
 class CloudSyncAuth {
   constructor() {
+    // Keep data directory for backup files if needed
     this.dataDir = path.join(__dirname, 'cloud_data');
     this.usersFile = path.join(this.dataDir, 'users.json');
     this.tokensFile = path.join(this.dataDir, 'tokens.json');
+
+    // Initialize database on startup
+    this.initializeDatabase();
 
     // Space-themed words for recovery keys
     this.spaceWords = [
@@ -69,8 +75,18 @@ class CloudSyncAuth {
       'EXPLORE',
     ];
 
-    // Ensure directories exist
+    // Ensure directories exist for backward compatibility
     this.initializeDirectories();
+  }
+
+  async initializeDatabase() {
+    try {
+      await database.initDatabase();
+      console.log('CloudSyncAuth: Database initialized successfully');
+    } catch (error) {
+      console.error('CloudSyncAuth: Failed to initialize database:', error);
+      throw error;
+    }
   }
 
   async initializeDirectories() {
@@ -78,14 +94,14 @@ class CloudSyncAuth {
       await fs.mkdir(this.dataDir, { recursive: true });
       await fs.mkdir(path.join(this.dataDir, 'players'), { recursive: true });
 
-      // Initialize users file if it doesn't exist
+      // Initialize users file if it doesn't exist (for backup purposes)
       try {
         await fs.access(this.usersFile);
       } catch {
         await fs.writeFile(this.usersFile, JSON.stringify({}));
       }
 
-      // Initialize tokens file if it doesn't exist
+      // Initialize tokens file if it doesn't exist (for backup purposes)
       try {
         await fs.access(this.tokensFile);
       } catch {
@@ -156,8 +172,8 @@ class CloudSyncAuth {
       }
 
       // Check if username already exists
-      const users = await this.loadUsers();
-      if (users[username.toLowerCase()]) {
+      const existingUser = await database.getUser(username.toLowerCase());
+      if (existingUser) {
         return { success: false, message: 'Username already exists' };
       }
 
@@ -168,7 +184,9 @@ class CloudSyncAuth {
 
       // Hash password and save user
       const { salt, hash } = this.hashPassword(password);
-      users[username.toLowerCase()] = {
+      
+      // Create user data object for database
+      const userData = {
         username: username, // Preserve original case
         salt,
         hash,
@@ -177,7 +195,8 @@ class CloudSyncAuth {
         createdAt: new Date().toISOString(),
       };
 
-      await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+      // Save to database
+      await database.createUser(username.toLowerCase(), JSON.stringify(userData));
 
       console.log(`✅ New user registered: ${username}`);
       return {
@@ -194,12 +213,14 @@ class CloudSyncAuth {
   // Login user
   async login(username, password) {
     try {
-      const users = await this.loadUsers();
-      const user = users[username.toLowerCase()];
+      const userRecord = await database.getUser(username.toLowerCase());
 
-      if (!user) {
+      if (!userRecord) {
         return { success: false, message: 'Invalid username or password' };
       }
+
+      // Parse user data from database
+      const user = JSON.parse(userRecord.password_hash);
 
       if (!this.verifyPassword(password, user.salt, user.hash)) {
         return { success: false, message: 'Invalid username or password' };
@@ -207,14 +228,17 @@ class CloudSyncAuth {
 
       // Generate and save token
       const token = this.generateToken();
-      const tokens = await this.loadTokens();
-      tokens[token] = {
+      const tokenData = {
         username: user.username,
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
       };
 
-      await fs.writeFile(this.tokensFile, JSON.stringify(tokens, null, 2));
+      // Save token to database
+      await database.createToken(token, username.toLowerCase());
+      
+      // Update last login timestamp
+      await database.updateLastLogin(username.toLowerCase());
 
       console.log(`✅ User logged in: ${user.username}`);
       // Emit analytics event for cloud login if analytics instance exists and exposes processEvent
@@ -247,17 +271,13 @@ class CloudSyncAuth {
   // Validate token
   async validateToken(token) {
     try {
-      const tokens = await this.loadTokens();
-      const tokenData = tokens[token];
+      const tokenData = await database.getTokenData(token);
 
       if (!tokenData) {
         return { valid: false };
       }
 
-      // Update last used time
-      tokenData.lastUsed = new Date().toISOString();
-      await fs.writeFile(this.tokensFile, JSON.stringify(tokens, null, 2));
-
+      // Token is valid, return username
       return { valid: true, username: tokenData.username };
     } catch (error) {
       console.error('Token validation error:', error);
@@ -273,16 +293,13 @@ class CloudSyncAuth {
         return { success: false, message: 'Invalid token' };
       }
 
-      const filename = `${validation.username.toLowerCase()}.json`;
-      const filepath = path.join(this.dataDir, 'players', filename);
-
       const playerData = {
         username: validation.username,
         gameData,
         lastSaved: new Date().toISOString(),
       };
 
-      await fs.writeFile(filepath, JSON.stringify(playerData, null, 2));
+      await database.savePlayerData(validation.username, playerData);
 
       console.log(`💾 Saved data for: ${validation.username}`);
       return { success: true };
@@ -300,17 +317,19 @@ class CloudSyncAuth {
         return { success: false, message: 'Invalid token' };
       }
 
-      const filename = `${validation.username.toLowerCase()}.json`;
-      const filepath = path.join(this.dataDir, 'players', filename);
-
       try {
-        const data = await fs.readFile(filepath, 'utf8');
-        const playerData = JSON.parse(data);
+        const playerData = await database.getPlayerData(validation.username);
 
-        console.log(`📥 Loaded data for: ${validation.username}`);
-        return { success: true, gameData: playerData.gameData };
+        if (playerData) {
+          console.log(`📥 Loaded data for: ${validation.username}`);
+          return { success: true, gameData: playerData.gameData };
+        } else {
+          // No saved data found - return empty data
+          console.log(`� No saved data found for: ${validation.username}`);
+          return { success: true, gameData: {} };
+        }
       } catch (error) {
-        // File doesn't exist or is corrupted - return empty data
+        // Database error - return empty data
         console.log(`📭 No saved data found for: ${validation.username}`);
         return { success: true, gameData: {} };
       }
@@ -320,22 +339,33 @@ class CloudSyncAuth {
     }
   }
 
-  // Load users from file
+  // Load users from database (compatibility method)
   async loadUsers() {
     try {
-      const data = await fs.readFile(this.usersFile, 'utf8');
-      return JSON.parse(data);
+      const users = await database.getAllUsers();
+      const usersObj = {};
+      
+      for (const user of users) {
+        try {
+          const userData = JSON.parse(user.password_hash);
+          usersObj[user.username.toLowerCase()] = userData;
+        } catch (e) {
+          console.error(`Failed to parse user data for ${user.username}:`, e);
+        }
+      }
+      
+      return usersObj;
     } catch (error) {
       console.error('Failed to load users:', error);
       return {};
     }
   }
 
-  // Load tokens from file
+  // Load tokens from database (compatibility method)
   async loadTokens() {
     try {
-      const data = await fs.readFile(this.tokensFile, 'utf8');
-      return JSON.parse(data);
+      // This method is mainly for compatibility - tokens are now managed directly by database
+      return {};
     } catch (error) {
       console.error('Failed to load tokens:', error);
       return {};
@@ -345,124 +375,10 @@ class CloudSyncAuth {
   // Clean up expired tokens (call periodically)
   async cleanupTokens() {
     try {
-      const tokens = await this.loadTokens();
-      const now = Date.now();
-      const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-      let cleaned = 0;
-      for (const [token, data] of Object.entries(tokens)) {
-        const tokenAge = now - new Date(data.lastUsed).getTime();
-        if (tokenAge > maxAge) {
-          delete tokens[token];
-          cleaned++;
-        }
-      }
-
-      if (cleaned > 0) {
-        await fs.writeFile(this.tokensFile, JSON.stringify(tokens, null, 2));
-        console.log(`🧹 Cleaned up ${cleaned} expired tokens`);
-      }
+      await database.deleteExpiredTokens();
+      console.log(`🧹 Cleaned up expired tokens`);
     } catch (error) {
       console.error('Token cleanup error:', error);
-    }
-  }
-
-  // Generate password reset code
-  async generatePasswordResetCode(username) {
-    try {
-      const users = await this.loadUsers();
-      const user = users[username.toLowerCase()];
-
-      if (!user || !user.email) {
-        return {
-          success: false,
-          message: 'User not found or no email on file',
-        };
-      }
-
-      // Generate 6-digit reset code
-      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-      // Store reset code
-      user.resetCode = resetCode;
-      user.resetExpiry = resetExpiry.toISOString();
-
-      await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
-
-      console.log(
-        `🔑 Password reset code generated for ${username}: ${resetCode}`,
-      );
-
-      // In a real app, you would send this via email
-      // For now, we'll log it and return success
-      return {
-        success: true,
-        message: 'Reset code sent to email',
-        resetCode: resetCode, // Remove this in production
-        email: user.email,
-      };
-    } catch (error) {
-      console.error('Password reset code generation error:', error);
-      return { success: false, message: 'Server error generating reset code' };
-    }
-  }
-
-  // Verify reset code and update password
-  async resetPassword(username, resetCode, newPassword) {
-    try {
-      if (!newPassword || newPassword.length < 6) {
-        return {
-          success: false,
-          message: 'New password must be at least 6 characters',
-        };
-      }
-
-      const users = await this.loadUsers();
-      const user = users[username.toLowerCase()];
-
-      if (!user) {
-        return { success: false, message: 'User not found' };
-      }
-
-      if (!user.resetCode || !user.resetExpiry) {
-        return { success: false, message: 'No reset code requested' };
-      }
-
-      // Check if reset code has expired
-      const now = new Date();
-      const expiry = new Date(user.resetExpiry);
-      if (now > expiry) {
-        delete user.resetCode;
-        delete user.resetExpiry;
-        await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
-        return {
-          success: false,
-          message: 'Reset code has expired. Please request a new one.',
-        };
-      }
-
-      // Verify reset code
-      if (user.resetCode !== resetCode) {
-        return { success: false, message: 'Invalid reset code' };
-      }
-
-      // Update password
-      const { salt, hash } = this.hashPassword(newPassword);
-      user.salt = salt;
-      user.hash = hash;
-
-      // Clear reset code
-      delete user.resetCode;
-      delete user.resetExpiry;
-
-      await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
-
-      console.log(`🔓 Password reset successfully for ${username}`);
-      return { success: true, message: 'Password reset successfully' };
-    } catch (error) {
-      console.error('Password reset error:', error);
-      return { success: false, message: 'Server error resetting password' };
     }
   }
 
@@ -484,13 +400,14 @@ class CloudSyncAuth {
         };
       }
 
-      // Load users
-      const users = await this.loadUsers();
-      const user = users[username.toLowerCase()];
+      // Load user from database
+      const userRecord = await database.getUser(username.toLowerCase());
 
-      if (!user) {
+      if (!userRecord) {
         return { success: false, message: 'Invalid username or recovery key' };
       }
+
+      const user = JSON.parse(userRecord.password_hash);
 
       // Verify recovery key
       if (
@@ -504,7 +421,11 @@ class CloudSyncAuth {
       user.salt = salt;
       user.hash = hash;
 
-      await fs.writeFile(this.usersFile, JSON.stringify(users, null, 2));
+      // Update user record in database
+      await database.pool.query(
+        'UPDATE users SET password_hash = $1 WHERE username = $2',
+        [JSON.stringify(user), username.toLowerCase()]
+      );
 
       console.log(`🔑 Password reset with recovery key for ${username}`);
       return { success: true, message: 'Password reset successfully' };
