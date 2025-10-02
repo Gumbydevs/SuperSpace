@@ -2141,6 +2141,20 @@ io.on('connection', (socket) => {
     console.log(`NPC leaving: ${data.npcId}`);
   });
 
+  // Handle Dreadnaught reward distribution to ALL players
+  socket.on('dreadnaughtReward', (data) => {
+    playerLastActivity[socket.id] = Date.now();
+
+    console.log(`Dreadnaught destroyed! Distributing rewards to all players: ${data.credits} credits, ${data.gems} gems`);
+
+    // Send reward to ALL connected players (including the one who sent it)
+    io.emit('dreadnaughtReward', {
+      credits: data.credits,
+      gems: data.gems,
+      npcId: data.npcId
+    });
+  });
+
   // Handle admin NPC clear events
   socket.on('npcClearAll', (data) => {
     playerLastActivity[socket.id] = Date.now();

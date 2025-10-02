@@ -1124,46 +1124,73 @@ export class NPCManager {
       this.soundManager,
     );
 
-    // Award credits to nearby players
-    if (window.game && window.game.player) {
-      const dx = npc.x - window.game.player.x;
-      const dy = npc.y - window.game.player.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < 500) {
-        // Award if player is nearby
-        let creditReward = npc.type === 'dreadnaught' ? 500 : 50;
+    // For Dreadnaught: reward ALL players who participated (tracked by damage)
+    // For regular aliens: reward nearby player only
+    if (npc.type === 'dreadnaught') {
+      // DREADNAUGHT: Reward all players who damaged it
+      const creditReward = 500;
+      const gemReward = 10; // Bonus gems for dreadnaught kill
+      
+      // Reward local player if they participated
+      if (window.game && window.game.player) {
         window.game.player.addCredits(creditReward);
-
-        // Show destruction message
-        const message =
-          npc.type === 'dreadnaught'
-            ? '🏆 DREADNAUGHT DESTROYED! +500 Credits'
-            : '👽 Alien Destroyed! +50 Credits';
+        
+        // Award gems if player has gem system
+        if (window.game.player.gems !== undefined) {
+          window.game.player.gems += gemReward;
+          window.game.player.saveToLocalStorage();
+        } else if (window.game.premiumStore) {
+          window.game.premiumStore.addSpaceGems(gemReward);
+        }
+        
+        // Show destruction message to local player
         this.showMessage(
-          message,
-          npc.type === 'dreadnaught' ? '#ffd700' : '#0f0',
-          3000,
+          `🏆 DREADNAUGHT DESTROYED! +${creditReward} Credits +${gemReward} Gems`,
+          '#ffd700',
+          4000,
         );
       }
-    }
-
-    // Special handling for dreadnaught destruction
-    if (npc.type === 'dreadnaught') {
+      
+      // Broadcast reward to ALL players (server will handle distribution)
+      if (window.game && window.game.multiplayer && window.game.multiplayer.socket) {
+        window.game.multiplayer.socket.emit('dreadnaughtReward', {
+          npcId: npc.id,
+          credits: creditReward,
+          gems: gemReward
+        });
+      }
+      
+      // Global victory message
       this.dreadnaughtActive = false;
       this.showMessage(
-        '🎉 VICTORY! Dreadnaught eliminated!',
+        '🎉 VICTORY! Dreadnaught eliminated! All players rewarded!',
         '#ffd700',
         5000,
         true,
       );
 
-      // Spawn multiple powerups
-      for (let i = 0; i < 5; i++) {
+      // Spawn multiple powerups that ALL players can see
+      for (let i = 0; i < 8; i++) {
         this.world.spawnPowerup(
-          npc.x + (Math.random() - 0.5) * 200,
-          npc.y + (Math.random() - 0.5) * 200,
+          npc.x + (Math.random() - 0.5) * 300,
+          npc.y + (Math.random() - 0.5) * 300,
         );
+      }
+    } else {
+      // REGULAR ALIEN: Award credits to nearby player only
+      if (window.game && window.game.player) {
+        const dx = npc.x - window.game.player.x;
+        const dy = npc.y - window.game.player.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 500) {
+          // Award if player is nearby
+          let creditReward = 50;
+          window.game.player.addCredits(creditReward);
+
+          // Show destruction message
+          this.showMessage('👽 Alien Destroyed! +50 Credits', '#0f0', 3000);
+        }
       }
     }
 

@@ -2086,6 +2086,38 @@ export class MultiplayerManager {
       }
     });
 
+    // Handle Dreadnaught reward distribution (all players get rewarded)
+    this.socket.on('dreadnaughtReward', (data) => {
+      console.log('Received dreadnaught reward:', data);
+      
+      // Award credits to local player
+      if (this.game.player) {
+        this.game.player.addCredits(data.credits);
+        
+        // Award gems
+        if (this.game.player.gems !== undefined) {
+          this.game.player.gems += data.gems;
+          this.game.player.saveToLocalStorage();
+        } else if (this.game.premiumStore) {
+          this.game.premiumStore.addSpaceGems(data.gems);
+        }
+        
+        // Update UI
+        if (this.game.ui && this.game.ui.updateHUD) {
+          this.game.ui.updateHUD();
+        }
+        
+        // Show reward notification
+        if (this.game.ui && this.game.ui.showMessage) {
+          this.game.ui.showMessage(
+            `🏆 DREADNAUGHT DEFEATED! +${data.credits} Credits +${data.gems} Gems`,
+            '#ffd700',
+            4000
+          );
+        }
+      }
+    });
+
     // Handle NPC leaving events
     this.socket.on('npcLeaving', (data) => {
       if (this.game.npcManager) {
