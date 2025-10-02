@@ -773,6 +773,14 @@ export class Player {
     // Don't fire when weapons are disengaged
     if (this.currentWeapon === 'Disengaged') {
       canFire = false;
+      // Play a simple beep sound if trying to fire with weapons disengaged
+      if (isFiring && this.fireCooldown <= 0 && soundManager) {
+        soundManager.play('error', {
+          volume: 0.2,
+          playbackRate: 1.5,
+        });
+        this.fireCooldown = 0.3; // Small cooldown to avoid sound spam
+      }
     }
     if (canFire) {
       // Subtract reduced energy cost if applicable

@@ -62,6 +62,7 @@ export class SoundManager {
     this.generateRailgunSound();
     this.generatePulseSound();
     this.generateWeaponSwitchSound();
+    this.generateErrorSound();
     this.generateRobotChatterSound();
     console.log('All sounds generated successfully');
   }
@@ -1831,6 +1832,55 @@ export class SoundManager {
     }
 
     this.sounds['weaponswitch'] = buffer;
+  }
+
+  // Generate a simple error beep sound (for disengaged weapons, etc.)
+  generateErrorSound() {
+    const sampleRate = this.audioContext.sampleRate;
+    const duration = 0.35; // a little longer for a pronounced mechanical buzz
+    const length = Math.floor(sampleRate * duration);
+    const buffer = this.audioContext.createBuffer(1, length, sampleRate);
+    const channelData = buffer.getChannelData(0);
+
+    // Create a mechanical "lock" buzz with lower frequency, harmonics and a short stutter
+    for (let i = 0; i < length; i++) {
+      const t = i / sampleRate;
+
+      // Envelope: very sharp attack, a brief stutter/pulse and then a slower decay
+      let envelope = 0;
+      if (t < 0.01) {
+        envelope = t / 0.01; // very fast attack
+      } else if (t < 0.06) {
+        // small rhythmic stutter (two quick pulses)
+        const pulse = Math.sin((t - 0.01) * Math.PI * 40) * 0.6;
+        envelope = (1 - (t - 0.01) / 0.05) * (0.6 + 0.4 * pulse);
+      } else {
+        envelope = Math.exp(-(t - 0.06) * 8); // slower decay for tail
+      }
+
+      // Base low-frequency buzz (square-ish character for mechanical feel)
+      const baseFreq = 160 + Math.sin(t * 60) * 8; // small modulation
+      const square = Math.sign(Math.sin(2 * Math.PI * baseFreq * t));
+
+      // Add layered harmonics with slight detune to simulate gears and electronics
+      const harmonic1 = Math.sign(Math.sin(2 * Math.PI * baseFreq * 2 * t)) * 0.35;
+      const harmonic2 = Math.sign(Math.sin(2 * Math.PI * baseFreq * 3.1 * t)) * 0.18;
+
+      // Add subtle metallic ring using a higher pitched filtered noise
+      const metallic = (Math.random() - 0.5) * 0.08 * Math.exp(-t * 6);
+
+      // Combine components — intentionally a bit aggressive for a denial sound
+      let sample = (square * 0.9 + harmonic1 + harmonic2 + metallic) * envelope;
+
+      // Soft clipping/distortion to add digital buzz
+      if (sample > 0.9) sample = 0.9;
+      if (sample < -0.9) sample = -0.9;
+
+      // Slight overall attenuation left to volume controls; we'll keep this fairly loud
+      channelData[i] = sample * 0.85;
+    }
+
+    this.sounds['error'] = buffer;
   }
 
   // Generate a synthesized humanoid robot chatter sound

@@ -82,6 +82,25 @@ class Game {
     this.gameState = 'menu'; // Game can be in 'menu', 'playing', 'dying', or 'gameover' state
     this.thrusterSoundActive = false; // Tracks if thruster sound is currently playing
 
+    // Zoom state: controls a smooth zoom that affects world & ship rendering (not UI)
+  this.zoomEnabled = false; // logical toggle state
+  this.zoomCurrent = 1; // current applied scale
+  this.zoomStart = 1; // scale at animation start
+  this.zoomTarget = 1; // target scale to animate to
+  this.zoomAmount = 1.5; // 50% closer = scale 1.5
+  this.zoomDuration = 520; // ms for zoom animation (slower, more gradual)
+  this._zoomAnimStart = 0; // timestamp when current zoom animation started
+
+    // Keyboard shortcut: toggle zoom with Z key
+    window.addEventListener('keydown', (e) => {
+      // Ignore when typing into inputs
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+      if (e.key && e.key.toLowerCase() === 'z') {
+        this.toggleZoom();
+      }
+    });
+
     // Make systems globally accessible
     window.admin = this.adminSystem;
     window.npcManager = this.npcManager; // Make NPC manager accessible for admin tools
@@ -1059,6 +1078,21 @@ class Game {
 
   // Here we update all game components each frame using delta time
   update(deltaTime) {
+    // Smoothly animate zoom scale towards target (time-based) - always run so UI toggles while overlays are open
+    if (this.zoomCurrent !== this.zoomTarget) {
+      const now = performance.now();
+      if (!this._zoomAnimStart) this._zoomAnimStart = now;
+      const elapsed = Math.min(now - this._zoomAnimStart, this.zoomDuration);
+      const t = Math.max(0, Math.min(1, elapsed / this.zoomDuration));
+      // easeInOutCubic
+      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      this.zoomCurrent = this.zoomStart + (this.zoomTarget - this.zoomStart) * ease;
+      if (elapsed >= this.zoomDuration) {
+        this.zoomCurrent = this.zoomTarget;
+        this._zoomAnimStart = 0;
+      }
+    }
+
     if (this.gameState === 'playing') {
       // Skip game updates if shop is open
       if (this.shop.shopOpen) return;
@@ -1099,6 +1133,7 @@ class Game {
         this.soundManager.stopThrusterSound();
         this.thrusterSoundActive = false;
       }
+
 
       // Here we update player position, rotation, and actions
       // Pass the entire input object instead of just keys
@@ -1257,11 +1292,13 @@ class Game {
 
     // Always render the stars and asteroids in the background regardless of game state
     this.ctx.save();
-    // Center the view
-    this.ctx.translate(
-      this.canvas.width / 2 - this.player.x,
-      this.canvas.height / 2 - this.player.y,
-    );
+    // Center the view and apply world zoom (UI is rendered after restore so it's unaffected)
+    // Translate to canvas center, scale, then translate to keep player centered
+    this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+    if (this.zoomCurrent && Math.abs(this.zoomCurrent - 1) > 0.001) {
+      this.ctx.scale(this.zoomCurrent, this.zoomCurrent);
+    }
+    this.ctx.translate(-this.player.x, -this.player.y);
 
     // Render the world (stars and asteroids)
     this.world.render(this.ctx, this.player);
@@ -1978,6 +2015,15 @@ class Game {
     // Reset skill and challenge systems for new session
     this.skillSystem.reset();
     this.challengeSystem.completed = { daily: [], weekly: [] };
+  }
+
+  // Toggle zoom state: flip target and start animation
+  toggleZoom() {
+    this.zoomEnabled = !this.zoomEnabled;
+    this.zoomTarget = this.zoomEnabled ? this.zoomAmount : 1;
+    // record starting value so interpolation is stable
+    this.zoomStart = this.zoomCurrent;
+    this._zoomAnimStart = performance.now();
   }
 
   // Here we implement the main game loop using requestAnimationFrame
