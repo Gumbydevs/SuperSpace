@@ -566,6 +566,89 @@ app.post('/analytics/save', async (req, res) => {
   }
 });
 
+// Admin endpoint to delete test users
+app.post('/admin/delete-users', async (req, res) => {
+  try {
+    const { users, confirmKey } = req.body;
+    
+    // Simple security check
+    if (confirmKey !== 'delete-test-users-2025') {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({ success: false, message: 'Users array required' });
+    }
+    
+    console.log('🗑️ Admin: Deleting test users:', users);
+    
+    const results = [];
+    
+    for (const username of users) {
+      try {
+        const lowerUsername = username.toLowerCase();
+        
+        // Delete from auth_tokens first (foreign key constraint)
+        const tokenResult = await database.pool.query(
+          'DELETE FROM auth_tokens WHERE username = $1',
+          [lowerUsername]
+        );
+        
+        // Delete from player_data
+        const playerDataResult = await database.pool.query(
+          'DELETE FROM player_data WHERE username = $1',
+          [lowerUsername]
+        );
+        
+        // Delete from users table
+        const userResult = await database.pool.query(
+          'DELETE FROM users WHERE username = $1 RETURNING username',
+          [lowerUsername]
+        );
+        
+        if (userResult.rows.length > 0) {
+          results.push({
+            username,
+            success: true,
+            tokensDeleted: tokenResult.rowCount,
+            playerDataDeleted: playerDataResult.rowCount
+          });
+          console.log(`✅ Deleted user: ${username}`);
+        } else {
+          results.push({
+            username,
+            success: false,
+            message: 'User not found'
+          });
+          console.log(`⚠️ User not found: ${username}`);
+        }
+      } catch (error) {
+        results.push({
+          username,
+          success: false,
+          message: error.message
+        });
+        console.error(`❌ Error deleting ${username}:`, error.message);
+      }
+    }
+    
+    // Get remaining user count
+    const remainingResult = await database.pool.query('SELECT COUNT(*) as count FROM users');
+    const remainingCount = parseInt(remainingResult.rows[0].count);
+    
+    res.json({
+      success: true,
+      message: 'Deletion process completed',
+      results,
+      remainingUsers: remainingCount
+    });
+    
+  } catch (error) {
+    console.error('Admin delete users error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 app.get('/analytics/hourly', (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
