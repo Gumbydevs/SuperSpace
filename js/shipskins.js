@@ -254,13 +254,13 @@ export class ShipSkinSystem {
   }
 
   applyHazardStripesEffect(ctx, ship, appearance, time) {
-    // Crash test dummy skin: bright yellow with bold black horizontal stripes
-    const primary = appearance.color || '#FFD700'; // Bright yellow
-    const accent = appearance.accent || '#000000'; // Black
+    // Crash test dummy skin: bright yellow body with blue windshield and black outline
+    const yellow = '#FFD700'; // Bright yellow
+    const blue = '#6495ED'; // Cornflower blue for windshield
+    const black = '#000000';
 
     ctx.save();
     // NOTE: Do NOT translate/rotate here - caller has already positioned the context
-    // (Remote players are pre-translated in multiplayer.js, local player in player.js)
     
     // Build hull path
     const path = new Path2D();
@@ -327,109 +327,37 @@ export class ShipSkinSystem {
         break;
     }
 
-    // Fill bright yellow base
-    ctx.fillStyle = primary;
+    // Fill with bright yellow base (entire hull)
+    ctx.fillStyle = yellow;
     ctx.fill(path);
 
-    // Bold crash test dummy pattern - simple and visible
-    ctx.save();
-    ctx.clip(path);
+    // Draw the 1px black stripe INSIDE the yellow edge
+    ctx.lineWidth = 2; // 2px so 1px shows as inner border
+    ctx.strokeStyle = black;
+    ctx.stroke(path);
     
-    // Draw thick horizontal black stripes like real crash test dummies
-    ctx.fillStyle = '#000000';
-    const stripeHeight = 4;
-    const spacing = 8;
-    
-    // Horizontal stripes across the entire ship
-    for (let y = -30; y <= 30; y += spacing) {
-      ctx.fillRect(-50, y, 100, stripeHeight);
-    }
-    
-    // Add vertical accent stripes for grid pattern
-    for (let x = -30; x <= 30; x += spacing) {
-      ctx.fillRect(x, -30, stripeHeight, 60);
-    }
-    
-    ctx.restore();
-
-    // Strong yellow outline to define ship shape
+    // Draw outer yellow border to create yellow/black/yellow effect
     ctx.lineWidth = 3;
-    ctx.strokeStyle = primary;
+    ctx.strokeStyle = yellow;
     ctx.stroke(path);
 
-    // Add a black pinstripe inside the yellow border
-    ctx.lineWidth = 1; // Skinny line
-    ctx.strokeStyle = '#000000';
-    ctx.stroke(path);
-
-    // Bold black details
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#000000';
-    
-    // Add warning markings
-    ctx.beginPath();
-    // Center warning stripe
-    ctx.moveTo(0, -15);
-    ctx.lineTo(0, 10);
-    // Cross hatch on nose
-    ctx.moveTo(-3, -10);
-    ctx.lineTo(3, -4);
-    ctx.moveTo(3, -10);
-    ctx.lineTo(-3, -4);
-    ctx.stroke();
-
-    // Enhanced cockpit with better visibility
-    ctx.fillStyle = 'rgba(100, 150, 255, 0.9)'; // More opaque blue
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
+    // Draw the blue windshield/cockpit
+    ctx.fillStyle = blue;
+    ctx.strokeStyle = black;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     if (ship.currentShip === 'scout') {
-      ctx.ellipse(0, -8, 3, 4.5, 0, 0, Math.PI * 2);
+      // Small oval windshield for scout
+      ctx.ellipse(0, -8, 3.5, 5, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'fighter') {
-      ctx.ellipse(0, -9, 3.5, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -9, 4, 6, 0, 0, Math.PI * 2);
     } else if (ship.currentShip === 'heavy') {
-      ctx.ellipse(0, -12, 4.5, 6.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -12, 5, 7, 0, 0, Math.PI * 2);
     } else {
-      ctx.ellipse(0, -10, 3.5, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -10, 4, 6, 0, 0, Math.PI * 2);
     }
     ctx.fill();
-    ctx.stroke(); // Add black outline to cockpit
-
-    // Add nose accent - PURE YELLOW ONLY, no black
-    ctx.fillStyle = primary; // Bright yellow only
-    ctx.beginPath();
-    if (ship.currentShip === 'scout') {
-      ctx.moveTo(0, -15);
-      ctx.lineTo(-3, -10);
-      ctx.lineTo(3, -10);
-    } else if (ship.currentShip === 'fighter') {
-      ctx.moveTo(0, -16);
-      ctx.lineTo(-4, -11);
-      ctx.lineTo(4, -11);
-    } else if (ship.currentShip === 'heavy') {
-      ctx.moveTo(0, -28);
-      ctx.lineTo(-6, -20);
-      ctx.lineTo(6, -20);
-    } else {
-      ctx.moveTo(0, -20);
-      ctx.lineTo(-4, -15);
-      ctx.lineTo(4, -15);
-    }
-    ctx.closePath();
-    ctx.fill(); // NO stroke, NO black outline
-
-    // Engine mounts
-    ctx.fillStyle = accent;
-    if (ship.currentShip === 'scout') {
-      ctx.fillRect(-6, 4, 2, 3);
-      ctx.fillRect(4, 4, 2, 3);
-    } else if (ship.currentShip === 'fighter') {
-      ctx.fillRect(-8, 6, 3, 3);
-      ctx.fillRect(5, 6, 3, 3);
-    } else if (ship.currentShip === 'heavy') {
-      ctx.fillRect(-12, 10, 4, 4);
-      ctx.fillRect(8, 10, 4, 4);
-    }
+    ctx.stroke(); // Black outline on windshield
 
     ctx.restore();
   }
