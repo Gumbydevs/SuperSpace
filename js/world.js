@@ -6,8 +6,8 @@
       // Random position within world bounds
       const x = this.getRandomInt(-this.width / 2 + 50, this.width / 2 - 50);
       const y = this.getRandomInt(-this.height / 2 + 50, this.height / 2 - 50);
-      // Random type (now includes fire rate boost)
-      const types = ['health', 'shield', 'energy', 'credits', 'fireRate'];
+      // Random type (includes fire rate boost and temporary weapons)
+      const types = ['health', 'shield', 'energy', 'credits', 'fireRate', 'weapon'];
       const selectedType = types[Math.floor(Math.random() * types.length)];
       powerups.push({
         x,
@@ -2080,6 +2080,10 @@
           case 'fireRate':
             color = '#f33'; // Red
             label = 'FIRE RATE';
+            break;
+          case 'weapon':
+            color = '#f90'; // Orange
+            label = 'WEAPON';
             break;
           case 'shield':
             color = '#33f'; // Blue (matches UI)
