@@ -378,8 +378,13 @@ class Game {
     document.body.appendChild(musicBtn);
   }
 
-  // Create an options gear button to open the options overlay (desktop)
+  // Create an options gear button to open the options overlay (desktop only)
   createOptionsGearButton() {
+    // Don't create desktop gear button on touch devices
+    if (this.inputHandler && this.inputHandler.isTouchDevice) {
+      return;
+    }
+    
     const gearBtn = document.createElement('button');
     gearBtn.textContent = '⚙️';
     gearBtn.id = 'options-gear-btn-top';

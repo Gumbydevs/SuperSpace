@@ -198,8 +198,15 @@ export class InputHandler {
     menuButton.id = 'mobile-menu-button';
     menuButton.className = 'touch-button mobile-menu-button';
     menuButton.innerHTML = '⚙️ Options'; // Match shop button format
-    menuButton.style.display = 'none'; // Hidden by default
+    menuButton.style.display = this.isTouchDevice ? 'flex' : 'none'; // Show on touch devices
     document.body.appendChild(menuButton); // Add to body instead of touchUI
+
+    // Add click handler for mobile menu button
+    menuButton.addEventListener('click', () => {
+      if (window.game && window.game.ui && window.game.ui.showOptionsOverlay) {
+        window.game.ui.showOptionsOverlay();
+      }
+    });
 
     document.body.appendChild(touchUI);
 

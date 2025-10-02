@@ -229,7 +229,12 @@
   <body>
     <div class="header">
       <h1>🚀 SuperSpace Analytics Dashboard</h1>
-      <div class="status-indicator" id="statusIndicator">LIVE</div>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px;">
+        <div class="status-indicator" id="statusIndicator">LIVE</div>
+        <div style="color:#cccccc;font-size:0.9em;">API:</div>
+        <input id="apiBaseInput" type="text" style="width:360px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.25);color:#fff;" placeholder="https://your-deployed-server.example.com" />
+        <button id="apiBaseSave" style="padding:6px 10px;border-radius:6px;border:none;background:#00ff88;color:#000;cursor:pointer;">Save</button>
+      </div>
     </div>
 
     <div class="refresh-indicator" id="refreshIndicator" style="opacity: 0">
@@ -264,6 +269,14 @@
         <h3>👤 Cloud Users</h3>
         <div id="cloudLoginUsersList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
         <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+      <!-- Cloud Users Registry (detailed) -->
+      <div class="metric-card">
+        <h3>☁️ Cloud User Registry</h3>
+        <div id="cloudUsersCount" class="metric-value">0</div>
+        <div id="cloudUsersList" style="max-height:220px;overflow-y:auto;font-size:0.95em;color:#fff;background:rgba(0,0,0,0.12);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Shows username, last login, and accumulated playtime</div>
       </div>
 
       <!-- Peak Players -->
@@ -593,6 +606,71 @@
           console.warn('Failed to initialize tutorialQuitChart', e);
         }
       }
+
+        // --- Cloud users registry fetch & render ---
+        function getApiBase() {
+          const saved = localStorage.getItem('analyticsApiBase');
+          return saved && saved.length > 0 ? saved : window.location.origin;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+          const input = document.getElementById('apiBaseInput');
+          const saveBtn = document.getElementById('apiBaseSave');
+          input.value = localStorage.getItem('analyticsApiBase') || window.location.origin;
+          saveBtn.addEventListener('click', () => {
+            const v = input.value.trim();
+            if (v) {
+              localStorage.setItem('analyticsApiBase', v);
+              input.style.border = '2px solid #00ff88';
+              setTimeout(()=>input.style.border='1px solid rgba(255,255,255,0.08)', 1200);
+              fetchCloudUsers();
+            }
+          });
+        });
+
+        async function fetchCloudUsers() {
+          try {
+            const base = getApiBase();
+            const url = base.replace(/\/+$/, '') + '/cloud/users';
+            const res = await fetch(url, { mode: 'cors' });
+            if (!res.ok) throw new Error('Failed to fetch cloud users: ' + res.status);
+            const data = await res.json();
+            renderCloudUsers(data);
+          } catch (e) {
+            console.error('Cloud users fetch error', e);
+            document.getElementById('cloudUsersList').innerHTML = '<em>Failed to load cloud users</em>';
+            document.getElementById('cloudUsersCount').textContent = '0';
+          }
+        }
+
+        function renderCloudUsers(data) {
+          if (!data || !Array.isArray(data.users)) {
+            document.getElementById('cloudUsersList').innerHTML = '<em>No cloud users</em>';
+            document.getElementById('cloudUsersCount').textContent = '0';
+            return;
+          }
+          const users = data.users;
+          document.getElementById('cloudUsersCount').textContent = users.length;
+          const rows = users.map(u => {
+            const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+            const play = formatPlayTime(u.playTimeSeconds || 0);
+            return `<div style="display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.03)"><div style="flex:1">${escapeHtml(u.username)}</div><div style="flex:0 0 220px;text-align:right;color:#00ff88">${last} &nbsp; • &nbsp; ${play}</div></div>`;
+          }).join('');
+          document.getElementById('cloudUsersList').innerHTML = rows || '<em>No cloud users</em>';
+        }
+
+        function formatPlayTime(seconds) {
+          seconds = Math.floor(seconds || 0);
+          const h = Math.floor(seconds / 3600);
+          const m = Math.floor((seconds % 3600) / 60);
+          const s = seconds % 60;
+          const pad = (n) => String(n).padStart(2, '0');
+          return `${h}h ${pad(m)}m ${pad(s)}s`;
+        }
+
+        // Kick off fetch and refresh every 30s
+        fetchCloudUsers();
+        setInterval(fetchCloudUsers, 30000);
 
       // --- Challenge definitions for rendering ---
       const CHALLENGE_DEFS = {
