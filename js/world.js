@@ -2077,8 +2077,8 @@
             color = '#3f3'; // Bright green (matches UI)
             label = 'HEALTH';
             break;
-          case 'weapon':
-            color = '#f33'; // Red (fire rate boost)
+          case 'fireRate':
+            color = '#f33'; // Red
             label = 'FIRE RATE';
             break;
           case 'shield':
