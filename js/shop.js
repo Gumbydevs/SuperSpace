@@ -651,6 +651,7 @@ export class ShopSystem {
     content.id = 'shop-content';
     content.style.height = '450px';
     content.style.overflowY = 'auto';
+    content.style.overflowX = 'hidden';
 
     // Add custom scrollbar styling
     const style = document.createElement('style');
@@ -922,6 +923,13 @@ export class ShopSystem {
   }
 
   renderShipsTab(container) {
+    // Create a scaled wrapper for content
+    const wrapper = document.createElement('div');
+    wrapper.style.transform = 'scale(0.8)';
+    wrapper.style.transformOrigin = 'top left';
+    wrapper.style.width = '125%'; // Compensate for scale
+    wrapper.style.marginBottom = '-20%'; // Compensate for scale
+    
     this.availableShips.forEach((ship) => {
       const shipCard = document.createElement('div');
       shipCard.className = 'shop-item';
@@ -1296,11 +1304,20 @@ export class ShopSystem {
       shipCard.appendChild(info);
       shipCard.appendChild(action);
 
-      container.appendChild(shipCard);
+      wrapper.appendChild(shipCard);
     });
+    
+    container.appendChild(wrapper);
   }
 
   renderWeaponsTab(container) {
+    // Create a scaled wrapper for content
+    const wrapper = document.createElement('div');
+    wrapper.style.transform = 'scale(0.8)';
+    wrapper.style.transformOrigin = 'top left';
+    wrapper.style.width = '125%'; // Compensate for scale
+    wrapper.style.marginBottom = '-20%'; // Compensate for scale
+    
     // Count owned purchasable weapons (excluding free ones)
     const ownedCount = this.availableWeapons.filter(
       (w) => w.owned && w.price > 0,
@@ -1482,16 +1499,25 @@ export class ShopSystem {
       }
 
       weaponCard.appendChild(action);
-      container.appendChild(weaponCard);
+      wrapper.appendChild(weaponCard);
     });
+    
+    container.appendChild(wrapper);
   }
 
   renderSkillsTab(container) {
+    // Create a scaled wrapper for content
+    const wrapper = document.createElement('div');
+    wrapper.style.transform = 'scale(0.8)';
+    wrapper.style.transformOrigin = 'top left';
+    wrapper.style.width = '125%'; // Compensate for scale
+    wrapper.style.marginBottom = '-20%'; // Compensate for scale
+    
     if (!window.game || !window.game.skillSystem) {
-      container.innerHTML = '<p>Skill system not available</p>';
+      wrapper.innerHTML = '<p>Skill system not available</p>';
+      container.appendChild(wrapper);
       return;
     }
-
     const skillSystem = window.game.skillSystem;
 
     // Header info
@@ -1512,7 +1538,7 @@ export class ShopSystem {
                 Earn 1 skill point per 2000 score points
             </div>
         `;
-    container.appendChild(infoDiv);
+    wrapper.appendChild(infoDiv);
 
     // Render each skill
     skillSystem.skills.forEach((skill) => {
@@ -1562,11 +1588,20 @@ export class ShopSystem {
 
       skillCard.appendChild(info);
       skillCard.appendChild(button);
-      container.appendChild(skillCard);
+      wrapper.appendChild(skillCard);
     });
+    
+    container.appendChild(wrapper);
   }
 
   renderUpgradesTab(container) {
+    // Create a scaled wrapper for content
+    const wrapper = document.createElement('div');
+    wrapper.style.transform = 'scale(0.8)';
+    wrapper.style.transformOrigin = 'top left';
+    wrapper.style.width = '125%'; // Compensate for scale
+    wrapper.style.marginBottom = '-20%'; // Compensate for scale
+    
     this.availableUpgrades.forEach((upgrade) => {
       const upgradeCard = document.createElement('div');
       upgradeCard.className = 'shop-item';
@@ -1723,8 +1758,10 @@ export class ShopSystem {
       upgradeCard.appendChild(info);
       upgradeCard.appendChild(action);
 
-      container.appendChild(upgradeCard);
+      wrapper.appendChild(upgradeCard);
     });
+    
+    container.appendChild(wrapper);
   }
 
   renderChallengesTab(container) {
