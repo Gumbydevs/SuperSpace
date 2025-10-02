@@ -1,7 +1,7 @@
 // Reset configuration file
 // Edit the flags below to control what is cleared/preserved during a version-driven reset.
 // Authoritative version for resets. Edit this value to trigger a version-driven reset.
-export const GAME_VERSION = '2025.10.02.002';
+export const GAME_VERSION = '2025.10.02.003';
 export const ResetConfig = {
   // Human-readable release notes keyed by version string
   versionNotes: {
