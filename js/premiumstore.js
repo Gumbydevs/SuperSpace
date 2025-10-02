@@ -1467,9 +1467,6 @@ export class PremiumStore {
   handleClick(x, y, canvas) {
     if (!this.storeOpen) return false;
     
-    // Debug logging for mobile click issues
-    console.log(`Premium store click at: ${x}, ${y} | Canvas: ${canvas.width}x${canvas.height}`);
-    
     // Use same mobile detection and responsive logic as render method
     const isMobile = canvas.width < 600 || canvas.height < 700;
     const isTablet = canvas.width < 900 || canvas.height < 900;
@@ -1533,16 +1530,12 @@ export class PremiumStore {
     const closeX = offsetX + scaledWidth - closeButtonWidth - closeButtonMargin;
     const closeY = offsetY + (isMobile ? 15 : 25);
     
-    // Debug close button bounds
-    console.log(`Close button bounds: ${closeX}, ${closeY}, ${closeX + closeButtonWidth}, ${closeY + closeButtonHeight} | isMobile: ${isMobile}`);
-    
     if (
       x >= closeX &&
       x <= closeX + closeButtonWidth &&
       y >= closeY &&
       y <= closeY + closeButtonHeight
     ) {
-      console.log('Close button clicked!');
       this.toggleStore();
       return true;
     }
@@ -1594,18 +1587,12 @@ export class PremiumStore {
       const itemX = startXItems + col * (itemWidth + spacing);
       const itemY = startYItems + row * (itemHeight + (isMobile ? 10 : 25)); // Match aggressive mobile spacing
 
-      // Debug item bounds
-      if (index === 0) { // Only log first item to avoid spam
-        console.log(`Item ${index} bounds: ${itemX}, ${itemY}, ${itemX + itemWidth}, ${itemY + itemHeight}`);
-      }
-
       if (
         x >= itemX &&
         x <= itemX + itemWidth &&
         y >= itemY &&
         y <= itemY + itemHeight
       ) {
-        console.log(`Item ${index} clicked: ${item.name}`);
         // Click is inside the item box. Decide intent:
         // - For gem packages: only trigger purchase when clicking the small BUY NOW button
         // - For non-owned avatars/skins: only trigger purchase when clicking the PURCHASE button

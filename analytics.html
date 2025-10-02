@@ -662,27 +662,36 @@
           });
         });
 
-        async function fetchCloudUsers() {
+      async function fetchCloudUsers() {
+        // Try multiple endpoints in order of preference
+        const endpoints = ['/cloud/users', '/cloud/users/auth', '/api/cloud/users'];
+        let lastError = null;
+        
+        for (const endpoint of endpoints) {
           try {
             const base = getApiBase();
-            const url = base.replace(/\/+$/, '') + '/cloud/users';
+            const url = base.replace(/\/+$/, '') + endpoint;
             const res = await fetch(url, { mode: 'cors' });
-            if (!res.ok) {
+            if (res.ok) {
+              const data = await res.json();
+              renderCloudUsers(data);
+              return; // Success, exit early
+            } else {
               const txt = await res.text().catch(() => '(no body)');
-              throw new Error(`Failed to fetch cloud users: status=${res.status} body=${txt}`);
+              lastError = new Error(`${endpoint}: status=${res.status} body=${txt}`);
             }
-            const data = await res.json();
-            renderCloudUsers(data);
           } catch (e) {
-            console.error('Cloud users fetch error', e);
-            const base = getApiBase();
-            const url = base.replace(/\/+$/, '') + '/cloud/users';
-            document.getElementById('cloudUsersList').innerHTML = `<div style="color:#ff8888;padding:8px;border-radius:6px;background:rgba(0,0,0,0.25)">Failed to load cloud users from <strong>${escapeHtml(url)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(e.message || String(e))}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
-            document.getElementById('cloudUsersCount').textContent = '0';
+            lastError = new Error(`${endpoint}: ${e.message}`);
           }
         }
-
-        function renderCloudUsers(data) {
+        
+        // All endpoints failed
+        console.error('Cloud users fetch error', lastError);
+        const base = getApiBase();
+        const url = base.replace(/\/+$/, '') + '/cloud/users';
+        document.getElementById('cloudUsersList').innerHTML = `<div style="color:#ff8888;padding:8px;border-radius:6px;background:rgba(0,0,0,0.25)">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
+        document.getElementById('cloudUsersCount').textContent = '0';
+      }        function renderCloudUsers(data) {
           if (!data || !Array.isArray(data.users)) {
             document.getElementById('cloudUsersList').innerHTML = '<em>No cloud users</em>';
             document.getElementById('cloudUsersCount').textContent = '0';

@@ -354,7 +354,37 @@ async function getCloudUsersPayload() {
 const cloudUsersHandler = async (req, res) => {
   try {
     const payload = await getCloudUsersPayload();
-    res.json(payload);
+    // Add debug info to help diagnose empty results
+    const fsPromises = require('fs').promises;
+    const cloudDir = require('path').join(__dirname, 'cloud_data');
+    let debugInfo = {};
+    try {
+      const stats = await fsPromises.stat(cloudDir);
+      debugInfo.cloudDirExists = stats.isDirectory();
+      const files = await fsPromises.readdir(cloudDir);
+      debugInfo.cloudDirFiles = files;
+      
+      const usersPath = require('path').join(cloudDir, 'users.json');
+      const tokensPath = require('path').join(cloudDir, 'tokens.json');
+      try {
+        const usersContent = await fsPromises.readFile(usersPath, 'utf8');
+        debugInfo.usersFileSize = usersContent.length;
+        debugInfo.usersFileContent = usersContent.substring(0, 200);
+      } catch (e) {
+        debugInfo.usersFileError = e.message;
+      }
+      try {
+        const tokensContent = await fsPromises.readFile(tokensPath, 'utf8');
+        debugInfo.tokensFileSize = tokensContent.length;
+        debugInfo.tokensFileContent = tokensContent.substring(0, 200);
+      } catch (e) {
+        debugInfo.tokensFileError = e.message;
+      }
+    } catch (e) {
+      debugInfo.dirError = e.message;
+    }
+    
+    res.json({ ...payload, debug: debugInfo });
   } catch (error) {
     console.error('Failed to read cloud users:', error);
     res.status(500).json({ error: 'Failed to read cloud users' });
@@ -364,6 +394,53 @@ const cloudUsersHandler = async (req, res) => {
 app.get('/cloud/users', cloudUsersHandler);
 app.get('/api/cloud/users', cloudUsersHandler);
 app.get('/api/v1/cloud/users', cloudUsersHandler);
+
+// Alternative endpoint that uses CloudSyncAuth directly
+app.get('/cloud/users/auth', async (req, res) => {
+  try {
+    const users = await cloudAuth.loadUsers();
+    const tokens = await cloudAuth.loadTokens();
+    
+    // Map username -> latest token lastUsed
+    const userLastLogin = {};
+    for (const [token, tdata] of Object.entries(tokens)) {
+      if (tdata && tdata.username) {
+        const uname = tdata.username.toLowerCase();
+        const ts = tdata.lastUsed ? new Date(tdata.lastUsed).getTime() : 0;
+        if (!userLastLogin[uname] || ts > userLastLogin[uname]) {
+          userLastLogin[uname] = ts;
+        }
+      }
+    }
+    
+    const list = [];
+    for (const [key, u] of Object.entries(users)) {
+      const username = u.username || key;
+      const userKey = username.toLowerCase();
+      const lastLogin = userLastLogin[userKey] ? new Date(userLastLogin[userKey]).toISOString() : null;
+      
+      list.push({
+        username,
+        createdAt: u.createdAt || null,
+        lastLogin,
+        playTimeSeconds: 0 // Will be 0 since we're not reading player files here
+      });
+    }
+    
+    // Sort by lastLogin desc then username
+    list.sort((a, b) => {
+      const ta = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+      const tb = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+      if (ta !== tb) return tb - ta;
+      return a.username.localeCompare(b.username);
+    });
+    
+    res.json({ count: list.length, users: list, method: 'auth' });
+  } catch (error) {
+    console.error('Failed to read cloud users via auth:', error);
+    res.status(500).json({ error: 'Failed to read cloud users via auth', details: error.message });
+  }
+});
 
 // Helper function to generate player activity data for charts
 function generatePlayerActivityData(stats) {
