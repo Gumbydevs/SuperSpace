@@ -16,29 +16,36 @@ export class PayPalIntegration {
     console.log('Production mode:', this.isProduction);
   }
 
-  // Create PayPal payment for gem package
-  createPayPalPayment(gemPackage) {
-    console.log('Creating PayPal payment for:', gemPackage);
+  // Create PayPal payment for gem package or individual item
+  createPayPalPayment(item) {
+    console.log('Creating PayPal payment for:', item);
 
     const paypalUrl = this.isProduction
       ? 'https://www.paypal.com/cgi-bin/webscr'
       : 'https://www.sandbox.paypal.com/cgi-bin/webscr';
 
+    // Determine if this is a gem package or individual item
+    const isGemPackage = item.gems !== undefined;
+    const itemName = isGemPackage 
+      ? `SuperSpace ${item.name}` 
+      : `SuperSpace ${item.name} (${item.type})`;
+
     // Create form data for PayPal
     const formData = {
       cmd: '_xclick',
       business: this.paypalEmail,
-      item_name: `SuperSpace ${gemPackage.name}`,
-      item_number: gemPackage.id,
-      amount: gemPackage.price.toFixed(2),
+      item_name: itemName,
+      item_number: item.id,
+      amount: item.price.toFixed(2),
       currency_code: this.currency,
       return: this.returnUrl,
       cancel_return: this.cancelUrl,
       notify_url: window.location.origin + '/paypal-ipn.php',
       custom: JSON.stringify({
         gameId: 'superspace',
-        packageId: gemPackage.id,
-        gems: gemPackage.gems + (gemPackage.bonus || 0),
+        packageId: item.id,
+        itemType: isGemPackage ? 'gems' : item.type,
+        gems: isGemPackage ? (item.gems + (item.bonus || 0)) : 0,
         playerId: this.generatePlayerId(),
       }),
     };
@@ -83,21 +90,51 @@ export class PayPalIntegration {
   }
 
   // Handle successful payment (call this from success page)
-  handlePaymentSuccess(packageId, transactionId) {
-    const gemPackage = this.premiumStore.gemPackages.find(
-      (p) => p.id === packageId,
-    );
-    if (gemPackage) {
-      const totalGems = gemPackage.gems + (gemPackage.bonus || 0);
-      this.premiumStore.addSpaceGems(totalGems, packageId);
+  handlePaymentSuccess(packageId, transactionId, customData = null) {
+    // Parse custom data if provided
+    let itemType = 'gems';
+    if (customData) {
+      try {
+        const parsedCustom = JSON.parse(customData);
+        itemType = parsedCustom.itemType || 'gems';
+      } catch (e) {
+        console.warn('Could not parse custom data:', e);
+      }
+    }
+
+    if (itemType === 'gems') {
+      // Handle gem package purchase
+      const gemPackage = this.premiumStore.gemPackages.find(
+        (p) => p.id === packageId,
+      );
+      if (gemPackage) {
+        const totalGems = gemPackage.gems + (gemPackage.bonus || 0);
+        this.premiumStore.addSpaceGems(totalGems, packageId);
+
+        // Record transaction
+        this.recordTransaction(packageId, transactionId, 'completed');
+
+        console.log(`Payment successful! Added ${totalGems} Space Gems`);
+
+        // Show success message
+        this.showPaymentSuccess(gemPackage, totalGems);
+      }
+    } else {
+      // Handle individual item purchase (avatar or skin)
+      console.log(`Payment successful! Granting ${itemType}: ${packageId}`);
+      
+      // Grant the item directly
+      if (itemType === 'avatar') {
+        this.premiumStore.grantAvatar(packageId);
+      } else if (itemType === 'skin') {
+        this.premiumStore.grantSkin(packageId);
+      }
 
       // Record transaction
       this.recordTransaction(packageId, transactionId, 'completed');
 
-      console.log(`Payment successful! Added ${totalGems} Space Gems`);
-
-      // Show success message
-      this.showPaymentSuccess(gemPackage, totalGems);
+      // Show success message for item
+      this.showItemPaymentSuccess(packageId, itemType);
     }
   }
 
@@ -134,6 +171,33 @@ export class PayPalIntegration {
     this.showPaymentMessage(
       'Purchase Successful! 🎉',
       `You received ${totalGems} Space Gems from ${gemPackage.name}!`,
+      '#00ff00',
+    );
+  }
+
+  // Show item payment success message
+  showItemPaymentSuccess(itemId, itemType) {
+    let itemName = itemId;
+    let emoji = '🎉';
+    
+    // Find the item name
+    if (itemType === 'avatar') {
+      const avatar = this.premiumStore.premiumAvatars.find(a => a.id === itemId);
+      if (avatar) {
+        itemName = avatar.name;
+        emoji = '👨‍🚀';
+      }
+    } else if (itemType === 'skin') {
+      const skin = this.premiumStore.shipSkins.find(s => s.id === itemId);
+      if (skin) {
+        itemName = skin.name;
+        emoji = '🚀';
+      }
+    }
+
+    this.showPaymentMessage(
+      `Purchase Successful! ${emoji}`,
+      `You unlocked ${itemName}!`,
       '#00ff00',
     );
   }

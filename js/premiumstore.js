@@ -93,6 +93,26 @@ export class PremiumStore {
         rarity: 'legendary',
         drawMethod: 'drawNeonWarrior',
       },
+      {
+        id: 'steve',
+        name: 'Steve',
+        description: 'The legendary block builder from another dimension',
+        gemPrice: 190,
+        realPrice: 1.99,
+        owned: false,
+        rarity: 'epic',
+        drawMethod: 'drawSteve',
+      },
+      {
+        id: 'enderman',
+        name: 'Endingman',
+        description: 'Mysterious dark entity from the End dimension',
+        gemPrice: 240,
+        realPrice: 2.49,
+        owned: false,
+        rarity: 'epic',
+        drawMethod: 'drawEnderman',
+      },
       // Playtester exclusive avatar (gifted to pre-release players)
       {
         id: 'playtester_dummy',
@@ -1592,22 +1612,28 @@ export class PremiumStore {
         `;
 
     messageBox.innerHTML = `
-            <h2 style="margin: 0 0 15px 0; color: #ff6666;">Insufficient Space Gems 💎</h2>
-            <p style="margin: 0 0 10px 0; font-size: 16px;">You need <strong>${needed} more gems</strong> to purchase ${item.name}</p>
-            <p style="margin: 0 0 20px 0; font-size: 14px; color: #cccccc;">
+            <h2 style="margin: 0 0 15px 0; color: #ff6666; font-family: 'Orbitron', monospace;">Insufficient Space Gems 💎</h2>
+            <p style="margin: 0 0 10px 0; font-size: 16px; font-family: 'Orbitron', monospace;">You need <strong>${needed} more gems</strong> to purchase ${item.name}</p>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #cccccc; font-family: 'Orbitron', monospace;">
                 Current: ${this.spaceGems} gems | Required: ${item.gemPrice} gems
             </p>
-            <div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="this.closest('.overlay').remove(); window.premiumStore.purchaseWithRealMoney('${item.id}', '${item.name}', ${item.realPrice});" 
+                        style="background: #28a745; color: white; border: none; 
+                               padding: 12px 20px; border-radius: 5px; cursor: pointer;
+                               font-weight: bold; font-size: 14px; font-family: 'Orbitron', monospace;">
+                    Buy for $${item.realPrice}
+                </button>
                 <button onclick="this.closest('.overlay').remove(); window.premiumStore.setTab('gems');" 
                         style="background: #00ffff; color: black; border: none; 
                                padding: 10px 15px; border-radius: 5px; cursor: pointer;
-                               font-weight: bold; margin: 5px;">
+                               font-weight: bold; margin: 5px; font-family: 'Orbitron', monospace;">
                     Buy Gems
                 </button>
                 <button onclick="this.closest('.overlay').remove()" 
                         style="background: #666666; color: white; border: none; 
                                padding: 10px 15px; border-radius: 5px; cursor: pointer;
-                               margin: 5px;">
+                               margin: 5px; font-family: 'Orbitron', monospace;">
                     Cancel
                 </button>
             </div>
@@ -1631,5 +1657,74 @@ export class PremiumStore {
   setPayPalIntegration(paypalIntegration) {
     this.paypalIntegration = paypalIntegration;
     console.log('PayPal integration connected to Premium Store');
+  }
+
+  // Purchase item directly with real money (PayPal)
+  purchaseWithRealMoney(itemId, itemName, realPrice) {
+    console.log(`Initiating PayPal payment for ${itemName} - $${realPrice}`);
+    
+    // Find the item in avatars or skins
+    let item = this.premiumAvatars.find(avatar => avatar.id === itemId);
+    if (!item) {
+      item = this.shipSkins.find(skin => skin.id === itemId);
+    }
+    
+    if (!item) {
+      console.error(`Item ${itemId} not found`);
+      return;
+    }
+
+    // Create a PayPal payment item object
+    const paymentItem = {
+      id: itemId,
+      name: itemName,
+      price: realPrice, // Use the realPrice parameter directly
+      type: this.premiumAvatars.includes(item) ? 'avatar' : 'skin'
+    };
+
+    if (this.paypalIntegration) {
+      this.paypalIntegration.createPayPalPayment(paymentItem);
+    } else {
+      console.error('PayPal integration not available');
+      alert('Payment system temporarily unavailable. Please try again later.');
+    }
+  }
+
+  // Grant avatar after successful PayPal purchase
+  grantAvatar(avatarId) {
+    const purchases = this.loadPremiumPurchases();
+    if (!purchases.avatars) purchases.avatars = [];
+    
+    if (!purchases.avatars.includes(avatarId)) {
+      purchases.avatars.push(avatarId);
+      localStorage.setItem('premiumPurchases', JSON.stringify(purchases));
+      
+      // Update the avatar in the store
+      const avatar = this.premiumAvatars.find(a => a.id === avatarId);
+      if (avatar) {
+        avatar.owned = true;
+      }
+      
+      console.log(`Avatar ${avatarId} granted successfully`);
+    }
+  }
+
+  // Grant skin after successful PayPal purchase  
+  grantSkin(skinId) {
+    const purchases = this.loadPremiumPurchases();
+    if (!purchases.skins) purchases.skins = [];
+    
+    if (!purchases.skins.includes(skinId)) {
+      purchases.skins.push(skinId);
+      localStorage.setItem('premiumPurchases', JSON.stringify(purchases));
+      
+      // Update the skin in the store
+      const skin = this.shipSkins.find(s => s.id === skinId);
+      if (skin) {
+        skin.owned = true;
+      }
+      
+      console.log(`Skin ${skinId} granted successfully`);
+    }
   }
 }

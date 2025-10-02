@@ -16,6 +16,8 @@ export class AvatarManager {
       'cyber_pilot',
       'galaxy_explorer',
       'neon_warrior',
+      'steve',
+      'enderman',
       'playtester_dummy',
     ];
     this.premiumStore = premiumStore;
@@ -74,6 +76,8 @@ export class AvatarManager {
       { id: 'cyber_pilot', name: 'Cyber-X' },
       { id: 'galaxy_explorer', name: 'Nova Star' },
       { id: 'neon_warrior', name: 'Neon Ghost' },
+      { id: 'steve', name: 'Steve' },
+      { id: 'enderman', name: 'Endingman' },
       // Playtester-only avatar (not shown in public store)
       { id: 'playtester_dummy', name: 'Test Dummy' },
     ];
@@ -1671,6 +1675,12 @@ export class AvatarManager {
       case 'neon_warrior':
         this.drawNeonWarrior(ctx, size);
         break;
+      case 'steve':
+        this.drawSteve(ctx, size);
+        break;
+      case 'enderman':
+        this.drawEnderman(ctx, size);
+        break;
       case 'playtester_dummy':
         this.drawCrashDummy(ctx, size);
         break;
@@ -1955,6 +1965,99 @@ export class AvatarManager {
     ctx.fillRect(7 * scale, 22 * scale, 2 * scale, 2 * scale);
     ctx.fillRect(11 * scale, 22 * scale, 2 * scale, 2 * scale);
     ctx.fillRect(15 * scale, 22 * scale, 2 * scale, 2 * scale);
+  }
+
+  drawSteve(ctx, size) {
+    // Steve from Minecraft (scalable) - made larger to fill more space
+    const scale = size / 20; // Changed from 24 to 20 to make Steve bigger
+
+    // Background - dark space theme
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, size, size);
+
+    // Head (tan/peach skin color) - bigger and more centered
+    ctx.fillStyle = '#fdbcb4';
+    ctx.fillRect(4 * scale, 2 * scale, 12 * scale, 12 * scale);
+
+    // Hair (brown)
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(4 * scale, 2 * scale, 12 * scale, 4 * scale);
+    ctx.fillRect(4 * scale, 2 * scale, 2 * scale, 8 * scale); // Left side
+    ctx.fillRect(14 * scale, 2 * scale, 2 * scale, 8 * scale); // Right side
+
+    // Eyes (dark) - bigger
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(7 * scale, 7 * scale, 2 * scale, 2 * scale);
+    ctx.fillRect(11 * scale, 7 * scale, 2 * scale, 2 * scale);
+
+    // Nose (slightly darker skin) - middle rectangle
+    ctx.fillStyle = '#f4a090';
+    ctx.fillRect(9 * scale, 9 * scale, 2 * scale, 2 * scale);
+
+    // Beard - U-shaped brown beard around mouth area
+    ctx.fillStyle = '#8b4513';
+    // Left side of beard (longer vertical)
+    ctx.fillRect(7 * scale, 11 * scale, 2 * scale, 4 * scale);
+    // Right side of beard (longer vertical)
+    ctx.fillRect(11 * scale, 11 * scale, 2 * scale, 4 * scale);
+    // Bottom of beard (connecting the U, moved down 1 pixel)
+    ctx.fillRect(7 * scale, 12 * scale, 6 * scale, 2 * scale);
+
+    // Body - cyan shirt (bigger)
+    ctx.fillStyle = '#20b2aa';
+    ctx.fillRect(5 * scale, 14 * scale, 10 * scale, 6 * scale);
+
+    // Arms - skin colored (bigger)
+    ctx.fillStyle = '#fdbcb4';
+    ctx.fillRect(2 * scale, 14 * scale, 3 * scale, 5 * scale); // Left arm
+    ctx.fillRect(15 * scale, 14 * scale, 3 * scale, 5 * scale); // Right arm
+  }
+
+  drawEnderman(ctx, size) {
+    // Enderman from Minecraft (scalable)
+    const scale = size / 24;
+
+    // Background - dark void
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, size, size);
+
+    // Head (completely black)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(6 * scale, 4 * scale, 12 * scale, 12 * scale);
+
+    // Eyes (bright magenta/purple glowing)
+    ctx.fillStyle = '#ff00ff';
+    ctx.fillRect(8 * scale, 8 * scale, 2 * scale, 4 * scale);
+    ctx.fillRect(14 * scale, 8 * scale, 2 * scale, 4 * scale);
+
+    // Eye glow effect
+    ctx.fillStyle = '#cc00cc';
+    ctx.fillRect(7 * scale, 9 * scale, 1 * scale, 2 * scale);
+    ctx.fillRect(10 * scale, 9 * scale, 1 * scale, 2 * scale);
+    ctx.fillRect(13 * scale, 9 * scale, 1 * scale, 2 * scale);
+    ctx.fillRect(16 * scale, 9 * scale, 1 * scale, 2 * scale);
+
+    // Body (black)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(7 * scale, 16 * scale, 10 * scale, 8 * scale);
+
+    // Arms (very long and thin like Enderman)
+    ctx.fillRect(4 * scale, 16 * scale, 3 * scale, 8 * scale); // Left arm
+    ctx.fillRect(17 * scale, 16 * scale, 3 * scale, 8 * scale); // Right arm
+
+    // Purple particle effects around the Enderman
+    ctx.fillStyle = '#8a2be2';
+    ctx.fillRect(2 * scale, 6 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(21 * scale, 8 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(1 * scale, 14 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(22 * scale, 18 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(3 * scale, 20 * scale, 1 * scale, 1 * scale);
+
+    // More particle effects
+    ctx.fillStyle = '#9370db';
+    ctx.fillRect(23 * scale, 5 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(0 * scale, 10 * scale, 1 * scale, 1 * scale);
+    ctx.fillRect(22 * scale, 12 * scale, 1 * scale, 1 * scale);
   }
 
   // Draw profile avatar (for UI display)
