@@ -645,12 +645,15 @@ class AccountUI {
         navigator.clipboard
           .writeText(recoveryKey)
           .then(() => {
-            document.getElementById('copy-recovery-key').textContent =
-              'Copied!';
-            setTimeout(() => {
-              document.getElementById('copy-recovery-key').textContent =
-                'Copy Key';
-            }, 2000);
+            const copyButton = document.getElementById('copy-recovery-key');
+            if (copyButton) {
+              copyButton.textContent = 'Copied!';
+              setTimeout(() => {
+                if (copyButton) {
+                  copyButton.textContent = 'Copy Key';
+                }
+              }, 2000);
+            }
           })
           .catch(() => {
             // Fallback for older browsers

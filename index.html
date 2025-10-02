@@ -17,6 +17,9 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <!-- Vercel Analytics - Simplified -->
     <script>
+      // Set analytics host for custom tracking
+      window.SUPERSPACE_ANALYTICS_HOST = 'https://superspace-server.onrender.com';
+      
       // Simple Vercel Analytics setup without external dependencies
       window.vercelTrack = function (event, data) {
         // console.log('✅ Vercel Analytics (fallback):', event, data); // Production: disabled
@@ -30,7 +33,6 @@
       }
     </script>
     <script src="js/vercelAnalytics.js"></script>
-    <script src="analytics-debug.js"></script>
     <script>
       // Connect to the server to get player count as soon as the page loads
       window.addEventListener('load', function () {
