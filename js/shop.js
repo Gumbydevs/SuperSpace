@@ -133,7 +133,7 @@ export class ShopSystem {
           cooldown: 0.1, // Rapid burst
           speed: 700,
           range: 400,
-          energyCost: 7,
+          energyCost: 5,
           projectileCount: 3,
         },
       },
@@ -1429,7 +1429,7 @@ export class ShopSystem {
                 Points allocated this run: ${skillSystem.getAllocatedPoints()}/${skillSystem.MAX_POINTS_PER_RUN}
             </div>
             <div style="font-size: 0.8em; color: #888; margin-top: 5px;">
-                Earn 1 skill point per 5000 score points
+                Earn 1 skill point per 1500 score points
             </div>
         `;
     container.appendChild(infoDiv);

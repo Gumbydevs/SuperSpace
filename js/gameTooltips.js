@@ -54,8 +54,8 @@ export class GameTooltips {
     
     this.shownTips = new Set();
     this.tipInterval = null;
-    this.minInterval = 90000; // Minimum 90 seconds between tips
-    this.maxInterval = 180000; // Maximum 3 minutes between tips
+    this.minInterval = 180000; // Minimum 3 minutes between tips
+    this.maxInterval = 300000; // Maximum 5 minutes between tips
     this.enabled = true;
     
     // Load shown tips from localStorage
@@ -66,10 +66,10 @@ export class GameTooltips {
   start() {
     if (!this.enabled) return;
     
-    // Show first tip after 30 seconds of gameplay
+    // Show first tip after 2 minutes of gameplay
     setTimeout(() => {
       this.showRandomTip();
-    }, 30000);
+    }, 120000);
     
     // Then show tips at random intervals
     this.scheduleNextTip();
@@ -126,7 +126,7 @@ export class GameTooltips {
   displayTip(message) {
     if (!this.chat) return;
     
-    // Use the chat's local display method (doesn't broadcast to server)
+    // Always add to chat history
     if (typeof this.chat.displayLocalMessage === 'function') {
       this.chat.displayLocalMessage(message, 'system');
     } else {
@@ -146,6 +146,11 @@ export class GameTooltips {
           messagesDiv.removeChild(messagesDiv.firstChild);
         }
       }
+    }
+    
+    // If chat is closed, show as toast notification
+    if (!this.chat.isVisible && typeof this.chat.showToast === 'function') {
+      this.chat.showToast('💡 Tip', message.replace('💡 TIP: ', ''));
     }
   }
   

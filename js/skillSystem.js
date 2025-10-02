@@ -12,8 +12,8 @@ export class SkillSystem {
 
   // Check if player earned new skill points based on score
   updateSkillPoints() {
-    // Award 1 skill point per 5000 score points (increased from 1000 for balance)
-    const earnedPoints = Math.floor(this.player.score / 5000);
+    // Award 1 skill point per 1500 score points (increased from 1000 for balance)
+    const earnedPoints = Math.floor(this.player.score / 1500);
     const currentAllocated = this.getAllocatedPoints();
 
     // Only give points up to the max per run
