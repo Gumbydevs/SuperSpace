@@ -1625,10 +1625,16 @@ export class ShopSystem {
 
       // Icon content based on upgrade type
       const iconContent = document.createElement('div');
-      iconContent.textContent = upgrade.id.charAt(0).toUpperCase();
-      iconContent.style.color = '#3af';
-      iconContent.style.fontSize = '24px';
-      iconContent.style.fontWeight = 'bold';
+      // Map upgrade IDs to appropriate emoji
+      const iconMap = {
+        engine: '🚀',      // Engine/speed
+        shield: '🛡️',      // Shield
+        energy: '⚡',      // Energy/power
+        armor: '🔰',       // Armor/defense
+        cargo: '📦',       // Cargo/storage
+      };
+      iconContent.textContent = iconMap[upgrade.id] || '⭐';
+      iconContent.style.fontSize = '32px';
 
       icon.appendChild(iconContent);
 
@@ -1671,10 +1677,34 @@ export class ShopSystem {
       info.appendChild(description);
       info.appendChild(level);
 
+      // Calculate if at max level - needed for next/current effects
+      const price = upgrade.getPrice(upgrade.level);
+      const atMaxLevel = upgrade.level >= upgrade.maxLevel;
+
+      // Next level effect preview - moved below level indicators
+      if (!atMaxLevel) {
+        const nextEffect = document.createElement('div');
+        nextEffect.style.marginTop = '8px';
+        nextEffect.style.fontSize = '0.8em';
+        nextEffect.style.color = '#aaf';
+
+        const effects = upgrade.getEffect(upgrade.level + 1);
+        const effectTexts = Object.entries(effects).map(([key, value]) => {
+          // Calculate difference from current level
+          const currentValue =
+            upgrade.level > 0 ? upgrade.getEffect(upgrade.level)[key] : 0;
+          const increase = value - currentValue;
+          return `${key.charAt(0).toUpperCase() + key.slice(1)}: +${increase}`;
+        });
+
+        nextEffect.textContent = 'Next: ' + effectTexts.join(', ');
+        info.appendChild(nextEffect);
+      }
+
       // Current effect display
       if (upgrade.level > 0) {
         const effect = document.createElement('div');
-        effect.style.marginTop = '10px';
+        effect.style.marginTop = '6px';
         effect.style.fontSize = '0.85em';
         effect.style.color = '#3f3';
 
@@ -1694,9 +1724,6 @@ export class ShopSystem {
       action.style.flexDirection = 'column';
       action.style.justifyContent = 'center';
       action.style.alignItems = 'center';
-
-      const price = upgrade.getPrice(upgrade.level);
-      const atMaxLevel = upgrade.level >= upgrade.maxLevel;
 
       const button = document.createElement('button');
       if (atMaxLevel) {
@@ -1733,26 +1760,6 @@ export class ShopSystem {
       }
 
       action.appendChild(button);
-
-      // Next level effect preview
-      if (!atMaxLevel) {
-        const nextEffect = document.createElement('div');
-        nextEffect.style.marginTop = '10px';
-        nextEffect.style.fontSize = '0.8em';
-        nextEffect.style.color = '#aaf';
-
-        const effects = upgrade.getEffect(upgrade.level + 1);
-        const effectTexts = Object.entries(effects).map(([key, value]) => {
-          // Calculate difference from current level
-          const currentValue =
-            upgrade.level > 0 ? upgrade.getEffect(upgrade.level)[key] : 0;
-          const increase = value - currentValue;
-          return `${key.charAt(0).toUpperCase() + key.slice(1)}: +${increase}`;
-        });
-
-        nextEffect.textContent = 'Next: ' + effectTexts.join(', ');
-        action.appendChild(nextEffect);
-      }
 
       upgradeCard.appendChild(icon);
       upgradeCard.appendChild(info);
