@@ -25,7 +25,8 @@ class ServerAnalytics {
     this.startSessionReaper();
     this.startPeriodicSave();
 
-    console.log('Server Analytics initialized');
+  const logger = require('./logger');
+  logger.info('Server Analytics initialized');
   }
 
   async initializeStorage() {
@@ -173,7 +174,8 @@ class ServerAnalytics {
     const { sessionId, playerId } = event;
     const now = event.timestamp || Date.now();
 
-    console.log(
+    const logger = require('./logger');
+    logger.debug(
       `Analytics: Processing session update for player ${playerId}, session ${sessionId}, active sessions: ${this.sessions.size}`,
     );
 
@@ -184,7 +186,7 @@ class ServerAnalytics {
     if (isSessionStart) {
       if (!this.sessions.has(playerId)) {
         // Truly new player
-        console.log(`Analytics: New player ${playerId} starting first session`);
+  logger.debug(`Analytics: New player ${playerId} starting first session`);
         this.sessions.set(playerId, {
           playerId,
           sessionId: sessionId,
@@ -217,24 +219,20 @@ class ServerAnalytics {
         const timeSinceLastActivity =
           now - (session.lastActivity || session.startTime || 0);
 
-        console.log(
+        logger.debug(
           `Analytics: Existing player ${playerId} reconnecting, time since last activity: ${timeSinceLastActivity}ms`,
         );
 
         if (timeSinceLastActivity < 60000) {
           // 1 minute threshold
           // Quick reconnect - just update sessionId and activity time
-          console.log(
-            `Analytics: Quick reconnect for player ${playerId} - updating session`,
-          );
+          logger.debug(`Analytics: Quick reconnect for player ${playerId} - updating session`);
           session.sessionId = sessionId;
           session.lastActivity = now;
           // Don't count as new session
         } else {
           // Long gap - treat as new session but don't duplicate the player
-          console.log(
-            `Analytics: New session for returning player ${playerId}`,
-          );
+          logger.debug(`Analytics: New session for returning player ${playerId}`);
           session.sessionId = sessionId;
           session.startTime = now;
           session.lastActivity = now;
@@ -276,7 +274,7 @@ class ServerAnalytics {
     if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
 
     stats.uniquePlayers.add(playerId);
-    console.log(`Analytics: Added new player ${playerId} to daily stats`);
+  logger.debug(`Analytics: Added new player ${playerId} to daily stats`);
   }
 
   updateDailyStatsForReturningPlayer(playerId, timestamp) {

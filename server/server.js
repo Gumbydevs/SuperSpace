@@ -176,7 +176,8 @@ app.get('/test', (req, res) => {
 // Analytics endpoints
 app.get('/analytics', async (req, res) => {
   try {
-    console.log('📊 Analytics endpoint called');
+    const logger = require('./logger');
+    logger.debug('📊 Analytics endpoint called');
     
     // Get data from database analytics (persistent) if available, fallback to file analytics
     let stats;
@@ -184,23 +185,23 @@ app.get('/analytics', async (req, res) => {
     
     try {
       if (dbAnalytics && dbAnalytics.initialized) {
-        console.log('🗄️ Using database analytics');
+  logger.info('🗄️ Using database analytics');
         // Use persistent database analytics
         stats = await dbAnalytics.getStats();
         dataSource = 'database';
       } else {
-        console.log('📁 Using file analytics');
+  logger.info('📁 Using file analytics');
         // Fallback to file analytics
         stats = analytics.getCurrentStats();
         dataSource = 'file';
       }
-      console.log('✅ Stats loaded successfully, source:', dataSource);
+  logger.debug('✅ Stats loaded successfully, source:', dataSource);
     } catch (statsError) {
       console.error('❌ Error loading stats:', statsError);
       // Fallback to file analytics if database fails
       stats = analytics.getCurrentStats();
       dataSource = 'file-fallback';
-      console.log('⚠️ Fell back to file analytics due to error');
+  logger.warn('⚠️ Fell back to file analytics due to error');
     }
     
     // --- Challenge completions aggregation ---
@@ -261,7 +262,7 @@ app.get('/analytics', async (req, res) => {
         const sock = (io.sockets && io.sockets.sockets && io.sockets.sockets.get(socketId)) || null;
         if (!sock) {
           // Log at debug level to avoid excessive logs in normal ops
-          console.log(`Analytics cleanup: removing stale player entry ${gameState.players[socketId]?.name || '<unknown>'} (${socketId})`);
+          logger.debug(`Analytics cleanup: removing stale player entry ${gameState.players[socketId]?.name || '<unknown>'} (${socketId})`);
           delete gameState.players[socketId];
           delete playerLastActivity[socketId];
         }
@@ -847,7 +848,8 @@ app.post('/analytics/track', (req, res) => {
     'Content-Type, Authorization, Cache-Control, Pragma',
   );
   try {
-    console.log('📊 Analytics track request received:', req.body);
+  const logger = require('./logger');
+  logger.debug('📊 Analytics track request received:', req.body);
 
     const { event, data, timestamp, url } = req.body;
 
@@ -861,11 +863,11 @@ app.post('/analytics/track', (req, res) => {
         data: data,
       };
 
-      console.log('📊 Processing event data:', eventData);
+  logger.debug('📊 Processing event data:', eventData);
       analytics.processEvent(eventData, req.ip);
-      console.log(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
+  logger.debug(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
     } else {
-      console.log(`📊 Analytics event missing required fields:`, {
+  logger.warn(`📊 Analytics event missing required fields:`, {
         event,
         hasData: !!data,
         hasPlayerId: data?.playerId,
@@ -1176,7 +1178,8 @@ function safeEmit(event, payload) {
     const connected = io.of('/').sockets.size || 0;
     if (connected === 0) {
       // No connected clients — skip emitting to save bandwidth
-      console.log(`SafeEmit: skipping '${event}' (no connected clients)`);
+  const logger = require('./logger');
+  logger.debug(`SafeEmit: skipping '${event}' (no connected clients)`);
       return;
     }
 
@@ -1483,10 +1486,11 @@ io.on('connection', (socket) => {
       console.log(`Admin kicked player: ${data.targetId}`);
     }
   });
-  console.log(`Player connected: ${socket.id}`);
-  console.log(`Connection origin: ${socket.request.headers.origin}`);
-  console.log(`Connection referer: ${socket.request.headers.referer}`);
-  console.log(`Connection host: ${socket.request.headers.host}`);
+  const logger = require('./logger');
+  logger.info(`Player connected: ${socket.id}`);
+  logger.debug(`Connection origin: ${socket.request.headers.origin}`);
+  logger.debug(`Connection referer: ${socket.request.headers.referer}`);
+  logger.debug(`Connection host: ${socket.request.headers.host}`);
 
   // Set initial activity timestamp
   playerLastActivity[socket.id] = Date.now();
