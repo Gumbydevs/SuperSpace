@@ -1,13 +1,13 @@
 // Reset configuration file
 // Edit the flags below to control what is cleared/preserved during a version-driven reset.
 // Authoritative version for resets. Edit this value to trigger a version-driven reset.
-export const GAME_VERSION = '2025.10.02.004';
+export const GAME_VERSION = '2025.10.02.005';
 export const ResetConfig = {
   // Human-readable release notes keyed by version string
   versionNotes: {
     // Use the same version format as GAME_VERSION above
     [GAME_VERSION]: [
-       // TODO Commented out until I can make login work properly we cant alert players to re-register !! ARG  '<span style="color: #ff4444; font-weight: bold;">Important: Due to a glitch in deploying the last patch, you may need to re-register your cloud account if you experience login issues.</span>',
+        '<span style="color: #ff4444; font-weight: bold;">Important: Due to a glitch in deploying the last patch, you may need to re-register your cloud account if you experience login issues.</span>',
         'Players have received a special pre-release avatar and ship skin to show our appreciation for your support!',
         'Restored original ship rotation physics! No more rotational inertia. Original feel restored: smoother, more responsive flight feel.',
         'Added Impact Deflector system: Press Left Ctrl or TAB for a brief energy shield that deflects asteroids without damage!',
