@@ -367,7 +367,7 @@ export class UI {
     updateGemsUI();
     setInterval(updateGemsUI, 1000);
 
-    // BOTTOM CENTER (iPad) / BOTTOM LEFT (Mobile) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
+    // BOTTOM CENTER (Mobile/iPad) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
     statusPanel.style.position = 'absolute';
@@ -376,13 +376,13 @@ export class UI {
       : minimapMargin;
     
     // Position based on device type
-    if (this.isTabletDevice) {
-      // iPad/Tablet: Center the status panel
+    if (this.isMobileDevice || this.isTabletDevice) {
+      // Mobile/iPad: Center the status panel
       statusPanel.style.left = '50%';
       statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom center';
     } else {
-      // Mobile/Desktop: Keep in bottom-left
+      // Desktop: Keep in bottom-left
       statusPanel.style.left = minimapMargin;
       statusPanel.style.transform = `scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom left';
@@ -398,8 +398,6 @@ export class UI {
     statusPanel.style.boxShadow = '0 0 8px rgba(0, 100, 255, 0.5)';
     statusPanel.style.zIndex = '1001';
     statusPanel.style.pointerEvents = 'auto';
-    statusPanel.style.transform = `scale(${statusPanelScale})`;
-    statusPanel.style.transformOrigin = 'bottom left';
 
     // Health display
     const healthDisplay = document.createElement('div');
