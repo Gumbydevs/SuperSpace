@@ -261,6 +261,13 @@
       </div>
     </div>
 
+    <div style="text-align:center;margin:12px 0;">
+      <button id="toggleAdvanced" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:#00ff88;padding:6px 10px;border-radius:6px;cursor:pointer;">Show advanced</button>
+      <label style="margin-left:12px;color:#ccc;font-size:0.95em;">
+        <input id="autoRefresh" type="checkbox" style="vertical-align:middle;margin-right:6px;"> Auto-refresh (30s)
+      </label>
+    </div>
+
     <div class="refresh-indicator" id="refreshIndicator" style="opacity: 0">
       Refreshing...
     </div>
@@ -354,7 +361,7 @@
       </div>
 
       <!-- Tutorial Insights (new) -->
-      <div class="metric-card large-chart">
+  <div class="metric-card large-chart advanced">
         <h3>🧭 Tutorial Insights</h3>
         <div style="display:flex;gap:12px;align-items:stretch;">
           <div style="flex:1;min-width:280px;height:260px;">
@@ -404,7 +411,7 @@
       </div>
 
       <!-- Premium Statistics -->
-      <div class="metric-card">
+  <div class="metric-card advanced">
         <h3>💎 Premium Stats</h3>
         <div class="stats-grid">
           <div class="stat-item">
@@ -439,7 +446,7 @@
       </div>   
 
       <!-- Challenge Completions -->
-      <div class="metric-card large-chart">
+  <div class="metric-card large-chart advanced">
         <h3>🎯 Challenge Completions</h3>
         <div id="challengeCompletionsSection" style="max-height:350px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
         <div class="metric-subtitle">Daily & Weekly | Today / This Week / All Time</div>
@@ -453,15 +460,15 @@
       </div>
 
       <!-- Admin Chat Panel -->
-      <div class="metric-card">
+  <div class="metric-card advanced">
         <h3>💬 Admin Chat</h3>
         <div id="adminChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;"></div>
         <input id="adminChatInput" type="text" placeholder="Send admin message..." style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(0,255,136,0.2);" />
         <button id="adminChatSend" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#00ff88;border:none;cursor:pointer;">Send as Admin</button>
       </div>
 
-      <!-- Cloud Users Registry (detailed) - Wide Layout -->
-      <div class="metric-card wide-users-card">
+  <!-- Cloud Users Registry (detailed) - Wide Layout -->
+  <div class="metric-card wide-users-card advanced">
         <h3>☁️ Cloud User Registry</h3>
         <div id="cloudUsersCount" class="metric-value">0</div>
         <div id="cloudUsersList" class="users-list-wide"></div>
@@ -1182,7 +1189,7 @@
         initCharts();
         fetchAnalyticsData();
 
-        // initialize Socket.IO connection for admin chat and live events
+  // initialize Socket.IO connection for admin chat and live events
         (function initSocket() {
           const script = document.createElement('script');
           script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
@@ -1225,8 +1232,39 @@
           document.head.appendChild(script);
         })();
 
-  // Auto-refresh every 5 seconds (disabled to reduce bandwidth)
-  // setInterval(fetchAnalyticsData, 5000);
+        // Advanced UI toggle and auto-refresh handling
+        const advBtn = document.getElementById('toggleAdvanced');
+        const autoCheckbox = document.getElementById('autoRefresh');
+        let advancedShown = false;
+        let refreshTimer = null;
+
+        function setAdvancedVisible(visible) {
+          advancedShown = !!visible;
+          document.querySelectorAll('.advanced').forEach(el => {
+            el.style.display = visible ? '' : 'none';
+          });
+          advBtn.textContent = visible ? 'Hide advanced' : 'Show advanced';
+        }
+
+        advBtn.onclick = () => setAdvancedVisible(!advancedShown);
+        // default: hide advanced panels
+        setAdvancedVisible(false);
+
+        function startAutoRefresh() {
+          if (refreshTimer) clearInterval(refreshTimer);
+          refreshTimer = setInterval(() => fetchAnalyticsData(), 30000); // 30s
+        }
+
+        function stopAutoRefresh() {
+          if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+          }
+        }
+
+        autoCheckbox.addEventListener('change', (e) => {
+          if (e.target.checked) startAutoRefresh(); else stopAutoRefresh();
+        });
 
         console.log('🚀 SuperSpace Analytics Dashboard Initialized');
       });
