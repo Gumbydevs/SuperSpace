@@ -801,10 +801,12 @@
   // Fallback to main data if today/allTime missing
   const today = data.today || {};
   const allTime = data.allTime || {};
-  document.getElementById('activePlayersToday').textContent = today.activePlayers ?? data.activePlayers ?? 0;
-  document.getElementById('activePlayersAll').textContent = allTime.activePlayers ?? data.activePlayers ?? 0;
-  document.getElementById('peakPlayersToday').textContent = today.peakConcurrent ?? data.peakPlayers ?? 0;
-  document.getElementById('peakPlayersAll').textContent = allTime.peakConcurrent ?? data.peakPlayers ?? 0;
+  // Active players: prefer uniquePlayersCount if provided by the server
+  document.getElementById('activePlayersToday').textContent = (typeof today.uniquePlayersCount === 'number' ? today.uniquePlayersCount : (today.activePlayers ?? data.activePlayers ?? 0));
+  document.getElementById('activePlayersAll').textContent = (typeof allTime.uniquePlayersCount === 'number' ? allTime.uniquePlayersCount : (allTime.activePlayers ?? data.activePlayers ?? 0));
+  // Peak concurrent: prefer globalPeak (all-time) or peakConcurrent where available
+  document.getElementById('peakPlayersToday').textContent = (typeof today.peakConcurrent === 'number' ? today.peakConcurrent : (data.peakPlayers ?? 0));
+  document.getElementById('peakPlayersAll').textContent = (typeof allTime.globalPeak === 'number' ? allTime.globalPeak : (typeof allTime.peakConcurrent === 'number' ? allTime.peakConcurrent : (data.peakPlayers ?? 0)));
   // Show today/all time for total sessions
   document.getElementById('totalSessionsToday').textContent = today.totalSessions || 0;
   document.getElementById('totalSessionsAll').textContent = allTime.totalSessions || 0;
