@@ -112,8 +112,22 @@ app.use(
 // Allow JSON bodies (used by admin endpoints)
 app.use(express.json());
 
-// Serve static files from the parent directory
-app.use(express.static(path.join(__dirname, '..')));
+// Maintenance mode: if MAINTENANCE=1 then short-circuit requests with a tiny 503
+// response to stop serving large assets and reduce outgoing bandwidth while
+// you fix billing or migrate the service. This middleware must come before
+// the static middleware below.
+if (process.env.MAINTENANCE === '1') {
+  app.use((req, res) => {
+    // Prevent caching so clients don't keep retrying heavy downloads
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Content-Type', 'text/plain; charset=utf-8');
+    // Small fixed payload to minimize bandwidth
+    res.status(503).send('Service temporarily unavailable - maintenance');
+  });
+} else {
+  // Serve static files from the parent directory
+  app.use(express.static(path.join(__dirname, '..')));
+}
 
 // Add a home route that shows server status
 app.get('/status', (req, res) => {
