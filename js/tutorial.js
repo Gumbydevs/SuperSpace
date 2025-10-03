@@ -419,8 +419,14 @@ export class TutorialSystem {
     const currentStepData = this.tutorialSteps[this.currentStep];
     if (!currentStepData) return;
     
-    // Stop detection is now handled in checkStopping() method which checks input state
-    // This allows both keyboard and mobile brake button to work properly
+    // Reset stop timer when stop key is released (for desktop keyboard responsiveness)
+    if (currentStepData.action === 'stop_ship') {
+      if (key === 'KeyS' || key === 'ArrowDown') {
+        // console.log('🛑 Tutorial: Stop key released - resetting timer'); // Production: disabled
+        this.stopHoldStart = null;
+      }
+    }
+    // Mobile detection is handled continuously in checkStopping()
   }
 
   handleKeyPress(key) {
@@ -439,8 +445,14 @@ export class TutorialSystem {
         break;
         
       case 'stop_ship':
-        // Stop detection is now handled in checkStopping() method which checks input state
-        // This allows both keyboard and mobile brake button to work
+        // Handle immediate keyboard input for desktop responsiveness
+        if (key === 'KeyS' || key === 'ArrowDown') {
+          // console.log('🛑 Tutorial: Stop key detected - starting timer'); // Production: disabled
+          if (!this.stopHoldStart) {
+            this.stopHoldStart = Date.now();
+          }
+        }
+        // Also checked continuously in checkStopping() for mobile compatibility
         break;
         
       case 'change_weapon':
@@ -451,8 +463,16 @@ export class TutorialSystem {
         break;
         
       case 'shoot':
-        // Shooting detection is now handled in checkShooting() method which checks input state
-        // This allows both keyboard and mobile fire button to work
+        // Handle immediate keyboard input for desktop responsiveness
+        if (key === 'Space') {
+          // console.log('🎮 Tutorial: Shoot key detected'); // Production: disabled
+          if (this.canPlayerShoot()) {
+            this.checkStepProgress('shoot');
+          } else {
+            // console.log('🎮 Tutorial: Space pressed but weapon disengaged - ignoring for tutorial'); // Production: disabled
+          }
+        }
+        // Also checked continuously in checkShooting() for mobile compatibility
         break;
         
       // Other actions handled by callbacks, not key presses

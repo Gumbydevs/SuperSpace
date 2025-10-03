@@ -14,18 +14,6 @@ export class UI {
     this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
                         ('ontouchstart' in window || navigator.maxTouchPoints > 0);
     
-    // Debug info - remove after testing
-    console.log('🔍 Device Detection Debug:', {
-      screenWidth: window.innerWidth,
-      screenHeight: window.innerHeight,
-      isMobileDevice: this.isMobileDevice,
-      isTabletDevice: this.isTabletDevice,
-      isTouchDevice: this.isTouchDevice,
-      hasTouch: 'ontouchstart' in window,
-      maxTouchPoints: navigator.maxTouchPoints,
-      userAgent: navigator.userAgent.slice(0, 50) + '...'
-    });
-    
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -395,11 +383,6 @@ export class UI {
     
     // Force center positioning for smaller screens AND touch devices
     const shouldCenter = window.innerWidth <= 1024 || this.isTouchDevice;
-    console.log('🎯 Status Panel Positioning:', {
-      screenWidth: window.innerWidth,
-      shouldCenter,
-      isTouchDevice: this.isTouchDevice
-    });
     
     if (shouldCenter) {
       // Smaller screens or touch devices: Force center positioning with !important
