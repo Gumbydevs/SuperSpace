@@ -147,6 +147,12 @@ class CloudSyncService {
         this.clearGameDataLocalStorage();
         // Download cloud data and merge with local
         await this.downloadAndMergeCloudData();
+        // Ensure playtester entitlements are present even if cloud had no data
+        try {
+          if (typeof this.ensurePlaytesterEntitlements === 'function') this.ensurePlaytesterEntitlements();
+        } catch (e) {
+          console.warn('Error ensuring playtester entitlements after login:', e);
+        }
         return { success: true, message: `Welcome back, ${username}!` };
       } else {
         const error = await response.json();
@@ -398,6 +404,80 @@ class CloudSyncService {
     // Trigger callback if set
     if (this.onDataSynced && typeof this.onDataSynced === 'function') {
       setTimeout(() => this.onDataSynced(), 100); // Small delay to ensure localStorage is updated
+    }
+    // Ensure gifted playtester entitlements are present after merging cloud data
+    try {
+      if (typeof this.ensurePlaytesterEntitlements === 'function') {
+        this.ensurePlaytesterEntitlements();
+      }
+    } catch (e) {
+      console.warn('Error while ensuring playtester entitlements:', e);
+    }
+  }
+
+  // Ensure playtester entitlements (granted to all players by default)
+  ensurePlaytesterEntitlements() {
+    try {
+      const playAv = 'playtester_dummy';
+      const playSkin = 'scout_playtester';
+
+      const raw = localStorage.getItem('premiumPurchases');
+      let purchases = { avatars: [], skins: [], purchaseHistory: [] };
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          purchases.avatars = Array.isArray(parsed.avatars) ? parsed.avatars : [];
+          purchases.skins = Array.isArray(parsed.skins) ? parsed.skins : [];
+          purchases.purchaseHistory = Array.isArray(parsed.purchaseHistory)
+            ? parsed.purchaseHistory
+            : Array.isArray(parsed.purchase_history)
+            ? parsed.purchase_history
+            : [];
+          Object.assign(purchases, parsed);
+        } catch (e) {
+          // ignore parse errors, we'll overwrite
+        }
+      }
+
+      let modified = false;
+      if (!purchases.avatars.includes(playAv)) {
+        purchases.avatars.push(playAv);
+        purchases.purchaseHistory = purchases.purchaseHistory || [];
+        purchases.purchaseHistory.push({ type: 'avatar', id: playAv, name: 'Playtester Dummy', cost: 0, currency: 'gift', timestamp: Date.now() });
+        modified = true;
+      }
+      if (!purchases.skins.includes(playSkin)) {
+        purchases.skins.push(playSkin);
+        purchases.purchaseHistory = purchases.purchaseHistory || [];
+        purchases.purchaseHistory.push({ type: 'skin', id: playSkin, name: 'Playtester Scout', cost: 0, currency: 'gift', timestamp: Date.now() });
+        modified = true;
+      }
+
+      if (modified) {
+        localStorage.setItem('premiumPurchases', JSON.stringify(purchases));
+        // Also write legacy keys to keep other systems happy
+        try {
+          const ownedAv = JSON.parse(localStorage.getItem('ownedAvatars') || '[]');
+          if (!ownedAv.includes(playAv)) {
+            ownedAv.push(playAv);
+            localStorage.setItem('ownedAvatars', JSON.stringify(ownedAv));
+          }
+        } catch (e) {}
+        try {
+          const ownedSk = JSON.parse(localStorage.getItem('ownedSkins') || '[]');
+          if (!ownedSk.includes(playSkin)) {
+            ownedSk.push(playSkin);
+            localStorage.setItem('ownedSkins', JSON.stringify(ownedSk));
+          }
+        } catch (e) {}
+        // Notify other systems if available
+        if (typeof window !== 'undefined' && window.notifyNewShipSkin) {
+          try { window.notifyNewShipSkin('scout_playtester'); } catch (e) {}
+        }
+        console.log('🎁 Playtester entitlements ensured (avatar + skin)');
+      }
+    } catch (e) {
+      console.warn('Failed to ensure playtester entitlements:', e);
     }
   }
 
