@@ -8,6 +8,7 @@ const database = require('./database');
 class DatabaseAnalytics {
   constructor() {
     this.initialized = false;
+    this._retryIntervalMs = 15000; // retry every 15s when DB is unreachable
     this.init();
   }
 
@@ -15,16 +16,30 @@ class DatabaseAnalytics {
     try {
       // Check if we have database connection
       if (process.env.DATABASE_URL && database.pool) {
-        this.initialized = true;
-        console.log('✅ Database Analytics initialized');
-        
-        // Initialize meta data if not exists
-        await this.initializeMeta();
+        // Perform a lightweight health check to ensure DB is reachable before marking initialized
+        try {
+          await database.pool.query('SELECT 1');
+          this.initialized = true;
+          console.log('✅ Database Analytics initialized (DB reachable)');
+
+          // Initialize meta data if not exists
+          await this.initializeMeta();
+          return;
+        } catch (healthErr) {
+          // DB not reachable - don't mark initialized, schedule retry
+          this.initialized = false;
+          console.error('❌ Database Analytics health check failed:', healthErr && healthErr.message ? healthErr.message : healthErr);
+          console.log(`Retrying Database Analytics init in ${this._retryIntervalMs / 1000}s`);
+          setTimeout(() => this.init(), this._retryIntervalMs);
+          return;
+        }
       } else {
         console.log('⚠️ Database not available, analytics will use file system');
       }
     } catch (error) {
       console.error('❌ Failed to initialize Database Analytics:', error);
+      // Schedule retry in case of unexpected init error
+      setTimeout(() => this.init(), this._retryIntervalMs);
     }
   }
 

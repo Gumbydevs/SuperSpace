@@ -82,9 +82,14 @@ class CloudSyncAuth {
 
   async initializeDatabase() {
     try {
-      await database.initDatabase();
-      this.dbAvailable = true;
-      console.log('CloudSyncAuth: Database initialized successfully');
+      const ok = await database.initDatabase();
+      if (ok) {
+        this.dbAvailable = true;
+        console.log('CloudSyncAuth: Database initialized successfully');
+      } else {
+        this.dbAvailable = false;
+        console.log('CloudSyncAuth: Database not initialized (falling back to file storage)');
+      }
     } catch (error) {
       console.error('CloudSyncAuth: Failed to initialize database:', error);
       console.log('⚠️  CloudSyncAuth: Falling back to file-based storage');

@@ -125,6 +125,9 @@ app.use(express.json());
 // response to stop serving large assets and reduce outgoing bandwidth while
 // you fix billing or migrate the service. This middleware must come before
 // the static middleware below.
+// Maintenance mode short-circuit disabled while live — always serve static files.
+// If you need maintenance mode again, restore the block below.
+/*
 if (process.env.MAINTENANCE === '1') {
   app.use((req, res) => {
     // Prevent caching so clients don't keep retrying heavy downloads
@@ -137,6 +140,10 @@ if (process.env.MAINTENANCE === '1') {
   // Serve static files from the parent directory
   app.use(express.static(path.join(__dirname, '..')));
 }
+*/
+
+// Always serve static files (maintenance disabled)
+app.use(express.static(path.join(__dirname, '..')));
 
 // Add a home route that shows server status
 app.get('/status', (req, res) => {
