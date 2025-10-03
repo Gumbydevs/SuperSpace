@@ -73,10 +73,17 @@ export class KillAnnouncer {
     // Create the announcement text
     let announcement = `${killerName} ${weaponType} ${victimName}`;
 
-    // Track kill streak
-    this.trackKillStreak(killerName);
+    // Only track kill streaks for actual players, not environmental hazards
+    const isEnvironmentalKill = killerName.toLowerCase().includes('asteroid') || 
+                               killerName.toLowerCase().includes('alien') ||
+                               killerName.toLowerCase().includes('dreadnaught');
+    
+    if (!isEnvironmentalKill) {
+      // Track kill streak for real players only
+      this.trackKillStreak(killerName);
+    }
 
-    // Reset victim's streak
+    // Reset victim's streak (they died regardless of what killed them)
     this.resetPlayerStreak(victimName);
 
     // Create and show the announcement with avatar
