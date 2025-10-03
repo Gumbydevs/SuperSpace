@@ -162,14 +162,28 @@ async function deleteExpiredTokens() {
 
 // Player data management functions
 async function savePlayerData(username, data) {
-    const result = await pool.query(`
-        INSERT INTO player_data (username, data) 
-        VALUES ($1, $2) 
-        ON CONFLICT (username) 
-        DO UPDATE SET data = $2, updated_at = CURRENT_TIMESTAMP 
-        RETURNING *
-    `, [username, JSON.stringify(data)]);
-    return result.rows[0];
+    try {
+        // Try a safe UPDATE first (works whether or not a unique index exists)
+        const upd = await pool.query(`
+            UPDATE player_data SET data = $2, updated_at = CURRENT_TIMESTAMP
+            WHERE username = $1
+            RETURNING *
+        `, [username, JSON.stringify(data)]);
+
+        if (upd.rows && upd.rows.length > 0) {
+            return upd.rows[0];
+        }
+
+        // No existing row, insert a new one
+        const ins = await pool.query(`
+            INSERT INTO player_data (username, data) VALUES ($1, $2) RETURNING *
+        `, [username, JSON.stringify(data)]);
+        return ins.rows[0];
+    } catch (error) {
+        // If something else goes wrong, rethrow so callers can handle/log
+        console.error('Error in savePlayerData:', error && error.message ? error.message : error);
+        throw error;
+    }
 }
 
 async function getPlayerData(username) {

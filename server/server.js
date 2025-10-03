@@ -46,7 +46,8 @@ async function initializeDatabase() {
 
 // Initialize analytics
 const analytics = new ServerAnalytics();
-const dbAnalytics = new DatabaseAnalytics();
+// dbAnalytics will be created after DB initialization if DATABASE_URL is present
+let dbAnalytics = null;
 
 // Periodic database analytics updates (disabled to reduce bandwidth and DB load)
 /*
@@ -182,7 +183,7 @@ app.get('/analytics', async (req, res) => {
     let dataSource = 'file';
     
     try {
-      if (dbAnalytics.initialized) {
+      if (dbAnalytics && dbAnalytics.initialized) {
         console.log('🗄️ Using database analytics');
         // Use persistent database analytics
         stats = await dbAnalytics.getStats();
@@ -191,6 +192,7 @@ app.get('/analytics', async (req, res) => {
         console.log('📁 Using file analytics');
         // Fallback to file analytics
         stats = analytics.getCurrentStats();
+        dataSource = 'file';
       }
       console.log('✅ Stats loaded successfully, source:', dataSource);
     } catch (statsError) {
@@ -345,7 +347,7 @@ app.get('/analytics', async (req, res) => {
       
       // Data source information for debugging
       dataSource,
-      persistentAnalytics: dbAnalytics.initialized
+  persistentAnalytics: !!(dbAnalytics && dbAnalytics.initialized)
     };
 
     console.log(
@@ -3176,6 +3178,52 @@ async function startServer(port) {
   
   if (databaseAvailable) {
     console.log('🚀 Starting with DATABASE persistence - user data will survive redeploys!');
+    // Initialize DB-backed analytics helper
+    try {
+      dbAnalytics = new DatabaseAnalytics();
+    } catch (e) {
+      console.error('Failed to initialize DatabaseAnalytics:', e);
+      dbAnalytics = null;
+    }
+
+    // Ensure player_data has unique index on username and dedupe if necessary
+    (async () => {
+      try {
+        const pool = database.pool;
+        // Check for duplicates
+        const dupRes = await pool.query(`SELECT username, COUNT(*) AS cnt FROM player_data GROUP BY username HAVING COUNT(*) > 1`);
+        if (dupRes.rows.length > 0) {
+          console.log('Deduplicating player_data table before creating unique index...');
+          await pool.query(`WITH ranked AS (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY username ORDER BY updated_at DESC NULLS LAST, id DESC) AS rn
+            FROM player_data
+          ) DELETE FROM player_data WHERE id IN (SELECT id FROM ranked WHERE rn > 1);`);
+        }
+        // Create unique index if missing
+        try {
+          await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS ux_player_data_username ON player_data(username)`);
+          console.log('Ensured unique index ux_player_data_username exists');
+        } catch (idxErr) {
+          console.error('Failed to create unique index on player_data.username:', idxErr);
+        }
+      } catch (e) {
+        console.error('Error during DB player_data dedupe/index creation:', e);
+      }
+    })();
+
+    // Optionally auto-import analytics files into DB if environment requests it
+    if (process.env.AUTO_IMPORT_ANALYTICS === '1') {
+      (async () => {
+        try {
+          console.log('AUTO_IMPORT_ANALYTICS=1 detected - importing analytics exports into DB');
+          const importer = require('./import_exports_to_pg');
+          await importer.importExports(process.env.DATABASE_URL);
+          console.log('AUTO import complete');
+        } catch (importErr) {
+          console.error('AUTO import failed:', importErr);
+        }
+      })();
+    }
   } else {
     console.log('⚠️  Starting with FILE persistence - user data WILL BE LOST on redeploys!');
     console.log('🔧 To fix: Set DATABASE_URL environment variable with PostgreSQL connection string');
