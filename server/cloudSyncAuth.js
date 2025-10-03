@@ -25,8 +25,9 @@ class CloudSyncAuth {
     this.dataDir = path.join(__dirname, 'cloud_data');
     this.usersFile = path.join(this.dataDir, 'users.json');
     this.tokensFile = path.join(this.dataDir, 'tokens.json');
+    this.dbAvailable = false;
 
-    // Initialize database on startup
+    // Initialize database on startup (non-blocking)
     this.initializeDatabase();
 
     // Space-themed words for recovery keys
@@ -82,10 +83,13 @@ class CloudSyncAuth {
   async initializeDatabase() {
     try {
       await database.initDatabase();
+      this.dbAvailable = true;
       console.log('CloudSyncAuth: Database initialized successfully');
     } catch (error) {
       console.error('CloudSyncAuth: Failed to initialize database:', error);
-      throw error;
+      console.log('⚠️  CloudSyncAuth: Falling back to file-based storage');
+      this.dbAvailable = false;
+      // Don't throw - gracefully fall back to file storage
     }
   }
 

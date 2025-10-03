@@ -9,6 +9,7 @@ const socketIO = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 const ServerAnalytics = require('./analytics');
+const DatabaseAnalytics = require('./databaseAnalytics');
 const CloudSyncAuth = require('./cloudSyncAuth');
 const database = require('./database');
 
@@ -36,6 +37,27 @@ async function initializeDatabase() {
 
 // Initialize analytics
 const analytics = new ServerAnalytics();
+const dbAnalytics = new DatabaseAnalytics();
+
+// Periodic database analytics updates
+setInterval(async () => {
+  if (dbAnalytics.initialized) {
+    try {
+      // Update global peak with current player count
+      const currentPlayers = Object.keys(gameState.players).length;
+      await dbAnalytics.updateGlobalPeak(currentPlayers);
+      
+      // Save daily stats periodically
+      const today = new Date().toISOString().split('T')[0];
+      const stats = await dbAnalytics.getStats();
+      if (stats.today) {
+        await dbAnalytics.saveDailyStats(today, stats.today);
+      }
+    } catch (error) {
+      console.error('Periodic database analytics update error:', error);
+    }
+  }
+}, 60000); // Update every minute
 
 // Initialize cloud sync auth (after database)
 let cloudAuth;
@@ -540,6 +562,27 @@ function generatePlayerActivityData(stats) {
 
   return activityData;
 }
+
+// Database analytics endpoint (new persistent analytics)
+app.get('/analytics/database', async (req, res) => {
+  try {
+    const stats = await dbAnalytics.getStats();
+    const recentEvents = await dbAnalytics.getRecentEvents(50);
+    
+    res.json({
+      ...stats,
+      recentEvents: recentEvents.slice(0, 10), // Show last 10 events
+      message: 'Database analytics (persistent across redeploys)',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Database analytics endpoint error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get database analytics', 
+      details: error.message 
+    });
+  }
+});
 
 app.get('/analytics/report', (req, res) => {
   try {
@@ -1284,6 +1327,23 @@ io.on('connection', (socket) => {
       // Forward to analytics
       analytics.processEvent(eventData, clientIp);
 
+      // Also track in database analytics (persistent)
+      if (dbAnalytics.initialized) {
+        dbAnalytics.trackEvent(
+          eventData.eventType,
+          eventData.playerId,
+          eventData.sessionId,
+          {
+            ...eventData,
+            clientIp: clientIp,
+            socketId: socket.id
+          }
+        ).catch(err => {
+          // Don't let database errors break the game
+          console.error('Database analytics error:', err);
+        });
+      }
+
       // Track mapping from socket -> playerId/sessionId so server can synthesize events on disconnect
       try {
         socket.analytics = socket.analytics || {};
@@ -1361,6 +1421,20 @@ io.on('connection', (socket) => {
       sessionId: `session_${Date.now()}_${socket.id}`,
       startTime: Date.now(),
     };
+
+    // Track session in database analytics
+    if (dbAnalytics.initialized) {
+      dbAnalytics.trackSession(
+        socket.analytics.sessionId,
+        playerId,
+        new Date(socket.analytics.startTime),
+        {
+          socketId: socket.id,
+          userAgent: socket.request.headers['user-agent'],
+          origin: socket.request.headers.origin
+        }
+      ).catch(err => console.error('Database session tracking error:', err));
+    }
 
     console.log(
       `📊 Player joined analytics: ${playerId} (Active players: ${analytics.sessions.size})`,
@@ -2820,6 +2894,15 @@ io.on('connection', (socket) => {
             data: { sessionDuration: duration },
           };
           analytics.processEvent(endEvent, clientIp);
+
+          // End session in database analytics
+          if (dbAnalytics.initialized && socket.analytics.sessionId) {
+            dbAnalytics.endSession(
+              socket.analytics.sessionId,
+              new Date(),
+              endEvent.data.sessionDuration || 0
+            ).catch(err => console.error('Database session end error:', err));
+          }
 
           console.log(
             `📊 Player left analytics: ${pid} (Session duration: ${Math.floor(duration / 1000)}s, Active players: ${analytics.sessions.size})`,
