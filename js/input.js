@@ -127,9 +127,8 @@ export class InputHandler {
   }
 
   setupTouchControls() {
-    // Only create touch controls for small mobile devices (phones), not iPads
-    const isSmallMobileDevice = this.isTouchDevice && window.innerWidth <= 480;
-    if (!isSmallMobileDevice) return;
+    // Create touch controls for all touch devices
+    if (!this.isTouchDevice) return;
 
     // Create touch UI container
     this.createTouchInterface();
