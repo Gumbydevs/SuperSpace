@@ -368,24 +368,27 @@ export class UI {
     // BOTTOM CENTER (Mobile/iPad) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
-    statusPanel.style.position = 'absolute';
-    statusPanel.style.bottom = this.isMobileDevice
-      ? statusBottomPosition
-      : minimapMargin;
-    
-    // Simple positioning: center on mobile/small screens, left on desktop
-    if (this.isMobileDevice) {
-      // Mobile/iPad: Center the status panel
+    // Use fixed positioning for touch/tablet devices (iPad) so the panel
+    // reliably centers at the bottom and sits above touch controls.
+    // Fall back to absolute for non-touch desktop.
+    if (this.isTouchDevice) {
+      statusPanel.style.position = 'fixed';
+      // Put it slightly above touch controls on tablets/phones
+      statusPanel.style.bottom = this.isMobileDevice ? statusBottomPosition : '20px';
       statusPanel.style.left = '50%';
       statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom center';
+      // Ensure it's above other touch UI elements
+      statusPanel.style.zIndex = '2002';
     } else {
-      // Desktop: Keep in bottom-left
+      statusPanel.style.position = 'absolute';
+      statusPanel.style.bottom = minimapMargin;
       statusPanel.style.left = minimapMargin;
       statusPanel.style.transform = `scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom left';
+      statusPanel.style.zIndex = '1001';
     }
-    
+
     statusPanel.style.display = 'flex';
     statusPanel.style.flexDirection = 'column';
     statusPanel.style.gap = this.isMobileDevice ? '4px' : '6px';
@@ -394,7 +397,6 @@ export class UI {
     statusPanel.style.borderRadius = '6px';
     statusPanel.style.border = '1px solid #444';
     statusPanel.style.boxShadow = '0 0 8px rgba(0, 100, 255, 0.5)';
-    statusPanel.style.zIndex = '1001';
     statusPanel.style.pointerEvents = 'auto';
 
     // Health display
