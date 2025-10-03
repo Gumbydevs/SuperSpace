@@ -46,7 +46,60 @@ async function initDatabase() {
             )
         `);
 
-        console.log('Database tables initialized successfully');
+        // Analytics tables for persistent analytics storage
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS analytics_daily_stats (
+                id SERIAL PRIMARY KEY,
+                date DATE NOT NULL UNIQUE,
+                stats JSONB NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id SERIAL PRIMARY KEY,
+                event_type VARCHAR(255) NOT NULL,
+                player_id VARCHAR(255),
+                session_id VARCHAR(255),
+                data JSONB NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                date DATE DEFAULT CURRENT_DATE
+            )
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS analytics_sessions (
+                id SERIAL PRIMARY KEY,
+                session_id VARCHAR(255) NOT NULL UNIQUE,
+                player_id VARCHAR(255),
+                start_time TIMESTAMP NOT NULL,
+                end_time TIMESTAMP,
+                duration_ms INTEGER,
+                events_count INTEGER DEFAULT 0,
+                last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data JSONB,
+                date DATE DEFAULT CURRENT_DATE
+            )
+        `);
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS analytics_meta (
+                id SERIAL PRIMARY KEY,
+                key VARCHAR(255) NOT NULL UNIQUE,
+                value JSONB NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Indexes for performance
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_events_date ON analytics_events(date)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(event_type)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_sessions_date ON analytics_sessions(date)`);
+        await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_sessions_player ON analytics_sessions(player_id)`);
+
+        console.log('✅ Database tables initialized successfully (including analytics tables)');
     } catch (error) {
         console.error('Error initializing database:', error);
         throw error;
@@ -180,6 +233,94 @@ async function getPlayerStats() {
     });
 }
 
+// Analytics database functions
+async function saveAnalyticsEvent(eventType, playerId, sessionId, data) {
+    const result = await pool.query(`
+        INSERT INTO analytics_events (event_type, player_id, session_id, data) 
+        VALUES ($1, $2, $3, $4) 
+        RETURNING *
+    `, [eventType, playerId, sessionId, JSON.stringify(data)]);
+    return result.rows[0];
+}
+
+async function getAnalyticsEvents(startDate, endDate, eventType = null) {
+    let query = 'SELECT * FROM analytics_events WHERE date >= $1 AND date <= $2';
+    let params = [startDate, endDate];
+    
+    if (eventType) {
+        query += ' AND event_type = $3';
+        params.push(eventType);
+    }
+    
+    query += ' ORDER BY timestamp DESC';
+    
+    const result = await pool.query(query, params);
+    return result.rows;
+}
+
+async function saveAnalyticsSession(sessionId, playerId, startTime, data = {}) {
+    const result = await pool.query(`
+        INSERT INTO analytics_sessions (session_id, player_id, start_time, data) 
+        VALUES ($1, $2, $3, $4) 
+        ON CONFLICT (session_id) 
+        DO UPDATE SET 
+            last_activity = CURRENT_TIMESTAMP,
+            data = $4
+        RETURNING *
+    `, [sessionId, playerId, startTime, JSON.stringify(data)]);
+    return result.rows[0];
+}
+
+async function updateAnalyticsSession(sessionId, endTime, durationMs, eventsCount) {
+    const result = await pool.query(`
+        UPDATE analytics_sessions 
+        SET end_time = $2, duration_ms = $3, events_count = $4, last_activity = CURRENT_TIMESTAMP
+        WHERE session_id = $1 
+        RETURNING *
+    `, [sessionId, endTime, durationMs, eventsCount]);
+    return result.rows[0];
+}
+
+async function saveDailyStats(date, stats) {
+    const result = await pool.query(`
+        INSERT INTO analytics_daily_stats (date, stats) 
+        VALUES ($1, $2) 
+        ON CONFLICT (date) 
+        DO UPDATE SET 
+            stats = $2,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+    `, [date, JSON.stringify(stats)]);
+    return result.rows[0];
+}
+
+async function getDailyStats(startDate, endDate) {
+    const result = await pool.query(`
+        SELECT * FROM analytics_daily_stats 
+        WHERE date >= $1 AND date <= $2 
+        ORDER BY date DESC
+    `, [startDate, endDate]);
+    return result.rows;
+}
+
+async function setAnalyticsMeta(key, value) {
+    const result = await pool.query(`
+        INSERT INTO analytics_meta (key, value) 
+        VALUES ($1, $2) 
+        ON CONFLICT (key) 
+        DO UPDATE SET 
+            value = $2,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+    `, [key, JSON.stringify(value)]);
+    return result.rows[0];
+}
+
+async function getAnalyticsMeta(key) {
+    const result = await pool.query('SELECT value FROM analytics_meta WHERE key = $1', [key]);
+    return result.rows.length > 0 ? result.rows[0].value : null;
+}
+
 module.exports = {
     pool,
     initDatabase,
@@ -195,5 +336,14 @@ module.exports = {
     getPlayerData,
     getAllPlayerData,
     getUserStats,
-    getPlayerStats
+    getPlayerStats,
+    // Analytics functions
+    saveAnalyticsEvent,
+    getAnalyticsEvents,
+    saveAnalyticsSession,
+    updateAnalyticsSession,
+    saveDailyStats,
+    getDailyStats,
+    setAnalyticsMeta,
+    getAnalyticsMeta
 };
