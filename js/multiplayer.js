@@ -284,6 +284,30 @@ export class MultiplayerManager {
       } catch (e) {}
 
       console.log('🎁 Playtester entitlements granted (premium avatar + skin)');
+    
+      // If the player hasn't chosen a custom avatar yet, set the Test Dummy as their selected avatar
+      try {
+        const currentAvatar = localStorage.getItem('selectedAvatar');
+        if (!currentAvatar || currentAvatar === 'han') {
+          localStorage.setItem('selectedAvatar', playAv);
+          // If avatar manager exists, update it immediately so UI reflects the new avatar
+          try {
+            if (window && window.avatarManagerInstance) {
+              window.avatarManagerInstance.selectedAvatar = playAv;
+              if (typeof window.avatarManagerInstance.drawProfileAvatar === 'function') {
+                window.avatarManagerInstance.drawProfileAvatar();
+              }
+              if (typeof window.avatarManagerInstance.onAvatarChange === 'function') {
+                try { window.avatarManagerInstance.onAvatarChange(playAv); } catch (e) { /* ignore */ }
+              }
+            }
+          } catch (e) {
+            /* ignore UI update errors */
+          }
+        }
+      } catch (e) {
+        /* ignore errors when trying to set selectedAvatar */
+      }
     } catch (e) {
       console.warn('Error granting playtester entitlements:', e);
     }
