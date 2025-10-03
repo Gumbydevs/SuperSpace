@@ -1871,6 +1871,32 @@ input[type='range'] {
   }
 }
 
+/* iPad and tablet-specific improvements */
+@media screen and (min-width: 600px) and (max-width: 1200px) {
+  /* Improve touch targets for tablets */
+  canvas {
+    touch-action: manipulation !important;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Prevent text selection on canvas interactions */
+  body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Better button sizing for tablet touch */
+  button {
+    min-height: 44px !important; /* Apple's recommended minimum touch target */
+    min-width: 44px !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 /* Tablet landscape adjustments */
 @media screen and (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
   .touch-ui {

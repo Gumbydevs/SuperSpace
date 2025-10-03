@@ -660,17 +660,20 @@ export class PremiumStore {
   render(ctx, canvas) {
     if (!this.storeOpen) return;
 
-    // Enhanced responsive scale for better mobile support
+    // Enhanced responsive scale for better mobile/tablet support
+    // Detect iPads and tablets more accurately
     const isMobile = canvas.width < 600 || canvas.height < 700;
-    const isTablet = canvas.width < 900 || canvas.height < 900;
+    const isTablet = (!isMobile && (canvas.width < 1200 || canvas.height < 900)) || 
+                     (navigator.userAgent.includes('iPad') || 
+                      (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1));
     
     let baseScale, dynamicFactor;
     if (isMobile) {
       baseScale = 0.7; // Significantly reduced from 0.9 to 0.7 for mobile
       dynamicFactor = 0.85; // Reduced from 0.95 to 0.85
     } else if (isTablet) {
-      baseScale = 0.8;
-      dynamicFactor = 0.8;
+      baseScale = 0.85; // Slightly larger for tablets
+      dynamicFactor = 0.9; // Better tablet support
     } else {
       baseScale = 0.75;
       dynamicFactor = 1;
@@ -867,13 +870,18 @@ export class PremiumStore {
   }
 
   renderTabs(ctx, canvas, offsetX, offsetY, scale, isMobile = false) {
+    // Use consistent tablet detection
+    const isTablet = (!isMobile && (canvas.width < 1200 || canvas.height < 900)) || 
+                     (navigator.userAgent.includes('iPad') || 
+                      (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1));
+    
     const tabs = [
       { id: 'avatars', name: 'AVATARS', icon: '👨‍🚀' },
       { id: 'skins', name: 'SHIP SKINS', icon: '🚀' },
       { id: 'gems', name: 'SPACE GEMS', icon: '💎' },
     ];
 
-    const tabWidth = isMobile ? 80 : 120; // Smaller tabs on mobile
+    const tabWidth = isMobile ? 80 : isTablet ? 100 : 120; // Tablet-specific tabs
     // Center tabs inside the scaled store area so tabs align with store content
     const scaledWidth = Math.min(
       Math.floor(canvas.width * scale),
@@ -884,12 +892,12 @@ export class PremiumStore {
 
     tabs.forEach((tab, index) => {
       const x = startX + index * tabWidth;
-      const y = offsetY + (isMobile ? 85 : 120); // Adjusted for mobile layout
+      const y = offsetY + (isMobile ? 85 : isTablet ? 105 : 120); // Tablet-specific positioning
       const isActive = this.currentTab === tab.id;
 
       // Tab background - sci-fi style
       ctx.fillStyle = isActive ? '#003366' : '#001122';
-      const tabHeight = isMobile ? 24 : 32;
+      const tabHeight = isMobile ? 24 : isTablet ? 28 : 32; // Tablet-specific height
       ctx.fillRect(x, y, tabWidth - (isMobile ? 5 : 10), tabHeight);
 
       // Tab border
@@ -899,27 +907,32 @@ export class PremiumStore {
 
       // Tab text - Orbitron font (responsive sizing)
       ctx.fillStyle = isActive ? '#00ffff' : '#ffffff';
-      ctx.font = `${isActive ? 'bold ' : ''}${isMobile ? '9px' : '12px'} Orbitron, Arial, sans-serif`;
+      ctx.font = `${isActive ? 'bold ' : ''}${isMobile ? '9px' : isTablet ? '10px' : '12px'} Orbitron, Arial, sans-serif`; // Tablet-specific font
       ctx.textAlign = 'center';
       
       if (isMobile) {
         // Mobile: show only icon to save space
         ctx.fillText(tab.icon, x + (tabWidth - 5) / 2, y + tabHeight / 2 + 3);
       } else {
-        // Desktop: show icon and name
-        ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, y + 20);
+        // Desktop and Tablet: show icon and name (tablet gets smaller font)
+        const textY = isTablet ? y + 18 : y + 20; // Tablet-specific text positioning
+        ctx.fillText(`${tab.icon} ${tab.name}`, x + (tabWidth - 10) / 2, textY);
       }
     });
   }
 
   renderStoreContent(ctx, canvas, offsetX, offsetY, scale) {
     const items = this.getCurrentTabItems();
+    // Use consistent tablet detection across all methods
     const isMobile = canvas.width < 600 || canvas.height < 700;
+    const isTablet = (!isMobile && (canvas.width < 1200 || canvas.height < 900)) || 
+                     (navigator.userAgent.includes('iPad') || 
+                      (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1));
     
-    const startY = offsetY + (isMobile ? 100 : 170); // Moved up even more (was 110)
-    const itemHeight = isMobile ? 65 : 100; // Even smaller items on mobile
-    const itemWidth = isMobile ? 160 : 240; // Even narrower items on mobile
-    const spacing = isMobile ? 10 : 30; // Even less spacing on mobile
+    const startY = offsetY + (isMobile ? 100 : isTablet ? 150 : 170); // Better tablet positioning
+    const itemHeight = isMobile ? 65 : isTablet ? 85 : 100; // Tablet-specific sizing
+    const itemWidth = isMobile ? 160 : isTablet ? 200 : 240; // Tablet-specific sizing
+    const spacing = isMobile ? 10 : isTablet ? 20 : 30; // Tablet-specific spacing
 
     // Compute scaled store area and derive how many items fit per row dynamically
     const scaledWidth = Math.min(
@@ -1467,17 +1480,22 @@ export class PremiumStore {
   handleClick(x, y, canvas) {
     if (!this.storeOpen) return false;
     
-    // Use same mobile detection and responsive logic as render method
+    // Debug logging for tablets
+    console.log(`Click at: ${x}, ${y} | Canvas: ${canvas.width}x${canvas.height}`);
+    
+    // Use EXACT same mobile/tablet detection and responsive logic as render method
     const isMobile = canvas.width < 600 || canvas.height < 700;
-    const isTablet = canvas.width < 900 || canvas.height < 900;
+    const isTablet = (!isMobile && (canvas.width < 1200 || canvas.height < 900)) || 
+                     (navigator.userAgent.includes('iPad') || 
+                      (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1));
     
     let baseScale, dynamicFactor;
     if (isMobile) {
-      baseScale = 0.9;
-      dynamicFactor = 0.95;
+      baseScale = 0.7; // Match render method - was 0.9
+      dynamicFactor = 0.85; // Match render method - was 0.95
     } else if (isTablet) {
-      baseScale = 0.8;
-      dynamicFactor = 0.8;
+      baseScale = 0.85; // Match render method - was 0.8
+      dynamicFactor = 0.9; // Match render method - was 0.8
     } else {
       baseScale = 0.75;
       dynamicFactor = 1;
@@ -1493,11 +1511,11 @@ export class PremiumStore {
       canvas.height - (isMobile ? 20 : 40),
     );
 
-    // Recompute grid metrics using mobile-responsive values
+    // Recompute grid metrics using consistent tablet-responsive values
     const gridItemsForHeight = this.getCurrentTabItems();
-    const gridItemHeight = isMobile ? 65 : 100; // Match aggressive mobile scaling
-    const gridItemWidth = isMobile ? 160 : 240; // Match aggressive mobile scaling
-    const gridSpacing = isMobile ? 10 : 30; // Match aggressive mobile scaling
+    const gridItemHeight = isMobile ? 65 : isTablet ? 85 : 100; // Match renderStoreContent
+    const gridItemWidth = isMobile ? 160 : isTablet ? 200 : 240; // Match renderStoreContent
+    const gridSpacing = isMobile ? 10 : isTablet ? 20 : 30; // Match renderStoreContent
     const availableInnerBase = scaledWidthBase - (isMobile ? 20 : 40);
     const itemsPerRowBase = Math.max(
       1,
@@ -1509,10 +1527,10 @@ export class PremiumStore {
       1,
       Math.ceil(gridItemsForHeight.length / itemsPerRowBase),
     );
-    const gridHeight = rowsBase * (gridItemHeight + (isMobile ? 10 : 25)) - (isMobile ? 10 : 25);
+    const gridHeight = rowsBase * (gridItemHeight + (isMobile ? 10 : isTablet ? 20 : 25)) - (isMobile ? 10 : isTablet ? 20 : 25);
 
-    const headerHeight = isMobile ? 120 : 200; // Match aggressive mobile scaling
-    const footerHeight = isMobile ? 60 : 140; // Match aggressive mobile scaling
+    const headerHeight = isMobile ? 120 : isTablet ? 160 : 200; // Tablet-specific heights
+    const footerHeight = isMobile ? 60 : isTablet ? 100 : 140; // Tablet-specific heights
     const neededHeight = headerHeight + gridHeight + footerHeight;
 
     const scaledHeight = Math.min(
@@ -1523,9 +1541,9 @@ export class PremiumStore {
     const offsetX = Math.floor((canvas.width - scaledWidth) / 2);
     const offsetY = Math.floor((canvas.height - scaledHeight) / 2);
 
-    // Close button - responsive sizing (matches render method) - Larger on mobile for better touch
-    const closeButtonWidth = isMobile ? 60 : 50; // Increased from 40 to 60 on mobile
-    const closeButtonHeight = isMobile ? 35 : 28; // Increased from 22 to 35 on mobile
+    // Close button - responsive sizing (matches render method) - Larger on mobile/tablet for better touch
+    const closeButtonWidth = isMobile ? 60 : isTablet ? 55 : 50; // Tablet-specific sizing
+    const closeButtonHeight = isMobile ? 35 : isTablet ? 32 : 28; // Tablet-specific sizing
     const closeButtonMargin = isMobile ? 10 : 20;
     const closeX = offsetX + scaledWidth - closeButtonWidth - closeButtonMargin;
     const closeY = offsetY + (isMobile ? 15 : 25);
@@ -1542,14 +1560,14 @@ export class PremiumStore {
 
     // Tab buttons - responsive sizing (matches render method)
     const tabs = ['avatars', 'skins', 'gems'];
-    const tabWidth = isMobile ? 80 : 120;
+    const tabWidth = isMobile ? 80 : isTablet ? 100 : 120; // Tablet-specific tab width
     const tabStartX =
       offsetX + Math.floor((scaledWidth - tabs.length * tabWidth) / 2);
 
     for (let i = 0; i < tabs.length; i++) {
       const tabX = tabStartX + i * tabWidth;
-      const tabY = offsetY + (isMobile ? 85 : 120);
-      const tabHeight = isMobile ? 24 : 32;
+      const tabY = offsetY + (isMobile ? 85 : isTablet ? 105 : 120); // Tablet-specific tab Y
+      const tabHeight = isMobile ? 24 : isTablet ? 28 : 32; // Tablet-specific tab height
 
       if (
         x >= tabX &&
@@ -1565,10 +1583,10 @@ export class PremiumStore {
 
     // Store items - updated positions (matches render method)
     const items = this.getCurrentTabItems();
-    const startYItems = offsetY + (isMobile ? 100 : 170); // Match aggressive mobile scaling
-    const itemHeight = isMobile ? 65 : 100; // Match aggressive mobile scaling
-    const itemWidth = isMobile ? 160 : 240; // Match aggressive mobile scaling  
-    const spacing = isMobile ? 10 : 30; // Match aggressive mobile spacing
+    const startYItems = offsetY + (isMobile ? 100 : isTablet ? 150 : 170); // Match renderStoreContent
+    const itemHeight = isMobile ? 65 : isTablet ? 85 : 100; // Match renderStoreContent
+    const itemWidth = isMobile ? 160 : isTablet ? 200 : 240; // Match renderStoreContent  
+    const spacing = isMobile ? 10 : isTablet ? 20 : 30; // Match renderStoreContent
 
     // Compute how many items per row using same logic as renderStoreContent
     const availableInner = scaledWidth - (isMobile ? 20 : 40);
@@ -1585,7 +1603,7 @@ export class PremiumStore {
       const row = Math.floor(index / itemsPerRow);
       const col = index % itemsPerRow;
       const itemX = startXItems + col * (itemWidth + spacing);
-      const itemY = startYItems + row * (itemHeight + (isMobile ? 10 : 25)); // Match aggressive mobile spacing
+      const itemY = startYItems + row * (itemHeight + (isMobile ? 10 : isTablet ? 20 : 25)); // Match renderStoreContent spacing
 
       if (
         x >= itemX &&

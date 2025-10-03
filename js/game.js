@@ -125,8 +125,11 @@ class Game {
     // Add mouse click handling for premium store
     this.canvas.addEventListener('click', (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      // Account for device pixel ratio and canvas scaling
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
 
       // Handle premium store clicks
       if (this.premiumStore.handleClick(x, y, this.canvas)) {
@@ -134,13 +137,16 @@ class Game {
       }
     });
 
-    // Add touch event handling for mobile devices
-    this.canvas.addEventListener('touchstart', (e) => {
+    // Add touch event handling for mobile devices and tablets
+    this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault(); // Prevent default touch behavior
       const rect = this.canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
+      const touch = e.changedTouches[0]; // Use changedTouches for touchend
+      // Account for device pixel ratio and canvas scaling
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const x = (touch.clientX - rect.left) * scaleX;
+      const y = (touch.clientY - rect.top) * scaleY;
 
       // Handle premium store touches
       if (this.premiumStore.handleClick(x, y, this.canvas)) {
