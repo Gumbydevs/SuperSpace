@@ -1,6 +1,7 @@
 // Simple leveled logger. Honors LOG_LEVEL env var (error,warn,info,debug).
 // Defaults to 'info' in production, 'debug' otherwise.
-const envLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+// Default to 'info' to avoid debug noise on platforms with strict log ingestion limits.
+const envLevel = process.env.LOG_LEVEL || 'info';
 const levels = { error: 0, warn: 1, info: 2, debug: 3 };
 const current = levels[envLevel] !== undefined ? envLevel : 'info';
 
