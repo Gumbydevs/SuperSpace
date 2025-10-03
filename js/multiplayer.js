@@ -2518,11 +2518,41 @@ export class MultiplayerManager {
         // Own death
         this.killAnnouncer.announceKill('An asteroid', 'you');
       } else {
-        // Other player death
+        // Other player death - always create explosion effect
         this.killAnnouncer.announceKill('An asteroid', victimName);
 
-        // Handle remote player death (no killer)
-        this.handleRemotePlayerDeath(data.playerId, 'asteroid');
+        // Get player data for explosion effect
+        const deadPlayer = this.players[data.playerId];
+        if (deadPlayer) {
+          // Player data exists, use normal death handler
+          this.handleRemotePlayerDeath(data.playerId, 'asteroid');
+        } else {
+          // Player data missing - create explosion effect using server-provided position
+          console.warn(`Missing player data for asteroid death: ${data.playerId}, using server position for explosion`);
+          
+          // Use position data from server if available, otherwise fallback
+          const explosionX = data.x !== undefined ? data.x : (this.game.player.x + (Math.random() - 0.5) * 200);
+          const explosionY = data.y !== undefined ? data.y : (this.game.player.y + (Math.random() - 0.5) * 200);
+          
+          // Create explosion effect at the correct position
+          if (this.game.world) {
+            this.game.world.createExplosion(explosionX, explosionY, 35);
+            
+            // Play explosion sound
+            if (this.game.soundManager) {
+              this.game.soundManager.play('explosion', {
+                volume: 0.7,
+                position: { x: explosionX, y: explosionY },
+              });
+            }
+            
+            // Create some visual debris for the destroyed ship
+            this.createBasicShipDebris(explosionX, explosionY, data.rotation || 0);
+          }
+          
+          // Show a game message as additional feedback
+          this.showGameMessage(`${victimName} was destroyed by an asteroid!`, '#ff8800');
+        }
       }
     }); // Handle player disconnection
     this.socket.on('playerLeft', (playerId) => {
@@ -6211,5 +6241,58 @@ export class MultiplayerManager {
             <span style="color: #888;">📅 Next scheduled: ${nextSpawnTime.toLocaleTimeString()}</span><br>
             <span style="color: #888;">🕐 Last spawn: ${lastSpawnTime.toLocaleTimeString()}</span>
         `;
+  }
+
+  // Create basic ship debris when player data is missing but we still want explosion effects
+  createBasicShipDebris(x, y, rotation) {
+    if (!this.game || !this.game.world) return;
+
+    const colors = ['#ff4444', '#ff8844', '#ffff44', '#ffffff'];
+    
+    // Create smaller debris pieces to simulate ship destruction
+    for (let i = 0; i < 15; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 30 + Math.random() * 80;
+      const size = 2 + Math.random() * 6;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      const debris = {
+        x: x + (Math.random() - 0.5) * 10,
+        y: y + (Math.random() - 0.5) * 10,
+        velocityX: Math.cos(angle) * speed,
+        velocityY: Math.sin(angle) * speed,
+        size: size,
+        color: color,
+        life: 1.0,
+        maxLife: 1.0 + Math.random() * 1.5,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 4,
+        update(deltaTime) {
+          // Move debris
+          this.x += this.velocityX * deltaTime;
+          this.y += this.velocityY * deltaTime;
+          // Decrease lifetime
+          this.life -= deltaTime / this.maxLife;
+          // Slow down over time
+          this.velocityX *= 0.98;
+          this.velocityY *= 0.98;
+          // Rotate debris
+          this.rotation += this.rotationSpeed * deltaTime;
+        },
+        render(ctx) {
+          if (this.life <= 0) return;
+          
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          ctx.rotate(this.rotation);
+          ctx.globalAlpha = this.life;
+          ctx.fillStyle = this.color;
+          ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+          ctx.restore();
+        }
+      };
+
+      this.game.world.particles.push(debris);
+    }
   }
 }

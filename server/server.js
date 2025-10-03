@@ -2232,10 +2232,13 @@ io.on('connection', (socket) => {
         `Player ${gameState.players[socket.id].name} was destroyed by an asteroid! Losses: ${gameState.players[socket.id].losses}`,
       );
 
-      // Broadcast the asteroid death to all clients
+      // Broadcast the asteroid death to all clients with position data for explosion effects
       io.emit('playerDestroyedByAsteroid', {
         playerId: socket.id,
         playerName: gameState.players[socket.id].name,
+        x: gameState.players[socket.id].x || 0,
+        y: gameState.players[socket.id].y || 0,
+        rotation: gameState.players[socket.id].rotation || 0,
       });
 
       // Broadcast updated stats to all clients
