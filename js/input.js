@@ -127,8 +127,9 @@ export class InputHandler {
   }
 
   setupTouchControls() {
-    // Only create touch controls if this is a touch device
-    if (!this.isTouchDevice) return;
+    // Only create touch controls for small mobile devices (phones), not iPads
+    const isSmallMobileDevice = this.isTouchDevice && window.innerWidth <= 480;
+    if (!isSmallMobileDevice) return;
 
     // Create touch UI container
     this.createTouchInterface();
@@ -198,8 +199,13 @@ export class InputHandler {
     menuButton.id = 'mobile-menu-button';
     menuButton.className = 'touch-button mobile-menu-button';
     menuButton.innerHTML = '⚙️ Options'; // Match shop button format
-    // Only show on small screens (phones), not iPads - iPads use desktop layout
-    menuButton.style.display = (this.isTouchDevice && window.innerWidth <= 480) ? 'flex' : 'none';
+    // Only show on very small screens (phones), explicitly hide on iPads
+    const isSmallPhone = window.innerWidth <= 480;
+    const isTabletOrLarger = window.innerWidth > 480;
+    menuButton.style.display = (this.isTouchDevice && isSmallPhone) ? 'flex' : 'none';
+    if (isTabletOrLarger) {
+      menuButton.style.display = 'none !important'; // Force hide on tablets/iPads
+    }
     document.body.appendChild(menuButton); // Add to body instead of touchUI
 
     // Add click handler for mobile menu button

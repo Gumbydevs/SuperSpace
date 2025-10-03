@@ -1552,6 +1552,34 @@ input[type='range'] {
     }
   }
 
+  /* Explicitly hide mobile menu button on iPads and larger screens */
+  @media (min-width: 481px) {
+    #mobile-menu-button {
+      display: none !important;
+    }
+    
+    /* Hide all touch interface elements on iPad and larger screens */
+    .touch-button {
+      display: none !important;
+    }
+    
+    #touch-ui {
+      display: none !important;
+    }
+    
+    #joystick-container {
+      display: none !important;
+    }
+    
+    #mobile-brake-button {
+      display: none !important;
+    }
+    
+    #mobile-fire-button {
+      display: none !important;
+    }
+  }
+
   #mobile-menu-button:active {
     background: rgba(
       0,
