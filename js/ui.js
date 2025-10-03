@@ -4,11 +4,16 @@ export class UI {
   constructor() {
     this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
     this.isSmallMobile = window.innerWidth <= 480; // Check if small mobile (screen width <= 480px)
-    // iPad/tablet detection - check for touch device OR specific iPad screen sizes
+    // Enhanced touch device detection - covers iPads, tablets, and mobile devices
     this.isTabletDevice = (
       ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
       window.innerWidth >= 768 && window.innerWidth <= 1024
     ) || /iPad/i.test(navigator.userAgent);
+    
+    // Combined mobile/touch device check for UI positioning
+    this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
+                        ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -38,6 +43,7 @@ export class UI {
       const wasMobile = this.isMobileDevice;
       const wasSmallMobile = this.isSmallMobile;
       const wasTablet = this.isTabletDevice;
+      const wasTouch = this.isTouchDevice;
 
       this.isMobileDevice = window.innerWidth <= 768;
       this.isSmallMobile = window.innerWidth <= 480;
@@ -45,12 +51,16 @@ export class UI {
         ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
         window.innerWidth >= 768 && window.innerWidth <= 1024
       ) || /iPad/i.test(navigator.userAgent);
+      
+      this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
+                          ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
       // Only recreate HUD if device category changed (mobile/tablet ↔ desktop or small mobile ↔ larger mobile)
       if (
         wasMobile !== this.isMobileDevice ||
         wasSmallMobile !== this.isSmallMobile ||
-        wasTablet !== this.isTabletDevice
+        wasTablet !== this.isTabletDevice ||
+        wasTouch !== this.isTouchDevice
       ) {
         this.createHudElements();
       }
@@ -370,19 +380,20 @@ export class UI {
     // BOTTOM CENTER (Mobile/iPad) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
-    statusPanel.style.position = 'absolute';
-    statusPanel.style.bottom = this.isMobileDevice || this.isTabletDevice
-      ? statusBottomPosition
-      : minimapMargin;
     
-    // Position based on device type
+    // Position based on device type - let CSS media queries handle mobile/tablet positioning
     if (this.isMobileDevice || this.isTabletDevice) {
-      // Mobile/iPad: Center the status panel
+      // Mobile/iPad: Let CSS media queries handle positioning with !important rules
+      // CSS will set: position: fixed, left: 50%, transform: translateX(-50%), bottom: 10px
+      statusPanel.style.position = 'fixed';
+      statusPanel.style.bottom = '10px';
       statusPanel.style.left = '50%';
       statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom center';
     } else {
-      // Desktop: Keep in bottom-left
+      // Desktop: Keep in bottom-left as before
+      statusPanel.style.position = 'absolute';
+      statusPanel.style.bottom = minimapMargin;
       statusPanel.style.left = minimapMargin;
       statusPanel.style.transform = `scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom left';

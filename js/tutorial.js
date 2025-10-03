@@ -100,7 +100,7 @@ export class TutorialSystem {
       {
         id: 'shooting',
         title: 'Fire Your Weapons! 🔫',
-        message: "Perfect! Now make sure your weapons are engaged and fire! Press SPACEBAR to shoot! Try firing once to test your weapon.",
+        message: "Perfect! Now make sure your weapons are engaged and fire! Press SPACEBAR to shoot (or tap the FIRE button on mobile/iPad). Try firing once to test your weapon.",
         trigger: 'auto',
         reward: null,
         rewardText: "Next let's find some targets! ✨",
@@ -451,14 +451,8 @@ export class TutorialSystem {
         break;
         
       case 'shoot':
-        if (key === 'Space') {
-          // console.log('🎮 Tutorial: Shoot key detected'); // Production: disabled
-          if (this.canPlayerShoot()) {
-            this.checkStepProgress('shoot');
-          } else {
-            // console.log('🎮 Tutorial: Space pressed but weapon disengaged - ignoring for tutorial'); // Production: disabled
-          }
-        }
+        // Shooting detection is now handled in checkShooting() method which checks input state
+        // This allows both keyboard and mobile fire button to work
         break;
         
       // Other actions handled by callbacks, not key presses
@@ -699,7 +693,24 @@ export class TutorialSystem {
   }
 
   checkShooting() {
-    // Shooting detection handled by key press and callback
+    // Don't check if we're not showing a notification
+    if (!this.isShowingNotification) {
+      return;
+    }
+    
+    // Only check if current step is the shooting step
+    const currentStepData = this.tutorialSteps[this.currentStep];
+    if (!currentStepData || currentStepData.action !== 'shoot') {
+      return;
+    }
+    
+    // Check if fire button is currently being pressed (keyboard OR mobile button)
+    const isFirePressed = this.game.input.keys.includes('Space');
+    
+    if (isFirePressed && this.canPlayerShoot()) {
+      // console.log('🎯 Tutorial: Fire detected (keyboard or mobile) - advancing!'); // Production: disabled
+      this.checkStepProgress('shoot');
+    }
   }
 
   startTutorial() {
