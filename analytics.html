@@ -256,6 +256,7 @@
       <h1>🚀 SuperSpace Analytics Dashboard</h1>
       <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px;">
         <div class="status-indicator" id="statusIndicator">LIVE</div>
+        <div class="status-indicator" id="persistenceIndicator" style="background:#ff9500;">FILE</div>
         <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server.onrender.com</div>
       </div>
     </div>
@@ -292,6 +293,16 @@
         <h3>👤 Cloud Users</h3>
         <div id="cloudLoginUsersList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
         <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+      <!-- Analytics Persistence Info -->
+      <div class="metric-card" id="persistenceInfo">
+        <h3>💾 Analytics Storage</h3>
+        <div id="persistenceStatus" style="font-size:1.2em;text-align:center;margin:10px 0;">
+          <div id="persistenceIcon">📁</div>
+          <div id="persistenceText">File-based</div>
+        </div>
+        <div class="metric-subtitle" id="persistenceDescription">Data resets on server redeploys</div>
       </div>
 
       <!-- Peak Players -->
@@ -1122,19 +1133,47 @@
           const data = await response.json();
           updateMetrics(data);
 
-          // Removed fetch for /analytics/activity/average24h to prevent 404 errors
-
           // Update status indicator
           document.getElementById('statusIndicator').textContent = 'LIVE';
-          document.getElementById('statusIndicator').style.background =
-            '#00ff88';
+          document.getElementById('statusIndicator').style.background = '#00ff88';
+          
+          // Update persistence indicator based on data source
+          const persistenceIndicator = document.getElementById('persistenceIndicator');
+          const persistenceIcon = document.getElementById('persistenceIcon');
+          const persistenceText = document.getElementById('persistenceText');
+          const persistenceDescription = document.getElementById('persistenceDescription');
+          
+          if (data.persistentAnalytics && data.dataSource === 'database') {
+            persistenceIndicator.textContent = 'DATABASE';
+            persistenceIndicator.style.background = '#00ff88';
+            persistenceIndicator.title = 'Analytics data persists across server redeploys';
+            
+            persistenceIcon.textContent = '🗄️';
+            persistenceText.textContent = 'Database Storage';
+            persistenceDescription.textContent = '✅ Data persists across server redeploys';
+            persistenceDescription.style.color = '#00ff88';
+          } else {
+            persistenceIndicator.textContent = 'FILE';
+            persistenceIndicator.style.background = '#ff9500';
+            persistenceIndicator.title = 'Analytics data resets on server redeploys';
+            
+            persistenceIcon.textContent = '📁';
+            persistenceText.textContent = 'File-based Storage';
+            persistenceDescription.textContent = '⚠️ Data resets on server redeploys';
+            persistenceDescription.style.color = '#ff9500';
+          }
         } catch (error) {
           console.error('Failed to fetch analytics data:', error);
 
           // Update status indicator to show error
           document.getElementById('statusIndicator').textContent = 'OFFLINE';
-          document.getElementById('statusIndicator').style.background =
-            '#ff4444';
+          document.getElementById('statusIndicator').style.background = '#ff4444';
+          
+          // Update persistence indicator to show error
+          const persistenceIndicator = document.getElementById('persistenceIndicator');
+          persistenceIndicator.textContent = 'ERROR';
+          persistenceIndicator.style.background = '#ff4444';
+          persistenceIndicator.title = 'Cannot connect to analytics server';
         }
       }
 

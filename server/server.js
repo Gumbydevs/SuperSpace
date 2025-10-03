@@ -141,7 +141,21 @@ app.get('/test', (req, res) => {
 });
 
 // Analytics endpoints
-app.get('/analytics', (req, res) => {
+app.get('/analytics', async (req, res) => {
+  try {
+    // Get data from database analytics (persistent) if available, fallback to file analytics
+    let stats;
+    let dataSource = 'file';
+    
+    if (databaseAnalytics.initialized) {
+      // Use persistent database analytics
+      stats = await databaseAnalytics.getStats();
+      dataSource = 'database';
+    } else {
+      // Fallback to file analytics
+      stats = analytics.getCurrentStats();
+    }
+    
     // --- Challenge completions aggregation ---
     // Helper to get date string for N days ago
     function getDateStringNDaysAgo(n) {
@@ -192,8 +206,6 @@ app.get('/analytics', (req, res) => {
         challengeStats[period][cid] = { count: players.size, players: Array.from(players) };
       }
     }
-  try {
-    const stats = analytics.getCurrentStats();
 
     // Use actual connected players count from gameState
     const actualActivePlayers = Object.keys(gameState.players).length;
@@ -285,10 +297,14 @@ app.get('/analytics', (req, res) => {
       // Cloud login metrics (exposed for admin dashboard)
       cloudLogins: stats.today?.cloudLogins || 0,
       cloudLoginUsers: stats.today?.cloudLoginUsers || [],
+      
+      // Data source information for debugging
+      dataSource,
+      persistentAnalytics: databaseAnalytics.initialized
     };
 
     console.log(
-      `📊 Analytics request - Active players: ${actualActivePlayers}, Analytics sessions: ${stats.activeSessions || 0}`,
+      `📊 Analytics request - Active players: ${actualActivePlayers}, Analytics sessions: ${stats.activeSessions || 0}, Source: ${dataSource}`,
     );
 
     res.json(dashboardData);
