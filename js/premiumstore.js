@@ -1480,9 +1480,6 @@ export class PremiumStore {
   handleClick(x, y, canvas) {
     if (!this.storeOpen) return false;
     
-    // Debug logging for tablets
-    console.log(`Click at: ${x}, ${y} | Canvas: ${canvas.width}x${canvas.height}`);
-    
     // Use EXACT same mobile/tablet detection and responsive logic as render method
     const isMobile = canvas.width < 600 || canvas.height < 700;
     const isTablet = (!isMobile && (canvas.width < 1200 || canvas.height < 900)) || 

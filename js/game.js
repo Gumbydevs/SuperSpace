@@ -125,11 +125,8 @@ class Game {
     // Add mouse click handling for premium store
     this.canvas.addEventListener('click', (e) => {
       const rect = this.canvas.getBoundingClientRect();
-      // Account for device pixel ratio and canvas scaling
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
       // Handle premium store clicks
       if (this.premiumStore.handleClick(x, y, this.canvas)) {
@@ -142,11 +139,9 @@ class Game {
       e.preventDefault(); // Prevent default touch behavior
       const rect = this.canvas.getBoundingClientRect();
       const touch = e.changedTouches[0]; // Use changedTouches for touchend
-      // Account for device pixel ratio and canvas scaling
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const x = (touch.clientX - rect.left) * scaleX;
-      const y = (touch.clientY - rect.top) * scaleY;
+      // Simple coordinate calculation for better iPad compatibility
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
 
       // Handle premium store touches
       if (this.premiumStore.handleClick(x, y, this.canvas)) {

@@ -1924,9 +1924,29 @@ input[type='range'] {
   }
 
   #status-panel {
+    position: fixed !important;
     bottom: 140px !important; /* Adjust for tablet landscape */
-    left: 20px !important;
-    transform: scale(0.95) !important; /* Slightly larger on tablet */
+    left: 50% !important; /* Center horizontally */
+    transform: translateX(-50%) scale(0.95) !important; /* Center and scale */
+    transform-origin: bottom center !important;
+  }
+}
+
+/* iPad and tablet adjustments (portrait mode) */
+@media screen and (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
+  #status-panel {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 50% !important; /* Center horizontally */
+    transform: translateX(-50%) scale(0.9) !important; /* Center and scale */
+    transform-origin: bottom center !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border: 2px solid #444 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 10px rgba(0, 100, 255, 0.6) !important;
+    z-index: 1001 !important;
+    max-width: 280px !important;
+    padding: 8px !important;
   }
 }
 
