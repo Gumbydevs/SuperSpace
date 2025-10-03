@@ -11,6 +11,17 @@ class AccountUI {
     this.addCloudSyncToMainMenu();
     this.createLoginOverlay();
     this.setupEventListeners();
+    
+    // Listen for login status changes
+    this.cloudSync.onLoginStatusChanged = () => {
+      this.updateCloudSyncButton();
+      this.updateLoginPanel();
+    };
+    
+    // Force initial update after a short delay to ensure everything is loaded
+    setTimeout(() => {
+      this.updateCloudSyncButton();
+    }, 100);
   }
 
   addCloudSyncToMainMenu() {
@@ -362,7 +373,10 @@ class AccountUI {
   showCloudSyncPanel() {
     this.isVisible = true;
     this.overlay.style.display = 'flex';
+    
+    // Always update the panel state when showing it
     this.updateLoginPanel();
+    this.updateSyncStatus();
 
     // Focus username field if not logged in
     if (!this.cloudSync.isLoggedIn) {
@@ -404,11 +418,10 @@ class AccountUI {
   updateLoginPanel() {
     const status = this.cloudSync.getSyncStatus();
 
-    if (status.isLoggedIn) {
+    if (status.isLoggedIn && status.username) {
       document.getElementById('login-section').style.display = 'none';
       document.getElementById('logged-in-section').style.display = 'block';
-      document.getElementById('logged-sync-username').textContent =
-        status.username;
+      document.getElementById('logged-sync-username').textContent = status.username;
     } else {
       document.getElementById('login-section').style.display = 'block';
       document.getElementById('logged-in-section').style.display = 'none';
@@ -416,11 +429,18 @@ class AccountUI {
   }
 
   updateSyncStatus() {
-    if (!this.cloudSync.isLoggedIn) return;
-
     const status = this.cloudSync.getSyncStatus();
     const syncStatusEl = document.getElementById('sync-status-text');
     const lastSyncEl = document.getElementById('last-sync-text');
+
+    if (!status.isLoggedIn) {
+      // User is not logged in, hide the logged-in section
+      if (document.getElementById('logged-in-section')) {
+        document.getElementById('logged-in-section').style.display = 'none';
+        document.getElementById('login-section').style.display = 'block';
+      }
+      return;
+    }
 
     if (syncStatusEl) {
       if (status.syncInProgress) {
@@ -676,6 +696,13 @@ class AccountUI {
       });
 
     // Prevent closing by clicking background (force user to acknowledge)
+  }
+
+  // Force refresh of all UI elements - useful for ensuring consistency
+  refreshUI() {
+    this.updateCloudSyncButton();
+    this.updateLoginPanel();
+    this.updateSyncStatus();
   }
 
   showForgotPasswordForm() {

@@ -63,6 +63,8 @@ class CloudSyncService {
     this.syncInterval = 30000; // Sync every 30 seconds
     this.serverUrl = 'https://superspace-server.onrender.com'; // Your existing server
     this.onDataSynced = null; // Callback for when data is synced
+    this.onLoginStatusChanged = null; // Callback for when login status changes
+    this.isValidated = false; // Track if the current session has been validated
 
     // Check if user is already logged in
     this.checkExistingLogin();
@@ -81,6 +83,9 @@ class CloudSyncService {
       this.username = savedUsername;
       this.isLoggedIn = true;
       console.log('🔐 Found existing login session for:', savedUsername);
+
+      // Notify UI of login status change
+      this.notifyLoginStatusChanged();
 
       // Validate token and sync data
       this.validateTokenAndSync();
@@ -134,6 +139,10 @@ class CloudSyncService {
         localStorage.setItem('ss_auth_token', this.authToken);
         localStorage.setItem('ss_username', username);
         console.log('🔐 Logged in successfully as:', username);
+        
+        // Notify UI of login status change
+        this.notifyLoginStatusChanged();
+        
         // Clear all game data keys before merging cloud data
         this.clearGameDataLocalStorage();
         // Download cloud data and merge with local
@@ -163,6 +172,9 @@ class CloudSyncService {
     // Clear saved session
     localStorage.removeItem('ss_auth_token');
     localStorage.removeItem('ss_username');
+
+    // Notify UI of login status change
+    this.notifyLoginStatusChanged();
 
     // --- Reset challenge state to local (non-cloud) state on logout ---
     if (window && window.challengeSystem && typeof window.challengeSystem.loadState === 'function') {
@@ -391,6 +403,7 @@ class CloudSyncService {
 
   // Validate token and sync
   async validateTokenAndSync() {
+    console.log('🔐 Validating authentication token...');
     try {
       const response = await fetch(`${this.serverUrl}/auth/validate`, {
         headers: {
@@ -400,13 +413,20 @@ class CloudSyncService {
 
       if (response.ok) {
         // Token is valid, perform initial sync
+        console.log('🔐 Token validated successfully');
         await this.downloadAndMergeCloudData();
+        // Notify UI that validation is complete and we're still logged in
+        this.notifyLoginStatusChanged();
       } else {
         // Token is invalid, clear session
+        console.log('🔐 Token validation failed, logging out');
         this.logout();
       }
     } catch (error) {
-      console.error('Token validation error:', error);
+      console.error('🔐 Token validation error (network issue):', error);
+      // On network error, assume we're still logged in but inform UI
+      // This allows offline usage with cached credentials
+      this.notifyLoginStatusChanged();
     }
   }
 
@@ -474,7 +494,15 @@ class CloudSyncService {
       username: this.username,
       syncInProgress: this.syncInProgress,
       lastSyncTime: this.lastSyncTime,
+      isValidated: this.isValidated || false, // Track if token has been validated
     };
+  }
+
+  // Notify UI components when login status changes
+  notifyLoginStatusChanged() {
+    if (this.onLoginStatusChanged && typeof this.onLoginStatusChanged === 'function') {
+      setTimeout(() => this.onLoginStatusChanged(), 10); // Small delay to ensure state is consistent
+    }
   }
 }
 
