@@ -17,6 +17,15 @@ const database = require('./database');
 const app = express();
 const server = http.createServer(app);
 
+// Ensure we capture and log unexpected crashes so the platform shows deploy logs
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err && err.stack ? err.stack : err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
 // Initialize database first
 async function initializeDatabase() {
   try {

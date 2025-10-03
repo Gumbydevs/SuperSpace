@@ -100,14 +100,19 @@ async function initDatabase() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_sessions_player ON analytics_sessions(player_id)`);
 
         console.log('✅ Database tables initialized successfully (including analytics tables)');
+        return true;
     } catch (error) {
         console.error('Error initializing database:', error);
-        throw error;
+        // Do not throw here - higher-level code should handle absence of database
+        // Return false to indicate initialization failure so callers can fallback
+        return false;
     }
-}
+        console.log('✅ Database tables initialized successfully (including analytics tables)');
+        return true;
 
 // User management functions
-async function createUser(username, passwordHash, email = null) {
+        // Swallow error and return false so callers can fallback to file-based storage
+        return false;
     const result = await pool.query(
         'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING *',
         [username, passwordHash, email]
