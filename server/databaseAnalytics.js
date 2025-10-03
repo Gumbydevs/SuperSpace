@@ -190,6 +190,10 @@ class DatabaseAnalytics {
 
   // Calculate statistics from events and sessions
   calculateStats(events, sessions) {
+    // Defensive: ensure events and sessions are arrays to avoid crashes when callers are disabled
+    events = Array.isArray(events) ? events : [];
+    sessions = Array.isArray(sessions) ? sessions : [];
+
     const stats = {
       totalSessions: sessions.length,
       totalGameTime: 0,

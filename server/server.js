@@ -48,7 +48,8 @@ async function initializeDatabase() {
 const analytics = new ServerAnalytics();
 const dbAnalytics = new DatabaseAnalytics();
 
-// Periodic database analytics updates
+// Periodic database analytics updates (disabled to reduce bandwidth and DB load)
+/*
 setInterval(async () => {
   if (dbAnalytics.initialized) {
     try {
@@ -67,6 +68,7 @@ setInterval(async () => {
     }
   }
 }, 60000); // Update every minute
+*/
 
 // Initialize cloud sync auth (after database)
 let cloudAuth;

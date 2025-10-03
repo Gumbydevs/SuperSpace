@@ -712,9 +712,9 @@
           return `${h}h ${pad(m)}m ${pad(s)}s`;
         }
 
-        // Kick off fetch and refresh every 30s
-        fetchCloudUsers();
-        setInterval(fetchCloudUsers, 30000);
+  // Kick off fetch and refresh every 30s (disabled to reduce bandwidth)
+  fetchCloudUsers();
+  // setInterval(fetchCloudUsers, 30000);
 
       // --- Challenge definitions for rendering ---
       const CHALLENGE_DEFS = {
@@ -1225,8 +1225,8 @@
           document.head.appendChild(script);
         })();
 
-        // Auto-refresh every 5 seconds
-        setInterval(fetchAnalyticsData, 5000);
+  // Auto-refresh every 5 seconds (disabled to reduce bandwidth)
+  // setInterval(fetchAnalyticsData, 5000);
 
         console.log('🚀 SuperSpace Analytics Dashboard Initialized');
       });
@@ -1241,12 +1241,12 @@
           .replace(/'/g, '&#039;');
       }
 
-      // Handle visibility change to pause/resume updates
-      document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') {
-          fetchAnalyticsData();
-        }
-      });
+      // Handle visibility change to pause/resume updates (fetch disabled)
+      // document.addEventListener('visibilitychange', function () {
+      //   if (document.visibilityState === 'visible') {
+      //     fetchAnalyticsData();
+      //   }
+      // });
     </script>
   </body>
 </html>

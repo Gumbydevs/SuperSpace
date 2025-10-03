@@ -50,10 +50,10 @@ class GameAnalytics {
     // Track user interactions
     this.setupEventListeners();
 
-    // Send heartbeat every 30 seconds
-    this.heartbeatInterval = setInterval(() => {
-      this.sendHeartbeat();
-    }, 30000);
+    // Send heartbeat every 30 seconds (disabled to reduce bandwidth)
+    // this.heartbeatInterval = setInterval(() => {
+    //   this.sendHeartbeat();
+    // }, 30000);
 
     // Send session start
     this.trackSessionStart();
@@ -100,13 +100,14 @@ class GameAnalytics {
 
   setupEventListeners() {
     // Track page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        this.trackEvent('tab_hidden');
-      } else {
-        this.trackEvent('tab_visible');
-      }
-    });
+    // Temporarily disable tab visibility analytics to reduce bandwidth
+    // document.addEventListener('visibilitychange', () => {
+    //   if (document.hidden) {
+    //     this.trackEvent('tab_hidden');
+    //   } else {
+    //     this.trackEvent('tab_visible');
+    //   }
+    // });
 
     // Track when user leaves
     window.addEventListener('beforeunload', () => {
@@ -243,9 +244,10 @@ class GameAnalytics {
   }
 
   startStatsCollection() {
-    this.statsInterval = setInterval(() => {
-      this.collectPeriodicStats();
-    }, 10000); // Every 10 seconds
+    // Periodic in-game stats collection commented out to reduce analytics traffic
+    // this.statsInterval = setInterval(() => {
+    //   this.collectPeriodicStats();
+    // }, 10000); // Every 10 seconds
   }
 
   stopStatsCollection() {
