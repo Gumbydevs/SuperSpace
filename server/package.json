@@ -20,7 +20,7 @@
     "nodemon": "^2.0.20"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   },
   "customLicense": {
     "notice": "This project is not open source. The code is available publicly for testing and community feedback only. All rights are reserved by Gumbysoft and Matt Sherman. Use, reuse, distribution, or modification is not permitted.",
