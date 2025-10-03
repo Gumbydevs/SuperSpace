@@ -147,6 +147,7 @@ async function getPlayerStats() {
     const result = await pool.query(`
         SELECT 
             u.username,
+            u.created_at,
             u.last_login,
             pd.data,
             pd.updated_at
@@ -166,6 +167,7 @@ async function getPlayerStats() {
         
         return {
             username: row.username,
+            createdAt: row.created_at,
             lastLogin: row.last_login,
             playTime: {
                 hours,

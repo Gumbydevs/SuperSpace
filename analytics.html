@@ -678,7 +678,9 @@
           document.getElementById('cloudUsersCount').textContent = users.length;
           const userItems = users.map(u => {
             const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
-            const play = formatPlayTime(u.playTimeSeconds || 0);
+            // Handle both old format (playTimeSeconds) and new format (playtime object)
+            const playTimeSeconds = u.playTimeSeconds || (u.playtime ? Math.floor(u.playtime.totalMs / 1000) : 0);
+            const play = formatPlayTime(playTimeSeconds);
             const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Unknown';
             return `<div class="user-item">
               <div style="font-weight:bold;color:#00ff88;margin-bottom:4px;">${escapeHtml(u.username)}</div>

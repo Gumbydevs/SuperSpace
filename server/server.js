@@ -287,6 +287,7 @@ async function getCloudUsersPayload() {
         const list = playerStats.map(player => {
           return {
             username: player.username,
+            createdAt: player.createdAt,
             lastLogin: player.lastLogin,
             playtime: {
               hours: player.playTime.hours,
