@@ -67,6 +67,9 @@ export class ChallengeSystem {
   // Always initialize currentDaily/currentWeekly as empty arrays to prevent undefined errors
   this.currentDaily = [];
   this.currentWeekly = [];
+  // Baselines captured at the time of the last reset so we can compute "today"/"this week" deltas
+  this.dailyBaseline = {};
+  this.weeklyBaseline = {};
 
     // Make sure Marvin is available
     if (!window.marvinAssistant) {
@@ -99,114 +102,139 @@ export class ChallengeSystem {
       );
 
       let done = false;
+      // Helper to compute delta from baseline for daily or weekly challenges
+      const delta = (statKey) => {
+        try {
+          const current = this.profile.stats[statKey] || 0;
+          let base = 0;
+          if (challengeType === 'daily') {
+            base = (this.dailyBaseline && this.dailyBaseline[statKey]) || 0;
+          } else if (challengeType === 'weekly') {
+            base = (this.weeklyBaseline && this.weeklyBaseline[statKey]) || 0;
+          }
+          return Math.max(0, current - base);
+        } catch (e) {
+          return this.profile.stats[statKey] || 0;
+        }
+      };
       switch (ch.id) {
-        // Daily
+        // Daily challenges (use delta(...) helper where appropriate)
         case 'survive_10':
-          done = this.profile.stats.longestSurvival >= 600;
+          done = (this.profile.stats.longestSurvival || 0) >= 600;
           break;
         case 'destroy_200_asteroids':
-          done = this.profile.stats.asteroidsDestroyed >= 200;
+          done = (challengeType === 'daily') ? delta('asteroidsDestroyed') >= 200 : (this.profile.stats.asteroidsDestroyed >= 200);
           break;
         case 'earn_1000_credits':
-          done = this.profile.stats.totalCreditsEarned >= 1000;
+          done = (challengeType === 'daily') ? delta('totalCreditsEarned') >= 1000 : (this.profile.stats.totalCreditsEarned >= 1000);
           break;
         case 'kill_10_enemies':
-          done = this.profile.stats.totalKills >= 10;
+          done = (challengeType === 'daily') ? delta('totalKills') >= 10 : (this.profile.stats.totalKills >= 10);
           break;
         case 'collect_5_powerups':
-          done = this.profile.stats.powerupsCollected >= 5;
+          done = (challengeType === 'daily') ? delta('powerupsCollected') >= 5 : (this.profile.stats.powerupsCollected >= 5);
           break;
         case 'no_damage_5':
-          // Consider both persisted best no-damage survival and the current
-          // in-session no-damage timer so the challenge can complete while
-          // the player is still alive in the session.
-          done = (this.profile.stats.noDamageSurvival >= 300) ||
-            (this.profile.stats.noDamageSurvivalSession >= 300);
+          // Session progress counts immediately. Persisted best is compared against baseline
+          try {
+            const baseNoDamage = (this.dailyBaseline && this.dailyBaseline.noDamageSurvival) || 0;
+            const persistedBest = this.profile.stats.noDamageSurvival || 0;
+            const sessionBest = this.profile.stats.noDamageSurvivalSession || 0;
+            if (sessionBest >= 300) {
+              done = true;
+            } else if ((persistedBest - baseNoDamage) >= 300) {
+              done = true;
+            } else {
+              done = false;
+            }
+          } catch (e) {
+            done = (this.profile.stats.noDamageSurvival >= 300) || (this.profile.stats.noDamageSurvivalSession >= 300);
+          }
           break;
         case 'use_3_bombs':
-          done = this.profile.stats.bombsUsed >= 3;
+          done = (challengeType === 'daily') ? delta('bombsUsed') >= 3 : (this.profile.stats.bombsUsed >= 3);
           break;
         case 'spend_5000_credits':
-          done = this.profile.stats.totalCreditsSpent >= 5000;
+          done = (challengeType === 'daily') ? delta('totalCreditsSpent') >= 5000 : (this.profile.stats.totalCreditsSpent >= 5000);
           break;
         case 'fly_10km':
-          // This challenge is "in one session" — prefer sessionDistance when available
           done = (this.profile.stats.sessionDistance || 0) >= 10000;
           break;
         case 'chat_1':
-          done = this.profile.stats.chatMessagesSent >= 1;
+          done = (challengeType === 'daily') ? delta('chatMessagesSent') >= 1 : (this.profile.stats.chatMessagesSent >= 1);
           break;
         case 'equip_skin':
-          done = this.profile.stats.skinsEquipped >= 1;
+          done = (challengeType === 'daily') ? delta('skinsEquipped') >= 1 : (this.profile.stats.skinsEquipped >= 1);
           break;
         case 'evade_20_projectiles':
-          done = this.profile.stats.projectilesEvaded >= 20;
+          done = (challengeType === 'daily') ? delta('projectilesEvaded') >= 20 : (this.profile.stats.projectilesEvaded >= 20);
           break;
         case 'upgrade_weapon':
-          done = this.profile.stats.weaponsUpgraded >= 1;
+          done = (challengeType === 'daily') ? delta('weaponsUpgraded') >= 1 : (this.profile.stats.weaponsUpgraded >= 1);
           break;
         case 'visit_sector_5':
-          done = this.profile.stats.sectorsVisited && this.profile.stats.sectorsVisited.includes(5);
+          if (challengeType === 'daily') {
+            const base = (this.dailyBaseline && this.dailyBaseline.sectorsVisited) || [];
+            const current = this.profile.stats.sectorsVisited || [];
+            const added = current.filter((s) => !base.includes(s));
+            done = added.includes(5);
+          } else {
+            done = this.profile.stats.sectorsVisited && this.profile.stats.sectorsVisited.includes(5);
+          }
           break;
         case 'scan_3_artifacts':
-          done = this.profile.stats.artifactsScanned >= 3;
+          done = (challengeType === 'daily') ? delta('artifactsScanned') >= 3 : (this.profile.stats.artifactsScanned >= 3);
           break;
         case 'destroy_boss':
-          done = this.profile.stats.bossesDefeated >= 1;
+          done = (challengeType === 'daily') ? delta('bossesDefeated') >= 1 : (this.profile.stats.bossesDefeated >= 1);
           break;
         case 'collect_10_powerups':
-          done = this.profile.stats.powerupsCollected >= 10;
-          break;
-        case 'activate_shield':
-          done = this.profile.stats.shieldActivations >= 3;
+          done = (challengeType === 'daily') ? delta('powerupsCollected') >= 10 : (this.profile.stats.powerupsCollected >= 10);
           break;
 
-        // Weekly
+        // Weekly challenges (compare against weekly baseline so progress starts at reset)
         case 'score_20000':
+          // Single-game score — not cumulative
           done = this.player && this.player.score >= 20000;
           break;
         case 'kill_25_enemies':
-          done = this.profile.stats.totalKills >= 25;
+          done = delta('totalKills') >= 25;
           break;
         case 'play_20_games':
-          done = this.profile.stats.gamesPlayed >= 20;
+          done = delta('gamesPlayed') >= 20;
           break;
         case 'destroy_1000_asteroids':
-          done = this.profile.stats.asteroidsDestroyed >= 1000;
+          done = delta('asteroidsDestroyed') >= 1000;
           break;
         case 'earn_10000_credits':
-          done = this.profile.stats.totalCreditsEarned >= 10000;
+          done = delta('totalCreditsEarned') >= 10000;
           break;
         case 'top_scorer_10min':
-          done = this.profile.stats.topScorer10min;
+          // topScorer10min is set externally and should be re-evaluated per week
+          done = !!this.profile.stats.topScorer10min;
           break;
         case 'no_death_3_rounds':
-          done = this.profile.stats.noDeathStreak >= 3;
+          done = delta('noDeathStreak') >= 3;
           break;
         case 'buy_3_items':
-          done = this.profile.stats.uniqueShopItemsBought >= 3;
+          done = delta('uniqueShopItemsBought') >= 3;
           break;
         case 'explore_50km':
-          // Weekly cumulative exploration should use totalDistance, but to avoid
-          // accidental completions immediately after a full reset/connect where
-          // totalDistance might be preserved or repopulated, prefer totalDistance
-          // while allowing sessionDistance to contribute during a session.
-          const totalDist = this.profile.stats.totalDistance || 0;
+          const totalDist = (challengeType === 'weekly') ? delta('totalDistance') : (this.profile.stats.totalDistance || 0);
           const sessionDist = this.profile.stats.sessionDistance || 0;
           done = (totalDist >= 50000) || (sessionDist >= 50000);
           break;
         case 'defeat_5_bosses':
-          done = this.profile.stats.bossesDefeated >= 5;
+          done = delta('bossesDefeated') >= 5;
           break;
         case 'collect_10_gems':
-          done = this.profile.stats.rareGemsCollected >= 10;
+          done = delta('rareGemsCollected') >= 10;
           break;
         case 'upgrade_5_times':
-          done = this.profile.stats.weaponsUpgraded >= 5;
+          done = delta('weaponsUpgraded') >= 5;
           break;
-        
         case 'evade_100_projectiles':
-          done = this.profile.stats.projectilesEvaded >= 100;
+          done = delta('projectilesEvaded') >= 100;
           break;
         default:
           done = false;
@@ -328,6 +356,8 @@ export class ChallengeSystem {
         lastWeeklyReset: this.lastWeeklyReset,
         currentDaily: Array.isArray(this.currentDaily) ? this.currentDaily : [],
         currentWeekly: Array.isArray(this.currentWeekly) ? this.currentWeekly : [],
+        dailyBaseline: this.dailyBaseline || {},
+        weeklyBaseline: this.weeklyBaseline || {},
       };
       localStorage.setItem('challenge_state', JSON.stringify(data));
     } catch (e) {
@@ -365,6 +395,8 @@ export class ChallengeSystem {
       if (data.lastWeeklyReset) this.lastWeeklyReset = data.lastWeeklyReset;
       if (Array.isArray(data.currentDaily)) this.currentDaily = data.currentDaily;
       if (Array.isArray(data.currentWeekly)) this.currentWeekly = data.currentWeekly;
+  if (data.dailyBaseline && typeof data.dailyBaseline === 'object') this.dailyBaseline = data.dailyBaseline;
+  if (data.weeklyBaseline && typeof data.weeklyBaseline === 'object') this.weeklyBaseline = data.weeklyBaseline;
       // If shop persisted a daily rotation for today, prefer that so UI and logic match
       try {
         const rotRaw = localStorage.getItem('daily_challenge_rotation');
@@ -509,6 +541,31 @@ export class ChallengeSystem {
       this.claimed.daily = [];
       this.notified.daily = [];
       this.sessionNotified.daily = [];
+      // Capture a baseline snapshot of relevant profile.stats so today's progress is measured from here
+      try {
+        if (this.profile && this.profile.stats) {
+          // Only copy primitive/serializable properties used by daily checks
+          const s = this.profile.stats;
+          this.dailyBaseline = {
+            totalCreditsEarned: s.totalCreditsEarned || 0,
+            totalCreditsSpent: s.totalCreditsSpent || 0,
+            totalKills: s.totalKills || 0,
+            powerupsCollected: s.powerupsCollected || 0,
+            bombsUsed: s.bombsUsed || 0,
+            chatMessagesSent: s.chatMessagesSent || 0,
+            skinsEquipped: s.skinsEquipped || 0,
+            projectilesEvaded: s.projectilesEvaded || 0,
+            weaponsUpgraded: s.weaponsUpgraded || 0,
+            artifactsScanned: s.artifactsScanned || 0,
+            bossesDefeated: s.bossesDefeated || 0,
+            sectorsVisited: Array.isArray(s.sectorsVisited) ? s.sectorsVisited.slice() : [],
+          };
+        } else {
+          this.dailyBaseline = {};
+        }
+      } catch (e) {
+        this.dailyBaseline = {};
+      }
       // Select a new random set of daily challenges
       let pool = (window.CHALLENGES?.daily || CHALLENGES.daily).slice();
       let count = 3 + Math.floor(Math.random() * 3); // 3-5
@@ -532,6 +589,29 @@ export class ChallengeSystem {
       this.claimed.weekly = [];
       this.notified.weekly = [];
       this.sessionNotified.weekly = [];
+      // Capture a baseline snapshot for weekly progress (cumulative)
+      try {
+        if (this.profile && this.profile.stats) {
+          const s = this.profile.stats;
+          this.weeklyBaseline = {
+            totalCreditsEarned: s.totalCreditsEarned || 0,
+            totalKills: s.totalKills || 0,
+            powerupsCollected: s.powerupsCollected || 0,
+            asteroidsDestroyed: s.asteroidsDestroyed || 0,
+            totalDistance: s.totalDistance || 0,
+            bossesDefeated: s.bossesDefeated || 0,
+            rareGemsCollected: s.rareGemsCollected || 0,
+            weaponsUpgraded: s.weaponsUpgraded || 0,
+            uniqueShopItemsBought: s.uniqueShopItemsBought || 0,
+            // keep sectorsVisited baseline for weekly comparisons if needed
+            sectorsVisited: Array.isArray(s.sectorsVisited) ? s.sectorsVisited.slice() : [],
+          };
+        } else {
+          this.weeklyBaseline = {};
+        }
+      } catch (e) {
+        this.weeklyBaseline = {};
+      }
       // Select a new random set of weekly challenges
       let pool = (window.CHALLENGES?.weekly || CHALLENGES.weekly).slice();
       let count = 3 + Math.floor((this.getEasternWeekKey().split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 3); // 3-5
