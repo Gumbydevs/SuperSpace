@@ -2,8 +2,10 @@ import { AvatarManager } from './avatarmanager.js';
 
 export class UI {
   constructor() {
-    this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
-    this.isSmallMobile = window.innerWidth <= 480; // Check if small mobile (screen width <= 480px)
+    // Detect touch devices properly (including iPads with large screens)
+    this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    this.isMobileDevice = this.isTouchDevice || window.innerWidth <= 768; // Touch devices OR small screens
+    this.isSmallMobile = window.innerWidth <= 480; // Small mobile screens only
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -33,7 +35,9 @@ export class UI {
       const wasMobile = this.isMobileDevice;
       const wasSmallMobile = this.isSmallMobile;
 
-      this.isMobileDevice = window.innerWidth <= 768;
+      // Recalculate device detection
+      this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      this.isMobileDevice = this.isTouchDevice || window.innerWidth <= 768;
       this.isSmallMobile = window.innerWidth <= 480;
 
       // Only recreate HUD if device category changed (mobile/tablet ↔ desktop or small mobile ↔ larger mobile)
