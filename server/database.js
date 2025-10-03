@@ -45,6 +45,9 @@ async function initDatabase() {
                 FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
             )
         `);
+        // Ensure username is unique in player_data so ON CONFLICT (username) works.
+        // Using a unique index with IF NOT EXISTS so this can be applied to existing DBs.
+        await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS ux_player_data_username ON player_data(username)`);
 
         // Analytics tables for persistent analytics storage
         await pool.query(`

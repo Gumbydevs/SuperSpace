@@ -475,6 +475,39 @@ class CloudSyncService {
           try { window.notifyNewShipSkin('scout_playtester'); } catch (e) {}
         }
         console.log('🎁 Playtester entitlements ensured (avatar + skin)');
+        // If the player hasn't chosen a custom avatar yet, set the Test Dummy as their selected avatar
+        try {
+          const currentAvatar = localStorage.getItem('selectedAvatar');
+          // Only override if no selection or default free avatar in use
+          if (!currentAvatar || currentAvatar === 'han') {
+            localStorage.setItem('selectedAvatar', playAv);
+            // If avatar manager exists, update it immediately so UI reflects the new avatar
+            try {
+              if (window && window.avatarManagerInstance) {
+                window.avatarManagerInstance.selectedAvatar = playAv;
+                if (typeof window.avatarManagerInstance.drawProfileAvatar === 'function') {
+                  window.avatarManagerInstance.drawProfileAvatar();
+                }
+                if (typeof window.avatarManagerInstance.onAvatarChange === 'function') {
+                  try { window.avatarManagerInstance.onAvatarChange(playAv); } catch (e) { /* ignore */ }
+                }
+              }
+            } catch (e) {
+              /* ignore UI update errors */
+            }
+
+            // If user is logged in, trigger an immediate cloud upload to persist this selection
+            try {
+              if (this && this.isLoggedIn && typeof this.uploadLocalStorageToCloud === 'function') {
+                this.uploadLocalStorageToCloud();
+              }
+            } catch (e) {
+              /* ignore upload errors here; periodic sync will retry */
+            }
+          }
+        } catch (e) {
+          // ignore errors when trying to set selectedAvatar
+        }
       }
     } catch (e) {
       console.warn('Failed to ensure playtester entitlements:', e);
