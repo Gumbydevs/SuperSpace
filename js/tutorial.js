@@ -82,7 +82,7 @@ export class TutorialSystem {
       {
         id: 'stopping',
         title: 'Learn to Stop! 🛑',
-        message: "Your ship has momentum and won't stop immediately! Hold S or DOWN arrow for 3 seconds to brake and come to a full stop. On mobile, hold the STOP button. Mastering stopping is crucial for precise movement!",
+        message: "Your ship has momentum and won't stop immediately! Hold S or DOWN arrow for 1 second to brake and come to a full stop. On mobile/iPad, hold the red STOP button (🛑). Mastering stopping is crucial for precise movement!",
         trigger: 'auto',
         reward: null,
         rewardText: "You're getting the hang of it! 🎯",
@@ -419,13 +419,8 @@ export class TutorialSystem {
     const currentStepData = this.tutorialSteps[this.currentStep];
     if (!currentStepData) return;
     
-    // Reset stop timer when stop key is released
-    if (currentStepData.action === 'stop_ship') {
-      if (key === 'KeyS' || key === 'ArrowDown') {
-        // console.log('🛑 Tutorial: Stop key released - resetting timer'); // Production: disabled
-        this.stopHoldStart = null;
-      }
-    }
+    // Stop detection is now handled in checkStopping() method which checks input state
+    // This allows both keyboard and mobile brake button to work properly
   }
 
   handleKeyPress(key) {
@@ -444,12 +439,8 @@ export class TutorialSystem {
         break;
         
       case 'stop_ship':
-        if (key === 'KeyS' || key === 'ArrowDown') {
-          // console.log('🛑 Tutorial: Stop key detected - starting timer'); // Production: disabled
-          if (!this.stopHoldStart) {
-            this.stopHoldStart = Date.now();
-          }
-        }
+        // Stop detection is now handled in checkStopping() method which checks input state
+        // This allows both keyboard and mobile brake button to work
         break;
         
       case 'change_weapon':
@@ -604,15 +595,27 @@ export class TutorialSystem {
       return;
     }
     
-    if (this.stopHoldStart) {
+    // Check if stop/brake is currently being held (keyboard OR mobile button)
+    const isStopPressed = this.game.input.keys.includes('KeyS') || 
+                         this.game.input.keys.includes('ArrowDown');
+    
+    if (isStopPressed) {
+      if (!this.stopHoldStart) {
+        this.stopHoldStart = Date.now();
+        // console.log('🛑 Tutorial: Stop detected (keyboard or mobile) - starting timer'); // Production: disabled
+      }
+      
       const holdTime = Date.now() - this.stopHoldStart;
-      // console.log(`🛑 Tutorial: Holding stop key for ${(holdTime/1000).toFixed(1)}s (need 1.0s)`); // Production: disabled
+      // console.log(`🛑 Tutorial: Holding stop for ${(holdTime/1000).toFixed(1)}s (need 1.0s)`); // Production: disabled
       
       if (holdTime >= 1000) {
-        // console.log('📚 Tutorial: Stop key held for 1 second - advancing!'); // Production: disabled
+        // console.log('📚 Tutorial: Stop held for 1 second - advancing!'); // Production: disabled
         this.checkStepProgress('stop_ship');
         this.stopHoldStart = null;
       }
+    } else {
+      // Reset timer if stop is not pressed
+      this.stopHoldStart = null;
     }
   }
 
