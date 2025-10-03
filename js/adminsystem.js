@@ -756,7 +756,7 @@ export class AdminSystem {
       if (window.location.hostname === 'localhost') {
         serverUrl = 'http://localhost:3000';
       } else {
-        serverUrl = 'https://superspace-server.onrender.com';
+  serverUrl = window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app';
       }
     }
 

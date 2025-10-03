@@ -10,7 +10,7 @@ reset-analytics.ps1
 .\tools\reset-analytics.ps1
 
 # Non-interactive (force) with custom URL and secret
-.\tools\reset-analytics.ps1 -Url "https://superspace-server.onrender.com/analytics/reset" -Secret "superspaceRESET_8f7c2b1e4d9a" -Force
+.\tools\reset-analytics.ps1 -Url "https://superspace-server-production.up.railway.app/analytics/reset" -Secret "superspaceRESET_8f7c2b1e4d9a" -Force
 ```
 
 Security note: keep the reset secret safe. Prefer setting `ANALYTICS_RESET_SECRET` in your server environment rather than relying on this hard-coded secret.

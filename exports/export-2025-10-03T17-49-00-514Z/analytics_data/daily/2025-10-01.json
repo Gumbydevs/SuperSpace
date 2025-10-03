@@ -1,0 +1,115 @@
+{
+  "date": "2025-10-01",
+  "totalSessions": 4,
+  "uniquePlayers": [
+    "player_1759357639890_taclzwbhj",
+    "Pilot"
+  ],
+  "uniqueSessions": [
+    "session_1759357639890_xgh8xzf4j",
+    "session_1759357647079_3hZRlfMU5x3P_wwpAAAF",
+    "session_1759357647080_3hZRlfMU5x3P_wwpAAAF"
+  ],
+  "uniqueIPs": [
+    "::1"
+  ],
+  "playerSessionMap": {
+    "player_1759357639890_taclzwbhj": [
+      "session_1759357639890_xgh8xzf4j"
+    ],
+    "Pilot": [
+      "session_1759357647079_3hZRlfMU5x3P_wwpAAAF",
+      "session_1759357647080_3hZRlfMU5x3P_wwpAAAF"
+    ]
+  },
+  "gamesStarted": 0,
+  "gamesCompleted": 0,
+  "totalGameTime": 0,
+  "gameDurations": [],
+  "sessionDurations": [
+    103516,
+    226513
+  ],
+  "totalSessionTime": 330029,
+  "lifeDurations": [],
+  "totalLifeTime": 0,
+  "totalKills": 0,
+  "totalDeaths": 2,
+  "totalShots": 0,
+  "totalPurchases": 0,
+  "totalSpent": 0,
+  "gemsSpent": 0,
+  "storeVisits": 0,
+  "powerupsCollected": 0,
+  "totalAchievements": 0,
+  "peakConcurrent": 2,
+  "currentConcurrent": 0,
+  "hourlyActivity": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    13,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "hourlyPeakConcurrent": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "shipUsage": {},
+  "weaponUsage": {},
+  "weaponKills": {},
+  "eventCounts": {
+    "session_start": 2,
+    "player_spawned": 1,
+    "game_started": 1,
+    "ui_interaction": 1,
+    "server_connection": 1,
+    "concurrent_players": 2,
+    "player_died": 2,
+    "respawn": 1,
+    "shop_interaction": 1,
+    "session_end": 1
+  },
+  "questCompletions": 0
+}

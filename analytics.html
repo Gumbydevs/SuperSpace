@@ -257,7 +257,7 @@
       <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px;">
         <div class="status-indicator" id="statusIndicator">LIVE</div>
         <div class="status-indicator" id="persistenceIndicator" style="background:#ff9500;">FILE</div>
-        <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server.onrender.com</div>
+  <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server-production.up.railway.app</div>
       </div>
     </div>
 
@@ -647,7 +647,7 @@
         // input field (stored to localStorage as analyticsApiBase).
         function getApiBase() {
           // Always use the deployed server for analytics
-          return 'https://superspace-server.onrender.com';
+          return (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
         }
 
       async function fetchCloudUsers() {
@@ -1116,7 +1116,7 @@
           // Use the Render server analytics endpoint instead of Vercel
           // Add cache busting parameter to force fresh requests
           const response = await fetch(
-            `https://superspace-server.onrender.com/analytics?t=${Date.now()}`,
+            `${(window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app')}/analytics?t=${Date.now()}`,
             {
               cache: 'no-cache',
               headers: {
@@ -1189,7 +1189,7 @@
           script.onload = () => {
             try {
               // Connect to the analytics server (same base as data fetch)
-              socket = io('https://superspace-server.onrender.com', {
+              socket = io((window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app'), {
                 transports: ['websocket'],
                 secure: true,
               });

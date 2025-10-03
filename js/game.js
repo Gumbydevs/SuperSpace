@@ -227,7 +227,7 @@ class Game {
     const serverUrl =
       window.location.hostname === 'localhost'
         ? 'http://localhost:3000'
-        : 'https://superspace-server.onrender.com';
+  : (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
 
     console.log('Initializing player count, connecting to:', serverUrl);
 
@@ -1004,7 +1004,7 @@ class Game {
       const serverUrl =
         window.location.hostname === 'localhost'
           ? 'http://localhost:3000'
-          : 'https://superspace-server.onrender.com'; // We'll deploy to Render
+          : (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app'); // deployed server
 
       this.multiplayer
         .connect(serverUrl)

@@ -1,0 +1,39 @@
+{
+  "playerId": "Pilot-1",
+  "sessionId": "session_1757897036963_yVpfAYYn8ZVypt3BAAAL",
+  "startTime": 1757897036963,
+  "lastActivity": 1757897036963,
+  "events": [
+    {
+      "sessionId": "session_1757897036963_yVpfAYYn8ZVypt3BAAAL",
+      "playerId": "Pilot-1",
+      "eventType": "session_start",
+      "timestamp": 1757897036963,
+      "data": {
+        "socketId": "yVpfAYYn8ZVypt3BAAAL",
+        "playerName": "Pilot-1"
+      },
+      "serverTimestamp": 1757897036963,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 20
+    }
+  ],
+  "ip": "::1",
+  "gameStats": {
+    "gamesPlayed": 0,
+    "totalGameTime": 0,
+    "kills": 0,
+    "deaths": 0,
+    "shotsFired": 0,
+    "coinsEarned": 0,
+    "totalTimeAlive": 0,
+    "lifeDurations": [],
+    "lastLifeStart": null,
+    "shipsUsed": [],
+    "weaponsUsed": [],
+    "achievementsUnlocked": [],
+    "challengesCompleted": []
+  },
+  "sessionIds": []
+}

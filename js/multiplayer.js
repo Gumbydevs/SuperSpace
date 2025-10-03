@@ -651,7 +651,7 @@ export class MultiplayerManager {
       if (this.allowAutomaticReset) {
         try {
           console.log('ResetConfig.flags.resetAnalytics enabled and allowAutomaticReset true — sending analytics reset request to server');
-          fetch('https://superspace-server.onrender.com/analytics/reset', {
+          fetch((window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app') + '/analytics/reset', {
             method: 'POST',
             headers: {
               'x-analytics-secret': 'superspaceRESET_8f7c2b1e4d9a'

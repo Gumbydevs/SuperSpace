@@ -1,0 +1,52 @@
+{
+  "playerId": "Pilot",
+  "sessionId": "session_1759357647079_3hZRlfMU5x3P_wwpAAAF",
+  "startTime": 1759357647079,
+  "lastActivity": 1759357750596,
+  "events": [
+    {
+      "sessionId": "session_1759357647079_3hZRlfMU5x3P_wwpAAAF",
+      "playerId": "Pilot",
+      "eventType": "session_start",
+      "timestamp": 1759357647079,
+      "data": {
+        "socketId": "3hZRlfMU5x3P_wwpAAAF",
+        "playerName": "Pilot"
+      },
+      "serverTimestamp": 1759357647079,
+      "clientIp": "::1",
+      "day": "2025-10-01",
+      "hour": 18
+    },
+    {
+      "sessionId": "session_1759357647080_3hZRlfMU5x3P_wwpAAAF",
+      "playerId": "Pilot",
+      "eventType": "session_end",
+      "timestamp": 1759357750596,
+      "data": {
+        "sessionDuration": 103516
+      },
+      "serverTimestamp": 1759357750596,
+      "clientIp": "::1",
+      "day": "2025-10-01",
+      "hour": 18
+    }
+  ],
+  "ip": "::1",
+  "gameStats": {
+    "gamesPlayed": 0,
+    "totalGameTime": 0,
+    "kills": 0,
+    "deaths": 0,
+    "shotsFired": 0,
+    "coinsEarned": 0,
+    "totalTimeAlive": 0,
+    "lifeDurations": [],
+    "lastLifeStart": 1759357718153,
+    "shipsUsed": [],
+    "weaponsUsed": [],
+    "achievementsUnlocked": [],
+    "challengesCompleted": []
+  },
+  "sessionIds": []
+}

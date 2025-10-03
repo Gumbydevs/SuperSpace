@@ -18,7 +18,7 @@
     <!-- Vercel Analytics - Simplified -->
     <script>
       // Set analytics host for custom tracking
-      window.SUPERSPACE_ANALYTICS_HOST = 'https://superspace-server.onrender.com';
+  window.SUPERSPACE_ANALYTICS_HOST = window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app';
       
       // Simple Vercel Analytics setup without external dependencies
       window.vercelTrack = function (event, data) {

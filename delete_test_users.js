@@ -11,7 +11,7 @@ const requestData = JSON.stringify({
 });
 
 const options = {
-  hostname: 'superspace-server.onrender.com',
+  hostname: 'superspace-server-production.up.railway.app',
   port: 443,
   path: '/admin/delete-users',
   method: 'POST',

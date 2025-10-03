@@ -1,0 +1,99 @@
+{
+  "date": "2025-10-02",
+  "totalSessions": 2,
+  "uniquePlayers": [
+    "Pilot"
+  ],
+  "uniqueSessions": [
+    "session_1759416796602_nRqxqO9BLKENwzvBAAAB",
+    "session_1759416796603_nRqxqO9BLKENwzvBAAAB"
+  ],
+  "uniqueIPs": [
+    "::1"
+  ],
+  "playerSessionMap": {
+    "Pilot": [
+      "session_1759416796602_nRqxqO9BLKENwzvBAAAB",
+      "session_1759416796603_nRqxqO9BLKENwzvBAAAB"
+    ]
+  },
+  "gamesStarted": 0,
+  "gamesCompleted": 0,
+  "totalGameTime": 0,
+  "gameDurations": [],
+  "sessionDurations": [],
+  "totalSessionTime": 0,
+  "lifeDurations": [],
+  "totalLifeTime": 0,
+  "totalKills": 0,
+  "totalDeaths": 0,
+  "totalShots": 0,
+  "totalPurchases": 0,
+  "totalSpent": 0,
+  "gemsSpent": 0,
+  "storeVisits": 0,
+  "powerupsCollected": 0,
+  "totalAchievements": 0,
+  "peakConcurrent": 1,
+  "currentConcurrent": 1,
+  "hourlyActivity": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    970,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "hourlyPeakConcurrent": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "shipUsage": {},
+  "weaponUsage": {},
+  "weaponKills": {},
+  "eventCounts": {
+    "session_start": 1,
+    "respawn": 969
+  },
+  "questCompletions": 0
+}

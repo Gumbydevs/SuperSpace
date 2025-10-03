@@ -1,5 +1,5 @@
 Param(
-  [string]$Url = "https://superspace-server.onrender.com/analytics/reset",
+  [string]$Url = "https://superspace-server-production.up.railway.app/analytics/reset",
   [string]$Secret = "superspaceRESET_8f7c2b1e4d9a",
   [switch]$Force
 )

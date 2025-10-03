@@ -1,0 +1,47 @@
+{
+  "playerId": "player_1759357639890_taclzwbhj",
+  "sessionId": "session_1759357639890_xgh8xzf4j",
+  "startTime": 1759357639906,
+  "lastActivity": 1759357639906,
+  "events": [
+    {
+      "sessionId": "session_1759357639890_xgh8xzf4j",
+      "playerId": "player_1759357639890_taclzwbhj",
+      "eventType": "session_start",
+      "timestamp": 1759357639906,
+      "data": {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.104.2 Chrome/138.0.7204.235 Electron/37.3.1 Safari/537.36",
+        "screen": "1920x1080",
+        "viewport": "975x531",
+        "timezone": "America/Toronto",
+        "language": "en-US",
+        "isReturning": false,
+        "playerId": "player_1759357639890_taclzwbhj",
+        "sessionId": "session_1759357639890_xgh8xzf4j",
+        "sessionDuration": 15,
+        "timestamp": 1759357639905
+      },
+      "serverTimestamp": 1759357639919,
+      "clientIp": "::1",
+      "day": "2025-10-01",
+      "hour": 18
+    }
+  ],
+  "ip": "::1",
+  "gameStats": {
+    "gamesPlayed": 0,
+    "totalGameTime": 0,
+    "kills": 0,
+    "deaths": 0,
+    "shotsFired": 0,
+    "coinsEarned": 0,
+    "totalTimeAlive": 0,
+    "lifeDurations": [],
+    "lastLifeStart": null,
+    "shipsUsed": [],
+    "weaponsUsed": [],
+    "achievementsUnlocked": [],
+    "challengesCompleted": []
+  },
+  "sessionIds": []
+}

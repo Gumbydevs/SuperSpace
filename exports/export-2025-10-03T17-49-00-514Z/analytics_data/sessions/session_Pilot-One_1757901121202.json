@@ -1,0 +1,119 @@
+{
+  "playerId": "Pilot-One",
+  "sessionId": "session_1757901137185_wnSIDya0ch82QyHlAAAT",
+  "startTime": 1757901121202,
+  "lastActivity": 1757901383860,
+  "events": [
+    {
+      "sessionId": "session_1757901121914_fJrwALv-f04ywwJ4AAAD",
+      "playerId": "Pilot-One",
+      "eventType": "session_start",
+      "timestamp": 1757901121914,
+      "data": {
+        "socketId": "fJrwALv-f04ywwJ4AAAD",
+        "playerName": "Pilot-One"
+      },
+      "serverTimestamp": 1757901121914,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901121916_fJrwALv-f04ywwJ4AAAD",
+      "playerId": "Pilot-One",
+      "eventType": "session_end",
+      "timestamp": 1757901124378,
+      "data": {
+        "sessionDuration": 2462
+      },
+      "serverTimestamp": 1757901124378,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901125522_sj5G-wPkM2ulX9YUAAAN",
+      "playerId": "Pilot-One",
+      "eventType": "session_start",
+      "timestamp": 1757901125522,
+      "data": {
+        "socketId": "sj5G-wPkM2ulX9YUAAAN",
+        "playerName": "Pilot-One"
+      },
+      "serverTimestamp": 1757901125522,
+      "clientIp": "::ffff:127.0.0.1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901137185_wnSIDya0ch82QyHlAAAT",
+      "playerId": "Pilot-One",
+      "eventType": "session_start",
+      "timestamp": 1757901137185,
+      "data": {
+        "socketId": "wnSIDya0ch82QyHlAAAT",
+        "playerName": "Pilot-One"
+      },
+      "serverTimestamp": 1757901137185,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901121203_OHQ-ExhMr0gQ2h4_AAAB",
+      "playerId": "Pilot-One",
+      "eventType": "session_end",
+      "timestamp": 1757901210394,
+      "data": {
+        "sessionDuration": 89191
+      },
+      "serverTimestamp": 1757901210394,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901125523_sj5G-wPkM2ulX9YUAAAN",
+      "playerId": "Pilot-One",
+      "eventType": "session_end",
+      "timestamp": 1757901300237,
+      "data": {
+        "sessionDuration": 174714
+      },
+      "serverTimestamp": 1757901300237,
+      "clientIp": "::ffff:127.0.0.1",
+      "day": "2025-09-14",
+      "hour": 21
+    },
+    {
+      "sessionId": "session_1757901137186_wnSIDya0ch82QyHlAAAT",
+      "playerId": "Pilot-One",
+      "eventType": "session_end",
+      "timestamp": 1757901383860,
+      "data": {
+        "sessionDuration": 246674
+      },
+      "serverTimestamp": 1757901383860,
+      "clientIp": "::1",
+      "day": "2025-09-14",
+      "hour": 21
+    }
+  ],
+  "ip": "::1",
+  "gameStats": {
+    "gamesPlayed": 0,
+    "totalGameTime": 0,
+    "kills": 0,
+    "deaths": 0,
+    "shotsFired": 0,
+    "coinsEarned": 0,
+    "totalTimeAlive": 0,
+    "lifeDurations": [],
+    "lastLifeStart": null,
+    "shipsUsed": [],
+    "weaponsUsed": [],
+    "achievementsUnlocked": [],
+    "challengesCompleted": []
+  },
+  "sessionIds": []
+}

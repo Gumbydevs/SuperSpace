@@ -39,7 +39,7 @@
         var serverUrl =
           window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : (window.SUPERSPACE_ANALYTICS_HOST || 'https://superspace-server.onrender.com');
+      : (window.SUPERSPACE_ANALYTICS_HOST || window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
         var statusUrl = serverUrl.replace(/\/$/, '') + '/status';
         var controller = new AbortController();
         var timer = setTimeout(function () {

@@ -61,7 +61,7 @@ class CloudSyncService {
     this.syncInProgress = false;
     this.lastSyncTime = 0;
     this.syncInterval = 30000; // Sync every 30 seconds
-    this.serverUrl = 'https://superspace-server.onrender.com'; // Your existing server
+  this.serverUrl = window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app'; // Your server
     this.onDataSynced = null; // Callback for when data is synced
     this.onLoginStatusChanged = null; // Callback for when login status changes
     this.isValidated = false; // Track if the current session has been validated
