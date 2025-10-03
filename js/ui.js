@@ -14,6 +14,18 @@ export class UI {
     this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
                         ('ontouchstart' in window || navigator.maxTouchPoints > 0);
     
+    // Debug info - remove after testing
+    console.log('🔍 Device Detection Debug:', {
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      isMobileDevice: this.isMobileDevice,
+      isTabletDevice: this.isTabletDevice,
+      isTouchDevice: this.isTouchDevice,
+      hasTouch: 'ontouchstart' in window,
+      maxTouchPoints: navigator.maxTouchPoints,
+      userAgent: navigator.userAgent.slice(0, 50) + '...'
+    });
+    
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -377,21 +389,28 @@ export class UI {
     updateGemsUI();
     setInterval(updateGemsUI, 1000);
 
-    // BOTTOM CENTER (Mobile/iPad/Touch) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
+    // BOTTOM CENTER (Non-Desktop) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
     
-    // Position based on device type - let CSS media queries handle mobile/tablet positioning
-    if (this.isTouchDevice) {
-      // Touch devices (Mobile/iPad/Tablet): Let CSS media queries handle positioning with !important rules
-      // CSS will set: position: fixed, left: 50%, transform: translateX(-50%), bottom: 10px
-      statusPanel.style.position = 'fixed';
-      statusPanel.style.bottom = '10px';
-      statusPanel.style.left = '50%';
-      statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
-      statusPanel.style.transformOrigin = 'bottom center';
+    // Force center positioning for smaller screens AND touch devices
+    const shouldCenter = window.innerWidth <= 1024 || this.isTouchDevice;
+    console.log('🎯 Status Panel Positioning:', {
+      screenWidth: window.innerWidth,
+      shouldCenter,
+      isTouchDevice: this.isTouchDevice
+    });
+    
+    if (shouldCenter) {
+      // Smaller screens or touch devices: Force center positioning with !important
+      statusPanel.style.setProperty('position', 'fixed', 'important');
+      statusPanel.style.setProperty('bottom', '10px', 'important');
+      statusPanel.style.setProperty('left', '50%', 'important');
+      statusPanel.style.setProperty('transform', `translateX(-50%) scale(${statusPanelScale})`, 'important');
+      statusPanel.style.setProperty('transform-origin', 'bottom center', 'important');
+      statusPanel.style.setProperty('right', 'auto', 'important'); // Clear any right positioning
     } else {
-      // Desktop: Keep in bottom-left as before
+      // Large desktop screens: Keep in bottom-left as before
       statusPanel.style.position = 'absolute';
       statusPanel.style.bottom = minimapMargin;
       statusPanel.style.left = minimapMargin;
@@ -401,7 +420,7 @@ export class UI {
     
     statusPanel.style.display = 'flex';
     statusPanel.style.flexDirection = 'column';
-    statusPanel.style.gap = this.isTouchDevice ? '4px' : '6px';
+    statusPanel.style.gap = shouldCenter ? '4px' : '6px';
     statusPanel.style.padding = statusPanelPadding;
     statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     statusPanel.style.borderRadius = '6px';
