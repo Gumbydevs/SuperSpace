@@ -1565,6 +1565,13 @@ input[type='range'] {
     }
   }
 
+/* Hide tutorial skip button on touch devices to keep top-right clean */
+@media (hover: none) and (pointer: coarse) {
+  .tutorial-skip-btn {
+    display: none !important;
+  }
+}
+
   #mobile-menu-button:active {
     background: rgba(
       0,
