@@ -4,6 +4,11 @@ export class UI {
   constructor() {
     this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
     this.isSmallMobile = window.innerWidth <= 480; // Check if small mobile (screen width <= 480px)
+    // iPad/tablet detection - check for touch device OR specific iPad screen sizes
+    this.isTabletDevice = (
+      ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
+      window.innerWidth >= 768 && window.innerWidth <= 1024
+    ) || /iPad/i.test(navigator.userAgent);
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -32,14 +37,20 @@ export class UI {
     window.addEventListener('resize', () => {
       const wasMobile = this.isMobileDevice;
       const wasSmallMobile = this.isSmallMobile;
+      const wasTablet = this.isTabletDevice;
 
       this.isMobileDevice = window.innerWidth <= 768;
       this.isSmallMobile = window.innerWidth <= 480;
+      this.isTabletDevice = (
+        ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
+        window.innerWidth >= 768 && window.innerWidth <= 1024
+      ) || /iPad/i.test(navigator.userAgent);
 
       // Only recreate HUD if device category changed (mobile/tablet ↔ desktop or small mobile ↔ larger mobile)
       if (
         wasMobile !== this.isMobileDevice ||
-        wasSmallMobile !== this.isSmallMobile
+        wasSmallMobile !== this.isSmallMobile ||
+        wasTablet !== this.isTabletDevice
       ) {
         this.createHudElements();
       }
@@ -356,17 +367,30 @@ export class UI {
     updateGemsUI();
     setInterval(updateGemsUI, 1000);
 
-    // BOTTOM LEFT - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
+    // BOTTOM CENTER (iPad) / BOTTOM LEFT (Mobile) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
     statusPanel.style.position = 'absolute';
-    statusPanel.style.bottom = this.isMobileDevice
+    statusPanel.style.bottom = this.isMobileDevice || this.isTabletDevice
       ? statusBottomPosition
       : minimapMargin;
-    statusPanel.style.left = minimapMargin;
+    
+    // Position based on device type
+    if (this.isTabletDevice) {
+      // iPad/Tablet: Center the status panel
+      statusPanel.style.left = '50%';
+      statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
+      statusPanel.style.transformOrigin = 'bottom center';
+    } else {
+      // Mobile/Desktop: Keep in bottom-left
+      statusPanel.style.left = minimapMargin;
+      statusPanel.style.transform = `scale(${statusPanelScale})`;
+      statusPanel.style.transformOrigin = 'bottom left';
+    }
+    
     statusPanel.style.display = 'flex';
     statusPanel.style.flexDirection = 'column';
-    statusPanel.style.gap = this.isMobileDevice ? '4px' : '6px';
+    statusPanel.style.gap = this.isMobileDevice || this.isTabletDevice ? '4px' : '6px';
     statusPanel.style.padding = statusPanelPadding;
     statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     statusPanel.style.borderRadius = '6px';
