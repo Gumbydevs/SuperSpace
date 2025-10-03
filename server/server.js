@@ -254,6 +254,22 @@ app.get('/analytics', async (req, res) => {
       }
     }
 
+    // Cleanup stale players: if a player entry exists but the socket is gone,
+    // remove it to avoid showing ghost connected players in the dashboard.
+    for (const socketId of Object.keys(gameState.players)) {
+      try {
+        const sock = (io.sockets && io.sockets.sockets && io.sockets.sockets.get(socketId)) || null;
+        if (!sock) {
+          // Log at debug level to avoid excessive logs in normal ops
+          console.log(`Analytics cleanup: removing stale player entry ${gameState.players[socketId]?.name || '<unknown>'} (${socketId})`);
+          delete gameState.players[socketId];
+          delete playerLastActivity[socketId];
+        }
+      } catch (e) {
+        // defensive - ignore any errors during cleanup
+      }
+    }
+
     // Use actual connected players count from gameState
     const actualActivePlayers = Object.keys(gameState.players).length;
 
