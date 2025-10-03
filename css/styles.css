@@ -1040,8 +1040,8 @@ input[type='range'] {
   transform: scale(1.04) !important;
 }
 
-/* Mobile and Tablet Responsive Design */
-@media screen and (max-width: 768px), (hover: none) and (pointer: coarse) {
+/* Mobile and Tablet Responsive Design - PHONES ONLY, NOT IPADS */
+@media screen and (max-width: 480px) {
   /* Shop button for Mobile Only - position within fixed viewport */
   #shop-btn {
     top: 10px !important;
@@ -1063,7 +1063,7 @@ input[type='range'] {
     z-index: 1003 !important;
     font-size: 12px !important;
   }
-  /* Hide mute and music buttons on mobile/tablet only */
+  /* Hide mute and music buttons on small mobile only, keep on iPad */
   #mute-btn,
   #music-btn {
     display: none !important;
@@ -1545,8 +1545,8 @@ input[type='range'] {
     touch-action: manipulation;
   }
 
-  /* Show mobile menu button only on touch devices */
-  @media (hover: none) and (pointer: coarse) {
+  /* Show mobile menu button only on small touch devices (phones), not iPads */
+  @media (hover: none) and (pointer: coarse) and (max-width: 480px) {
     #mobile-menu-button {
       display: flex !important;
     }

@@ -193,12 +193,13 @@ export class InputHandler {
     brakeButton.innerHTML = '🛑';
     touchUI.appendChild(brakeButton);
 
-    // Create mobile menu/pause button - only on mobile devices
+    // Create mobile menu/pause button - only on small mobile devices (phones), not iPads
     const menuButton = document.createElement('div');
     menuButton.id = 'mobile-menu-button';
     menuButton.className = 'touch-button mobile-menu-button';
     menuButton.innerHTML = '⚙️ Options'; // Match shop button format
-    menuButton.style.display = this.isTouchDevice ? 'flex' : 'none'; // Show on touch devices
+    // Only show on small screens (phones), not iPads - iPads use desktop layout
+    menuButton.style.display = (this.isTouchDevice && window.innerWidth <= 480) ? 'flex' : 'none';
     document.body.appendChild(menuButton); // Add to body instead of touchUI
 
     // Add click handler for mobile menu button
