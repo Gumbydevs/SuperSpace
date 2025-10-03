@@ -187,6 +187,24 @@ app.get('/analytics', async (req, res) => {
         // Use persistent database analytics
         stats = await dbAnalytics.getStats();
         dataSource = 'database';
+
+        // If the DB is reachable but contains no analytics yet (all zeros)
+        // prefer the file-based analytics which may have historical data on disk.
+        try {
+          const dbHasNoData =
+            !stats ||
+            !stats.allTime ||
+            (typeof stats.allTime.uniquePlayersCount !== 'number' && !stats.allTime.uniquePlayers) ||
+            (stats.allTime.uniquePlayersCount === 0 && analytics.dailyStats && analytics.dailyStats.size > 0);
+
+          if (dbHasNoData) {
+            console.log('⚠️ Database analytics empty - falling back to file-based analytics for richer history');
+            stats = analytics.getCurrentStats();
+            dataSource = 'file-fallback';
+          }
+        } catch (e) {
+          console.error('Error while deciding analytics source fallback:', e);
+        }
       } else {
         console.log('📁 Using file analytics');
         // Fallback to file analytics

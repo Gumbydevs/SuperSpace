@@ -621,6 +621,11 @@ class ServerAnalytics {
         const stats = this.dailyStats.get(day);
         stats.currentConcurrent = this.sessions.size;
       }
+      // Persist daily stats immediately so all-time aggregates are not lost
+      // if the server is restarted before the periodic save runs.
+      this.saveDailyStats().catch((e) => {
+        console.error('Error saving daily stats on session end:', e);
+      });
     } else {
       console.log(
         `Analytics: Warning - session end called for player ${playerId} but no session found or no duration data`,
@@ -961,6 +966,10 @@ class ServerAnalytics {
         const stats = this.dailyStats.get(day);
         stats.currentConcurrent = this.sessions.size;
       }
+      // Persist daily stats immediately (fire-and-forget)
+      this.saveDailyStats().catch((e) => {
+        console.error('Error saving daily stats after reaper session end:', e);
+      });
     } catch (e) {
       console.error('Error handling immediate session end:', e);
     }
