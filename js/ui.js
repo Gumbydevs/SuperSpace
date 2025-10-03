@@ -370,7 +370,7 @@ export class UI {
       : minimapMargin;
     
     // Simple positioning: center on mobile/small screens, left on desktop
-    if (window.innerWidth <= 768) {
+    if (this.isMobileDevice) {
       // Mobile/iPad: Center the status panel
       statusPanel.style.left = '50%';
       statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
