@@ -702,15 +702,26 @@ export class PlayerProfile {
     document.body.appendChild(overlay);
 
     // Event listeners
-    document.getElementById('close-profile').onclick = () =>
+    const closeBtn = document.getElementById('close-profile');
+    closeBtn.onclick = () => this.closeProfile();
+    // Add touch support for iPad
+    closeBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
       this.closeProfile();
+    });
+    
     overlay.onclick = (e) => {
       if (e.target === overlay) this.closeProfile();
     };
 
     // Reset progress button with double confirmation
-    document.getElementById('reset-progress-btn').onclick = () =>
+    const resetBtn = document.getElementById('reset-progress-btn');
+    resetBtn.onclick = () => this.handleResetProgress();
+    // Add touch support for iPad
+    resetBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
       this.handleResetProgress();
+    });
 
     // ESC key to close
     const escapeHandler = (e) => {

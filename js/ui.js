@@ -64,6 +64,11 @@ export class UI {
       this.closeOptionsBtn.addEventListener('click', () =>
         this.hideOptionsOverlay(),
       );
+      // Add touch support for iPad
+      this.closeOptionsBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.hideOptionsOverlay();
+      });
     }
     // Escape toggles overlay
     document.addEventListener('keydown', (e) => {

@@ -182,8 +182,14 @@ export class AdminSystem {
     console.log('Admin overlay added to DOM successfully');
 
     // Event listeners
-    document.getElementById('close-admin').onclick = () =>
+    const closeAdminBtn = document.getElementById('close-admin');
+    closeAdminBtn.onclick = () => this.closeAdminPanel();
+    // Add touch support for iPad
+    closeAdminBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
       this.closeAdminPanel();
+    });
+    
     overlay.onclick = (e) => {
       if (e.target === overlay) this.closeAdminPanel();
     };

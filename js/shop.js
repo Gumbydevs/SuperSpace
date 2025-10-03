@@ -619,6 +619,11 @@ export class ShopSystem {
     closeBtn.style.fontSize = '1.5em';
     closeBtn.style.cursor = 'pointer';
     closeBtn.onclick = () => this.toggleShop();
+    // Add touch support for iPad
+    closeBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.toggleShop();
+    });
 
     header.appendChild(title);
     header.appendChild(credits);
