@@ -377,13 +377,13 @@ export class UI {
     updateGemsUI();
     setInterval(updateGemsUI, 1000);
 
-    // BOTTOM CENTER (Mobile/iPad) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
+    // BOTTOM CENTER (Mobile/iPad/Touch) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
     
     // Position based on device type - let CSS media queries handle mobile/tablet positioning
-    if (this.isMobileDevice || this.isTabletDevice) {
-      // Mobile/iPad: Let CSS media queries handle positioning with !important rules
+    if (this.isTouchDevice) {
+      // Touch devices (Mobile/iPad/Tablet): Let CSS media queries handle positioning with !important rules
       // CSS will set: position: fixed, left: 50%, transform: translateX(-50%), bottom: 10px
       statusPanel.style.position = 'fixed';
       statusPanel.style.bottom = '10px';
@@ -401,7 +401,7 @@ export class UI {
     
     statusPanel.style.display = 'flex';
     statusPanel.style.flexDirection = 'column';
-    statusPanel.style.gap = this.isMobileDevice || this.isTabletDevice ? '4px' : '6px';
+    statusPanel.style.gap = this.isTouchDevice ? '4px' : '6px';
     statusPanel.style.padding = statusPanelPadding;
     statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     statusPanel.style.borderRadius = '6px';
