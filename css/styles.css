@@ -1558,24 +1558,9 @@ input[type='range'] {
       display: none !important;
     }
     
-    /* Hide all touch interface elements on iPad and larger screens */
-    .touch-button {
-      display: none !important;
-    }
-    
-    #touch-ui {
-      display: none !important;
-    }
-    
-    #joystick-container {
-      display: none !important;
-    }
-    
-    #mobile-brake-button {
-      display: none !important;
-    }
-    
-    #mobile-fire-button {
+    /* Hide secondary touch buttons on iPad to avoid clutter in top-right area */
+    #afterburner-button,
+    #deflector-button {
       display: none !important;
     }
   }
