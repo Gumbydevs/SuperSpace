@@ -1134,6 +1134,32 @@ const io = socketIO(server, {
   },
 });
 
+// Helper to avoid broadcasting large payloads when no clients are connected
+function safeEmit(event, payload) {
+  try {
+    const connected = io.of('/').sockets.size || 0;
+    if (connected === 0) {
+      // No connected clients — skip emitting to save bandwidth
+      console.log(`SafeEmit: skipping '${event}' (no connected clients)`);
+      return;
+    }
+
+    // Log large payloads for debugging (warn if >50KB)
+    try {
+      const size = Buffer.byteLength(JSON.stringify(payload || {}), 'utf8');
+      if (size > 50 * 1024) {
+        console.warn(`SafeEmit: payload for '${event}' is large: ${Math.round(size/1024)}KB`);
+      }
+    } catch (e) {
+      // ignore JSON errors
+    }
+
+    io.emit(event, payload);
+  } catch (e) {
+    console.error('SafeEmit error for', event, e);
+  }
+}
+
 // Add Socket.IO error handling
 io.engine.on('connection_error', (err) => {
   console.log('Socket.IO connection error:', err.req); // the request object
@@ -1192,7 +1218,7 @@ function generateAsteroids() {
   }
 
   // Send the new asteroid field to all connected clients
-  io.emit('asteroidFieldUpdate', {
+  safeEmit('asteroidFieldUpdate', {
     asteroids: gameState.asteroids,
   });
 
@@ -1235,7 +1261,7 @@ setInterval(() => {
 
     // Broadcast new asteroids to all clients
     if (newAsteroids.length > 0) {
-      io.emit('newAsteroids', { asteroids: newAsteroids });
+      safeEmit('newAsteroids', { asteroids: newAsteroids });
       console.log(
         `Generated ${newAsteroids.length} new asteroids. Total: ${gameState.asteroids.length}`,
       );
@@ -1434,8 +1460,8 @@ io.on('connection', (socket) => {
     // Get the current count of players
     const playerCount = Object.keys(gameState.players).length;
 
-    // Send current player count to the requesting client
-    socket.emit('playerCountUpdate', playerCount);
+  // Send current player count to the requesting client
+  socket.emit('playerCountUpdate', playerCount);
 
     console.log(
       `Player count requested by: ${socket.id}, current count: ${playerCount}`,
@@ -1534,8 +1560,11 @@ io.on('connection', (socket) => {
     // Notify all clients about the new player
     socket.broadcast.emit('playerJoined', gameState.players[socket.id]);
 
-    // Broadcast updated player count to all clients
-    io.emit('playerCountUpdate', Object.keys(gameState.players).length);
+  // Broadcast updated player count to all clients
+    safeEmit('playerCountUpdate', Object.keys(gameState.players).length);
+  
+  // Ensure the world loop is running when at least one client connects
+  startWorldLoop();
 
     console.log(`Player ${gameState.players[socket.id].name} joined the game`);
   });
@@ -2996,8 +3025,14 @@ io.on('connection', (socket) => {
       // Remove player activity tracking
       delete playerLastActivity[socket.id];
 
-      // Broadcast updated player count to all clients
-      io.emit('playerCountUpdate', Object.keys(gameState.players).length);
+  // Broadcast updated player count to all clients
+      safeEmit('playerCountUpdate', Object.keys(gameState.players).length);
+
+      // If no players remain, stop the world loop
+      const connectedNow = io.of('/').sockets.size || 0;
+      if (connectedNow === 0) {
+        stopWorldLoop();
+      }
     } else {
       console.log(`Unknown player disconnected: ${socket.id}`);
     }
@@ -3049,14 +3084,44 @@ function updateWorld() {
   // This is a simplified version - in a real game, you'd have more complex logic here
 
   // Send world updates to all clients
-  io.emit('worldUpdate', {
+  safeEmit('worldUpdate', {
     asteroids: gameState.asteroids,
     powerups: gameState.powerups,
   });
 }
 
-// Run world update at a lower frequency than client frame rate
-setInterval(updateWorld, 1000 / 10); // 10 updates per second
+// World update loop control: only run when there are connected clients to avoid
+// unnecessary CPU and bandwidth usage on idle servers.
+let worldIntervalId = null;
+const WORLD_TICK_MS = Math.round(1000 / 10); // 10 updates per second
+
+function startWorldLoop() {
+  try {
+    const connected = io.of('/').sockets.size || 0;
+    if (connected === 0) {
+      // nothing to do
+      return;
+    }
+    if (!worldIntervalId) {
+      worldIntervalId = setInterval(updateWorld, WORLD_TICK_MS);
+      console.log(`Started world loop (${WORLD_TICK_MS}ms tick) - connected clients: ${connected}`);
+    }
+  } catch (e) {
+    console.error('Error starting world loop:', e);
+  }
+}
+
+function stopWorldLoop() {
+  try {
+    if (worldIntervalId) {
+      clearInterval(worldIntervalId);
+      worldIntervalId = null;
+      console.log('Stopped world loop (no connected clients)');
+    }
+  } catch (e) {
+    console.error('Error stopping world loop:', e);
+  }
+}
 
 // Generate a random color for players
 function getRandomColor() {
