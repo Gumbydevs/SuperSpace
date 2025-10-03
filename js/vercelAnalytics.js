@@ -130,7 +130,8 @@ class SuperSpaceAnalytics {
     // Track page visibility changes
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        this.track('tab_hidden');
+        // Commented out to reduce bandwidth: tab hidden events are not essential
+        // this.track('tab_hidden');
       } else {
         this.track('tab_visible');
       }
@@ -330,17 +331,19 @@ class SuperSpaceAnalytics {
   // === SOCIAL & MULTIPLAYER ===
 
   trackPlayerCount(count) {
-    this.track('concurrent_players', {
-      count,
-      isPeakHour: this.isPeakHour(),
-    });
+    // Commented out to reduce bandwidth: frequent player count events are non-essential
+    // this.track('concurrent_players', {
+    //   count,
+    //   isPeakHour: this.isPeakHour(),
+    // });
   }
 
   trackServerConnection(status) {
-    this.track('server_connection', {
-      status, // 'connected', 'disconnected', 'error'
-      sessionDuration: Date.now() - this.sessionStartTime,
-    });
+    // Commented out to reduce bandwidth: server connection pings are non-essential
+    // this.track('server_connection', {
+    //   status, // 'connected', 'disconnected', 'error'
+    //   sessionDuration: Date.now() - this.sessionStartTime,
+    // });
   }
 
   // === ACHIEVEMENTS & CHALLENGES ===
