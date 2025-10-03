@@ -143,17 +143,30 @@ app.get('/test', (req, res) => {
 // Analytics endpoints
 app.get('/analytics', async (req, res) => {
   try {
+    console.log('📊 Analytics endpoint called');
+    
     // Get data from database analytics (persistent) if available, fallback to file analytics
     let stats;
     let dataSource = 'file';
     
-    if (databaseAnalytics.initialized) {
-      // Use persistent database analytics
-      stats = await databaseAnalytics.getStats();
-      dataSource = 'database';
-    } else {
-      // Fallback to file analytics
+    try {
+      if (dbAnalytics.initialized) {
+        console.log('🗄️ Using database analytics');
+        // Use persistent database analytics
+        stats = await dbAnalytics.getStats();
+        dataSource = 'database';
+      } else {
+        console.log('📁 Using file analytics');
+        // Fallback to file analytics
+        stats = analytics.getCurrentStats();
+      }
+      console.log('✅ Stats loaded successfully, source:', dataSource);
+    } catch (statsError) {
+      console.error('❌ Error loading stats:', statsError);
+      // Fallback to file analytics if database fails
       stats = analytics.getCurrentStats();
+      dataSource = 'file-fallback';
+      console.log('⚠️ Fell back to file analytics due to error');
     }
     
     // --- Challenge completions aggregation ---
@@ -300,7 +313,7 @@ app.get('/analytics', async (req, res) => {
       
       // Data source information for debugging
       dataSource,
-      persistentAnalytics: databaseAnalytics.initialized
+      persistentAnalytics: dbAnalytics.initialized
     };
 
     console.log(
@@ -309,8 +322,13 @@ app.get('/analytics', async (req, res) => {
 
     res.json(dashboardData);
   } catch (error) {
-    console.error('Error getting analytics:', error);
-    res.status(500).json({ error: 'Failed to get analytics' });
+    console.error('❌ Analytics endpoint error:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to get analytics',
+      message: error.message,
+      dataSource: 'error'
+    });
   }
 });
 
