@@ -4,16 +4,6 @@ export class UI {
   constructor() {
     this.isMobileDevice = window.innerWidth <= 768; // Check if mobile/tablet (screen width <= 768px)
     this.isSmallMobile = window.innerWidth <= 480; // Check if small mobile (screen width <= 480px)
-    // Enhanced touch device detection - covers iPads, tablets, and mobile devices
-    this.isTabletDevice = (
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
-      window.innerWidth >= 768 && window.innerWidth <= 1024
-    ) || /iPad/i.test(navigator.userAgent);
-    
-    // Combined mobile/touch device check for UI positioning
-    this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
-                        ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    
     this.createHudElements();
     // Initially hide gameplay UI elements since we start at menu
     this.setGameplayUIVisibility(false);
@@ -42,25 +32,14 @@ export class UI {
     window.addEventListener('resize', () => {
       const wasMobile = this.isMobileDevice;
       const wasSmallMobile = this.isSmallMobile;
-      const wasTablet = this.isTabletDevice;
-      const wasTouch = this.isTouchDevice;
 
       this.isMobileDevice = window.innerWidth <= 768;
       this.isSmallMobile = window.innerWidth <= 480;
-      this.isTabletDevice = (
-        ('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
-        window.innerWidth >= 768 && window.innerWidth <= 1024
-      ) || /iPad/i.test(navigator.userAgent);
-      
-      this.isTouchDevice = this.isMobileDevice || this.isTabletDevice || 
-                          ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
       // Only recreate HUD if device category changed (mobile/tablet ↔ desktop or small mobile ↔ larger mobile)
       if (
         wasMobile !== this.isMobileDevice ||
-        wasSmallMobile !== this.isSmallMobile ||
-        wasTablet !== this.isTabletDevice ||
-        wasTouch !== this.isTouchDevice
+        wasSmallMobile !== this.isSmallMobile
       ) {
         this.createHudElements();
       }
@@ -377,25 +356,22 @@ export class UI {
     updateGemsUI();
     setInterval(updateGemsUI, 1000);
 
-    // BOTTOM CENTER (Non-Desktop) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
+    // BOTTOM CENTER (Mobile/iPad) / BOTTOM LEFT (Desktop) - Player status indicators (Health, Weapon, etc.) - positioned to avoid touch controls
     const statusPanel = document.createElement('div');
     statusPanel.id = 'status-panel';
+    statusPanel.style.position = 'absolute';
+    statusPanel.style.bottom = this.isMobileDevice
+      ? statusBottomPosition
+      : minimapMargin;
     
-    // Force center positioning for smaller screens AND touch devices
-    const shouldCenter = window.innerWidth <= 1024 || this.isTouchDevice;
-    
-    if (shouldCenter) {
-      // Smaller screens or touch devices: Force center positioning with !important
-      statusPanel.style.setProperty('position', 'fixed', 'important');
-      statusPanel.style.setProperty('bottom', '10px', 'important');
-      statusPanel.style.setProperty('left', '50%', 'important');
-      statusPanel.style.setProperty('transform', `translateX(-50%) scale(${statusPanelScale})`, 'important');
-      statusPanel.style.setProperty('transform-origin', 'bottom center', 'important');
-      statusPanel.style.setProperty('right', 'auto', 'important'); // Clear any right positioning
+    // Simple positioning: center on mobile/small screens, left on desktop
+    if (window.innerWidth <= 768) {
+      // Mobile/iPad: Center the status panel
+      statusPanel.style.left = '50%';
+      statusPanel.style.transform = `translateX(-50%) scale(${statusPanelScale})`;
+      statusPanel.style.transformOrigin = 'bottom center';
     } else {
-      // Large desktop screens: Keep in bottom-left as before
-      statusPanel.style.position = 'absolute';
-      statusPanel.style.bottom = minimapMargin;
+      // Desktop: Keep in bottom-left
       statusPanel.style.left = minimapMargin;
       statusPanel.style.transform = `scale(${statusPanelScale})`;
       statusPanel.style.transformOrigin = 'bottom left';
@@ -403,7 +379,7 @@ export class UI {
     
     statusPanel.style.display = 'flex';
     statusPanel.style.flexDirection = 'column';
-    statusPanel.style.gap = shouldCenter ? '4px' : '6px';
+    statusPanel.style.gap = this.isMobileDevice ? '4px' : '6px';
     statusPanel.style.padding = statusPanelPadding;
     statusPanel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     statusPanel.style.borderRadius = '6px';
