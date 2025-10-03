@@ -107,12 +107,10 @@ async function initDatabase() {
         // Return false to indicate initialization failure so callers can fallback
         return false;
     }
-        console.log('✅ Database tables initialized successfully (including analytics tables)');
-        return true;
+}
 
 // User management functions
-        // Swallow error and return false so callers can fallback to file-based storage
-        return false;
+async function createUser(username, passwordHash, email = null) {
     const result = await pool.query(
         'INSERT INTO users (username, password_hash, email) VALUES ($1, $2, $3) RETURNING *',
         [username, passwordHash, email]

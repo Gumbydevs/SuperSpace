@@ -69,11 +69,9 @@ async function importSessions(pool, exportsDir) {
   }
 }
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
+async function importExports(databaseUrl) {
   if (!databaseUrl) {
-    console.error('Please set DATABASE_URL env var to your Postgres connection string.');
-    process.exit(1);
+    throw new Error('DATABASE_URL must be provided');
   }
 
   const pool = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
@@ -81,14 +79,11 @@ async function main() {
     const exportsDir = path.join(__dirname, '..', 'exports');
     // find latest export dir that contains db_schema.sql
     const dirs = await fs.readdir(exportsDir);
-    const exportDirs = dirs.filter(d => d.startsWith('export-'))
-      .map(d => ({ d, stat: fs.stat(path.join(exportsDir, d)) }));
 
     // pick the latest by name (ISO timestamp in name)
     const latest = dirs.filter(d => d.startsWith('export-')).sort().pop();
     if (!latest) {
-      console.error('No export directories found under exports/');
-      process.exit(1);
+      throw new Error('No export directories found under exports/');
     }
 
     const schemaPath = path.join(exportsDir, latest, 'db_schema.sql');
@@ -98,11 +93,27 @@ async function main() {
     await importSessions(pool, path.join(exportsDir, latest));
 
     console.log('Import complete.');
+    return { ok: true, importDir: latest };
   } catch (error) {
     console.error('Import failed:', error);
+    throw error;
   } finally {
     await pool.end();
   }
 }
 
-main();
+// Allow running standalone
+if (require.main === module) {
+  (async () => {
+    try {
+      const res = await importExports(process.env.DATABASE_URL);
+      console.log('Standalone import result:', res);
+      process.exit(0);
+    } catch (e) {
+      console.error('Standalone import error:', e);
+      process.exit(1);
+    }
+  })();
+}
+
+module.exports = { importExports };

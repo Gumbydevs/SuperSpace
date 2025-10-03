@@ -3306,3 +3306,34 @@ app.get('/debug/logs', (req, res) => {
     res.status(500).json({ error: 'Failed to get logs' });
   }
 });
+
+// One-time admin import endpoint - runs the import script using the server's DATABASE_URL
+// Protect with IMPORT_SECRET header; after a successful run the endpoint removes itself.
+let importEndpointEnabled = true;
+app.post('/admin/import-data', async (req, res) => {
+  try {
+    if (!importEndpointEnabled) return res.status(404).json({ error: 'Not found' });
+
+    const secretHeader = req.get('x-admin-import-secret');
+    const expected = process.env.IMPORT_SECRET || 'superspace_IMPORT_SECRET';
+    if (!secretHeader || secretHeader !== expected) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    console.log('Admin import-data endpoint triggered');
+    const importer = require('./import_exports_to_pg');
+    try {
+      const result = await importer.importExports(process.env.DATABASE_URL);
+      // Disable endpoint after successful import
+      importEndpointEnabled = false;
+      console.log('Admin import completed:', result);
+      return res.json({ ok: true, result });
+    } catch (importErr) {
+      console.error('Admin import failed:', importErr);
+      return res.status(500).json({ ok: false, error: importErr.message });
+    }
+  } catch (error) {
+    console.error('Error in /admin/import-data:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
