@@ -3190,7 +3190,8 @@ function updateWorld() {
 // World update loop control: only run when there are connected clients to avoid
 // unnecessary CPU and bandwidth usage on idle servers.
 let worldIntervalId = null;
-const WORLD_TICK_MS = Math.round(1000 / 10); // 10 updates per second
+// Reduce tick rate from 10Hz to ~3Hz to lower baseline bandwidth while keeping gameplay responsive
+const WORLD_TICK_MS = 333; // ~3 updates per second
 
 function startWorldLoop() {
   try {
