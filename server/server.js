@@ -3042,6 +3042,33 @@ io.on('connection', (socket) => {
           console.log(
             `📊 Player left analytics: ${pid} (Session duration: ${Math.floor(duration / 1000)}s, Active players: ${analytics.sessions.size})`,
           );
+        } else {
+          // Defensive fallback: if analytics has no live session object for this player
+          // still record the sessionDuration into today's dailyStats so averages are
+          // not lost when disconnects happen before analytics created the session.
+          try {
+            const day = analytics.getDateString(Date.now());
+            if (!analytics.dailyStats.has(day)) analytics.dailyStats.set(day, analytics.createEmptyDayStats());
+            const stats = analytics.dailyStats.get(day);
+            const secs = Math.round((Date.now() - (socket.analytics && socket.analytics.startTime ? socket.analytics.startTime : Date.now())) / 1000);
+            stats.totalSessionTime = (stats.totalSessionTime || 0) + secs;
+            stats.sessionDurations = stats.sessionDurations || [];
+            stats.sessionDurations.push(secs);
+            // update unique session map if possible
+            try {
+              if (socket.analytics && socket.analytics.playerId) {
+                if (!stats.playerSessionMap) stats.playerSessionMap = {};
+                if (!stats.playerSessionMap[socket.analytics.playerId]) stats.playerSessionMap[socket.analytics.playerId] = new Set();
+                if (socket.analytics.sessionId) stats.playerSessionMap[socket.analytics.playerId].add(socket.analytics.sessionId);
+                if (!stats.uniqueSessions) stats.uniqueSessions = new Set();
+                if (socket.analytics.sessionId) stats.uniqueSessions.add(socket.analytics.sessionId);
+              }
+            } catch (e) {}
+            // Persist immediately (best-effort)
+            analytics.saveDailyStats && analytics.saveDailyStats().catch(() => {});
+          } catch (e) {
+            console.error('Error applying disconnect fallback for session duration:', e);
+          }
         }
       }
     } catch (e) {
