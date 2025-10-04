@@ -258,6 +258,8 @@
         <div class="status-indicator" id="statusIndicator">LIVE</div>
         <div class="status-indicator" id="persistenceIndicator" style="background:#ff9500;">FILE</div>
   <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server-production.up.railway.app</div>
+  </div>
+  <div id="statusError" style="text-align:center;margin-top:6px;color:#ff7777;display:none;font-size:0.85em;"></div>
       </div>
     </div>
 
@@ -1187,6 +1189,12 @@
           persistenceIndicator.textContent = 'ERROR';
           persistenceIndicator.style.background = '#ff4444';
           persistenceIndicator.title = 'Cannot connect to analytics server';
+          // show short error message in header for quick debugging
+          try {
+            const el = document.getElementById('statusError');
+            el.style.display = 'block';
+            el.textContent = (error && error.message) ? `Error: ${error.message}` : String(error);
+          } catch (e) { /* ignore UI errors */ }
         }
       }
 

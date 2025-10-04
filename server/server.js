@@ -3116,7 +3116,13 @@ io.on('connection', (socket) => {
         stopWorldLoop();
       }
     } else {
-  logger.warn(`Unknown player disconnected: ${socket.id}`);
+      // Provide more context when a socket disconnects before joining the game.
+      const info = {
+        socketId: socket.id,
+        analytics: socket.analytics || null,
+        headers: socket.request ? socket.request.headers : null,
+      };
+  logger.warn(`Unknown player disconnected: ${socket.id}`, info);
     }
   });
 });
