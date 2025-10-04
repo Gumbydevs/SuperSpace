@@ -260,7 +260,6 @@
   <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server-production.up.railway.app</div>
   </div>
   <div id="statusError" style="text-align:center;margin-top:6px;color:#ff7777;display:none;font-size:0.85em;"></div>
-      </div>
     </div>
 
     <div style="text-align:center;margin:12px 0;">
@@ -1149,8 +1148,8 @@
           updateMetrics(data);
 
           // Update status indicator
-          document.getElementById('statusIndicator').textContent = 'LIVE';
-          document.getElementById('statusIndicator').style.background = '#00ff88';
+          const statusEl = document.getElementById('statusIndicator');
+          if (statusEl) { statusEl.textContent = 'LIVE'; statusEl.style.background = '#00ff88'; }
           
           // Update persistence indicator based on data source
           const persistenceIndicator = document.getElementById('persistenceIndicator');
@@ -1159,41 +1158,31 @@
           const persistenceDescription = document.getElementById('persistenceDescription');
           
           if (data.persistentAnalytics && data.dataSource === 'database') {
-            persistenceIndicator.textContent = 'DATABASE';
-            persistenceIndicator.style.background = '#00ff88';
-            persistenceIndicator.title = 'Analytics data persists across server redeploys';
-            
-            persistenceIcon.textContent = '🗄️';
-            persistenceText.textContent = 'Database Storage';
-            persistenceDescription.textContent = '✅ Data persists across server redeploys';
-            persistenceDescription.style.color = '#00ff88';
+            if (persistenceIndicator) { persistenceIndicator.textContent = 'DATABASE'; persistenceIndicator.style.background = '#00ff88'; persistenceIndicator.title = 'Analytics data persists across server redeploys'; }
+            if (persistenceIcon) persistenceIcon.textContent = '🗄️';
+            if (persistenceText) persistenceText.textContent = 'Database Storage';
+            if (persistenceDescription) { persistenceDescription.textContent = '✅ Data persists across server redeploys'; persistenceDescription.style.color = '#00ff88'; }
           } else {
-            persistenceIndicator.textContent = 'FILE';
-            persistenceIndicator.style.background = '#ff9500';
-            persistenceIndicator.title = 'Analytics data resets on server redeploys';
-            
-            persistenceIcon.textContent = '📁';
-            persistenceText.textContent = 'File-based Storage';
-            persistenceDescription.textContent = '⚠️ Data resets on server redeploys';
-            persistenceDescription.style.color = '#ff9500';
+            if (persistenceIndicator) { persistenceIndicator.textContent = 'FILE'; persistenceIndicator.style.background = '#ff9500'; persistenceIndicator.title = 'Analytics data resets on server redeploys'; }
+            if (persistenceIcon) persistenceIcon.textContent = '📁';
+            if (persistenceText) persistenceText.textContent = 'File-based Storage';
+            if (persistenceDescription) { persistenceDescription.textContent = '⚠️ Data resets on server redeploys'; persistenceDescription.style.color = '#ff9500'; }
           }
         } catch (error) {
           console.error('Failed to fetch analytics data:', error);
 
           // Update status indicator to show error
-          document.getElementById('statusIndicator').textContent = 'OFFLINE';
-          document.getElementById('statusIndicator').style.background = '#ff4444';
-          
+          const statusElErr = document.getElementById('statusIndicator');
+          if (statusElErr) { statusElErr.textContent = 'OFFLINE'; statusElErr.style.background = '#ff4444'; }
+
           // Update persistence indicator to show error
-          const persistenceIndicator = document.getElementById('persistenceIndicator');
-          persistenceIndicator.textContent = 'ERROR';
-          persistenceIndicator.style.background = '#ff4444';
-          persistenceIndicator.title = 'Cannot connect to analytics server';
+          const persistenceIndicatorErr = document.getElementById('persistenceIndicator');
+          if (persistenceIndicatorErr) { persistenceIndicatorErr.textContent = 'ERROR'; persistenceIndicatorErr.style.background = '#ff4444'; persistenceIndicatorErr.title = 'Cannot connect to analytics server'; }
+
           // show short error message in header for quick debugging
           try {
             const el = document.getElementById('statusError');
-            el.style.display = 'block';
-            el.textContent = (error && error.message) ? `Error: ${error.message}` : String(error);
+            if (el) { el.style.display = 'block'; el.textContent = (error && error.message) ? `Error: ${error.message}` : String(error); }
           } catch (e) { /* ignore UI errors */ }
         }
       }
