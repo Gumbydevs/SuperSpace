@@ -318,7 +318,28 @@ app.get('/analytics', async (req, res) => {
     todayPayload.peakConcurrent = adjustedPeak;
     todayPayload.currentConcurrent = actualActivePlayers;
 
-  const dashboardData = {
+    // Persist adjusted global peak so the "all-time" number reflects
+    // actual connected players when it exceeds the stored peak.
+    try {
+      if (dataSource === 'database' && dbAnalytics && dbAnalytics.initialized) {
+        // Update DB global peak (fire-and-forget)
+        dbAnalytics.updateGlobalPeak(adjustedPeak).catch(() => {});
+      } else {
+        // File-based analytics: update in-memory meta and persist to disk
+        try {
+          if (analytics && (typeof analytics.globalPeak === 'number') && analytics.globalPeak < adjustedPeak) {
+            analytics.globalPeak = adjustedPeak;
+            analytics.saveMeta && analytics.saveMeta().catch(() => {});
+          }
+        } catch (e) {
+          // ignore persistence errors
+        }
+      }
+    } catch (e) {
+      // defensive - do not fail the endpoint due to persistence issues
+    }
+
+    const dashboardData = {
     // Challenge completions and achievers
     challengeStats,
     // Basic metrics that dashboard expects - use real player count
