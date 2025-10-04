@@ -1258,13 +1258,6 @@ const ASTEROID_MIN_SIZE = 20;
 const ASTEROID_MAX_SIZE = 100;
 const ASTEROID_REGENERATION_TIME = 10000; // Time in ms to regenerate asteroids
 
-// Delta update tracking for asteroids to avoid sending full arrays each tick
-const ASTEROID_POS_THRESHOLD = 5; // units - significant move threshold
-const ASTEROID_ROT_THRESHOLD = 0.02; // radians
-const FULL_SNAPSHOT_INTERVAL_MS = 10 * 1000; // send a full snapshot every 10s to keep clients in sync
-let lastFullSnapshotAt = 0;
-let lastSentAsteroids = new Map(); // id -> { x,y,rotation,health,radius }
-
 // Generate initial asteroids
 generateAsteroids();
 
@@ -3197,76 +3190,7 @@ function updateWorld() {
 // World update loop control: only run when there are connected clients to avoid
 // unnecessary CPU and bandwidth usage on idle servers.
 let worldIntervalId = null;
-// Reduce tick rate from 10Hz to ~3Hz to cut baseline bandwidth while
-// keeping gameplay responsive. We'll also send deltas for asteroids.
-const WORLD_TICK_MS = 333; // ~3 updates per second
-
-function updateWorld() {
-  // Update asteroids and powerups if needed
-  // Send deltas (created, updated, destroyed) for asteroids to minimize payloads
-  try {
-    const now = Date.now();
-
-    const created = [];
-    const updated = [];
-    const destroyed = [];
-
-    const currentMap = new Map(gameState.asteroids.map(a => [a.id, a]));
-
-    // Detect created and updated asteroids
-    for (const ast of gameState.asteroids) {
-      const prev = lastSentAsteroids.get(ast.id);
-      if (!prev) {
-        created.push(ast);
-        lastSentAsteroids.set(ast.id, { x: ast.x, y: ast.y, rotation: ast.rotation, health: ast.health, radius: ast.radius });
-        continue;
-      }
-
-      const dx = Math.abs(ast.x - (prev.x || 0));
-      const dy = Math.abs(ast.y - (prev.y || 0));
-      const drot = Math.abs(ast.rotation - (prev.rotation || 0));
-      const dhealth = ast.health !== prev.health;
-      if (dx > ASTEROID_POS_THRESHOLD || dy > ASTEROID_POS_THRESHOLD || drot > ASTEROID_ROT_THRESHOLD || dhealth) {
-        updated.push({ id: ast.id, x: ast.x, y: ast.y, rotation: ast.rotation, health: ast.health });
-        lastSentAsteroids.set(ast.id, { x: ast.x, y: ast.y, rotation: ast.rotation, health: ast.health, radius: ast.radius });
-      }
-    }
-
-    // Detect destroyed asteroids
-    for (const [id] of lastSentAsteroids.entries()) {
-      if (!currentMap.has(id)) {
-        destroyed.push(id);
-        lastSentAsteroids.delete(id);
-      }
-    }
-
-    // Periodically send a full snapshot to keep clients fully in sync
-    if (now - lastFullSnapshotAt > FULL_SNAPSHOT_INTERVAL_MS) {
-      lastFullSnapshotAt = now;
-      lastSentAsteroids.clear();
-      for (const ast of gameState.asteroids) {
-        lastSentAsteroids.set(ast.id, { x: ast.x, y: ast.y, rotation: ast.rotation, health: ast.health, radius: ast.radius });
-      }
-      safeEmit('worldSnapshot', {
-        asteroids: gameState.asteroids,
-        powerups: gameState.powerups,
-      });
-      return;
-    }
-
-    const payload = {};
-    if (created.length) payload.asteroidsCreated = created;
-    if (updated.length) payload.asteroidsUpdated = updated;
-    if (destroyed.length) payload.asteroidsDestroyed = destroyed;
-    if (gameState.powerups && gameState.powerups.length) payload.powerups = gameState.powerups;
-
-    if (Object.keys(payload).length > 0) {
-      safeEmit('worldDelta', payload);
-    }
-  } catch (e) {
-    console.error('Error in updateWorld delta logic:', e);
-  }
-}
+const WORLD_TICK_MS = Math.round(1000 / 10); // 10 updates per second
 
 function startWorldLoop() {
   try {
