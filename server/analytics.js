@@ -5,6 +5,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const logger = require('./logger');
 class ServerAnalytics {
   constructor() {
     this.dataDir = path.join(__dirname, 'analytics_data');
@@ -25,7 +26,6 @@ class ServerAnalytics {
     this.startSessionReaper();
     this.startPeriodicSave();
 
-  const logger = require('./logger');
   logger.info('Server Analytics initialized');
   }
 
