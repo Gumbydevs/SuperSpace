@@ -306,67 +306,74 @@ app.get('/analytics', async (req, res) => {
       }))
       .sort((a, b) => b.score - a.score);
 
-    // Transform data to match dashboard expectations
+    // Transform data to match dashboard expectations. Use the actual connected
+    // player count when it is higher than analytics-derived concurrent counts
+    // (this can happen when clients connect but haven't emitted session_start
+    // yet which is what the analytics subsystem uses to track sessions).
+    const reportedPeak = stats.today?.peakConcurrent || 0;
+    const adjustedPeak = Math.max(reportedPeak, actualActivePlayers);
+
+    const todayPayload = Object.assign({}, stats.today || {});
+    // Ensure the frontend finds these fields under today
+    todayPayload.peakConcurrent = adjustedPeak;
+    todayPayload.currentConcurrent = actualActivePlayers;
+
   const dashboardData = {
-  // Challenge completions and achievers
-  challengeStats,
-      // Basic metrics that dashboard expects - use real player count
-      activePlayers: actualActivePlayers,
-      peakPlayers: stats.today?.peakConcurrent || 0,
-      totalSessions: stats.today?.totalSessions || 0,
-      avgSessionTime: Math.floor(
-        (stats.today?.averageSessionDuration || 0) / 1000,
-      ),
-  connectedPlayers, // <-- new field: array of {name, duration, socketId}
-  // Expose today and allTime stats for frontend
-  today: stats.today || {},
-  allTime: stats.allTime || {},
+    // Challenge completions and achievers
+    challengeStats,
+    // Basic metrics that dashboard expects - use real player count
+    activePlayers: actualActivePlayers,
+    peakPlayers: adjustedPeak,
+    totalSessions: stats.today?.totalSessions || 0,
+    avgSessionTime: Math.floor((stats.today?.averageSessionDuration || 0) / 1000),
+    connectedPlayers, // <-- new field: array of {name, duration, socketId}
+    // Expose today and allTime stats for frontend (with adjusted peak/current)
+    today: todayPayload,
+    allTime: stats.allTime || {},
 
-      // Game statistics - map to actual field names
-      killsToday: stats.today?.totalKills || 0,
-      deathsToday: stats.today?.totalDeaths || 0,
-      shotsFired: stats.today?.totalShots || 0,
-      powerupsCollected: stats.today?.powerupsCollected || 0,
+    // Game statistics - map to actual field names
+    killsToday: stats.today?.totalKills || 0,
+    deathsToday: stats.today?.totalDeaths || 0,
+    shotsFired: stats.today?.totalShots || 0,
+    powerupsCollected: stats.today?.powerupsCollected || 0,
 
-      // Premium statistics
-      premiumPlayers: stats.today?.premiumPlayers || 0,
-      storeVisits: stats.today?.storeVisits || 0,
+    // Premium statistics
+    premiumPlayers: stats.today?.premiumPlayers || 0,
+    storeVisits: stats.today?.storeVisits || 0,
+    purchases: stats.today?.totalPurchases || 0,
+    revenue: stats.today?.totalSpent || 0, // Real money revenue
+    gemsSpent: stats.today?.gemsSpent || 0, // Gems spent on items
+
+    // Chart data
+    playerActivity: generatePlayerActivityData({ activeSessions: actualActivePlayers }),
+    gameEvents: {
+      kills: stats.today?.totalKills || 0,
+      deaths: stats.today?.totalDeaths || 0,
+      shots: stats.today?.totalShots || 0,
+      powerups: stats.today?.powerupsCollected || 0,
       purchases: stats.today?.totalPurchases || 0,
-      revenue: stats.today?.totalSpent || 0, // Real money revenue
-      gemsSpent: stats.today?.gemsSpent || 0, // Gems spent on items
+    },
 
-      // Chart data
-      playerActivity: generatePlayerActivityData({
-        activeSessions: actualActivePlayers,
-      }),
-      gameEvents: {
-        kills: stats.today?.totalKills || 0,
-        deaths: stats.today?.totalDeaths || 0,
-        shots: stats.today?.totalShots || 0,
-        powerups: stats.today?.powerupsCollected || 0,
-        purchases: stats.today?.totalPurchases || 0,
-      },
+    // Leaderboard for dashboard
+    leaderboard,
 
-      // Leaderboard for dashboard
-      leaderboard,
+    // Recent events for live log
+    recentEvents: stats.recentEvents || [],
 
-      // Recent events for live log
-  recentEvents: stats.recentEvents || [],
+    // Debug info
+    debug: {
+      analyticsActiveSessions: stats.activeSessions || 0,
+      gameStateActivePlayers: actualActivePlayers,
+      playerNames: Object.values(gameState.players).map((p) => p.name),
+    },
+    // Cloud login metrics (exposed for admin dashboard)
+    cloudLogins: stats.today?.cloudLogins || 0,
+    cloudLoginUsers: stats.today?.cloudLoginUsers || [],
 
-      // Debug info
-      debug: {
-        analyticsActiveSessions: stats.activeSessions || 0,
-        gameStateActivePlayers: actualActivePlayers,
-        playerNames: Object.values(gameState.players).map((p) => p.name),
-      },
-      // Cloud login metrics (exposed for admin dashboard)
-      cloudLogins: stats.today?.cloudLogins || 0,
-      cloudLoginUsers: stats.today?.cloudLoginUsers || [],
-      
-      // Data source information for debugging
-      dataSource,
-  persistentAnalytics: !!(dbAnalytics && dbAnalytics.initialized)
-    };
+    // Data source information for debugging
+    dataSource,
+    persistentAnalytics: !!(dbAnalytics && dbAnalytics.initialized),
+  };
 
     console.log(
       `📊 Analytics request - Active players: ${actualActivePlayers}, Analytics sessions: ${stats.activeSessions || 0}, Source: ${dataSource}`,
