@@ -1412,6 +1412,15 @@ setInterval(() => {
 
 // Connection handling
 io.on('connection', (socket) => {
+  // mark admin/analytics sockets from handshake auth if present
+  try {
+    if (socket.handshake && socket.handshake.auth && socket.handshake.auth.role === 'admin') {
+      socket.isAdminSocket = true;
+    }
+  } catch (e) {}
+
+  // also allow explicit identify from client as a fallback
+  socket.on('identifyAdmin', () => { socket.isAdminSocket = true; });
   // Analytics event handler
   socket.on('analytics_event', (eventData) => {
     try {
@@ -3122,7 +3131,7 @@ io.on('connection', (socket) => {
         analytics: socket.analytics || null,
         headers: socket.request ? socket.request.headers : null,
       };
-  logger.warn(`Unknown player disconnected: ${socket.id}`, info);
+  logger.debug(`Unknown player disconnected: ${socket.id}`, info);
     }
   });
 });
