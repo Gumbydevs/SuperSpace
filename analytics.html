@@ -689,16 +689,16 @@
         console.error('Cloud users fetch error', lastError);
         const base = getApiBase();
         const url = base.replace(/\/+$/, '') + '/cloud/users';
-        document.getElementById('cloudUsersList').innerHTML = `<div class="user-item" style="color:#ff8888;background:rgba(255,136,136,0.1);">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
-        document.getElementById('cloudUsersCount').textContent = '0';
+  const cul = document.getElementById('cloudUsersList'); if (cul) cul.innerHTML = `<div class="user-item" style="color:#ff8888;background:rgba(255,136,136,0.1);">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
+  const ccount = document.getElementById('cloudUsersCount'); if (ccount) ccount.textContent = '0';
       }        function renderCloudUsers(data) {
           if (!data || !Array.isArray(data.users)) {
-            document.getElementById('cloudUsersList').innerHTML = '<div class="user-item"><em>No cloud users</em></div>';
-            document.getElementById('cloudUsersCount').textContent = '0';
+            const cul2 = document.getElementById('cloudUsersList'); if (cul2) cul2.innerHTML = '<div class="user-item"><em>No cloud users</em></div>';
+            const ccount2 = document.getElementById('cloudUsersCount'); if (ccount2) ccount2.textContent = '0';
             return;
           }
           const users = data.users;
-          document.getElementById('cloudUsersCount').textContent = users.length;
+          const ccount3 = document.getElementById('cloudUsersCount'); if (ccount3) ccount3.textContent = users.length;
           const userItems = users.map(u => {
             const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
             // Handle both old format (playTimeSeconds) and new format (playtime object)
@@ -712,7 +712,7 @@
               <div style="font-size:0.85em;color:#ccc;">Joined: ${created}</div>
             </div>`;
           }).join('');
-          document.getElementById('cloudUsersList').innerHTML = userItems || '<div class="user-item"><em>No cloud users</em></div>';
+          const cul4 = document.getElementById('cloudUsersList'); if (cul4) cul4.innerHTML = userItems || '<div class="user-item"><em>No cloud users</em></div>';
         }
 
         function formatPlayTime(seconds) {
@@ -766,7 +766,7 @@
 
       function renderChallengeCompletions(challengeStats) {
         if (!challengeStats) {
-          document.getElementById('challengeCompletionsSection').innerHTML = '<em>No challenge data available</em>';
+    const ccsec = document.getElementById('challengeCompletionsSection'); if (ccsec) ccsec.innerHTML = '<em>No challenge data available</em>';
           return;
         }
         let html = '';
@@ -785,60 +785,64 @@
           }
           html += '</tbody></table>';
         }
-        document.getElementById('challengeCompletionsSection').innerHTML = html;
+  const ccsec2 = document.getElementById('challengeCompletionsSection'); if (ccsec2) ccsec2.innerHTML = html;
       }
 
       function updateMetrics(data) {
+            // safe setter to avoid 'Cannot set properties of null'
+            function setText(id, val) {
+              try { const el = document.getElementById(id); if (el) el.textContent = val; } catch (e) { /* ignore */ }
+            }
         // Challenge completions
         if (data.challengeStats) {
           renderChallengeCompletions(data.challengeStats);
         } else {
-          document.getElementById('challengeCompletionsSection').innerHTML = '<em>No challenge data available</em>';
+          const ccsec3 = document.getElementById('challengeCompletionsSection'); if (ccsec3) ccsec3.innerHTML = '<em>No challenge data available</em>';
         }
         // Leaderboard
         if (Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
           const rows = data.leaderboard.map((p, i) =>
             `<tr><td style='color:#00ff88;'>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${p.score}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`
           ).join('');
-          document.getElementById('leaderboardList').innerHTML = `
+          const llist = document.getElementById('leaderboardList'); if (llist) llist.innerHTML = `
             <table style='width:100%;color:#fff;font-size:1em;'>
               <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wins</th><th>Losses</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           `;
         } else {
-          document.getElementById('leaderboardList').innerHTML = '<em>No players online</em>';
+          const llist2 = document.getElementById('leaderboardList'); if (llist2) llist2.innerHTML = '<em>No players online</em>';
         }
         // Update basic metrics
   // Fallback to main data if today/allTime missing
   const today = data.today || {};
   const allTime = data.allTime || {};
   // Active players: prefer uniquePlayersCount if provided by the server
-  document.getElementById('activePlayersToday').textContent = (typeof today.uniquePlayersCount === 'number' ? today.uniquePlayersCount : (today.activePlayers ?? data.activePlayers ?? 0));
-  document.getElementById('activePlayersAll').textContent = (typeof allTime.uniquePlayersCount === 'number' ? allTime.uniquePlayersCount : (allTime.activePlayers ?? data.activePlayers ?? 0));
+  setText('activePlayersToday', (typeof today.uniquePlayersCount === 'number' ? today.uniquePlayersCount : (today.activePlayers ?? data.activePlayers ?? 0)));
+  setText('activePlayersAll', (typeof allTime.uniquePlayersCount === 'number' ? allTime.uniquePlayersCount : (allTime.activePlayers ?? data.activePlayers ?? 0)));
   // Peak concurrent: prefer globalPeak (all-time) or peakConcurrent where available
-  document.getElementById('peakPlayersToday').textContent = (typeof today.peakConcurrent === 'number' ? today.peakConcurrent : (data.peakPlayers ?? 0));
-  document.getElementById('peakPlayersAll').textContent = (typeof allTime.globalPeak === 'number' ? allTime.globalPeak : (typeof allTime.peakConcurrent === 'number' ? allTime.peakConcurrent : (data.peakPlayers ?? 0)));
+  setText('peakPlayersToday', (typeof today.peakConcurrent === 'number' ? today.peakConcurrent : (data.peakPlayers ?? 0)));
+  setText('peakPlayersAll', (typeof allTime.globalPeak === 'number' ? allTime.globalPeak : (typeof allTime.peakConcurrent === 'number' ? allTime.peakConcurrent : (data.peakPlayers ?? 0))));
   // Show today/all time for total sessions
-  document.getElementById('totalSessionsToday').textContent = today.totalSessions || 0;
-  document.getElementById('totalSessionsAll').textContent = allTime.totalSessions || 0;
+  setText('totalSessionsToday', today.totalSessions || 0);
+  setText('totalSessionsAll', allTime.totalSessions || 0);
 
         // Player names with session durations (side by side)
         if (Array.isArray(data.connectedPlayers) && data.connectedPlayers.length > 0) {
           // Show names and durations in two columns, side by side, format duration as h/m/s
           const nameCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;'>${escapeHtml(p.name)}</div>`).join('');
           const durCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;color:#00ff88;'>${formatDuration(p.duration)}</div>`).join('');
-          document.getElementById('playerNamesList').innerHTML = `
-            <div style='flex:1;min-width:120px;'>${nameCol}</div>
-            <div style='flex:0 0 110px;text-align:right;'>${durCol}</div>
-          `;
+                  const pnl = document.getElementById('playerNamesList'); if (pnl) pnl.innerHTML = `
+                    <div style='flex:1;min-width:120px;'>${nameCol}</div>
+                    <div style='flex:0 0 110px;text-align:right;'>${durCol}</div>
+                  `;
         } else {
-          document.getElementById('playerNamesList').innerHTML = '<em>No players connected</em>';
+          const pnl2 = document.getElementById('playerNamesList'); if (pnl2) pnl2.innerHTML = '<em>No players connected</em>';
         }
 
   // Cloud logins today/all time
-  document.getElementById('cloudLoginsToday').textContent = today.cloudLogins ?? data.cloudLogins ?? 0;
-  document.getElementById('cloudLoginsAll').textContent = allTime.cloudLogins ?? data.cloudLogins ?? 0;
+  setText('cloudLoginsToday', today.cloudLogins ?? data.cloudLogins ?? 0);
+  setText('cloudLoginsAll', allTime.cloudLogins ?? data.cloudLogins ?? 0);
 
         // Cloud login users today/all time
   let todayUsers = today.cloudLoginUsers || [];
@@ -851,13 +855,13 @@
           html += `<div><b>All Time:</b> ${allTimeUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
         }
         if (!html) html = '<em>None</em>';
-        document.getElementById('cloudLoginUsersList').innerHTML = html;
+  const cu = document.getElementById('cloudLoginUsersList'); if (cu) cu.innerHTML = html;
 
   // Format average session time (today/all time)
   const avgTimeToday = today.averageSessionDuration || 0;
   const avgTimeAll = allTime.averageSessionDuration || 0;
-  document.getElementById('avgSessionTimeToday').textContent = formatDuration(avgTimeToday);
-  document.getElementById('avgSessionTimeAll').textContent = formatDuration(avgTimeAll);
+  setText('avgSessionTimeToday', formatDuration(avgTimeToday));
+  setText('avgSessionTimeAll', formatDuration(avgTimeAll));
       // Utility: format seconds as h/m/s
       function formatDuration(seconds) {
         seconds = Math.floor(seconds);
@@ -875,20 +879,20 @@
 
         // Update game statistics
   // Show today/all time for kills, deaths, shots, powerups
-  document.getElementById('killsToday').textContent = today.totalKills || 0;
-  document.getElementById('killsAll').textContent = allTime.totalKills || 0;
-  document.getElementById('deathsToday').textContent = today.totalDeaths || 0;
-  document.getElementById('deathsAll').textContent = allTime.totalDeaths || 0;
-  document.getElementById('shotsFiredToday').textContent = today.totalShots || 0;
-  document.getElementById('shotsFiredAll').textContent = allTime.totalShots || 0;
-  document.getElementById('powerupsCollectedToday').textContent = today.powerupsCollected || 0;
-  document.getElementById('powerupsCollectedAll').textContent = allTime.powerupsCollected || 0;
+  setText('killsToday', today.totalKills || 0);
+  setText('killsAll', allTime.totalKills || 0);
+  setText('deathsToday', today.totalDeaths || 0);
+  setText('deathsAll', allTime.totalDeaths || 0);
+  setText('shotsFiredToday', today.totalShots || 0);
+  setText('shotsFiredAll', allTime.totalShots || 0);
+  setText('powerupsCollectedToday', today.powerupsCollected || 0);
+  setText('powerupsCollectedAll', allTime.powerupsCollected || 0);
 
   // Tutorial timing/quit stats
   const tut = data.tutorialStats || { today: {}, allTime: {} };
   const avgToday = tut.today ? (tut.today.avgCompletionSeconds || 0) : 0;
   const avgAll = tut.allTime ? (tut.allTime.avgCompletionSeconds || 0) : 0;
-  document.getElementById('tutorialAvgComplete').textContent = formatDuration(Math.round(avgToday)) + ' / ' + formatDuration(Math.round(avgAll));
+  setText('tutorialAvgComplete', formatDuration(Math.round(avgToday)) + ' / ' + formatDuration(Math.round(avgAll)));
   // Most common quit step (choose today if available, otherwise allTime)
   const quitCounts = (tut.today && tut.today.quitCounts && Object.keys(tut.today.quitCounts).length>0) ? tut.today.quitCounts : (tut.allTime && tut.allTime.quitCounts ? tut.allTime.quitCounts : {});
   let mostQuit = '-';
@@ -899,16 +903,16 @@
     }
     mostQuit = key + ` (${max})`;
   }
-  document.getElementById('tutorialMostQuit').textContent = mostQuit;
+  setText('tutorialMostQuit', mostQuit);
 
   // Populate tutorial step durations table
   try {
-    const tableContainer = document.getElementById('tutorialStepTable');
+  const tableContainer = document.getElementById('tutorialStepTable');
     const stepDurationsToday = tut.today && tut.today.stepDurations ? tut.today.stepDurations : {};
     const stepDurationsAll = tut.allTime && tut.allTime.stepDurations ? tut.allTime.stepDurations : {};
     const allStepIds = new Set([...Object.keys(stepDurationsToday), ...Object.keys(stepDurationsAll)]);
     if (allStepIds.size === 0) {
-      tableContainer.innerHTML = '<em>No tutorial timing data yet</em>';
+  if (tableContainer) tableContainer.innerHTML = '<em>No tutorial timing data yet</em>';
     } else {
       let html = '<table style="width:100%;color:#fff;border-collapse:collapse;font-size:0.95em;">';
       html += '<thead><tr><th style="text-align:left">Step</th><th>Today (s)</th><th>All Time (s)</th></tr></thead><tbody>';
@@ -919,7 +923,7 @@
         html += `<tr><td style="padding:4px 6px">${escapeHtml(sid)}</td><td style="padding:4px 6px;color:#00ff88">${avg(todayArr)}</td><td style="padding:4px 6px">${avg(allArr)}</td></tr>`;
       }
       html += '</tbody></table>';
-      tableContainer.innerHTML = html;
+  if (tableContainer) tableContainer.innerHTML = html;
     }
   } catch (e) {
     console.warn('Failed to render tutorialStepTable', e);
@@ -951,19 +955,19 @@
   const tCompletedToday = todayEvents['tutorial_step_completed'] || 0;
   const tCompletedAll = allTimeEvents['tutorial_step_completed'] || 0;
 
-  document.getElementById('tutorialStartedToday').textContent = tStartedToday;
-  document.getElementById('tutorialStartedAll').textContent = tStartedAll;
-  document.getElementById('tutorialStepShownToday').textContent = tShownToday;
-  document.getElementById('tutorialStepShownAll').textContent = tShownAll;
-  document.getElementById('tutorialStepCompletedToday').textContent = tCompletedToday;
-  document.getElementById('tutorialStepCompletedAll').textContent = tCompletedAll;
+  setText('tutorialStartedToday', tStartedToday);
+  setText('tutorialStartedAll', tStartedAll);
+  setText('tutorialStepShownToday', tShownToday);
+  setText('tutorialStepShownAll', tShownAll);
+  setText('tutorialStepCompletedToday', tCompletedToday);
+  setText('tutorialStepCompletedAll', tCompletedAll);
 
   // Update premium statistics (today/all time)
-  document.getElementById('premiumPlayers').textContent = `${today.premiumPlayers || 0} / ${allTime.premiumPlayers || 0}`;
-  document.getElementById('storeVisits').textContent = `${today.storeVisits || 0} / ${allTime.storeVisits || 0}`;
-  document.getElementById('purchases').textContent = `${today.totalPurchases || 0} / ${allTime.totalPurchases || 0}`;
-  document.getElementById('revenue').textContent = `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`;
-  document.getElementById('gemsSpent').textContent = `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`;
+  setText('premiumPlayers', `${today.premiumPlayers || 0} / ${allTime.premiumPlayers || 0}`);
+  setText('storeVisits', `${today.storeVisits || 0} / ${allTime.storeVisits || 0}`);
+  setText('purchases', `${today.totalPurchases || 0} / ${allTime.totalPurchases || 0}`);
+  setText('revenue', `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`);
+  setText('gemsSpent', `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`);
       // Load all previous chat history (all players, all server chat) into admin chat panel
 
       // --- Admin Chat Scrollable Log ---
