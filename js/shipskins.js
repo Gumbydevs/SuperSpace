@@ -259,7 +259,8 @@ export class ShipSkinSystem {
     const blue = '#6495ED';
     const black = '#000000';
     
-    console.log('HAZARD STRIPES EFFECT CALLED for', ship.currentShip);
+  // Debug: hazard stripes effect triggered (silenced in normal runs)
+  if (typeof console.debug === 'function') console.debug('HAZARD STRIPES EFFECT CALLED for', ship.currentShip);
 
     ctx.save();
     

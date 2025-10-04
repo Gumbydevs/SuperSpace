@@ -1231,9 +1231,7 @@ export class Player {
           Array.isArray(remotePlayer.projectiles)
         ) {
           if (remotePlayer.projectiles.length > 0) {
-            console.log(
-              `🎯 Updating ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`,
-            );
+            if (typeof console.debug === 'function') console.debug(`🎯 Updating ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`);
           }
           for (let i = remotePlayer.projectiles.length - 1; i >= 0; i--) {
             const projectile = remotePlayer.projectiles[i];
@@ -2160,9 +2158,7 @@ export class Player {
           Array.isArray(remotePlayer.projectiles)
         ) {
           if (remotePlayer.projectiles.length > 0) {
-            console.log(
-              `🎨 Rendering ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`,
-            );
+            if (typeof console.debug === 'function') console.debug(`🎨 Rendering ${remotePlayer.projectiles.length} remote projectiles for player ${remotePlayer.name}`);
           }
           // Render each projectile from this remote player
           remotePlayer.projectiles.forEach((projectile) => {

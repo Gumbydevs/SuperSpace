@@ -718,8 +718,10 @@ export class World {
             }
 
             // Chance for alien to emerge from destroyed asteroid
+            // Capture the spawned NPC (if any) so we can include it when notifying server
+            let spawnedNPC = null;
             if (window.game && window.game.npcManager) {
-              window.game.npcManager.spawnAlienFromAsteroid(
+              spawnedNPC = window.game.npcManager.spawnAlienFromAsteroid(
                 asteroid.x,
                 asteroid.y,
               );
@@ -740,30 +742,23 @@ export class World {
 
               // Chance to spawn powerup
               if (Math.random() < 0.3) {
+                // Previously we deferred powerup creation to server in multiplayer mode.
+                // Restore the original behavior: spawn locally and report coordinates to server if needed.
                 const powerupCountBefore = this.powerups.length;
                 this.spawnPowerup(asteroid.x, asteroid.y);
                 // Get the newly spawned powerup (it was added to the end)
                 if (this.powerups.length > powerupCountBefore) {
                   const newPowerup = this.powerups[this.powerups.length - 1];
-                  powerupsCreated.push({
-                    x: newPowerup.x,
-                    y: newPowerup.y,
-                    type: newPowerup.type,
-                  });
+                  powerupsCreated.push({ x: newPowerup.x, y: newPowerup.y, type: newPowerup.type });
                 }
               }
             } else if (Math.random() < 0.1) {
               // Small chance for small asteroids to spawn powerup
               const powerupCountBefore = this.powerups.length;
               this.spawnPowerup(asteroid.x, asteroid.y);
-              // Get the newly spawned powerup (it was added to the end)
               if (this.powerups.length > powerupCountBefore) {
                 const newPowerup = this.powerups[this.powerups.length - 1];
-                powerupsCreated.push({
-                  x: newPowerup.x,
-                  y: newPowerup.y,
-                  type: newPowerup.type,
-                });
+                powerupsCreated.push({ x: newPowerup.x, y: newPowerup.y, type: newPowerup.type });
               }
             }
 
@@ -777,11 +772,12 @@ export class World {
                 fragments: fragmentsCreated.length,
                 powerups: powerupsCreated.length,
               });
-              window.game.multiplayer.sendAsteroidDestruction(
+                window.game.multiplayer.sendAsteroidDestruction(
                 asteroid,
                 fragmentsCreated,
                 powerupsCreated,
                 { x: impactX, y: impactY, radius: asteroid.radius },
+                spawnedNPC,
               );
             }
           }
@@ -1037,7 +1033,8 @@ export class World {
         } catch (e) {
           console.error('Error notifying playerProfile of powerup collection', e);
         }
-        // Remove collected powerup
+        // Notify server of pickup (if connected) so server can authoritatively remove it for all clients
+        // Remove collected powerup locally
         this.powerups.splice(i, 1);
 
         // Spawn a new powerup after delay (maintains powerup count in world)
@@ -1490,8 +1487,24 @@ export class World {
       pulseSpeed: 5 + Math.random() * 2, // Random pulse speed
     };
 
+    // If server-authoritative powerups are enabled, request the server to create one
+    try {
+      const mp = window && window.game && window.game.multiplayer;
+      if (mp && mp.connected && mp.serverPowerups) {
+        // create a temporary visual placeholder
+        powerup.tempId = `temp_${Date.now()}_${Math.floor(Math.random()*10000)}`;
+        this.powerups.push(powerup);
+        try { mp.socket.emit('requestSpawnPowerup', { x: powerup.x, y: powerup.y, type: powerup.type, tempId: powerup.tempId }); } catch (e) { console.debug('Failed to emit requestSpawnPowerup', e); }
+        return powerup;
+      }
+    } catch (e) {
+      // ignore and fall back to local spawn
+    }
+
     this.powerups.push(powerup);
+    return powerup;
   }
+  
 
   // Check if an entity is within the safe zone
   isInSafeZone(entity) {

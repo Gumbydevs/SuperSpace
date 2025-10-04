@@ -25,6 +25,23 @@ import { GameTooltips } from './gameTooltips.js';
 // Main Game class that coordinates all game systems and components
 class Game {
   constructor() {
+    // Runtime debug toggle: set window.DEBUG_LOGS = true in console to re-enable debug logs
+    try {
+      if (typeof window !== 'undefined') {
+        window.DEBUG_LOGS = window.DEBUG_LOGS || false;
+        if (!window.DEBUG_LOGS) {
+          // Silence console.debug to avoid flooding the console during normal play
+          if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+            console._origDebug = console.debug;
+            console.debug = function () {};
+          } else if (typeof console !== 'undefined') {
+            console.debug = function () {};
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     // Here we get the canvas element and its context for drawing
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');

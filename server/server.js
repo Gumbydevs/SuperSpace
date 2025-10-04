@@ -107,6 +107,21 @@ console.error = (...args) => {
   originalConsoleError(...args);
 };
 
+// In-memory ring buffer for recent powerup events (adds/removes) - opt-in via env
+const powerupEventBuffer = [];
+const maxPowerupEvents = 200;
+
+function pushPowerupEvent(evt) {
+  try {
+    evt.timestamp = Date.now();
+    powerupEventBuffer.push(evt);
+    if (powerupEventBuffer.length > maxPowerupEvents) powerupEventBuffer.shift();
+  } catch (e) {
+    // don't let debug tracing crash the server
+    originalConsoleError('Error pushing powerup event', e);
+  }
+}
+
 // Configure CORS to allow requests from specific domains
 app.use(
   cors({
@@ -410,6 +425,20 @@ app.get('/analytics', async (req, res) => {
       dataSource: 'error'
     });
   }
+});
+
+// Debug endpoint: return recent powerup add/remove events (useful to fetch after reproducing locally)
+app.get('/debug/powerup-events', (req, res) => {
+  // Optional filter via query: ?limit=50
+  const limit = Math.min(parseInt(req.query.limit || '200', 10) || 200, maxPowerupEvents);
+  const out = powerupEventBuffer.slice(-limit);
+  res.json({ count: out.length, events: out });
+});
+
+// Clear the debug buffer
+app.post('/debug/powerup-events/clear', (req, res) => {
+  powerupEventBuffer.length = 0;
+  res.json({ ok: true });
 });
 
 // Expose cloud user registry (uses database when available, falls back to files)
@@ -1192,12 +1221,16 @@ app.get('/analytics/debug', (req, res) => {
   }
 });
 
-// Create Socket.IO server with CORS configuration
+// Create Socket.IO server with CORS configuration and enable per-message deflate compression
 const io = socketIO(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: false,
+  },
+  // Enable websocket compression to reduce payload sizes for repetitive JSON
+  perMessageDeflate: {
+    threshold: 1024, // only compress messages >1KB
   },
 });
 
@@ -1215,8 +1248,14 @@ function safeEmit(event, payload) {
     // Log large payloads for debugging (warn if >50KB)
     try {
       const size = Buffer.byteLength(JSON.stringify(payload || {}), 'utf8');
+      // store a rolling metric on the io object for quick debugging
+      io._lastEmitSize = size;
+      io._emitSizeSamples = (io._emitSizeSamples || []);
+      io._emitSizeSamples.push(size);
+      if (io._emitSizeSamples.length > 20) io._emitSizeSamples.shift();
+      const avg = Math.round(io._emitSizeSamples.reduce((a,b)=>a+b,0) / io._emitSizeSamples.length);
       if (size > 50 * 1024) {
-        console.warn(`SafeEmit: payload for '${event}' is large: ${Math.round(size/1024)}KB`);
+        console.warn(`SafeEmit: payload for '${event}' is large: ${Math.round(size/1024)}KB (avg ${Math.round(avg/1024)}KB)`);
       }
     } catch (e) {
       // ignore JSON errors
@@ -1247,6 +1286,12 @@ const gameState = {
   powerups: [],
   npcs: [], // Add NPC tracking
 };
+
+// Simple counter for assigning unique powerup IDs
+let powerupIdCounter = 1;
+
+// Feature flag: enable server-authoritative powerups when env var SERVER_POWERUPS=1
+const SERVER_POWERUPS_ENABLED = String(process.env.SERVER_POWERUPS || '0') === '1';
 
 // Track last activity time for each player
 const playerLastActivity = {};
@@ -1560,8 +1605,8 @@ io.on('connection', (socket) => {
       startTime: Date.now(),
     };
 
-    // Track session in database analytics
-    if (dbAnalytics.initialized) {
+    // Track session in database analytics (only if dbAnalytics exists and is initialized)
+    if (dbAnalytics && dbAnalytics.initialized) {
       dbAnalytics.trackSession(
         socket.analytics.sessionId,
         playerId,
@@ -1618,13 +1663,24 @@ io.on('connection', (socket) => {
       },
     };
 
+    // Send the current asteroid field and powerups to the joining client so they sync immediately
+    try {
+      socket.emit('asteroidFieldUpdate', { asteroids: gameState.asteroids });
+      socket.emit('worldUpdate', { asteroids: gameState.asteroids, powerups: gameState.powerups });
+    } catch (e) {
+      console.warn('Error sending asteroid field to joining client', e);
+    }
+
     // Send the current game state to the new player
     socket.emit('gameState', gameState);
+
+  // Send server runtime configuration (clients can enable/disable features accordingly)
+  socket.emit('serverConfig', { serverPowerups: SERVER_POWERUPS_ENABLED });
 
     // Notify all clients about the new player
     socket.broadcast.emit('playerJoined', gameState.players[socket.id]);
 
-  // Broadcast updated player count to all clients
+    // Broadcast updated player count to all clients
     safeEmit('playerCountUpdate', Object.keys(gameState.players).length);
   
   // Ensure the world loop is running when at least one client connects
@@ -2934,19 +2990,124 @@ io.on('connection', (socket) => {
       `🌟 SERVER: Fragments: ${data.fragments ? data.fragments.length : 0}, Powerups: ${data.powerups ? data.powerups.length : 0}`,
     );
 
-    // Broadcast the destruction to all other players
-    console.log(
-      `🌟 SERVER: Broadcasting to ${Object.keys(gameState.players).length - 1} other players`,
-    );
+    // Persist the asteroid removal in the authoritative server state so
+    // late-joining clients will not see an already-destroyed asteroid.
+    try {
+      const idx = gameState.asteroids.findIndex((a) => a.id === data.asteroidId);
+      if (idx !== -1) {
+        gameState.asteroids.splice(idx, 1);
+        console.log(`🌟 SERVER: Removed asteroid ${data.asteroidId} from gameState`);
+      } else {
+        console.log(`🌟 SERVER: Asteroid ${data.asteroidId} not found in gameState`);
+      }
+    } catch (e) {
+      console.warn('Error removing asteroid from gameState', e);
+    }
+
+    // Optionally persist powerups server-side and assign ids when enabled
+    let persistedPowerups = data.powerups;
+    if (SERVER_POWERUPS_ENABLED && Array.isArray(data.powerups) && data.powerups.length > 0) {
+      persistedPowerups = [];
+      data.powerups.forEach((p) => {
+        const pu = {
+          id: powerupIdCounter++,
+          x: p.x,
+          y: p.y,
+          type: p.type || p.t || 'health',
+          radius: p.radius || 15,
+        };
+        gameState.powerups.push(pu);
+        persistedPowerups.push(pu);
+        // record debug event if available
+        try { pushPowerupEvent({ action: 'add', source: 'asteroidDestroyed', createdBy: socket.id, powerup: pu }); } catch (e) {}
+      });
+    }
+
+    // Broadcast the destruction to all other players (lighter-weight behavior)
+    console.log(`🌟 SERVER: Broadcasting asteroid destruction to other players`);
+    // If client included an NPC spawn, persist it server-side and broadcast it to others
+    let npcToBroadcast = null;
+    try {
+      if (data.npcSpawned && data.npcSpawned.id) {
+        // Avoid duplicate NPC ids on server
+        const exists = gameState.npcs.find((n) => n.id === data.npcSpawned.id);
+        if (!exists) {
+          const npcObj = { ...data.npcSpawned, spawnerId: socket.id, spawnTime: Date.now() };
+          gameState.npcs.push(npcObj);
+          npcToBroadcast = data.npcSpawned;
+          console.log(`🌟 SERVER: Persisted NPC ${data.npcSpawned.id} from player ${socket.id}`);
+        } else {
+          console.log(`🌟 SERVER: NPC ${data.npcSpawned.id} already exists on server, skipping persist`);
+          npcToBroadcast = data.npcSpawned; // still broadcast so others can create remote instance
+        }
+      }
+    } catch (e) {
+      console.warn('Error persisting npcSpawned from client', e);
+    }
+
     socket.broadcast.emit('playerAsteroidDestroyed', {
       playerId: socket.id,
       asteroidId: data.asteroidId,
       position: data.position,
       fragments: data.fragments,
-      powerups: data.powerups,
+      powerups: persistedPowerups,
       explosion: data.explosion,
+      npcSpawned: npcToBroadcast,
     });
   });
+
+  // If server-authoritative powerups are enabled, register handlers for spawn/collect
+  if (SERVER_POWERUPS_ENABLED) {
+    // Client requests server to spawn a powerup at coords (or random)
+    socket.on('requestSpawnPowerup', (data) => {
+      try {
+        const x = typeof data.x === 'number' ? data.x : (Math.random() - 0.5) * WORLD_SIZE;
+        const y = typeof data.y === 'number' ? data.y : (Math.random() - 0.5) * WORLD_SIZE;
+        const pu = { id: powerupIdCounter++, x, y, type: data.type || 'health', radius: 15 };
+        gameState.powerups.push(pu);
+        pushPowerupEvent({ action: 'add', source: 'requestSpawnPowerup', createdBy: socket.id, powerup: pu });
+        io.emit('powerupAdded', pu);
+      } catch (e) { console.error('Error handling requestSpawnPowerup', e); }
+    });
+
+    // Client notifies it collected a server-owned powerup
+    socket.on('powerupCollected', (data) => {
+      try {
+        if (!data || typeof data.id === 'undefined') return;
+        const id = data.id;
+        const idx = gameState.powerups.findIndex((p) => p.id === id);
+        if (idx === -1) return;
+        const [removed] = gameState.powerups.splice(idx, 1);
+        pushPowerupEvent({ action: 'remove', source: 'powerupCollected', removedBy: socket.id, powerup: removed });
+        io.emit('powerupRemoved', { id: removed.id, playerId: socket.id });
+      } catch (e) { console.error('Error handling powerupCollected', e); }
+    });
+
+    // Positional fallback for pickups (if client doesn't have id)
+    socket.on('powerupCollectedAt', (data) => {
+      try {
+        if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
+        const maxDist = 60;
+        let foundIdx = -1;
+        let foundDist2 = Infinity;
+        for (let i = 0; i < gameState.powerups.length; i++) {
+          const p = gameState.powerups[i];
+          if (data.type && p.type !== data.type) continue;
+          const dx = p.x - data.x;
+          const dy = p.y - data.y;
+          const d2 = dx*dx + dy*dy;
+          if (d2 < foundDist2 && d2 <= maxDist*maxDist) { foundDist2 = d2; foundIdx = i; }
+        }
+        if (foundIdx === -1) return;
+        const [removed] = gameState.powerups.splice(foundIdx, 1);
+        pushPowerupEvent({ action: 'remove', source: 'powerupCollectedAt', removedBy: socket.id, powerup: removed });
+        io.emit('powerupRemoved', { id: removed.id, playerId: socket.id });
+      } catch (e) { console.error('Error handling powerupCollectedAt', e); }
+    });
+  }
+
+  // NOTE: powerup collection/spawn authoritative handlers removed to restore previous client-driven behavior.
+  // If you want to re-enable server-authoritative powerups later, reintroduce the handlers above behind a flag.
 
   // Handle projectile impacts from players (for visual sync)
   socket.on('projectileImpact', (data) => {

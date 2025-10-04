@@ -1797,6 +1797,41 @@ export class MultiplayerManager {
       }
     });
 
+      // Server runtime configuration - toggles like server-authoritative powerups
+      this.socket.on('serverConfig', (cfg) => {
+        try {
+          this.serverPowerups = !!(cfg && cfg.serverPowerups);
+          if (this.serverPowerups) {
+            console.log('Server-authoritative powerups enabled by server');
+            // Register handlers
+            this.socket.on('powerupAdded', (payload) => {
+              try {
+                if (!this.game || !this.game.world) return;
+                // Remove any local temp placeholder with tempId
+                if (payload && payload.tempId && typeof this.game.world.removePowerupByTempId === 'function') {
+                  this.game.world.removePowerupByTempId(payload.tempId);
+                }
+                // Spawn authoritative server powerup and attach server id
+                const spawned = this.game.world.spawnPowerup(payload.x, payload.y, payload.type);
+                if (spawned) spawned.id = payload.id;
+              } catch (e) { console.debug('Error processing powerupAdded', e); }
+            });
+
+            this.socket.on('powerupRemoved', (data) => {
+              try {
+                if (!this.game || !this.game.world) return;
+                const id = data && data.id;
+                if (typeof id === 'undefined') return;
+                for (let i = this.game.world.powerups.length - 1; i >= 0; i--) {
+                  const p = this.game.world.powerups[i];
+                  if (p && p.id === id) this.game.world.powerups.splice(i, 1);
+                }
+              } catch (e) { console.debug('Error processing powerupRemoved', e); }
+            });
+          }
+        } catch (e) { console.debug('Error applying serverConfig', e); }
+      });
+
     // Handle new asteroids being added from server
     this.socket.on('newAsteroids', (data) => {
       console.log(
@@ -1873,8 +1908,7 @@ export class MultiplayerManager {
 
     // Handle asteroid destruction from server
     this.socket.on('asteroidDestroyed', (data) => {
-      // console.log('🌟 Received asteroidDestroyed event from server:', data);
-      // console.log('🌟 Server data contains fragments:', data.fragments ? data.fragments.length : 'none');
+      console.debug('🌟 Received asteroidDestroyed event from server; fragments:', data && data.fragments ? data.fragments.length : 0, data);
       if (this.game.world) {
         // Use the new fragment handling method
         this.handleAsteroidDestroyedWithFragments(data);
@@ -1885,14 +1919,32 @@ export class MultiplayerManager {
 
     // Handle asteroid destruction from other players
     this.socket.on('playerAsteroidDestroyed', (data) => {
-      // console.log('💥 Received playerAsteroidDestroyed event:', data);
-      // console.log('💥 My socket ID:', this.socket.id, 'Event from:', data.playerId);
+      console.debug('🔥 Received playerAsteroidDestroyed from server; fragments:', data && data.fragments ? data.fragments.length : 0, 'npcSpawned:', data && data.npcSpawned ? data.npcSpawned.id : null, data);
+      // Spawn any powerups the server included (coordinate-based)
+      try {
+        if (this.game && this.game.world && data && Array.isArray(data.powerups) && data.powerups.length > 0) {
+          data.powerups.forEach((powerup) => {
+            if (powerup && typeof powerup.x === 'number') {
+              this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
+            }
+          });
+        }
+      } catch (e) {
+        console.debug('Error applying powerups from playerAsteroidDestroyed', e);
+      }
+
+      // If server included an NPC spawn, have npcManager create a remote NPC
+      try {
+        if (data && data.npcSpawned && this.game && this.game.npcManager) {
+          this.game.npcManager.handleRemoteNPCSpawn(data.npcSpawned);
+        }
+      } catch (e) {
+        console.debug('Error handling npcSpawned from playerAsteroidDestroyed', e);
+      }
+
+      // Still run full visual/fragments/explosion handling for other players only
       if (this.game.world && data.playerId !== this.socket.id) {
-        // console.log('💥 Processing asteroid destruction from other player');
-        // Another player destroyed an asteroid - show the effects
         this.handleOtherPlayerAsteroidDestruction(data);
-      } else {
-        // console.log('💥 Ignoring own asteroid destruction or no game world');
       }
     });
 
@@ -2783,6 +2835,9 @@ export class MultiplayerManager {
       this.killAnnouncer = new KillAnnouncer();
     }
 
+    // NOTE: powerupRemoved is handled in setupSocketEvents to ensure a single
+    // authoritative listener; do not register a duplicate here.
+
     // Check if the kill announcements container exists
     if (!document.getElementById('kill-announcements')) {
       console.log('Kill announcements container missing, recreating it');
@@ -3135,7 +3190,14 @@ export class MultiplayerManager {
       })),
       powerups: powerups,
       explosion: explosionData,
+      // optional NPC spawned by local client on asteroid destruction
+      npcSpawned: null,
     };
+
+    // If caller passed an extra argument for npc spawn, attach it
+    if (arguments.length >= 5 && arguments[4]) {
+      destructionData.npcSpawned = arguments[4];
+    }
 
     // console.log('Sending asteroid destruction to server:', destructionData);
     this.socket.emit('asteroidDestroyed', destructionData);
@@ -3528,20 +3590,14 @@ export class MultiplayerManager {
     // Update the player list UI when a player is removed
     this.updatePlayerList();
 
-    console.log(
-      'Removed player:',
-      playerId,
-      'Total players:',
-      Object.keys(this.players).length,
-    );
+    // Removed player (debug)
+    if (typeof console.debug === 'function') console.debug('Removed player:', playerId, 'Total players:', Object.keys(this.players).length);
   }
 
   // Handle receiving a projectile from another player
   handleRemoteProjectile(playerId, projectileData) {
-    console.log(
-      `🚀 Received remote projectile from ${playerId}:`,
-      projectileData,
-    );
+    // Received remote projectile (debug)
+    if (typeof console.debug === 'function') console.debug(`🚀 Received remote projectile from ${playerId}:`, projectileData);
 
     // Create a proper Projectile instance for remote players with all properties
     // Import Projectile class to create full instances
@@ -3729,9 +3785,8 @@ export class MultiplayerManager {
         this.players[playerId].projectiles = [];
       }
       this.players[playerId].projectiles.push(projectile);
-      console.log(
-        `✅ Added remote projectile to player ${playerId} (${this.players[playerId].name}). Total: ${this.players[playerId].projectiles.length}`,
-      );
+      // Added remote projectile (debug)
+      if (typeof console.debug === 'function') console.debug(`Added remote projectile to player ${playerId} (${this.players[playerId].name}). Total: ${this.players[playerId].projectiles.length}`);
 
       // Play firing sound for remote projectile so nearby players hear the launch.
       // Do not attempt to play if this event is actually from our own player.
@@ -4650,7 +4705,7 @@ export class MultiplayerManager {
         });
         // console.log(`Added fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}`);
       });
-      // console.log(`Successfully added ${data.fragments.length} asteroid fragments from server`);
+      console.debug(`Successfully added ${data.fragments.length} asteroid fragments from server. Total asteroids now:`, this.game.world.asteroids.length);
     } else {
       // console.log('No fragments in server response');
     }
@@ -4682,33 +4737,67 @@ export class MultiplayerManager {
       );
     }
 
-    // Add fragments
+    // Add fragments (normalize incoming fragment objects so they render correctly)
     if (data.fragments && data.fragments.length > 0) {
-      console.log(
-        `🔥 Adding ${data.fragments.length} fragments:`,
-        data.fragments,
-      );
-      data.fragments.forEach((fragment, index) => {
-        console.log(`🔥 Adding fragment ${index}:`, fragment);
-        this.game.world.asteroids.push(fragment);
+      console.debug(`🔥 Adding ${data.fragments.length} fragments (other player):`);
+      // Log first few fragment summary entries for debugging
+      data.fragments.slice(0,5).forEach((f, idx) => {
+        try {
+          console.debug(`fragment[${idx}] keys:`, Object.keys(f), 'sample:', { id: f.id, x: f.x, y: f.y, radius: f.radius, seed: f.seed, verticesLen: f.vertices ? f.vertices.length : 0 });
+        } catch(e) { console.debug('Error summarizing fragment', e); }
       });
-      console.log(
-        `🔥 Added ${data.fragments.length} fragments from other player`,
-      );
+      data.fragments.forEach((fragment, index) => {
+        try {
+          // console.log(`🔥 Adding fragment ${index}:`, fragment);
+          const size = fragment.radius > 50 ? 'large' : fragment.radius > 25 ? 'medium' : 'small';
+          const scoreValue = size === 'large' ? 50 : size === 'medium' ? 20 : 10;
+
+          // Build vertices: use provided vertices if valid, otherwise generate deterministically when seed present
+          let vertices;
+          if (fragment.vertices && Array.isArray(fragment.vertices) && fragment.vertices.length > 0) {
+            vertices = fragment.vertices;
+          } else if (typeof fragment.seed !== 'undefined') {
+            vertices = this.game.world.generateAsteroidVertices(8, 0.4, fragment.seed);
+          } else {
+            vertices = this.game.world.generateAsteroidVertices(Math.floor(6 + Math.random() * 4), 0.5);
+          }
+
+          const fragObj = {
+            id: fragment.id,
+            x: fragment.x,
+            y: fragment.y,
+            radius: fragment.radius,
+            health: fragment.health || (fragment.radius * 2),
+            type: fragment.type || 'rock',
+            rotation: fragment.rotation || 0,
+            rotationSpeed: fragment.rotationSpeed || 0,
+            velocityX: fragment.velocityX || 0,
+            velocityY: fragment.velocityY || 0,
+            size: size,
+            scoreValue: scoreValue,
+            vertices: vertices,
+          };
+
+          this.game.world.asteroids.push(fragObj);
+        } catch (e) {
+          console.error('Error adding fragment from other player', e);
+        }
+      });
+      console.debug(`🔥 Added ${data.fragments.length} fragments from other player. Total asteroids now:`, this.game.world.asteroids.length);
     } else {
       console.log('🔥 No fragments to add');
     }
 
-    // Add powerups
+    // Add powerups (use server-provided object when possible to preserve IDs)
     if (data.powerups && data.powerups.length > 0) {
-      // console.log(`🔥 Adding ${data.powerups.length} powerups:`, data.powerups);
       data.powerups.forEach((powerup, index) => {
-        // console.log(`🔥 Spawning powerup ${index}:`, powerup);
-        this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
+        // If server sent a full object (with id), pass it through so client can keep id
+        if (powerup && typeof powerup.id !== 'undefined') {
+          this.game.world.spawnPowerup(powerup);
+        } else {
+          this.game.world.spawnPowerup(powerup.x, powerup.y, powerup.type);
+        }
       });
-      // console.log(`🔥 Added ${data.powerups.length} powerups from other player`);
-    } else {
-      // console.log('🔥 No powerups to add');
     }
 
     // console.log('🔥 Current asteroids after:', this.game.world.asteroids.length);

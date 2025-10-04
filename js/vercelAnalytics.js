@@ -67,20 +67,22 @@ class SuperSpaceAnalytics {
     if (typeof window.vercelTrack === 'function') {
       // Modern @vercel/analytics import method
       window.vercelTrack(eventName, enrichedProperties);
-      console.log(`≡ƒÄ» VERCEL TRACK EVENT: ${eventName}`, enrichedProperties);
+      if (!ANALYTICS_PRODUCTION_MODE) console.log(`≡ƒÄ» VERCEL TRACK EVENT: ${eventName}`, enrichedProperties);
     } else if (typeof window.va === 'function') {
       // Legacy va method
       window.va('track', eventName, enrichedProperties);
-      console.log(`≡ƒÄ» VERCEL VA EVENT: ${eventName}`, enrichedProperties);
+      if (!ANALYTICS_PRODUCTION_MODE) console.log(`≡ƒÄ» VERCEL VA EVENT: ${eventName}`, enrichedProperties);
     } else if (typeof window.gtag === 'function') {
       // Google Analytics fallback
       window.gtag('event', eventName, enrichedProperties);
-      console.log(`≡ƒÄ» GTAG EVENT: ${eventName}`, enrichedProperties);
+      if (!ANALYTICS_PRODUCTION_MODE) console.log(`≡ƒÄ» GTAG EVENT: ${eventName}`, enrichedProperties);
     } else {
-      console.log(
-        `≡ƒÄ» ANALYTICS DEBUG (no tracking available): ${eventName}`,
-        enrichedProperties,
-      );
+      if (!ANALYTICS_PRODUCTION_MODE) {
+        console.log(
+          `≡ƒÄ» ANALYTICS DEBUG (no tracking available): ${eventName}`,
+          enrichedProperties,
+        );
+      }
     }
 
     // Also send to our custom analytics API as backup (silently)
