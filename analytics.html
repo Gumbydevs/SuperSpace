@@ -274,6 +274,20 @@
 
     <div class="dashboard-container">
 
+      <!-- Peak Players -->
+      <div class="metric-card">
+        <h3>📈 Peak Concurrent</h3>
+        <div class="metric-value"><span id="peakPlayersToday">0</span> / <span id="peakPlayersAll">0</span></div>
+        <div class="metric-subtitle">Live / All Time</div>
+      </div>
+      
+       <!-- Player Names List -->
+      <div class="metric-card">
+        <h3>🧑‍🚀 Online Players </h3>
+        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;display:flex;flex-direction:row;gap:24px;"></div>
+        <div class="metric-subtitle">Players logged in guest & cloud</div>
+      </div>
+      
       <!-- Live Player Count -->
       <div class="metric-card">
         <h3>🎮 Active Players</h3>
@@ -281,19 +295,14 @@
         <div class="metric-subtitle">Today / All Time</div>
       </div>
 
-      <!-- Player Names List -->
-      <div class="metric-card">
-        <h3>🧑‍🚀 Online Players </h3>
-        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;display:flex;flex-direction:row;gap:24px;"></div>
-        <div class="metric-subtitle">Players logged in guest & cloud</div>
-      </div>
+     
 
-      <!-- Cloud Account Logins -->
+      <!-- Cloud Account Logins
       <div class="metric-card">
         <h3>☁️ Cloud Logins</h3>
         <div class="metric-value"><span id="cloudLoginsToday">0</span> / <span id="cloudLoginsAll">0</span></div>
         <div class="metric-subtitle">Today / All Time</div>
-      </div>
+      </div> -->
 
       <!-- Cloud Accounts Created/Logged In -->
       <div class="metric-card">
@@ -302,21 +311,13 @@
         <div class="metric-subtitle">Today / All Time</div>
       </div>
 
-      <!-- Analytics Persistence Info -->
-      <div class="metric-card" id="persistenceInfo">
-        <h3>💾 Analytics Storage</h3>
-        <div id="persistenceStatus" style="font-size:1.2em;text-align:center;margin:10px 0;">
-          <div id="persistenceIcon">📁</div>
-          <div id="persistenceText">File-based</div>
-        </div>
-        <div class="metric-subtitle" id="persistenceDescription">Data resets on server redeploys</div>
-      </div>
-
-      <!-- Peak Players -->
+      
+      
+       <!-- Average Session Time -->
       <div class="metric-card">
-        <h3>📈 Peak Concurrent</h3>
-        <div class="metric-value"><span id="peakPlayersToday">0</span> / <span id="peakPlayersAll">0</span></div>
-        <div class="metric-subtitle">Live / All Time</div>
+        <h3>⏱️ Avg Session</h3>
+        <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Total Sessions -->
@@ -337,11 +338,14 @@
         <div class="metric-subtitle">Today / All Time</div>
       </div>
 
-      <!-- Average Session Time -->
-      <div class="metric-card">
-        <h3>⏱️ Avg Session</h3>
-        <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
-        <div class="metric-subtitle">Today / All Time</div>
+     <!-- Analytics Persistence Info -->
+      <div class="metric-card" id="persistenceInfo">
+        <h3>💾 Analytics Storage</h3>
+        <div id="persistenceStatus" style="font-size:1.2em;text-align:center;margin:10px 0;">
+          <div id="persistenceIcon">📁</div>
+          <div id="persistenceText">File-based</div>
+        </div>
+        <div class="metric-subtitle" id="persistenceDescription">Data resets on server redeploys</div>
       </div>
 
       <!-- Player Activity Chart -->
