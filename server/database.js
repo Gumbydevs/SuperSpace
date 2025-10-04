@@ -102,7 +102,8 @@ async function initDatabase() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_sessions_date ON analytics_sessions(date)`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_analytics_sessions_player ON analytics_sessions(player_id)`);
 
-        console.log('✅ Database tables initialized successfully (including analytics tables)');
+    const logger = require('./logger');
+    logger.info('✅ Database tables initialized successfully (including analytics tables)');
         return true;
     } catch (error) {
         console.error('Error initializing database:', error);

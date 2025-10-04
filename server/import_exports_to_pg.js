@@ -13,7 +13,8 @@ const { Pool } = require('pg');
 
 async function applySqlFile(pool, filePath) {
   const sql = await fs.readFile(filePath, 'utf8');
-  console.log('Applying SQL from', filePath);
+  const logger = require('./logger');
+  logger.info('Applying SQL from', filePath);
   await pool.query(sql);
 }
 
@@ -27,14 +28,16 @@ async function importDailyStats(pool, exportsDir) {
       const raw = await fs.readFile(p, 'utf8');
       const obj = JSON.parse(raw);
       const date = obj.date || f.replace('.json', '');
-      console.log('Importing daily stats for', date);
+  const logger = require('./logger');
+  logger.info('Importing daily stats for', date);
       await pool.query(
         `INSERT INTO analytics_daily_stats (date, stats) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET stats = $2, updated_at = CURRENT_TIMESTAMP`,
         [date, obj]
       );
     }
   } catch (e) {
-    console.error('Failed to import daily stats:', e.message);
+    const logger = require('./logger');
+    logger.error('Failed to import daily stats:', e.message);
   }
 }
 
@@ -56,7 +59,8 @@ async function importSessions(pool, exportsDir) {
       const eventsCount = Array.isArray(obj.events) ? obj.events.length : 0;
       const date = new Date(startTime).toISOString().split('T')[0];
 
-      console.log('Importing session', sessionId, 'player', playerId);
+  const logger = require('./logger');
+  logger.info('Importing session', sessionId, 'player', playerId);
       await pool.query(
         `INSERT INTO analytics_sessions (session_id, player_id, start_time, end_time, duration_ms, events_count, data, date)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -65,7 +69,8 @@ async function importSessions(pool, exportsDir) {
       );
     }
   } catch (e) {
-    console.error('Failed to import sessions:', e.message);
+    const logger = require('./logger');
+    logger.error('Failed to import sessions:', e.message);
   }
 }
 
@@ -92,10 +97,12 @@ async function importExports(databaseUrl) {
     await importDailyStats(pool, path.join(exportsDir, latest));
     await importSessions(pool, path.join(exportsDir, latest));
 
-    console.log('Import complete.');
+    const logger = require('./logger');
+    logger.info('Import complete.');
     return { ok: true, importDir: latest };
   } catch (error) {
-    console.error('Import failed:', error);
+    const logger = require('./logger');
+    logger.error('Import failed:', error);
     throw error;
   } finally {
     await pool.end();
@@ -107,10 +114,12 @@ if (require.main === module) {
   (async () => {
     try {
       const res = await importExports(process.env.DATABASE_URL);
-      console.log('Standalone import result:', res);
+      const logger = require('./logger');
+      logger.info('Standalone import result:', res);
       process.exit(0);
     } catch (e) {
-      console.error('Standalone import error:', e);
+      const logger = require('./logger');
+      logger.error('Standalone import error:', e);
       process.exit(1);
     }
   })();

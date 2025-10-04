@@ -243,9 +243,10 @@ class ServerAnalytics {
     } else {
       // For non-session-start events, just ensure the player exists
       if (!this.sessions.has(playerId)) {
-        console.log(
-          `Analytics: Warning - received ${event.eventType} for unknown player ${playerId}`,
-        );
+            const logger = require('./logger');
+            logger.warn(
+              `Analytics: Warning - received ${event.eventType} for unknown player ${playerId}`,
+            );
         return;
       }
     }
@@ -288,9 +289,8 @@ class ServerAnalytics {
     if (!stats.questCompletions) stats.questCompletions = 0; // New field for quest completions
 
     // Player already exists, just increment session count
-    console.log(
-      `Analytics: Added new session for returning player ${playerId}`,
-    );
+    const logger = require('./logger');
+    logger.debug(`Analytics: Added new session for returning player ${playerId}`);
   }
 
   updatePeakConcurrent() {
@@ -589,7 +589,8 @@ class ServerAnalytics {
   handleSessionEnd(event) {
     const playerId = event.playerId || event.sessionId;
     const session = this.sessions.get(playerId);
-    console.log(
+    const logger = require('./logger');
+    logger.debug(
       `Analytics: Handling session end for player ${playerId}, session exists: ${!!session}`,
     );
 
@@ -609,7 +610,7 @@ class ServerAnalytics {
 
       // Clean up session from memory immediately
       this.sessions.delete(playerId);
-      console.log(
+      logger.info(
         `Analytics: Session ended for player ${playerId}, ${this.sessions.size} active sessions remaining`,
       );
 
@@ -625,7 +626,7 @@ class ServerAnalytics {
         console.error('Error saving daily stats on session end:', e);
       });
     } else {
-      console.log(
+      logger.warn(
         `Analytics: Warning - session end called for player ${playerId} but no session found or no duration data`,
       );
     }

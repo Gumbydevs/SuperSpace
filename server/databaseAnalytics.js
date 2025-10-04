@@ -20,7 +20,8 @@ class DatabaseAnalytics {
         try {
           await database.pool.query('SELECT 1');
           this.initialized = true;
-          console.log('✅ Database Analytics initialized (DB reachable)');
+          const logger = require('./logger');
+          logger.info('✅ Database Analytics initialized (DB reachable)');
 
           // Initialize meta data if not exists
           await this.initializeMeta();
@@ -28,16 +29,19 @@ class DatabaseAnalytics {
         } catch (healthErr) {
           // DB not reachable - don't mark initialized, schedule retry
           this.initialized = false;
-          console.error('❌ Database Analytics health check failed:', healthErr && healthErr.message ? healthErr.message : healthErr);
-          console.log(`Retrying Database Analytics init in ${this._retryIntervalMs / 1000}s`);
+          const logger = require('./logger');
+          logger.error('❌ Database Analytics health check failed:', healthErr && healthErr.message ? healthErr.message : healthErr);
+          logger.debug(`Retrying Database Analytics init in ${this._retryIntervalMs / 1000}s`);
           setTimeout(() => this.init(), this._retryIntervalMs);
           return;
         }
       } else {
-        console.log('⚠️ Database not available, analytics will use file system');
+  const logger = require('./logger');
+  logger.warn('⚠️ Database not available, analytics will use file system');
       }
     } catch (error) {
-      console.error('❌ Failed to initialize Database Analytics:', error);
+  const logger = require('./logger');
+  logger.error('❌ Failed to initialize Database Analytics:', error);
       // Schedule retry in case of unexpected init error
       setTimeout(() => this.init(), this._retryIntervalMs);
     }
@@ -51,7 +55,8 @@ class DatabaseAnalytics {
         await database.setAnalyticsMeta('globalPeak', 0);
       }
     } catch (error) {
-      console.error('Error initializing meta:', error);
+  const logger = require('./logger');
+  logger.error('Error initializing meta:', error);
     }
   }
 

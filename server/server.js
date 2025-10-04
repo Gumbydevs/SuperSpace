@@ -12,6 +12,7 @@ const ServerAnalytics = require('./analytics');
 const DatabaseAnalytics = require('./databaseAnalytics');
 const CloudSyncAuth = require('./cloudSyncAuth');
 const database = require('./database');
+const logger = require('./logger');
 
 // Create the Express app and HTTP server
 const app = express();
@@ -31,15 +32,15 @@ async function initializeDatabase() {
   try {
     if (process.env.DATABASE_URL) {
       await database.initDatabase();
-      console.log('✅ Database initialized successfully');
+  logger.info('✅ Database initialized successfully');
       return true;
     } else {
-      console.log('⚠️  No DATABASE_URL found - using file-based storage (data will be lost on redeploys!)');
+  logger.warn('⚠️  No DATABASE_URL found - using file-based storage (data will be lost on redeploys!)');
       return false;
     }
   } catch (error) {
     console.error('❌ Failed to initialize database:', error);
-    console.log('⚠️  Falling back to file-based storage (data will be lost on redeploys!)');
+  logger.warn('⚠️  Falling back to file-based storage (data will be lost on redeploys!)');
     return false;
   }
 }
@@ -150,7 +151,7 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // Add a home route that shows server status
 app.get('/status', (req, res) => {
-  console.log('Status endpoint hit from origin:', req.get('origin'));
+  logger.debug('Status endpoint hit from origin:', req.get('origin'));
   const now = Date.now();
   res.json({
     status: 'running',
@@ -169,7 +170,7 @@ app.get('/status', (req, res) => {
 
 // Add a simple test endpoint for CORS testing
 app.get('/test', (req, res) => {
-  console.log('Test endpoint hit from origin:', req.get('origin'));
+  logger.debug('Test endpoint hit from origin:', req.get('origin'));
   res.json({ message: 'CORS test successful', origin: req.get('origin') });
 });
 
@@ -684,7 +685,7 @@ app.get('/analytics/report', (req, res) => {
 // Call with POST /analytics/save to flush in-memory analytics to files
 app.post('/analytics/save', async (req, res) => {
   try {
-    console.log('Admin: forcing analytics save to disk');
+  logger.info('Admin: forcing analytics save to disk');
     await analytics.saveDailyStats();
     await analytics.savePlayerProfiles();
     await analytics.saveMeta();
@@ -709,7 +710,7 @@ app.post('/admin/delete-users', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Users array required' });
     }
     
-    console.log('🗑️ Admin: Deleting test users:', users);
+  logger.info('🗑️ Admin: Deleting test users:', users);
     
     const results = [];
     
@@ -742,14 +743,14 @@ app.post('/admin/delete-users', async (req, res) => {
             tokensDeleted: tokenResult.rowCount,
             playerDataDeleted: playerDataResult.rowCount
           });
-          console.log(`✅ Deleted user: ${username}`);
+            logger.info(`✅ Deleted user: ${username}`);
         } else {
           results.push({
             username,
             success: false,
             message: 'User not found'
           });
-          console.log(`⚠️ User not found: ${username}`);
+          logger.warn(`⚠️ User not found: ${username}`);
         }
       } catch (error) {
         results.push({
@@ -1201,10 +1202,10 @@ function safeEmit(event, payload) {
 
 // Add Socket.IO error handling
 io.engine.on('connection_error', (err) => {
-  console.log('Socket.IO connection error:', err.req); // the request object
-  console.log('Error code:', err.code); // the error code, for example 1
-  console.log('Error message:', err.message); // the error message, for example "Session ID unknown"
-  console.log('Error context:', err.context); // some additional error context
+  logger.error('Socket.IO connection error:', err && err.req ? err.req : err);
+  logger.error('Socket.IO error code:', err && err.code ? err.code : 'n/a');
+  logger.error('Socket.IO error message:', err && err.message ? err.message : 'n/a');
+  logger.debug('Socket.IO error context:', err && err.context ? err.context : null);
 });
 
 // Constants for inactivity timeout
@@ -1234,7 +1235,7 @@ generateAsteroids();
 
 // Function to generate asteroid field
 function generateAsteroids() {
-  console.log('Generating new asteroid field...');
+  logger.info('Generating new asteroid field...');
   gameState.asteroids = [];
 
   // Generate asteroids with unique IDs
@@ -1261,7 +1262,7 @@ function generateAsteroids() {
     asteroids: gameState.asteroids,
   });
 
-  console.log(`Generated ${gameState.asteroids.length} asteroids`);
+  logger.info(`Generated ${gameState.asteroids.length} asteroids`);
 }
 
 // Periodic asteroid regeneration to maintain battlefield density
@@ -1271,7 +1272,7 @@ setInterval(() => {
     Object.keys(gameState.players).length > 0 &&
     gameState.asteroids.length < ASTEROID_COUNT * 0.7
   ) {
-    console.log(
+    logger.info(
       `Regenerating asteroids. Current: ${gameState.asteroids.length}, Target: ${ASTEROID_COUNT}`,
     );
 
@@ -1301,7 +1302,7 @@ setInterval(() => {
     // Broadcast new asteroids to all clients
     if (newAsteroids.length > 0) {
       safeEmit('newAsteroids', { asteroids: newAsteroids });
-      console.log(
+      logger.info(
         `Generated ${newAsteroids.length} new asteroids. Total: ${gameState.asteroids.length}`,
       );
     }
@@ -1469,7 +1470,7 @@ io.on('connection', (socket) => {
       io.emit('adminPlayerKicked', { id: data.targetId, name: kickedName });
       targetSocket.emit('kickedByAdmin');
       targetSocket.disconnect(true);
-      console.log(`Admin kicked player: ${data.targetId}`);
+  logger.info(`Admin kicked player: ${data.targetId}`);
     }
   });
   const logger = require('./logger');
@@ -1536,7 +1537,7 @@ io.on('connection', (socket) => {
       ).catch(err => console.error('Database session tracking error:', err));
     }
 
-    console.log(
+    logger.info(
       `📊 Player joined analytics: ${playerId} (Active players: ${analytics.sessions.size})`,
     );
 
@@ -1592,7 +1593,7 @@ io.on('connection', (socket) => {
   // Ensure the world loop is running when at least one client connects
   startWorldLoop();
 
-    console.log(`Player ${gameState.players[socket.id].name} joined the game`);
+  logger.info(`Player ${gameState.players[socket.id].name} joined the game`);
   });
 
   // Player movement update
@@ -1625,7 +1626,7 @@ io.on('connection', (socket) => {
         const oldScore = player.score;
         player.score = data.score;
         if (oldScore !== player.score) {
-          console.log(
+          logger.debug(
             `SCORE UPDATE: Player ${player.name} score changed from ${oldScore} to ${player.score}`,
           );
         }
@@ -1634,7 +1635,7 @@ io.on('connection', (socket) => {
         const oldWins = player.wins;
         player.wins = data.wins;
         if (oldWins !== player.wins) {
-          console.log(
+          logger.debug(
             `WINS UPDATE: Player ${player.name} wins changed from ${oldWins} to ${player.wins}`,
           );
         }
@@ -1643,7 +1644,7 @@ io.on('connection', (socket) => {
         const oldLosses = player.losses;
         player.losses = data.losses;
         if (oldLosses !== player.losses) {
-          console.log(
+          logger.debug(
             `LOSSES UPDATE: Player ${player.name} losses changed from ${oldLosses} to ${player.losses}`,
           );
         }
@@ -1785,13 +1786,13 @@ io.on('connection', (socket) => {
     // Update activity timestamp
     playerLastActivity[socket.id] = Date.now();
 
-    console.log(
+    logger.debug(
       `Projectile hit from ${socket.id} on target ${data.targetId} for ${data.damage} damage`,
     );
 
     // Validate the target exists
     if (!gameState.players[data.targetId]) {
-      console.log(`Invalid target ${data.targetId} for projectile hit`);
+  logger.warn(`Invalid target ${data.targetId} for projectile hit`);
       return;
     }
 
@@ -1822,7 +1823,7 @@ io.on('connection', (socket) => {
       }
     }
 
-    console.log(
+    logger.debug(
       `Player ${targetPlayer.name} hit by ${attackerPlayer?.name || 'unknown'} for ${data.damage} damage. Shield: ${oldShield} -> ${targetPlayer.shield}, Health: ${oldHealth} -> ${targetPlayer.health}`,
     );
 
@@ -1846,9 +1847,9 @@ io.on('connection', (socket) => {
     // Check if player was destroyed
     if (targetPlayer.health <= 0) {
       targetPlayer.losses += 1;
-      console.log(
-        `Player ${targetPlayer.name} was destroyed by ${attackerPlayer?.name || 'unknown'}!`,
-      );
+        logger.info(
+          `Player ${targetPlayer.name} was destroyed by ${attackerPlayer?.name || 'unknown'}!`,
+        );
 
       // Award points to attacker
       if (attackerPlayer) {
@@ -1896,7 +1897,7 @@ io.on('connection', (socket) => {
       // DEBUG: Log before emitting playerDestroyed so we can trace events
           // Use provided attackerId when present (this allows NPC ids to be used)
           const emitAttackerId = data.attackerId || socket.id;
-          console.log('DEBUG: Emitting playerDestroyed', {
+    logger.debug('DEBUG: Emitting playerDestroyed', {
             playerId: data.targetId,
             attackerId: emitAttackerId,
             killerAvatar: killerInfo.killerAvatar,
@@ -1926,7 +1927,7 @@ io.on('connection', (socket) => {
         // Reduce asteroid health
         asteroid.health -= data.damage;
 
-        console.log(
+        logger.debug(
           `Asteroid ${data.id} hit for ${data.damage} damage. Health: ${asteroid.health}/${asteroid.health + data.damage}`,
         );
 
@@ -1939,7 +1940,7 @@ io.on('connection', (socket) => {
             if (Math.random() < 0.7) {
               // 70% chance to split
               const fragmentCount = 2 + Math.floor(Math.random() * 3); // 2-4 fragments
-              console.log(
+              logger.debug(
                 `Creating ${fragmentCount} fragments for asteroid ${data.id} with radius ${asteroid.radius}`,
               );
 
@@ -1978,17 +1979,17 @@ io.on('connection', (socket) => {
                 };
                 fragments.push(fragment);
                 gameState.asteroids.push(fragment);
-                console.log(
+                logger.debug(
                   `Created fragment ${fragment.id} at (${fragment.x}, ${fragment.y}) with radius ${fragment.radius}, seed ${seed}`,
                 );
               }
             } else {
-              console.log(
+              logger.debug(
                 `Asteroid ${data.id} destroyed without splitting (30% chance)`,
               );
             }
           } else {
-            console.log(
+            logger.debug(
               `Asteroid ${data.id} too small to split (radius: ${asteroid.radius})`,
             );
           }
@@ -2009,7 +2010,7 @@ io.on('connection', (socket) => {
             fragments: fragments, // Include fragment data
           });
 
-          console.log(
+          logger.info(
             `Asteroid ${data.id} destroyed by player ${socket.id}. Created ${fragments.length} fragments. Broadcasting to all clients. ${gameState.asteroids.length} asteroids remaining.`,
           );
         } else {
@@ -2028,11 +2029,11 @@ io.on('connection', (socket) => {
         const oldScore = gameState.players[socket.id].score;
         gameState.players[socket.id].score += data.points || 0;
         gameState.players[socket.id].credits += data.credits || 0;
-        console.log(
+        logger.debug(
           `Player ${gameState.players[socket.id].name} scored ${data.points || 0} points. Score: ${oldScore} -> ${gameState.players[socket.id].score}`,
         );
         // Broadcast updated stats to all clients
-        console.log(
+        logger.debug(
           `Broadcasting score update for asteroid kill: ${socket.id}`,
         );
         io.emit('playerStatsUpdate', {
@@ -2331,7 +2332,7 @@ io.on('connection', (socket) => {
       gameState.players[socket.id].y = data.y || 0;
 
       // DEBUG: Log before broadcasting playerRespawned
-      console.log('DEBUG: Broadcasting playerRespawned', {
+    logger.debug('DEBUG: Broadcasting playerRespawned', {
         id: socket.id,
         x: gameState.players[socket.id].x,
         y: gameState.players[socket.id].y,
@@ -2446,9 +2447,9 @@ io.on('connection', (socket) => {
         color: data.color,
       });
 
-      console.log(
-        `Player ${gameState.players[socket.id].name} changed ship color to ${data.color}`,
-      );
+        logger.debug(
+          `Player ${gameState.players[socket.id].name} changed ship color to ${data.color}`,
+        );
     }
   });
 
@@ -2489,7 +2490,7 @@ io.on('connection', (socket) => {
         color: data.color,
       });
 
-      console.log(
+      logger.debug(
         `Player ${gameState.players[socket.id].name} changed engine color to ${data.color}`,
       );
     }
@@ -2510,7 +2511,7 @@ io.on('connection', (socket) => {
         skinId: data.skinId,
       });
 
-      console.log(
+      logger.debug(
         `Player ${gameState.players[socket.id].name} changed ship skin to ${data.skinId}`,
       );
     }
@@ -2929,7 +2930,7 @@ io.on('connection', (socket) => {
     const player = gameState.players[socket.id];
     if (player && data.message) {
       const message = data.message.substring(0, 100); // Limit message length
-      console.log(`[CHAT] ${player.name}: ${message}`);
+  logger.info(`[CHAT] ${player.name}: ${message}`);
       io.emit('chatMessage', {
         name: player.name,
         message: message,
@@ -2949,7 +2950,7 @@ io.on('connection', (socket) => {
         message: message,
         isSystem: true,
       };
-      console.log(`[ADMIN CHAT] ${adminPayload.name}: ${adminPayload.message}`);
+  logger.info(`[ADMIN CHAT] ${adminPayload.name}: ${adminPayload.message}`);
       // Broadcast to all game clients
       io.emit('chatMessage', adminPayload);
 
@@ -3020,14 +3021,14 @@ io.on('connection', (socket) => {
     }
 
     if (gameState.players[socket.id]) {
-      console.log(`Player ${gameState.players[socket.id].name} disconnected`);
+  logger.info(`Player ${gameState.players[socket.id].name} disconnected`);
 
       // Clean up NPCs spawned by this player
       const playerNPCs = gameState.npcs.filter(
         (npc) => npc.spawnerId === socket.id,
       );
       if (playerNPCs.length > 0) {
-        console.log(
+        logger.info(
           `Cleaning up ${playerNPCs.length} NPCs spawned by disconnected player`,
         );
 
@@ -3060,7 +3061,7 @@ io.on('connection', (socket) => {
         stopWorldLoop();
       }
     } else {
-      console.log(`Unknown player disconnected: ${socket.id}`);
+  logger.warn(`Unknown player disconnected: ${socket.id}`);
     }
   });
 });
@@ -3083,7 +3084,7 @@ setInterval(() => {
     const socket = io.sockets.sockets.get(socketId);
     if (socket && gameState.players[socketId]) {
       const playerName = gameState.players[socketId].name;
-      console.log(`Disconnecting inactive player: ${playerName} (${socketId})`);
+  logger.info(`Disconnecting inactive player: ${playerName} (${socketId})`);
 
       // Notify all clients about the timeout
       io.emit('playerTimedOut', {
@@ -3130,7 +3131,7 @@ function startWorldLoop() {
     }
     if (!worldIntervalId) {
       worldIntervalId = setInterval(updateWorld, WORLD_TICK_MS);
-      console.log(`Started world loop (${WORLD_TICK_MS}ms tick) - connected clients: ${connected}`);
+  logger.info(`Started world loop (${WORLD_TICK_MS}ms tick) - connected clients: ${connected}`);
     }
   } catch (e) {
     console.error('Error starting world loop:', e);
@@ -3142,7 +3143,7 @@ function stopWorldLoop() {
     if (worldIntervalId) {
       clearInterval(worldIntervalId);
       worldIntervalId = null;
-      console.log('Stopped world loop (no connected clients)');
+  logger.info('Stopped world loop (no connected clients)');
     }
   } catch (e) {
     console.error('Error stopping world loop:', e);
@@ -3183,7 +3184,7 @@ async function startServer(port) {
   cloudAuth = new CloudSyncAuth();
   
   if (databaseAvailable) {
-    console.log('🚀 Starting with DATABASE persistence - user data will survive redeploys!');
+  logger.info('🚀 Starting with DATABASE persistence - user data will survive redeploys!');
     // Initialize DB-backed analytics helper
     try {
       dbAnalytics = new DatabaseAnalytics();

@@ -83,16 +83,18 @@ class CloudSyncAuth {
   async initializeDatabase() {
     try {
       const ok = await database.initDatabase();
+      const logger = require('./logger');
       if (ok) {
         this.dbAvailable = true;
-        console.log('CloudSyncAuth: Database initialized successfully');
+        logger.info('CloudSyncAuth: Database initialized successfully');
       } else {
         this.dbAvailable = false;
-        console.log('CloudSyncAuth: Database not initialized (falling back to file storage)');
+        logger.warn('CloudSyncAuth: Database not initialized (falling back to file storage)');
       }
     } catch (error) {
-      console.error('CloudSyncAuth: Failed to initialize database:', error);
-      console.log('⚠️  CloudSyncAuth: Falling back to file-based storage');
+  const logger = require('./logger');
+  logger.error('CloudSyncAuth: Failed to initialize database:', error);
+  logger.warn('⚠️  CloudSyncAuth: Falling back to file-based storage');
       this.dbAvailable = false;
       // Don't throw - gracefully fall back to file storage
     }
@@ -117,7 +119,8 @@ class CloudSyncAuth {
         await fs.writeFile(this.tokensFile, JSON.stringify({}));
       }
 
-      console.log('☁️ Cloud sync directories initialized');
+  const logger = require('./logger');
+  logger.info('☁️ Cloud sync directories initialized');
     } catch (error) {
       console.error('Failed to initialize cloud sync directories:', error);
     }

@@ -14,12 +14,13 @@ function timestamp() {
 
 async function exportPostgres(exportDir) {
   const connectionString = process.env.DATABASE_URL;
+  const logger = require('./logger');
   if (!connectionString) {
-    console.log('No DATABASE_URL present, skipping Postgres export.');
+    logger.info('No DATABASE_URL present, skipping Postgres export.');
     return { skipped: true };
   }
 
-  console.log('Exporting Postgres database to', exportDir);
+  logger.info('Exporting Postgres database to', exportDir);
   const pool = new Pool({ connectionString, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
 
   const tables = [
@@ -40,19 +41,19 @@ async function exportPostgres(exportDir) {
         const res = await pool.query(`SELECT * FROM ${t} ORDER BY id ASC`);
         const outPath = path.join(exportDir, `${t}.json`);
         await fs.writeFile(outPath, JSON.stringify(res.rows, null, 2), 'utf8');
-        console.log(`Exported ${res.rows.length} rows from ${t} -> ${outPath}`);
+  logger.info(`Exported ${res.rows.length} rows from ${t} -> ${outPath}`);
       } catch (e) {
         console.warn(`Warning: failed to export table ${t}:`, e.message);
       }
     }
 
     // Export schema (best-effort): we will write a note that schema file in this repo can be used
-    console.log('Postgres export complete. Please use server/db_schema.sql to recreate schema on target DB.');
+  logger.info('Postgres export complete. Please use server/db_schema.sql to recreate schema on target DB.');
 
     await pool.end();
     return { skipped: false };
   } catch (e) {
-    console.error('Postgres export failed:', e.message || e);
+  logger.error('Postgres export failed:', e.message || e);
     try { await pool.end(); } catch (er) {}
     return { skipped: false, error: e };
   }
@@ -62,7 +63,7 @@ async function copyIfExists(src, dest) {
   try {
     const s = path.resolve(src);
     if (!fssync.existsSync(s)) {
-      console.log(`Source not found: ${s} — skipping`);
+    logger.debug(`Source not found: ${s} — skipping`);
       return false;
     }
     // Use fs.cp when available for recursive copy
@@ -72,7 +73,7 @@ async function copyIfExists(src, dest) {
       // Fallback: recursive copy via read/write
       await copyRecursive(s, dest);
     }
-    console.log(`Copied ${s} -> ${dest}`);
+  logger.info(`Copied ${s} -> ${dest}`);
     return true;
   } catch (e) {
     console.error(`Failed to copy ${src} -> ${dest}:`, e.message || e);
@@ -126,7 +127,7 @@ async function main() {
     const outDir = path.join(outRoot, `export-${timestamp()}`);
     await ensureDir(outDir);
 
-    console.log('Starting export into', outDir);
+      logger.info('Starting export into', outDir);
 
     // Try Postgres export first
     const pgResult = await exportPostgres(outDir);
@@ -134,7 +135,7 @@ async function main() {
     // If Postgres was not present or failed, copy files
     if (pgResult.skipped) {
       const filesResult = await exportFiles(outDir);
-      console.log('File-based export results:', filesResult);
+  logger.info('File-based export results:', filesResult);
     }
 
     // Also include schema SQL for convenience
@@ -147,9 +148,9 @@ async function main() {
       // ignore
     }
 
-    console.log('Export complete. Files are located in', outDir);
+  logger.info('Export complete. Files are located in', outDir);
   } catch (e) {
-    console.error('Export failed:', e.message || e);
+    logger.error('Export failed:', e.message || e);
     process.exitCode = 2;
   }
 }
