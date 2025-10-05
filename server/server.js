@@ -422,6 +422,62 @@ app.get('/analytics', async (req, res) => {
       }
     }
 
+    // Ensure tutorialStats is exposed at top-level for the frontend.
+    // Prefer DB-provided tutorial aggregates when available (stats.tutorialStats or stats.today.tutorial),
+    // otherwise fall back to simple counts from eventCounts.
+    let tutorialStatsOut = null;
+    try {
+      if (stats && stats.tutorialStats) {
+        tutorialStatsOut = stats.tutorialStats;
+      } else if (stats && stats.today && stats.today.tutorial) {
+        const tToday = stats.today.tutorial;
+        const tAll = stats.allTime && stats.allTime.tutorial ? stats.allTime.tutorial : { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} };
+        const avg = (arr) => (Array.isArray(arr) && arr.length > 0) ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        tutorialStatsOut = {
+          today: {
+            started: tToday.started || 0,
+            completed: tToday.completed || 0,
+            avgCompletionSeconds: avg(tToday.completionDurations || []),
+            avgQuitSeconds: avg(tToday.quitDurations || []),
+            quitCounts: tToday.quitCounts || {},
+            stepDurations: tToday.stepDurations || {},
+          },
+          allTime: {
+            started: tAll.started || 0,
+            completed: tAll.completed || 0,
+            avgCompletionSeconds: avg(tAll.completionDurations || []),
+            avgQuitSeconds: avg(tAll.quitDurations || []),
+            quitCounts: tAll.quitCounts || {},
+            stepDurations: tAll.stepDurations || {},
+          },
+        };
+      } else {
+        // Fallback to eventCounts if tutorial object not present
+        const todayEv = (stats && stats.today && stats.today.eventCounts) ? stats.today.eventCounts : {};
+        const allEv = (stats && stats.allTime && stats.allTime.eventCounts) ? stats.allTime.eventCounts : {};
+        tutorialStatsOut = {
+          today: {
+            started: todayEv['tutorial_started'] || 0,
+            completed: todayEv['tutorial_completed'] || 0,
+            avgCompletionSeconds: 0,
+            avgQuitSeconds: 0,
+            quitCounts: {},
+            stepDurations: {},
+          },
+          allTime: {
+            started: allEv['tutorial_started'] || 0,
+            completed: allEv['tutorial_completed'] || 0,
+            avgCompletionSeconds: 0,
+            avgQuitSeconds: 0,
+            quitCounts: {},
+            stepDurations: {},
+          },
+        };
+      }
+    } catch (e) {
+      tutorialStatsOut = { today: { started: 0, completed: 0, avgCompletionSeconds: 0, avgQuitSeconds: 0, quitCounts: {}, stepDurations: {} }, allTime: { started: 0, completed: 0, avgCompletionSeconds: 0, avgQuitSeconds: 0, quitCounts: {}, stepDurations: {} } };
+    }
+
     // Respond with dashboard payload plus computed series
     res.json({
       ok: true,
@@ -432,6 +488,7 @@ app.get('/analytics', async (req, res) => {
       diagnostics,
       playerActivity,
       range,
+      tutorialStats: tutorialStatsOut,
       ...dashboardData,
     });
   } catch (error) {
