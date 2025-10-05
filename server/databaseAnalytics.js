@@ -182,11 +182,19 @@ class DatabaseAnalytics {
         averageSessionDuration: typeof todayStatsRaw.averageSessionTime === 'number' ? Math.floor(todayStatsRaw.averageSessionTime / 1000) : 0,
         // ensure hourlyActivity is present
         hourlyActivity: Array.isArray(todayStatsRaw.hourlyActivity) ? todayStatsRaw.hourlyActivity : Array(24).fill(0),
+        // ensure hourlyUniquePlayers is present for charting
+        hourlyUniquePlayers: Array.isArray(todayStatsRaw.hourlyUniquePlayers) ? todayStatsRaw.hourlyUniquePlayers : (Array.isArray(todayStatsRaw.hourlyActivity) ? todayStatsRaw.hourlyActivity : Array(24).fill(0)),
+        // expose eventCounts and tutorial shape
+        eventCounts: todayStatsRaw.eventCounts || {},
+        tutorial: todayStatsRaw.tutorial || { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} },
       });
 
       const allTimeStats = Object.assign({}, allTimeStatsRaw, {
         averageSessionDuration: typeof allTimeStatsRaw.averageSessionTime === 'number' ? Math.floor(allTimeStatsRaw.averageSessionTime / 1000) : 0,
         hourlyActivity: Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0),
+        hourlyUniquePlayers: Array.isArray(allTimeStatsRaw.hourlyUniquePlayers) ? allTimeStatsRaw.hourlyUniquePlayers : (Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0)),
+        eventCounts: allTimeStatsRaw.eventCounts || {},
+        tutorial: allTimeStatsRaw.tutorial || { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} },
       });
 
       return {
@@ -221,8 +229,17 @@ class DatabaseAnalytics {
       averageSessionTime: 0,
       peakPlayers: 0,
       uniquePlayers: new Set(),
-      tutorialStarted: 0,
-      tutorialCompleted: 0
+      // Maintain an eventCounts map so callers (frontend) can read counts by event type
+      eventCounts: {},
+      // Nested tutorial object to mirror file-based analytics shape
+      tutorial: {
+        started: 0,
+        completed: 0,
+        completionDurations: [],
+        quitCounts: {},
+        quitDurations: [],
+        stepDurations: {},
+      },
     };
 
     // Process sessions
@@ -238,7 +255,13 @@ class DatabaseAnalytics {
     // Process events
     events.forEach(event => {
       const eventData = event.data || {};
-      
+
+      // Maintain eventCounts map
+      try {
+        const et = event.event_type || event.eventType || 'unknown';
+        stats.eventCounts[et] = (stats.eventCounts[et] || 0) + 1;
+      } catch (e) {}
+
       switch (event.event_type) {
         case 'player_killed':
         case 'kill':
@@ -255,13 +278,52 @@ class DatabaseAnalytics {
           stats.powerupsCollected++;
           break;
         case 'tutorial_started':
-          stats.tutorialStarted++;
+          stats.tutorial.started = (stats.tutorial.started || 0) + 1;
           break;
         case 'tutorial_completed':
-          stats.tutorialCompleted++;
+          stats.tutorial.completed = (stats.tutorial.completed || 0) + 1;
+          // Accept either seconds or milliseconds in event payload
+          const durSec = (eventData && (typeof eventData.totalDurationSeconds === 'number')) ? Number(eventData.totalDurationSeconds) : null;
+          const durMs = (eventData && (typeof eventData.totalDurationMs === 'number')) ? Number(eventData.totalDurationMs) : null;
+          if (durSec != null) stats.tutorial.completionDurations.push(durSec);
+          else if (durMs != null) stats.tutorial.completionDurations.push(Math.round(durMs / 1000));
+
+          // merge step durations if present
+          if (eventData && eventData.stepDurations && typeof eventData.stepDurations === 'object') {
+            for (const [sid, sdur] of Object.entries(eventData.stepDurations)) {
+              if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+              stats.tutorial.stepDurations[sid].push(Number(sdur));
+            }
+          }
+          break;
+        case 'tutorial_quit':
+          try {
+            const lastStep = eventData && eventData.lastStepId ? String(eventData.lastStepId) : 'unknown';
+            stats.tutorial.quitCounts[lastStep] = (stats.tutorial.quitCounts[lastStep] || 0) + 1;
+            const qdurSec = (eventData && typeof eventData.totalDurationSeconds === 'number') ? Number(eventData.totalDurationSeconds) : null;
+            const qdurMs = (eventData && typeof eventData.totalDurationMs === 'number') ? Number(eventData.totalDurationMs) : null;
+            if (qdurSec != null) stats.tutorial.quitDurations.push(qdurSec);
+            else if (qdurMs != null) stats.tutorial.quitDurations.push(Math.round(qdurMs / 1000));
+            if (eventData && eventData.stepDurations && typeof eventData.stepDurations === 'object') {
+              for (const [sid, sdur] of Object.entries(eventData.stepDurations)) {
+                if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+                stats.tutorial.stepDurations[sid].push(Number(sdur));
+              }
+            }
+          } catch (e) {}
+          break;
+        case 'tutorial_step_duration':
+          try {
+            const sid = eventData && eventData.stepId ? String(eventData.stepId) : 'unknown';
+            const dur = eventData && (typeof eventData.durationSeconds === 'number') ? Number(eventData.durationSeconds) : null;
+            if (dur != null) {
+              if (!stats.tutorial.stepDurations[sid]) stats.tutorial.stepDurations[sid] = [];
+              stats.tutorial.stepDurations[sid].push(dur);
+            }
+          } catch (e) {}
           break;
       }
-      
+
       if (event.player_id) {
         stats.uniquePlayers.add(event.player_id);
       }
