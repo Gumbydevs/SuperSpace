@@ -14,6 +14,12 @@ export class TutorialSystem {
     this.tutorialEnabled = this.getTutorialEnabledStatus();
     this.notificationQueue = [];
     this.isShowingNotification = false;
+  // Track active pulse intervals for mobile highlights so they can be stopped
+  this._activePulses = new Map(); // id -> intervalId
+    // Mobile stop button pressed state
+    this._mobileStopPressed = false;
+      // Mobile movement (joystick) active flag
+      this._mobileMovementActive = false;
     this.hasEnteredWorld = false; // Track if player has entered the world
     this.playerStartPosition = null; // Track starting position for movement detection
     this.hasPlayerMoved = false; // Track if player has moved significantly
@@ -34,6 +40,84 @@ export class TutorialSystem {
     this.setupEventListeners();
     
     // Don't start tutorial immediately - wait for world entry
+  }
+
+  // Briefly pulse (highlight) the relevant touch control(s) for the given step on mobile devices
+  pulseControlForStep(step) {
+    // Only apply on touch/mobile devices and if input elements exist
+    if (!this.game || !this.game.isMobileDevice) return;
+
+    const controlsForAction = {
+      'movement': ['touch-joystick'],
+      'stop_ship': ['brake-button'],
+      'change_weapon': ['weapon-button'],
+      'shoot': ['fire-button'],
+      // include the actual shop button id (#shop-btn) and fallbacks
+      'open_shop': ['shop-btn', 'mobile-menu-button', 'shop-button']
+    };
+
+    const ids = controlsForAction[step.action] || [];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      // If a pulse is already active for this id, skip creating another interval
+      if (this._activePulses.has(id)) return;
+
+      // Start by ensuring the class is present to trigger the first animation
+      el.classList.add('tutorial-highlight');
+
+      // Use an interval to re-trigger the animation by removing and re-adding the class.
+      // Repeat slightly longer than the animation duration so pulses don't overlap.
+      const intervalMs = 1300; // slightly longer than 1.2s animation
+      const intervalId = setInterval(() => {
+        try {
+          // restart animation
+          el.classList.remove('tutorial-highlight');
+          // force reflow to allow re-adding animation
+          // eslint-disable-next-line no-unused-expressions
+          void el.offsetWidth;
+          el.classList.add('tutorial-highlight');
+        } catch (e) {
+          // if element no longer exists, clean up
+          this.stopPulseForIds([id]);
+        }
+      }, intervalMs);
+
+      this._activePulses.set(id, intervalId);
+    });
+  }
+
+  // Stop pulsing for a list of element ids
+  stopPulseForIds(ids) {
+    if (!ids || !ids.length) return;
+    ids.forEach((id) => {
+      try {
+        if (this._activePulses && this._activePulses.has(id)) {
+          clearInterval(this._activePulses.get(id));
+          this._activePulses.delete(id);
+        }
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('tutorial-highlight');
+      } catch (e) {
+        // ignore cleanup errors
+      }
+    });
+  }
+
+  // Stop all active pulses
+  stopAllPulses() {
+    if (!this._activePulses) return;
+    for (const [id, intervalId] of this._activePulses.entries()) {
+      try {
+        clearInterval(intervalId);
+      } catch (e) {
+        // ignore
+      }
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('tutorial-highlight');
+    }
+    this._activePulses.clear();
   }
 
   getCompletedStatus() {
@@ -216,7 +300,7 @@ export class TutorialSystem {
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 3000;
+      z-index: 11000; /* higher than floating buttons so tutorial appears above */
       pointer-events: none;
       font-family: 'Orbitron', Arial, sans-serif;
       box-sizing: border-box;
@@ -248,7 +332,7 @@ export class TutorialSystem {
         }
       }
 
-      .tutorial-notification {
+        .tutorial-notification {
         background: linear-gradient(135deg, rgba(70, 130, 180, 0.95), rgba(100, 149, 237, 0.95));
         color: white;
         padding: 20px 25px 35px 25px;
@@ -260,7 +344,7 @@ export class TutorialSystem {
         position: relative;
         animation: tutorialSlideIn 0.6s ease-out;
         backdrop-filter: blur(10px);
-        padding-right: 80px;
+        padding-right: 64px; /* reduced to avoid floating button overlap on small screens */
         pointer-events: auto;
         cursor: pointer;
       }
@@ -354,20 +438,53 @@ export class TutorialSystem {
           left: 0;
           transform: none;
           width: 100%;
-          top: env(safe-area-inset-top, 20px);
+          top: env(safe-area-inset-top, 12px);
           padding-left: max(8px, env(safe-area-inset-left, 8px));
           padding-right: max(8px, env(safe-area-inset-right, 8px));
+          z-index: 11000; /* ensure top-most */
+          display: flex;
+          justify-content: center; /* center notifications so they don't span full width */
+          pointer-events: none;
         }
         .tutorial-notification {
-          width: calc(100% - 32px);
-          max-width: none;
-          padding: 12px 14px 20px 14px;
-          padding-right: 48px;
+          /* centered, narrower notifications that fit well on phones */
+          width: calc(100% - 24px);
+          max-width: 340px;
+          padding: 10px 12px 18px 12px; /* increased bottom padding to avoid overlap */
+          padding-right: 56px;
+          font-size: 13px;
+          line-height: 1.3; /* slightly taller line-height to give breathing room */
+          max-height: calc(42vh);
+          overflow-y: auto;
+          pointer-events: auto;
         }
+        .tutorial-title { font-size: 14px; }
+        .tutorial-message { font-size: 12px; margin-bottom: 10px; }
+        .tutorial-reward { font-size: 11px; margin-top: 8px; }
         .tutorial-skip-btn {
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
         }
+      }
+      /* Mobile touch-control highlight used by the tutorial to briefly pulse required controls */
+      .tutorial-highlight {
+        /* Non-intrusive highlight: don't change the element's shape (no border-radius override)
+           Use a glow via box-shadow. Allow pointer interactions so pulsing doesn't
+           disable touch handlers on the control (important for mobile buttons).
+        */
+        animation: tutorialPulse 1.2s ease-out;
+        transform-origin: center center;
+        /* keep default pointer behavior so the control remains tappable */
+      }
+
+      @keyframes tutorialPulse {
+        /* Double pulse: two identical glows within the same animation duration */
+        0% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+        15% { box-shadow: 0 0 22px 8px rgba(255,215,0,0.28); }
+        30% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+        55% { box-shadow: 0 0 22px 8px rgba(255,215,0,0.28); }
+        75% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
       }
     `;
     document.head.appendChild(style);
@@ -399,6 +516,73 @@ export class TutorialSystem {
         }
       }
     });
+
+    // Mobile touch buttons: watch for touch on weapon & fire buttons to support tutorial progression
+    const fireBtn = document.getElementById('fire-button');
+    if (fireBtn) {
+      fireBtn.addEventListener('touchstart', (e) => {
+        if (!this.isActive) return;
+        // Only advance if current tutorial step expects shooting
+        const step = this.tutorialSteps[this.currentStep];
+        if (step && step.action === 'shoot') {
+          // Only count if weapon is engaged
+          if (this.canPlayerShoot()) {
+            this.checkStepProgress('shoot');
+          }
+        }
+      }, { passive: true });
+    }
+
+    const weaponBtn = document.getElementById('weapon-button');
+    if (weaponBtn) {
+      weaponBtn.addEventListener('touchstart', (e) => {
+        if (!this.isActive) return;
+        const step = this.tutorialSteps[this.currentStep];
+        if (step && step.action === 'change_weapon') {
+          // If the player changes weapon via UI it will be reflected on player.currentWeapon shortly;
+          // give a small delay to allow game input to update the player state, then check.
+          setTimeout(() => this.checkWeaponChange(), 120);
+        }
+      }, { passive: true });
+    }
+
+    // Brake/Stop button: track touch hold for mobile stopping step
+    const brakeBtn = document.getElementById('brake-button');
+    if (brakeBtn) {
+      brakeBtn.addEventListener('touchstart', (e) => {
+        if (!this.isActive) return;
+        this._mobileStopPressed = true;
+        // If current step is stop_ship and stopHoldStart is not set, start it now
+        const step = this.tutorialSteps[this.currentStep];
+        if (step && step.action === 'stop_ship' && !this.stopHoldStart) {
+          this.stopHoldStart = Date.now();
+        }
+      }, { passive: true });
+
+      const clearStop = (e) => {
+        this._mobileStopPressed = false;
+        this.stopHoldStart = null;
+      };
+
+      brakeBtn.addEventListener('touchend', clearStop, { passive: true });
+      brakeBtn.addEventListener('touchcancel', clearStop, { passive: true });
+    }
+
+    // Touch joystick: detect touch interactions as movement on mobile
+    const joystickEl = document.getElementById('touch-joystick');
+    if (joystickEl) {
+      const setMoveActive = (e) => {
+        if (!this.isActive) return;
+        this._mobileMovementActive = true;
+      };
+      const clearMoveActive = (e) => {
+        this._mobileMovementActive = false;
+      };
+      joystickEl.addEventListener('touchstart', setMoveActive, { passive: true });
+      joystickEl.addEventListener('touchmove', setMoveActive, { passive: true });
+      joystickEl.addEventListener('touchend', clearMoveActive, { passive: true });
+      joystickEl.addEventListener('touchcancel', clearMoveActive, { passive: true });
+    }
   }
 
   // Helper to determine if the player can actually shoot (weapon engaged)
@@ -580,16 +764,63 @@ export class TutorialSystem {
     }
 
     if (!this.hasPlayerMoved) {
+      // Also consider mobile joystick input as movement: if the game's input system
+      // reports a touch joystick or thrust amount, treat that as movement so the
+      // mobile tutorial doesn't get stuck waiting for keyboard input.
+      try {
+        const input = this.game && this.game.input;
+        if (input) {
+          // Compute joystick magnitude from multiple possible shapes the input system
+          // might expose (normalized magnitude or raw dx/dy). Be permissive on
+          // mobile so small thumb movements count.
+          let mag = 0;
+          if (input.touchJoystick) {
+            if (typeof input.touchJoystick.magnitude === 'number') {
+              mag = input.touchJoystick.magnitude;
+            } else if (typeof input.touchJoystick.dx === 'number' || typeof input.touchJoystick.dy === 'number') {
+              const dxj = input.touchJoystick.dx || 0;
+              const dyj = input.touchJoystick.dy || 0;
+              mag = Math.sqrt(dxj * dxj + dyj * dyj);
+            } else if (typeof input.touchJoystick.x === 'number' || typeof input.touchJoystick.y === 'number') {
+              const dxj = input.touchJoystick.x || 0;
+              const dyj = input.touchJoystick.y || 0;
+              mag = Math.sqrt(dxj * dxj + dyj * dyj);
+            }
+          }
+          const thrust = input.thrustAmount || 0;
+
+          // Mobile thresholds: be more permissive for touch. Desktop keeps previous
+          // conservative thresholds. These are intentionally low so small thumb
+          // movements register — adjust if you see false positives.
+          const mobileMagThreshold = 0.05; // normalized or raw depending on input impl
+          const mobileThrustThreshold = 0.08;
+
+          if (this._mobileMovementActive || mag > mobileMagThreshold || thrust > mobileThrustThreshold) {
+            // Treat a sustained joystick push or touch interaction as movement
+            this.hasPlayerMoved = true;
+            this.checkStepProgress('movement');
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore any errors reading input
+      }
+      // As a fallback, check for very small position changes which can occur on mobile when
+      // thrust is applied by touch-driven physics updates that are not reflected via input fields.
       const dx = this.player.x - this.playerStartPosition.x;
       const dy = this.player.y - this.playerStartPosition.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Determine movement threshold depending on platform so mobile touch
+      // interactions (smaller pixel movements) register correctly.
+      const threshold = (this.game && this.game.isMobileDevice) ? 12 : 30;
       
       // Log less frequently to avoid spam - only every 60 frames (about 1 second)
       // if (this.game.frameCount % 60 === 0) { // Production: disabled
       //   console.log(`🔍 Tutorial: checkMovement - start(${this.playerStartPosition.x.toFixed(1)},${this.playerStartPosition.y.toFixed(1)}) current(${this.player.x.toFixed(1)},${this.player.y.toFixed(1)}) distance=${distance.toFixed(1)}`);
       // }
-      
-      if (distance > 30) {
+
+      if (distance > threshold) {
         // console.log('📚 Tutorial: Player movement detected! Distance: ' + distance.toFixed(1)); // Production: disabled
         this.hasPlayerMoved = true;
         this.checkStepProgress('movement');
@@ -610,8 +841,7 @@ export class TutorialSystem {
     }
     
     // Check if stop/brake is currently being held (keyboard OR mobile button)
-    const isStopPressed = this.game.input.keys.includes('KeyS') || 
-                         this.game.input.keys.includes('ArrowDown');
+  const isStopPressed = (this.game.input.keys && (this.game.input.keys.includes('KeyS') || this.game.input.keys.includes('ArrowDown'))) || this._mobileStopPressed;
     
     if (isStopPressed) {
       if (!this.stopHoldStart) {
@@ -900,13 +1130,28 @@ export class TutorialSystem {
       }
       // console.log(`✅ Tutorial action completed: ${actionType} - advancing step`); // Production: disabled
       
-      // Prevent double-advancement by immediately marking as inactive during transition
+  // Prevent double-advancement by immediately marking as inactive during transition
       const wasActive = this.isActive;
       this.isActive = false;
       
       // Mark as not showing notification first
       this.isShowingNotification = false;
       
+      // Stop pulses related to this step so the UI stops pulsing when the step completes
+      try {
+        const controlsForAction = {
+          'movement': ['touch-joystick'],
+          'stop_ship': ['brake-button'],
+          'change_weapon': ['weapon-button'],
+          'shoot': ['fire-button'],
+          'open_shop': ['shop-btn', 'mobile-menu-button', 'shop-button']
+        };
+        const idsToStop = controlsForAction[step.action] || [];
+        this.stopPulseForIds(idsToStop);
+      } catch (e) {
+        // ignore
+      }
+
       // Remove current notification
       const container = document.getElementById('tutorial-notifications');
       if (container && container.firstChild) {
@@ -1081,6 +1326,41 @@ export class TutorialSystem {
       window.marvinAssistant.attachToNotification(notification);
     }
 
+    // On mobile, briefly pulse the relevant control(s) to hint to touch players
+    if (step.action) {
+      try {
+        this.pulseControlForStep(step);
+      } catch (e) {
+        // ignore any pulse errors
+      }
+    }
+
+    // Special-case: on mobile, for the shop step place the notification below the shop button
+    // so it doesn't block interaction with the button.
+    try {
+      if (this.game && this.game.isMobileDevice && step.action === 'open_shop') {
+  const shopBtn = document.getElementById('shop-btn') || document.getElementById('mobile-menu-button') || document.getElementById('shop-button');
+        if (shopBtn) {
+          const rect = shopBtn.getBoundingClientRect();
+          // Ensure notification has been laid out so offsetWidth is available
+          const notifWidth = notification.offsetWidth || Math.min(window.innerWidth - 16, 340);
+          let left = rect.left + (rect.width / 2) - (notifWidth / 2);
+          left = Math.max(8, Math.min(left, window.innerWidth - notifWidth - 8));
+          const top = rect.bottom + 8; // place just below the button
+
+          // Make this notification fixed and positioned relative to viewport
+          notification.style.position = 'fixed';
+          notification.style.left = `${left}px`;
+          notification.style.top = `${top}px`;
+          notification.style.transform = 'none';
+          notification.style.margin = '0';
+          notification.style.zIndex = '12000';
+        }
+      }
+    } catch (e) {
+      // ignore positioning errors
+    }
+
     // For action-required steps, don't auto-remove
     if (!step.action) {
       // Info steps stay until clicked
@@ -1167,6 +1447,31 @@ export class TutorialSystem {
       // console.log('💰 Tutorial: Updated shop UI with new credits/gems'); // Production: disabled
     }
 
+    // Ensure the shop button badge is updated even if the shop DOM hasn't been
+    // initialized yet (some builds create the shop button lazily when opening the shop).
+    try {
+      if (this.game && this.game.shop && typeof this.game.shop.updateShopButtonBadge === 'function') {
+        const tryUpdateBadge = () => {
+          const btn = document.getElementById('shop-btn') || document.getElementById('mobile-menu-button') || document.getElementById('shop-button');
+          if (btn) {
+            this.game.shop.updateShopButtonBadge();
+          } else {
+            // Retry once after a short delay to allow lazy DOM creation
+            setTimeout(() => {
+              try {
+                if (typeof this.game.shop.updateShopButtonBadge === 'function') this.game.shop.updateShopButtonBadge();
+              } catch (e) {
+                // ignore
+              }
+            }, 300);
+          }
+        };
+        tryUpdateBadge();
+      }
+    } catch (e) {
+      // ignore
+    }
+
     // Save player progress
     if (this.player && this.player.saveToLocalStorage) {
       this.player.saveToLocalStorage();
@@ -1195,6 +1500,8 @@ export class TutorialSystem {
     
     this.isShowingNotification = false;
     this.notificationQueue = [];
+  // Stop all active pulses when tutorial is skipped
+  try { this.stopAllPulses(); } catch (e) { /* ignore */ }
 
     // Show skip message
     if (window.game && window.game.ui && window.game.ui.showMessage) {
@@ -1227,6 +1534,9 @@ export class TutorialSystem {
   completeTutorial() {
     this.isActive = false;
     this.markTutorialCompleted();
+
+    // Stop any active pulses when tutorial completes
+    try { this.stopAllPulses(); } catch (e) { /* ignore */ }
     
     // Show completion message
     if (window.game && window.game.ui && window.game.ui.showMessage) {

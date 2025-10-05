@@ -107,6 +107,19 @@ class Game {
   this.zoomAmount = 1.5; // 50% closer = scale 1.5
   this.zoomDuration = 520; // ms for zoom animation (slower, more gradual)
   this._zoomAnimStart = 0; // timestamp when current zoom animation started
+  // Detect touch/mobile devices and adjust zoom behaviour: disable manual zoom and
+  // use a slightly more zoomed-out view by default so UI fits better on small screens.
+  this.isMobileDevice = (typeof window !== 'undefined') && ('ontouchstart' in window || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''));
+  if (this.isMobileDevice) {
+    // Prevent the desktop zoom feature from being enabled on touch devices
+    this.zoomAmount = 1; // no zoom-in available
+    this.zoomEnabled = false;
+    // Slightly zoom the world out so players see more on small viewports
+    // (use a subtle value to avoid layout breakage)
+    this.zoomCurrent = 0.92;
+    this.zoomStart = this.zoomCurrent;
+    this.zoomTarget = this.zoomCurrent;
+  }
 
     // Keyboard shortcut: toggle zoom with Z key
     window.addEventListener('keydown', (e) => {
@@ -549,10 +562,11 @@ class Game {
     // Only allow shop access when playing
     if (this.gameState === 'playing') {
       this.shop.toggleShop();
-      
       // Notify tutorial system that shop was opened
       if (this.tutorialSystem) {
-        this.tutorialSystem.onShopOpened();
+        if (typeof this.tutorialSystem.onShopOpened === 'function') {
+          this.tutorialSystem.onShopOpened();
+        }
       }
     }
   }
@@ -1989,6 +2003,11 @@ class Game {
 
   // Toggle zoom state: flip target and start animation
   toggleZoom() {
+    // If on a mobile/touch device, ignore zoom toggles to avoid UI breakage
+    if (this.isMobileDevice) {
+      // Keep zoom locked to mobile-friendly default
+      return;
+    }
     this.zoomEnabled = !this.zoomEnabled;
     this.zoomTarget = this.zoomEnabled ? this.zoomAmount : 1;
     // record starting value so interpolation is stable

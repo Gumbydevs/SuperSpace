@@ -29,6 +29,23 @@ export class MarvinAssistant {
                 height: 58px;
             }
         `;
+  // Mobile-specific adjustments: show Marvin inside visible area and scale down
+  style.textContent += `
+      @media (max-width: 760px) {
+        .marvin-container {
+          left: auto !important;
+          right: 8px !important;
+          top: calc(env(safe-area-inset-top, 8px) + 6px) !important;
+          width: 36px !important;
+          height: 36px !important;
+          transform: none !important;
+          animation: marvinAppear 0.25s ease-out forwards;
+          pointer-events: none;
+          z-index: 10500 !important; /* stay under tutorial (tutorial z-index is 11000) */
+        }
+        .marvin-canvas { width: 36px !important; height: 36px !important; }
+      }
+    `;
     document.head.appendChild(style);
   }
 
