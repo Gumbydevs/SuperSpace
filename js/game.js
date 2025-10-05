@@ -412,7 +412,8 @@ class Game {
   // Create an options gear button to open the options overlay (desktop only)
   createOptionsGearButton() {
     // Only create desktop gear button on desktop (not on any touch devices)
-    if (this.inputHandler && this.inputHandler.isTouchDevice) {
+    // Note: InputHandler is stored on `this.input` in Game; guard against touch devices here.
+    if ((this.input && this.input.isTouchDevice) || (this.inputHandler && this.inputHandler.isTouchDevice)) {
       return; // Skip on all touch devices (phones, tablets, iPads)
     }
     
