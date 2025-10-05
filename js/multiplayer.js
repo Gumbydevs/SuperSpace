@@ -308,6 +308,54 @@ export class MultiplayerManager {
       } catch (e) {
         /* ignore errors when trying to set selectedAvatar */
       }
+      // Ensure in-memory systems reflect the newly-granted entitlements (covers incognito/non-persistent flows)
+      try {
+        if (window && window.game) {
+          // Refresh premium store in-memory purchases and update owned status
+          const ps = window.game.premiumStore;
+          try {
+            if (ps && typeof ps.loadPremiumPurchases === 'function') {
+              ps.premiumPurchases = ps.loadPremiumPurchases();
+              if (typeof ps.updateOwnedStatus === 'function') ps.updateOwnedStatus();
+              if (typeof ps.savePremiumPurchases === 'function') ps.savePremiumPurchases();
+            } else if (ps) {
+              // Fallback: read from localStorage and apply
+              try {
+                ps.premiumPurchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+              } catch (e) {
+                ps.premiumPurchases = ps.premiumPurchases || { avatars: [], skins: [], purchaseHistory: [] };
+              }
+              if (typeof ps.updateOwnedStatus === 'function') ps.updateOwnedStatus();
+            }
+
+            // If no ship skin selected, set the playtester skin so it becomes visible in HUD/appearance
+            const curSelSkin = localStorage.getItem('selectedShipSkin');
+            if (!curSelSkin || curSelSkin === 'none') {
+              try {
+                localStorage.setItem('selectedShipSkin', playSkin);
+                if (window.game && window.game.shipSkins && typeof window.game.shipSkins.setActiveSkin === 'function') {
+                  try { window.game.shipSkins.setActiveSkin('scout', playSkin); } catch (e) { /* ignore */ }
+                }
+              } catch (e) {
+                /* ignore */
+              }
+            }
+
+            // Notify other systems/UI of new skin
+            if (typeof window.notifyNewShipSkin === 'function') {
+              try { window.notifyNewShipSkin(playSkin); } catch (e) { /* ignore */ }
+            }
+
+            if (window.shipSkinNotifications && typeof window.shipSkinNotifications.check === 'function') {
+              try { window.shipSkinNotifications.check(); } catch (e) { /* ignore */ }
+            }
+          } catch (e) {
+            // ignore in-memory update errors
+          }
+        }
+      } catch (e) {
+        /* ignore */
+      }
     } catch (e) {
       console.warn('Error granting playtester entitlements:', e);
     }

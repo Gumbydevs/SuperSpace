@@ -529,6 +529,45 @@ class CloudSyncService {
         console.log('🔐 Token validated successfully');
         await this.downloadAndMergeCloudData();
         // Notify UI that validation is complete and we're still logged in
+        // Ensure in-memory systems reflect new entitlements (helps incognito or lazy-initialized UI)
+        try {
+          if (window && window.game) {
+            const ps = window.game.premiumStore;
+            try {
+              if (ps && typeof ps.loadPremiumPurchases === 'function') {
+                ps.premiumPurchases = ps.loadPremiumPurchases();
+                if (typeof ps.updateOwnedStatus === 'function') ps.updateOwnedStatus();
+                if (typeof ps.savePremiumPurchases === 'function') ps.savePremiumPurchases();
+              } else if (ps) {
+                try {
+                  ps.premiumPurchases = JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+                } catch (e) {
+                  ps.premiumPurchases = ps.premiumPurchases || { avatars: [], skins: [], purchaseHistory: [] };
+                }
+                if (typeof ps.updateOwnedStatus === 'function') ps.updateOwnedStatus();
+              }
+
+              // Ensure playtester skin selected if none set
+              const curSelSkin = localStorage.getItem('selectedShipSkin');
+              if (!curSelSkin || curSelSkin === 'none') {
+                try {
+                  localStorage.setItem('selectedShipSkin', playSkin);
+                  if (window.game && window.game.shipSkins && typeof window.game.shipSkins.setActiveSkin === 'function') {
+                    try { window.game.shipSkins.setActiveSkin('scout', playSkin); } catch (e) { /* ignore */ }
+                  }
+                } catch (e) { /* ignore */ }
+              }
+
+              if (typeof window.notifyNewShipSkin === 'function') {
+                try { window.notifyNewShipSkin(playSkin); } catch (e) { /* ignore */ }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
         this.notifyLoginStatusChanged();
       } else {
         // Token is invalid, clear session
