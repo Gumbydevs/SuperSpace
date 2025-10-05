@@ -255,6 +255,25 @@ class DatabaseAnalytics {
       }
     });
 
+    // Build hourly activity array (counts per hour in EST) so dashboard can plot last-24h
+    try {
+      const hourlyActivity = Array(24).fill(0);
+      events.forEach(event => {
+        // try multiple timestamp field names depending on DB schema
+        const ts = event.timestamp || event.time || event.created_at || event.createdAt || event.tstamp;
+        if (!ts) return;
+        const d = new Date(ts);
+        // Convert to EST (handles DST) then get hour
+        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const hour = est.getHours();
+        if (typeof hour === 'number' && hour >= 0 && hour < 24) hourlyActivity[hour]++;
+      });
+      stats.hourlyActivity = hourlyActivity;
+    } catch (e) {
+      // defensive: if something goes wrong, expose zeros
+      stats.hourlyActivity = Array(24).fill(0);
+    }
+
     // Calculate averages
     stats.averageSessionTime = sessions.length > 0 ? stats.totalGameTime / sessions.length : 0;
     stats.uniquePlayersCount = stats.uniquePlayers.size;

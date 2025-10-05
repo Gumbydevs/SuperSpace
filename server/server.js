@@ -380,8 +380,8 @@ app.get('/analytics', async (req, res) => {
     revenue: stats.today?.totalSpent || 0, // Real money revenue
     gemsSpent: stats.today?.gemsSpent || 0, // Gems spent on items
 
-    // Chart data
-    playerActivity: generatePlayerActivityData({ activeSessions: actualActivePlayers }),
+  // Chart data - pass today's stats so hourlyActivity is available for last-24h chart
+  playerActivity: generatePlayerActivityData({ today: stats.today, activeSessions: actualActivePlayers }),
     gameEvents: {
       kills: stats.today?.totalKills || 0,
       deaths: stats.today?.totalDeaths || 0,
