@@ -206,6 +206,28 @@ class Game {
     this.createPremiumStoreButton();
     this.createAdminButton();
 
+    // Tiny visual nudge for top-right stacked buttons on touch phones to avoid
+    // overlapping the online players panel. Keep desktop unchanged.
+    try {
+      const isTouchPhone = ('ontouchstart' in window || /Mobi|Android|iPhone/i.test(navigator.userAgent || '')) && window.innerWidth <= 480;
+      if (isTouchPhone) {
+        const toNudge = ['shop-btn', 'options-gear-btn-top', 'mobile-menu-button', 'premium-btn'];
+        toNudge.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            // Only apply inline transform if not already transformed
+            const existing = el.style.transform || window.getComputedStyle(el).transform;
+            if (!existing || existing === 'none') {
+              // Larger nudge for reliability across devices
+              el.style.transform = 'translateY(24px)';
+            }
+          }
+        });
+      }
+    } catch (e) {
+      /* ignore if DOM not ready or any error */
+    }
+
     // Set up keyboard shortcuts
     this.setupHotkeys();
 

@@ -2292,19 +2292,40 @@ input[type='range'] {
 @media screen and (max-width: 428px) and (orientation: portrait) {
   /* Adjust top-right button positioning for iPhone portrait mode */
   #shop-btn {
-    top: 20px !important; /* Moved much higher to use empty space */
+    top: 36px !important; /* pushed down more to avoid overlapping header */
   }
 
   #mobile-menu-button {
-    top: 80px !important; /* Options button - 50px spacing from shop */
+    top: 110px !important; /* Options button - larger spacing from shop */
   }
 
   #premium-btn {
-    top: 130px !important; /* Premium button - 50px spacing from options */
+    top: 160px !important; /* Premium button - larger spacing from options */
   }
 
   #mobile-chat-btn {
     top: 190px !important; /* Chat button - 50px spacing from premium */
+  }
+}
+
+/* Nudge top-right stacked buttons slightly down on very small phones to avoid
+   overlapping the online players / active pilots box. This only affects
+   narrow, touch devices (phones) and leaves desktop behavior untouched. */
+@media screen and (max-width: 480px) {
+  #shop-btn,
+  #mobile-menu-button,
+  #premium-btn {
+    /* larger visual shift downward to avoid overlapping active pilots box */
+    transform: translateY(24px);
+  }
+}
+
+/* For very narrow iPhone portrait viewports, use a slightly larger nudge */
+@media screen and (max-width: 428px) and (orientation: portrait) {
+  #shop-btn,
+  #mobile-menu-button,
+  #premium-btn {
+    transform: translateY(28px);
   }
 }
 
