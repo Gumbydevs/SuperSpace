@@ -1421,7 +1421,8 @@ export class MultiplayerManager {
     }
   }
 
-  connect(serverUrl = 'http://localhost:3000') {
+  connect(serverUrl = (window.SUPERSPACE_SERVER_URL || 'http://localhost:3000')) {
+    console.debug('multiplayer.connect will use serverUrl:', serverUrl);
     // Block connection if kicked
     if (sessionStorage.getItem('wasKicked') === '1') {
       alert('You have been kicked from the game by an admin.');

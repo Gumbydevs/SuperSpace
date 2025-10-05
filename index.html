@@ -15,6 +15,18 @@
     />
     <link rel="stylesheet" href="css/styles.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      // Ensure a global server URL is available for all modules early.
+      // This avoids accidental attempts to connect to localhost when the
+      // production server should be used during local development.
+      if (!window.SUPERSPACE_SERVER_URL) {
+        window.SUPERSPACE_SERVER_URL = 'https://superspace-server-production.up.railway.app';
+        console.debug('AUTO: SUPERSPACE_SERVER_URL set to', window.SUPERSPACE_SERVER_URL);
+      } else {
+        console.debug('SUPERSPACE_SERVER_URL already set to', window.SUPERSPACE_SERVER_URL);
+      }
+    </script>
+    <!-- Player-count monitor removed (was used for debugging) -->
     <!-- Vercel Analytics - Simplified -->
     <script>
       // Set analytics host for custom tracking
@@ -37,8 +49,11 @@
     <script>
       // Connect to the server to get player count as soon as the page loads
       window.addEventListener('load', function () {
-        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const serverUrl = isLocalHost ? 'http://localhost:3000' : 'https://superspace-server.onrender.com';
+  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  // Prefer an explicit override when provided (useful when developing locally
+  // but wanting to target the remote multiplayer server)
+  const serverUrl = window.SUPERSPACE_SERVER_URL || (isLocalHost ? 'http://localhost:3000' : 'https://superspace-server-production.up.railway.app');
+  console.debug('Player-count socket will connect to:', serverUrl);
 
         // Connect to server
         const socket = io(serverUrl, {
@@ -49,28 +64,51 @@
           timeout: 10000,
         });
 
-        // When connected, request player count
+        // Keep last known player count so transient disconnects don't immediately
+        // replace the visible number with a '?' which is confusing to users.
+        let lastKnownCount = null;
+        let disconnectTimer = null;
+        const DISCONNECT_GRACE_MS = 7000; // wait this long before showing '?'
+
+        function updatePlayerCountDisplay(val) {
+          const el = document.getElementById('player-count');
+          if (!el) return;
+          el.textContent = (val === null || typeof val === 'undefined') ? '?' : val;
+        }
+
+        // When connected, request player count and clear any pending disconnect timers
         socket.on('connect', function () {
+          if (disconnectTimer) {
+            clearTimeout(disconnectTimer);
+            disconnectTimer = null;
+          }
           socket.emit('getPlayerCount');
         });
 
         // Listen for player count updates (guard element access to avoid crashes
         // when page body is replaced by other scripts like the inactivity logout)
         socket.on('playerCountUpdate', function (count) {
-          const el = document.getElementById('player-count');
-          if (el) el.textContent = count;
+          lastKnownCount = count;
+          updatePlayerCountDisplay(count);
         });
 
-        // Handle disconnect/errors gracefully
-        socket.on('disconnect', function () {
-          const el = document.getElementById('player-count');
-          if (el) el.textContent = '?';
-        });
+        // Schedule showing a '?' only after a short grace period. If we reconnect
+        // or receive an update before the timer fires, we keep the last known value.
+        function scheduleShowQuestion() {
+          if (disconnectTimer) return; // already scheduled
+          disconnectTimer = setTimeout(function () {
+            // If we have a last known count, keep showing it; otherwise show '?'
+            if (lastKnownCount === null || typeof lastKnownCount === 'undefined') {
+              updatePlayerCountDisplay('?');
+            } else {
+              updatePlayerCountDisplay(lastKnownCount);
+            }
+            disconnectTimer = null;
+          }, DISCONNECT_GRACE_MS);
+        }
 
-        socket.on('connect_error', function () {
-          const el = document.getElementById('player-count');
-          if (el) el.textContent = '?';
-        });
+        socket.on('disconnect', scheduleShowQuestion);
+        socket.on('connect_error', scheduleShowQuestion);
       });
     </script>
   </head>

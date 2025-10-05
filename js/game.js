@@ -277,21 +277,21 @@ class Game {
   } // Connect to the server to get player count without joining the game
   initializePlayerCount() {
     const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const serverUrl = isLocalHost
-      ? 'http://localhost:3000'
-      : (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
+    // Prefer an explicitly configured server URL (e.g. when running the game
+    // in a browser that is served from localhost but the multiplayer server is remote).
+    const serverUrl = window.SUPERSPACE_SERVER_URL || (isLocalHost ? 'http://localhost:3000' : 'https://superspace-server-production.up.railway.app');
 
-    console.log('Initializing player count, connecting to:', serverUrl);
+  console.debug('Initializing player count, connecting to:', serverUrl);
 
     // Load Socket.IO client only if not already loaded
     if (typeof io === 'undefined') {
-      console.log('Socket.IO not loaded, loading script...');
+  console.debug('Socket.IO not loaded, loading script...');
       const script = document.createElement('script');
       script.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
       script.integrity = ''; // Removed integrity check which can cause issues
       script.crossOrigin = 'anonymous';
       script.onload = () => {
-        console.log('Socket.IO script loaded successfully');
+        console.debug('Socket.IO script loaded successfully');
         this.createPlayerCountConnection(serverUrl);
       };
       script.onerror = (error) => {
@@ -299,7 +299,7 @@ class Game {
       };
       document.head.appendChild(script);
     } else {
-      console.log('Socket.IO already loaded, creating connection');
+  console.debug('Socket.IO already loaded, creating connection');
       this.createPlayerCountConnection(serverUrl);
     }
   }
@@ -307,33 +307,92 @@ class Game {
   // Create a connection specifically for player count
   createPlayerCountConnection(serverUrl) {
     try {
-      console.log('Creating temporary socket connection for player count');
+  console.debug('Creating temporary socket connection for player count');
       const tempSocket = io(serverUrl, {
         reconnection: false,
         timeout: 5000,
       });
 
+      // Keep last known count and a grace timer so short-lived connection
+      // failures don't immediately replace the visible number with '?'.
+      let lastKnownCount = null;
+      let disconnectTimer = null;
+      const DISCONNECT_GRACE_MS = 7000;
+
+      function updatePlayerCountDisplay(val) {
+        const playerCountElement = document.getElementById('player-count');
+        if (!playerCountElement) return;
+          // If the authoritative multiplayer manager is connected, don't allow
+          // the temporary socket to overwrite the display with stale/unknown values.
+          if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            // Let the multiplayer manager set the authoritative value
+            try {
+              window.game.multiplayer.updatePlayerCount();
+              return;
+            } catch (e) {
+              // fall through and set the value as a last resort
+              console.warn('Failed to defer player count to multiplayer manager', e);
+            }
+          }
+
+          playerCountElement.textContent = (val === null || typeof val === 'undefined') ? '?' : val;
+      }
+
+      function scheduleShowQuestion() {
+        if (disconnectTimer) return;
+        disconnectTimer = setTimeout(() => {
+          // If multiplayer is already connected, let it be authoritative
+          if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+            try {
+              window.game.multiplayer.updatePlayerCount();
+            } catch (e) {
+              console.warn('Error updating authoritative player count', e);
+            }
+            disconnectTimer = null;
+            return;
+          }
+
+          if (lastKnownCount === null || typeof lastKnownCount === 'undefined') {
+            updatePlayerCountDisplay('?');
+          } else {
+            updatePlayerCountDisplay(lastKnownCount);
+          }
+          disconnectTimer = null;
+        }, DISCONNECT_GRACE_MS);
+      }
+
       // Setup event handlers
       tempSocket.on('connect', () => {
         console.log('Player count socket connected with ID:', tempSocket.id);
+        if (disconnectTimer) {
+          clearTimeout(disconnectTimer);
+          disconnectTimer = null;
+        }
         // Request player count once connected
         tempSocket.emit('getPlayerCount');
       });
 
       tempSocket.on('connect_error', (error) => {
         console.error('Player count socket connection error:', error);
+        scheduleShowQuestion();
+      });
+
+      tempSocket.on('disconnect', () => {
+        console.log('Player count socket disconnected');
+        scheduleShowQuestion();
       });
 
       // Listen for player count updates
       tempSocket.on('playerCountUpdate', (count) => {
         console.log('Received player count update:', count);
-        const playerCountElement = document.getElementById('player-count');
-        if (playerCountElement) {
-          playerCountElement.textContent = count;
-          console.log('Player count element updated to:', count);
-        } else {
-          console.warn('Player count element not found in DOM');
+        // If the main multiplayer manager is already connected, let it be
+        // authoritative for the displayed player count and ignore this temp socket.
+        if (window.game && window.game.multiplayer && window.game.multiplayer.connected) {
+          console.log('Temp socket: multiplayer already connected, ignoring temp playerCountUpdate', count);
+          return;
         }
+        lastKnownCount = count;
+        updatePlayerCountDisplay(count);
       });
 
       // Store the socket so we can disconnect it later when actual game starts
