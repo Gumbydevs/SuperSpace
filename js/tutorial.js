@@ -1201,13 +1201,15 @@ export class TutorialSystem {
         }, 400);
       }
       
-      // Move to next step
+      // Move to next step. Capture completedIndex so analytics refers to the step that finished,
+      // not the new currentStep after advancing (avoids off-by-one in reports).
+      const completedIndex = this.currentStep;
       setTimeout(() => {
         this.isActive = wasActive; // Restore active state
         this.nextStep();
-        // Analytics: step completed
+        // Analytics: step completed (report the completedIndex)
         try {
-          const payload = { stepId: step.id, action: actionType, index: this.currentStep };
+          const payload = { stepId: step.id, action: actionType, index: completedIndex };
           if (window.analytics && typeof window.analytics.track === 'function') {
             window.analytics.track('tutorial_step_completed', payload);
           } else if (window.gameAnalytics && typeof window.gameAnalytics.trackEvent === 'function') {
@@ -1216,13 +1218,13 @@ export class TutorialSystem {
         } catch (e) {
           console.warn('Tutorial: failed to send analytics for tutorial_step_completed', e);
         }
-        // Record duration for the completed step
+        // Record duration for the completed step (use completedIndex)
         try {
           const now = Date.now();
           if (this._currentStepStartTs != null) {
             const durMs = now - this._currentStepStartTs;
             this._stepDurations[step.id] = (durMs / 1000);
-            const durPayload = { stepId: step.id, index: this.currentStep, durationSeconds: Math.round(durMs / 1000) };
+            const durPayload = { stepId: step.id, index: completedIndex, durationSeconds: Math.round(durMs / 1000) };
             try {
               if (window.analytics && typeof window.analytics.track === 'function') {
                 window.analytics.track('tutorial_step_duration', durPayload);
