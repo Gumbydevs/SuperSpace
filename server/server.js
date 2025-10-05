@@ -683,80 +683,88 @@ async function generatePlayerActivityData(stats, range = '24h') {
     return activityData;
   }
 
-  // For multi-day ranges, build daily series
+  // For multi-day ranges we want hour-of-day aggregation (peak players by hour)
+  // Produce 24 buckets (0..23) where each bucket is the peak unique players seen
+  // in that hour across the selected days. This shows peak playing times-of-day.
   let days = 0;
   if (range === '7d') days = 7;
   else if (range === '30d') days = 30;
 
+  // Build list of date keys for the requested window
+  let dateKeys = [];
   if (range === 'all') {
-    // collect all available days from either file-based analytics or database sessions
+    // For 'all' we will consider all available days
     if (dbAnalytics && dbAnalytics.initialized) {
-      // fetch all session data and aggregate by EST date
-      const rows = await dbAnalytics.getSessionData('1970-01-01', new Date().toISOString().split('T')[0]);
-      const map = {};
-      rows.forEach(r => {
-        const d = new Date(r.start_time || r.start_time); // expect standard column
-        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-        const key = est.toISOString().split('T')[0];
-        map[key] = map[key] || new Set();
-        if (r.player_id) map[key].add(r.player_id);
-      });
-      const keys = Object.keys(map).sort();
-      for (const k of keys) {
-        activityData.push({ timestamp: k + 'T00:00:00.000Z', count: map[k].size });
-      }
-      return activityData;
+      // we'll fetch sessions for all time (DB helper handles bounds)
+      // leave dateKeys empty to signal full-scan
+      dateKeys = null;
     } else {
-      // file-based: iterate analytics.dailyStats
-      const keys = Array.from(analytics.dailyStats.keys()).sort();
-      for (const k of keys) {
-        const s = analytics.dailyStats.get(k) || {};
-        let count = 0;
-        if (s.uniquePlayers instanceof Set) count = s.uniquePlayers.size;
-        else if (Array.isArray(s.uniquePlayers)) count = s.uniquePlayers.length;
-        else if (typeof s.uniquePlayers === 'number') count = s.uniquePlayers;
-        activityData.push({ timestamp: k + 'T00:00:00.000Z', count });
-      }
-      return activityData;
+      dateKeys = Array.from(analytics.dailyStats.keys()).sort();
+    }
+  } else {
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const key = est.toISOString().split('T')[0];
+      dateKeys.push(key);
     }
   }
 
-  // range is 7d or 30d
-  const n = days;
-  const dates = [];
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    // use EST date string
-    const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const key = est.toISOString().split('T')[0];
-    dates.push(key);
-  }
+  // Helper: initialize per-day per-hour sets and compute peak per hour
+  const hourPeak = Array.from({ length: 24 }, () => 0);
 
   if (dbAnalytics && dbAnalytics.initialized) {
-    const start = dates[0];
-    const end = dates[dates.length - 1];
+    // For DB-backed analytics, fetch sessions in the date window
+    const start = dateKeys && dateKeys.length ? dateKeys[0] : '1970-01-01';
+    const end = dateKeys && dateKeys.length ? dateKeys[dateKeys.length - 1] : new Date().toISOString().split('T')[0];
     const rows = await dbAnalytics.getSessionData(start, end);
-    const map = {};
-    dates.forEach(k => (map[k] = new Set()));
+    // Map day -> hour -> Set(playerId)
+    const perDayHour = {};
     rows.forEach(r => {
       const d = new Date(r.start_time || r.start_time);
       const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      const key = est.toISOString().split('T')[0];
-      if (map[key] && r.player_id) map[key].add(r.player_id);
+      const day = est.toISOString().split('T')[0];
+      const hr = est.getHours();
+      perDayHour[day] = perDayHour[day] || {};
+      perDayHour[day][hr] = perDayHour[day][hr] || new Set();
+      if (r.player_id) perDayHour[day][hr].add(r.player_id);
     });
-    for (const k of dates) activityData.push({ timestamp: k + 'T00:00:00.000Z', count: map[k].size });
-    return activityData;
+
+    // If dateKeys is null (all), use all days from perDayHour keys
+    const keysToConsider = dateKeys === null ? Object.keys(perDayHour).sort() : dateKeys;
+    for (const day of keysToConsider) {
+      const hours = perDayHour[day] || {};
+      for (let hr = 0; hr < 24; hr++) {
+        const cnt = hours[hr] ? hours[hr].size : 0;
+        if (cnt > hourPeak[hr]) hourPeak[hr] = cnt;
+      }
+    }
+  } else {
+    // File-based analytics: inspect analytics.dailyStats entries
+    const keys = dateKeys || Array.from(analytics.dailyStats.keys()).sort();
+    for (const day of keys) {
+      const s = analytics.dailyStats.get(day) || {};
+      // Prefer hourlyUniquePlayers, fall back to hourlyActivity
+      const arr = (s.hourlyUniquePlayers && Array.isArray(s.hourlyUniquePlayers))
+        ? s.hourlyUniquePlayers
+        : (s.hourlyActivity && Array.isArray(s.hourlyActivity)) ? s.hourlyActivity : null;
+      if (!arr) continue;
+      for (let hr = 0; hr < 24; hr++) {
+        const cnt = arr[hr] || 0;
+        if (cnt > hourPeak[hr]) hourPeak[hr] = cnt;
+      }
+    }
   }
 
-  // file-based aggregation
-  for (const k of dates) {
-    const s = analytics.dailyStats.get(k) || {};
-    let count = 0;
-    if (s.uniquePlayers instanceof Set) count = s.uniquePlayers.size;
-    else if (Array.isArray(s.uniquePlayers)) count = s.uniquePlayers.length;
-    else if (typeof s.uniquePlayers === 'number') count = s.uniquePlayers;
-    activityData.push({ timestamp: k + 'T00:00:00.000Z', count });
+  // Build activityData as 24 hourly points (use today's date for timestamps so labels show times)
+  const todayIso = new Date().toISOString().split('T')[0];
+  for (let hr = 0; hr < 24; hr++) {
+    // create ISO timestamp at that hour (UTC) using today's date and hour
+    const time = new Date();
+    time.setUTCHours(hr, 0, 0, 0);
+    activityData.push({ timestamp: time.toISOString(), count: hourPeak[hr] });
   }
+
   return activityData;
 }
 
