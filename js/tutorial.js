@@ -764,6 +764,26 @@ export class TutorialSystem {
     }
 
     if (!this.hasPlayerMoved) {
+      // Desktop fallback: if the game's input handler reports movement keys
+      // being pressed, treat that as movement. This ensures keyboard users
+      // advance the tutorial even if keydown events are missed by other
+      // listeners or focus changes.
+      try {
+        const inputHandler = this.game && this.game.input;
+        if (inputHandler && Array.isArray(inputHandler.keys) && inputHandler.keys.length) {
+          const keyList = inputHandler.keys;
+          const movementKeys = ['KeyW', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowRight'];
+          for (let i = 0; i < movementKeys.length; i++) {
+            if (keyList.includes(movementKeys[i])) {
+              this.hasPlayerMoved = true;
+              this.checkStepProgress('movement');
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore input read errors
+      }
       // Also consider mobile joystick input as movement: if the game's input system
       // reports a touch joystick or thrust amount, treat that as movement so the
       // mobile tutorial doesn't get stuck waiting for keyboard input.
@@ -841,7 +861,16 @@ export class TutorialSystem {
     }
     
     // Check if stop/brake is currently being held (keyboard OR mobile button)
-  const isStopPressed = (this.game.input.keys && (this.game.input.keys.includes('KeyS') || this.game.input.keys.includes('ArrowDown'))) || this._mobileStopPressed;
+  // Safely read input keys (guard against game/input not being initialized)
+  let inputKeys = [];
+  try {
+    if (this.game && this.game.input && Array.isArray(this.game.input.keys)) {
+      inputKeys = this.game.input.keys;
+    }
+  } catch (e) {
+    inputKeys = [];
+  }
+  const isStopPressed = (inputKeys.includes('KeyS') || inputKeys.includes('ArrowDown')) || this._mobileStopPressed;
     
     if (isStopPressed) {
       if (!this.stopHoldStart) {
@@ -955,8 +984,16 @@ export class TutorialSystem {
     }
     
     // Check if fire button is currently being pressed (keyboard OR mobile button)
-    const isFirePressed = this.game.input.keys.includes('Space');
-    
+    let inputKeys = [];
+    try {
+      if (this.game && this.game.input && Array.isArray(this.game.input.keys)) {
+        inputKeys = this.game.input.keys;
+      }
+    } catch (e) {
+      inputKeys = [];
+    }
+    const isFirePressed = inputKeys.includes('Space');
+
     if (isFirePressed && this.canPlayerShoot()) {
       // console.log('🎯 Tutorial: Fire detected (keyboard or mobile) - advancing!'); // Production: disabled
       this.checkStepProgress('shoot');

@@ -65,18 +65,12 @@
   }
 
   function decideAndMaybeShow() {
-    // Explicit overrides take precedence
+    // Only show maintenance modal if explicitly requested by the host or
+    // during a controlled maintenance workflow. Do NOT perform the old
+    // automatic reachability check (it was causing stale/removed notices to appear).
     if (typeof window.SUPERSPACE_MAINTENANCE !== 'undefined') {
       if (window.SUPERSPACE_MAINTENANCE && !isUserSuppressed()) showModal();
-      return;
     }
-
-    if (isUserSuppressed()) return;
-
-    // No explicit override: check server reachability
-    checkServerReachable(3500).then(function (ok) {
-      if (!ok) showModal();
-    });
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {

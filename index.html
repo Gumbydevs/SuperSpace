@@ -37,10 +37,8 @@
     <script>
       // Connect to the server to get player count as soon as the page loads
       window.addEventListener('load', function () {
-        const serverUrl =
-          window.location.hostname === 'localhost'
-            ? 'http://localhost:3000'
-            : 'https://superspace-server.onrender.com';
+        const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const serverUrl = isLocalHost ? 'http://localhost:3000' : 'https://superspace-server.onrender.com';
 
         // Connect to server
         const socket = io(serverUrl, {
@@ -56,18 +54,22 @@
           socket.emit('getPlayerCount');
         });
 
-        // Listen for player count updates
+        // Listen for player count updates (guard element access to avoid crashes
+        // when page body is replaced by other scripts like the inactivity logout)
         socket.on('playerCountUpdate', function (count) {
-          document.getElementById('player-count').textContent = count;
+          const el = document.getElementById('player-count');
+          if (el) el.textContent = count;
         });
 
         // Handle disconnect/errors gracefully
         socket.on('disconnect', function () {
-          document.getElementById('player-count').textContent = '?';
+          const el = document.getElementById('player-count');
+          if (el) el.textContent = '?';
         });
 
         socket.on('connect_error', function () {
-          document.getElementById('player-count').textContent = '?';
+          const el = document.getElementById('player-count');
+          if (el) el.textContent = '?';
         });
       });
     </script>
@@ -429,6 +431,9 @@
         const agreeBtn = document.getElementById('disclaimer-agree-btn');
         const dontShowCheckbox = document.getElementById('dont-show-again');
 
+        // If any required element is missing (page modified or partial load), bail out
+        if (!disclaimerPopup || !agreeBtn || !dontShowCheckbox) return;
+
         // Check if user has already agreed (permanently or for this session)
         // Only treat the string 'true' (lowercase) as agreed
         const agreedLocal = localStorage.getItem(
@@ -466,6 +471,277 @@
           '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
         throw new Error('Blocked by admin kick');
       }
+    </script>
+    <script>
+      // Early check: show a message if the user was previously logged out due to inactivity
+      (function () {
+        try {
+          if (sessionStorage.getItem('loggedOutDueToInactivity') === '1') {
+            document.body.innerHTML =
+              '<div style="color:#f44;font-size:1.6em;text-align:center;margin-top:20vh;">You were logged out due to inactivity.<br><br><button id="_ssi_ok_btn" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
+            // Remove the flag when user acknowledges so normal flow resumes
+            document.addEventListener('click', function onClick(e) {
+              if (e.target && e.target.id === '_ssi_ok_btn') {
+                sessionStorage.removeItem('loggedOutDueToInactivity');
+                location.reload();
+              }
+            });
+            // Prevent further scripts from running on this page load
+            throw new Error('Logged out due to inactivity');
+          }
+        } catch (e) {
+          // Intentionally swallow errors to avoid breaking load if sessionStorage is inaccessible
+        }
+      })();
+    </script>
+
+    <script>
+      // Inactivity manager (client-side)
+      // - Shows a warning after inactivity
+      // - Logs out by setting sessionStorage flag and reloading
+      (function () {
+  const DEFAULT_INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
+    const WARN_BEFORE_MS = 60 * 1000; // show warning 60s before logout
+    // Ignore very small values saved accidentally in localStorage from tests.
+    const MIN_LOCAL_INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
+
+        // read configured timeout and fall back to default
+        // Behavior note: by default we do NOT honor a previous session's stored
+        // inactivity timeout. This avoids accidental short timers persisting
+        // across page loads. To explicitly persist a custom timeout across
+        // sessions set localStorage 'superspace-inactivity-persist' === '1'.
+        // For development testing you can still set window.SUPERSPACE_INACTIVITY_MS
+        // in the console (only for the current session).
+        function readConfiguredTimeout() {
+          const fromWindow = (typeof window.SUPERSPACE_INACTIVITY_MS === 'number' && window.SUPERSPACE_INACTIVITY_MS > 0)
+            ? window.SUPERSPACE_INACTIVITY_MS
+            : null;
+          if (fromWindow) return fromWindow;
+          // Only read localStorage if user explicitly opted into persistence
+          try {
+            if (localStorage.getItem('superspace-inactivity-persist') !== '1') {
+              return DEFAULT_INACTIVITY_MS;
+            }
+          } catch (e) {
+            return DEFAULT_INACTIVITY_MS;
+          }
+
+          const fromStorage = parseInt(localStorage.getItem('superspace-inactivity-ms'), 10);
+          if (Number.isFinite(fromStorage) && fromStorage > 0) {
+            if (fromStorage < MIN_LOCAL_INACTIVITY_MS) {
+              // Remove tiny leftover test values so they don't affect new sessions.
+              try { localStorage.removeItem('superspace-inactivity-ms'); } catch (e) {}
+              if (window.DEBUG_LOGS) console.warn('superspace-inactivity-ms in localStorage was too small (' + fromStorage + 'ms); removed and using default ' + DEFAULT_INACTIVITY_MS + 'ms. To persist a custom timeout across sessions set localStorage.superspace-inactivity-persist = "1" and superspace-inactivity-ms.');
+              return DEFAULT_INACTIVITY_MS;
+            }
+            return fromStorage;
+          }
+          return DEFAULT_INACTIVITY_MS;
+        }
+
+        // Don't run in environments where document/body isn't available yet
+        if (!document || !document.body || typeof sessionStorage === 'undefined') return;
+
+  // Mutable value so runtime changes take effect
+  let inactivityMs = readConfiguredTimeout();
+
+  // Manager state
+  let enabled = false; // only start counting when explicitly enabled (e.g., after player joins)
+
+  let idleTimer = null;
+        let warnTimer = null;
+        let countdownInterval = null;
+  let lastReset = 0; // simple debounce timestamp
+  let lastActivity = Date.now(); // timestamp of last user activity
+        const RESET_DEBOUNCE_MS = 500; // ignore resets more frequent than this
+
+        // Create warning overlay (hidden by default)
+        const overlay = document.createElement('div');
+        overlay.id = 'superspace-inactivity-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.display = 'none';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.background = 'rgba(0,0,0,0.75)';
+        overlay.style.zIndex = '99999';
+        overlay.innerHTML = `
+          <div style="max-width:520px;padding:20px;border-radius:8px;background:#111;color:#fff;text-align:center;font-family:inherit;">
+            <div id="ssi-message" style="font-size:1.1em;margin-bottom:12px;">You've been inactive and will be logged out soon.</div>
+            <div id="ssi-countdown" style="font-size:1.4em;font-weight:600;margin-bottom:16px;"></div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+              <button id="ssi-stay-btn" style="padding:8px 14px;border-radius:6px;border:0;cursor:pointer;background:#2bff8a;color:#000;font-weight:700;">Stay Logged In</button>
+              <button id="ssi-logout-btn" style="padding:8px 14px;border-radius:6px;border:0;cursor:pointer;background:#ff6b6b;color:#fff;font-weight:700;">Log Out Now</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const showWarning = () => {
+          try {
+            // Re-read configured timeout in case it changed while idle
+            inactivityMs = readConfiguredTimeout();
+            // If the configured inactivity is shorter than the warning window,
+            // use the smaller value so the countdown reflects the true remaining time.
+            const logoutDelay = Math.min(WARN_BEFORE_MS, Math.max(0, inactivityMs));
+            const logoutAt = Date.now() + logoutDelay;
+            overlay.style.display = 'flex';
+            const countdownEl = document.getElementById('ssi-countdown');
+            if (countdownInterval) clearInterval(countdownInterval);
+            // update countdown once per second (low cost)
+            countdownInterval = setInterval(() => {
+              const sec = Math.max(0, Math.ceil((logoutAt - Date.now()) / 1000));
+              if (countdownEl) countdownEl.textContent = `${sec}s`;
+              if (sec <= 0) {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+
+            // After the computed logoutDelay, perform logout (set flag then reload)
+            warnTimer = setTimeout(() => {
+              try {
+                sessionStorage.setItem('loggedOutDueToInactivity', '1');
+              } catch (e) {
+                // ignore
+              }
+              location.reload();
+            }, logoutDelay);
+          } catch (e) {
+            // ignore overlay errors
+          }
+        };
+
+        const hideWarning = () => {
+          overlay.style.display = 'none';
+          if (warnTimer) {
+            clearTimeout(warnTimer);
+            warnTimer = null;
+          }
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+          }
+        };
+
+        const resetIdleTimer = (force) => {
+          if (!enabled && !force) return; // ignore resets until enabled
+          const now = Date.now();
+          // Debounce to avoid spamming timer resets from frequent events
+          if (!force && now - lastReset < RESET_DEBOUNCE_MS) return;
+          lastReset = now;
+
+          // If warning is visible, hide it and cancel pending logout
+          hideWarning();
+          if (idleTimer) {
+            clearTimeout(idleTimer);
+          }
+          // Ensure we use latest configured timeout (supports runtime changes)
+          inactivityMs = readConfiguredTimeout();
+          // If the configured timeout is shorter than the warning window,
+          // schedule the warning after the full timeout. Otherwise schedule
+          // it WARN_BEFORE_MS before the timeout.
+          const delayToWarning = inactivityMs > WARN_BEFORE_MS ? (inactivityMs - WARN_BEFORE_MS) : inactivityMs;
+          if (window.DEBUG_LOGS) console.debug('Inactivity: scheduling warning in', delayToWarning, 'ms (inactivityMs=', inactivityMs, 'WARN_BEFORE_MS=', WARN_BEFORE_MS, ')');
+          idleTimer = setTimeout(() => {
+            showWarning();
+          }, Math.max(0, delayToWarning));
+        };
+
+        // Activity events
+        const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel', 'click'];
+        activityEvents.forEach((ev) => {
+          window.addEventListener(ev, () => {
+            try {
+              // Always update last activity timestamp so enabling the manager uses
+              // a recent activity time as baseline and doesn't immediately fire.
+              lastActivity = Date.now();
+              // If the manager isn't enabled or the warning overlay is visible, ignore starting reset
+              if (!enabled) return;
+              if (overlay && overlay.style && overlay.style.display === 'flex') return;
+              resetIdleTimer();
+            } catch (e) {
+              // ignore
+            }
+          }, { passive: true });
+        });
+
+        // Buttons
+        document.addEventListener('click', function (e) {
+          if (!e.target) return;
+          if (e.target.id === 'ssi-stay-btn') {
+            resetIdleTimer(true);
+          } else if (e.target.id === 'ssi-logout-btn') {
+            try {
+              sessionStorage.setItem('loggedOutDueToInactivity', '1');
+            } catch (e) {}
+            location.reload();
+          }
+        });
+
+  // Do NOT start the idle timer yet. The manager must be enabled when the player
+  // actually enters the game/server. Call window.superspaceInactivity.enable() to start.
+
+        // Expose a safe API to reset the idle timer and change timeout at runtime
+        // API: control enabling/disabling and timeout at runtime
+        function enableInactivity() {
+          if (enabled) return;
+          enabled = true;
+          // Treat the enable action as recent activity and start timers fresh.
+          lastActivity = Date.now();
+          // Use the central reset path so debounce, configured timeout reads,
+          // and warning cancellation behavior are consistent.
+          resetIdleTimer(true);
+          if (window.DEBUG_LOGS) console.debug('Inactivity enabled via enableInactivity(), timers reset.');
+        }
+
+        function disableInactivity() {
+          enabled = false;
+          hideWarning();
+          if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+        }
+
+        if (!window.superspaceInactivity) {
+          window.superspaceInactivity = {
+            reset: resetIdleTimer,
+            enable: enableInactivity,
+            disable: disableInactivity,
+            setTimeoutMs(ms) {
+              if (!Number.isFinite(ms) || ms <= 0) return false;
+              try { localStorage.setItem('superspace-inactivity-ms', String(ms)); } catch (e) {}
+              inactivityMs = ms;
+              if (enabled) resetIdleTimer(true);
+              return true;
+            },
+            getTimeoutMs() { return inactivityMs; }
+          };
+        } else {
+          // augment existing API if present
+          window.superspaceInactivity.reset = resetIdleTimer;
+          window.superspaceInactivity.enable = enableInactivity;
+          window.superspaceInactivity.disable = disableInactivity;
+          window.superspaceInactivity.setTimeoutMs = function (ms) {
+            if (!Number.isFinite(ms) || ms <= 0) return false;
+            try { localStorage.setItem('superspace-inactivity-ms', String(ms)); } catch (e) {}
+            inactivityMs = ms;
+            if (enabled) resetIdleTimer(true);
+            return true;
+          };
+          window.superspaceInactivity.getTimeoutMs = function () { return inactivityMs; };
+        }
+
+        // Automatically enable inactivity when player clicks the main play button
+        try {
+          const playBtn = document.getElementById('play-btn');
+          if (playBtn) {
+            playBtn.addEventListener('click', () => {
+              try { window.superspaceInactivity && window.superspaceInactivity.enable(); } catch (e) {}
+            });
+          }
+        } catch (e) { /* ignore */ }
+      })();
     </script>
     <script>
       // Simple mobile zoom prevention

@@ -276,10 +276,10 @@ class Game {
     });
   } // Connect to the server to get player count without joining the game
   initializePlayerCount() {
-    const serverUrl =
-      window.location.hostname === 'localhost'
-        ? 'http://localhost:3000'
-  : (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const serverUrl = isLocalHost
+      ? 'http://localhost:3000'
+      : (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
 
     console.log('Initializing player count, connecting to:', serverUrl);
 
