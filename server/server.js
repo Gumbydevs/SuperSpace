@@ -194,6 +194,13 @@ app.get('/analytics', async (req, res) => {
   try {
     const logger = require('./logger');
     logger.debug('📊 Analytics endpoint called');
+    // Diagnostics object to help debug DB connectivity and initialization
+    const diagnostics = {
+      databaseEnvPresent: !!process.env.DATABASE_URL,
+      dbAnalyticsInitialized: !!(dbAnalytics && dbAnalytics.initialized),
+      dbPoolReachable: false,
+      dbAnalyticsError: null,
+    };
     
     // Get data from database analytics (persistent) if available, fallback to file analytics
     let stats;
@@ -201,23 +208,25 @@ app.get('/analytics', async (req, res) => {
     
     try {
       if (dbAnalytics && dbAnalytics.initialized) {
-  logger.info('🗄️ Using database analytics');
+        logger.info('🗄️ Using database analytics');
         // Use persistent database analytics
         stats = await dbAnalytics.getStats();
         dataSource = 'database';
+        diagnostics.dbAnalyticsInitialized = true;
       } else {
-  logger.info('📁 Using file analytics');
+        logger.info('📁 Using file analytics');
         // Fallback to file analytics
         stats = analytics.getCurrentStats();
         dataSource = 'file';
       }
-  logger.debug('✅ Stats loaded successfully, source:', dataSource);
+      logger.debug('✅ Stats loaded successfully, source:', dataSource);
     } catch (statsError) {
       console.error('❌ Error loading stats:', statsError);
+      diagnostics.dbAnalyticsError = (statsError && statsError.message) ? statsError.message : String(statsError);
       // Fallback to file analytics if database fails
       stats = analytics.getCurrentStats();
       dataSource = 'file-fallback';
-  logger.warn('⚠️ Fell back to file analytics due to error');
+      logger.warn('⚠️ Fell back to file analytics due to error');
     }
     
     // --- Challenge completions aggregation ---
@@ -419,6 +428,7 @@ app.get('/analytics', async (req, res) => {
       dataSource,
       persistentAnalytics: analytics.isPersistent(),
       stats,
+      diagnostics,
       playerActivity,
       range,
       ...dashboardData,
