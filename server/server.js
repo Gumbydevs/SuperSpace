@@ -675,15 +675,15 @@ function generatePlayerActivityData(stats) {
   const activityData = [];
   const now = new Date();
 
-  // Get today's hourly activity from analytics if available
-  if (stats.today && stats.today.hourlyActivity) {
-    const hourlyActivity = stats.today.hourlyActivity;
+  // Get today's hourly activity from analytics if available; prefer unique players per hour
+  if (stats.today && (stats.today.hourlyUniquePlayers || stats.today.hourlyActivity)) {
+    const hourlyActivity = stats.today.hourlyUniquePlayers || stats.today.hourlyActivity;
 
     // Generate last 24 hours of data points (every hour)
     for (let i = 23; i >= 0; i--) {
       const time = new Date(now.getTime() - i * 60 * 60 * 1000);
       const hour = time.getHours();
-      const count = hourlyActivity[hour] || 0;
+  const count = hourlyActivity[hour] || 0;
 
       activityData.push({
         timestamp: time.toISOString(),

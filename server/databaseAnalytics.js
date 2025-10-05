@@ -267,18 +267,24 @@ class DatabaseAnalytics {
       }
     });
 
-    // Build hourly activity array (counts per hour in EST) so dashboard can plot last-24h
+  // Build hourly activity array (counts per hour in EST) so dashboard can plot last-24h
     try {
-      const hourlyActivity = Array(24).fill(0);
+  const hourlyActivity = Array(24).fill(0);
+  const hourlyUnique = Array(24).fill(0);
+  const hourlyUniqueSets = Array.from({ length: 24 }, () => new Set());
       // Prefer session start times when available (sessions are a good proxy for active players)
       if (Array.isArray(sessions) && sessions.length > 0) {
         sessions.forEach(s => {
           const ts = s.start_time || s.startTime || s.started_at || s.startedAt || s.start || s.timestamp;
           if (!ts) return;
+          const playerId = s.player_id || s.playerId || s.player || s.username || null;
           const d = new Date(ts);
           const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
           const hour = est.getHours();
-          if (Number.isInteger(hour) && hour >= 0 && hour < 24) hourlyActivity[hour]++;
+          if (Number.isInteger(hour) && hour >= 0 && hour < 24) {
+            hourlyActivity[hour]++;
+            if (playerId) hourlyUniqueSets[hour].add(playerId);
+          }
         });
       } else {
         // Fallback to events if no session records are available
@@ -288,13 +294,23 @@ class DatabaseAnalytics {
           const d = new Date(ts);
           const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
           const hour = est.getHours();
-          if (Number.isInteger(hour) && hour >= 0 && hour < 24) hourlyActivity[hour]++;
+          if (Number.isInteger(hour) && hour >= 0 && hour < 24) {
+            hourlyActivity[hour]++;
+            const playerId = event.player_id || event.playerId || event.player || null;
+            if (playerId) hourlyUniqueSets[hour].add(playerId);
+          }
         });
       }
+      // Convert sets to counts for hourlyUnique
+      for (let h = 0; h < 24; h++) {
+        hourlyUnique[h] = hourlyUniqueSets[h].size;
+      }
       stats.hourlyActivity = hourlyActivity;
+      stats.hourlyUniquePlayers = hourlyUnique;
     } catch (e) {
       // defensive: if something goes wrong, expose zeros
       stats.hourlyActivity = Array(24).fill(0);
+      stats.hourlyUniquePlayers = Array(24).fill(0);
     }
 
     // Calculate averages
