@@ -373,8 +373,9 @@ export class InputHandler {
             
             #fire-button {
                 /* Positioning delegated to external stylesheet via CSS variables */
-                bottom: var(--touch-gap, 30px);
-                right: var(--touch-gap, 30px);
+        /* nudge down 5px and left 10px from default */
+        bottom: calc(var(--touch-gap, 30px) + 5px);
+        right: calc(var(--touch-gap, 30px) + 10px);
                 width: 80px;
                 height: 80px;
                 background-color: rgba(255, 100, 100, 0.3);
@@ -549,20 +550,20 @@ export class InputHandler {
                 }
                 
                 #brake-button {
-                    width: 45px;
-                    height: 45px;
-                    bottom: 120px;
+          width: 50px;
+          height: 50px;
+          bottom: 125px;
                     left: 15px;
                     font-size: 16px;
                 }
                 
-                #brake-button {
-                    width: 40px;
-                    height: 40px;
-                    bottom: 110px;
-                    left: 15px;
-                    font-size: 16px;
-                }
+        #brake-button {
+          width: 50px;
+          height: 50px;
+          bottom: 125px;
+          left: 15px;
+          font-size: 16px;
+        }
             }
         `;
 
@@ -589,16 +590,50 @@ export class InputHandler {
           parseInt(rootStyles.getPropertyValue('--touch-gap-large')) || 100;
 
         // Fire button -> bottom/right = gap
+        // We'll align fire and deflector horizontally to the afterburner center
         fireButton.style.bottom = gap + 'px';
-        fireButton.style.right = gap + 'px';
 
         // Weapon button -> bottom = gap, right = gap + gapLarge
-        weaponButton.style.bottom = gap + 'px';
-        weaponButton.style.right = gap + gapLarge + 'px';
+  // place weapon between afterburner and deflector (mid-stack)
+  // adjust weapon position slightly: move down 4px and right 4px from previous
+  weaponButton.style.bottom = (gap + gapLarge + 40) + 'px';
+  weaponButton.style.right = (gap + gapLarge - 21) + 'px';
 
         // Afterburner -> bottom = gap + gapLarge, right = gap
         afterburnerButton.style.bottom = gap + gapLarge + 'px';
         afterburnerButton.style.right = gap + 'px';
+
+        // Align deflector/shield above afterburner (vertical stack) and align fire horizontally
+  // push deflector down an extra 18px total and right 4px for better spacing
+  deflectorButton.style.bottom = (gap + gapLarge * 2 - 18) + 'px';
+  deflectorButton.style.right = (gap - 4) + 'px';
+
+        // Brake/stop button: nudge up 10px and increase size (ensure runtime sync)
+        try {
+          brakeButton.style.bottom = '125px';
+          brakeButton.style.width = '50px';
+          brakeButton.style.height = '50px';
+        } catch (err) {
+          // ignore if element not available
+        }
+
+        // Compute center alignment: make fire button horizontally center over afterburner,
+        // then apply the requested visual nudge (down 5px, left 10px).
+        try {
+          const afterRect = afterburnerButton.getBoundingClientRect();
+          const fireRect = fireButton.getBoundingClientRect();
+          const centerX = afterRect.left + afterRect.width / 2;
+          const desiredLeft = centerX - fireRect.width / 2;
+          // compute right value relative to viewport and add left nudge (-10px)
+          const rightValue = Math.max(8, window.innerWidth - desiredLeft - fireRect.width + 10);
+          fireButton.style.right = rightValue + 'px';
+          // apply down nudge
+          fireButton.style.bottom = (gap + 5) + 'px';
+        } catch (err) {
+          // fallback: apply simple gap-based nudge
+          fireButton.style.right = (gap + 10) + 'px';
+          fireButton.style.bottom = (gap + 5) + 'px';
+        }
       } catch (err) {
         // ignore in older browsers
       }

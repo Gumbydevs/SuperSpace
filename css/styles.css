@@ -1529,7 +1529,8 @@ input[type='range'] {
 
   /* Weapon switch button */
   #weapon-button {
-    bottom: var(--touch-gap);
+    /* move weapon button up by 20px to reduce overlap with other HUD elements */
+    bottom: calc(var(--touch-gap) + 20px);
     right: calc(var(--touch-gap) + var(--touch-gap-large));
     width: 60px;
     height: 60px;
@@ -1786,18 +1787,22 @@ input[type='range'] {
   }
 
   #fire-button {
-    width: 80px;
-    height: 80px;
-    bottom: var(--touch-gap);
-    right: var(--touch-gap);
+                width: 65px;
+                height: 65px;
+                /* nudge down 5px */
+                bottom: 25px;
+                /* move left 10px by increasing the right offset */
+                right: calc(var(--touch-gap, 20px) - 20px);
+                font-size: 20px;
     font-size: 20px;
   }
 
   #weapon-button {
     width: 60px;
     height: 60px;
-    bottom: var(--touch-gap);
-    right: calc(var(--touch-gap) + var(--touch-gap-large));
+   /* adjust weapon position slightly: move down 4px and right 4px from previous */
+   bottom: calc(var(--touch-gap) + var(--touch-gap-large) + 40px);
+   right: calc(var(--touch-gap) + var(--touch-gap-large) - 21px);
     font-size: 18px;
   }
 
@@ -1805,7 +1810,19 @@ input[type='range'] {
     width: 60px;
     height: 60px;
     bottom: calc(var(--touch-gap) + var(--touch-gap-large));
+    /* afterburner as center reference */
     right: var(--touch-gap);
+    font-size: 18px;
+  }
+
+  /* Align deflector/shield with the afterburner and fire button horizontally */
+  #deflector-button {
+    /* move slightly right and down to improve spacing */
+    right: calc(var(--touch-gap) - 4px); /* 4px more to the right */
+    width: 60px;
+    height: 60px;
+    /* Nudge down additional 8px (total -18px) for better spacing */
+    bottom: calc(var(--touch-gap) + (var(--touch-gap-large) * 2) - 18px);
     font-size: 18px;
   }
 
@@ -1817,9 +1834,10 @@ input[type='range'] {
   }
 
   #brake-button {
-    width: 40px;
-    height: 40px;
-    bottom: 110px;
+    /* nudge up 10px and increase radius (size) by 10px */
+    width: 50px;
+    height: 50px;
+    bottom: 125px; /* moved up by additional 25px */
     left: 15px;
     font-size: 16px;
   }
