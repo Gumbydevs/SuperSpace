@@ -355,75 +355,61 @@ app.get('/analytics', async (req, res) => {
     }
 
     const dashboardData = {
-    // Challenge completions and achievers
-    challengeStats,
-    // Basic metrics that dashboard expects - use real player count
-    activePlayers: actualActivePlayers,
-    peakPlayers: adjustedPeak,
-    totalSessions: stats.today?.totalSessions || 0,
-    avgSessionTime: Math.floor((stats.today?.averageSessionDuration || 0) / 1000),
-    connectedPlayers, // <-- new field: array of {name, duration, socketId}
-    // Expose today and allTime stats for frontend (with adjusted peak/current)
-    today: todayPayload,
-    allTime: stats.allTime || {},
+      // Challenge completions and achievers
+      challengeStats,
+      // Basic metrics that dashboard expects - use real player count
+      activePlayers: actualActivePlayers,
+      peakPlayers: adjustedPeak,
+      totalSessions: stats.today?.totalSessions || 0,
+      avgSessionTime: Math.floor((stats.today?.averageSessionDuration || 0) / 1000),
+      connectedPlayers, // <-- new field: array of {name, duration, socketId}
+      // Expose today and allTime stats for frontend (with adjusted peak/current)
+      today: todayPayload,
+      allTime: stats.allTime || {},
 
-    // Game statistics - map to actual field names
-    killsToday: stats.today?.totalKills || 0,
-    deathsToday: stats.today?.totalDeaths || 0,
-    shotsFired: stats.today?.totalShots || 0,
-    powerupsCollected: stats.today?.powerupsCollected || 0,
+      // Game statistics - map to actual field names
+      killsToday: stats.today?.totalKills || 0,
+      deathsToday: stats.today?.totalDeaths || 0,
+      shotsFired: stats.today?.totalShots || 0,
+      powerupsCollected: stats.today?.powerupsCollected || 0,
 
-    // Premium statistics
-    premiumPlayers: stats.today?.premiumPlayers || 0,
-    storeVisits: stats.today?.storeVisits || 0,
-    purchases: stats.today?.totalPurchases || 0,
-    revenue: stats.today?.totalSpent || 0, // Real money revenue
-    gemsSpent: stats.today?.gemsSpent || 0, // Gems spent on items
-
-  // Chart data - pass today's stats so hourlyActivity is available for last-24h chart
-  playerActivity: generatePlayerActivityData({ today: stats.today, activeSessions: actualActivePlayers }),
-    gameEvents: {
-      kills: stats.today?.totalKills || 0,
-      deaths: stats.today?.totalDeaths || 0,
-      shots: stats.today?.totalShots || 0,
-      powerups: stats.today?.powerupsCollected || 0,
+      // Premium statistics
+      premiumPlayers: stats.today?.premiumPlayers || 0,
+      storeVisits: stats.today?.storeVisits || 0,
       purchases: stats.today?.totalPurchases || 0,
-    },
+      revenue: stats.today?.totalSpent || 0, // Real money revenue
+      gemsSpent: stats.today?.gemsSpent || 0, // Gems spent on items
 
-    // Leaderboard for dashboard
-    leaderboard,
+      // Chart-related placeholder: playerActivity will be computed below asynchronously
+      gameEvents: {
+        kills: stats.today?.totalKills || 0,
+        deaths: stats.today?.totalDeaths || 0,
+        shots: stats.today?.totalShots || 0,
+        powerups: stats.today?.powerupsCollected || 0,
+        purchases: stats.today?.totalPurchases || 0,
+      },
 
-    // Recent events for live log
-    recentEvents: stats.recentEvents || [],
+      // Leaderboard for dashboard
+      leaderboard,
+    };
 
-    // Debug info
-    debug: {
-      analyticsActiveSessions: stats.activeSessions || 0,
-      gameStateActivePlayers: actualActivePlayers,
-      playerNames: Object.values(gameState.players).map((p) => p.name),
-    },
-    // Cloud login metrics (exposed for admin dashboard)
-    cloudLogins: stats.today?.cloudLogins || 0,
-    cloudLoginUsers: stats.today?.cloudLoginUsers || [],
+    // Determine requested range and compute player activity series
+    const range = req.query.range || '24h';
+    const playerActivity = await generatePlayerActivityData(stats, range);
 
-    // Data source information for debugging
-    dataSource,
-    persistentAnalytics: !!(dbAnalytics && dbAnalytics.initialized),
-  };
-
-    console.log(
-      `📊 Analytics request - Active players: ${actualActivePlayers}, Analytics sessions: ${stats.activeSessions || 0}, Source: ${dataSource}`,
-    );
-
-    res.json(dashboardData);
-  } catch (error) {
-    console.error('❌ Analytics endpoint error:', error);
-    console.error('❌ Error stack:', error.stack);
-    res.status(500).json({ 
-      error: 'Failed to get analytics',
-      message: error.message,
-      dataSource: 'error'
+    // Respond with dashboard payload plus computed series
+    res.json({
+      ok: true,
+      dataSource,
+      persistentAnalytics: analytics.isPersistent(),
+      stats,
+      playerActivity,
+      range,
+      ...dashboardData,
     });
+  } catch (error) {
+    console.error('Error in /analytics', error);
+    res.status(500).json({ ok: false, error: 'server error' });
   }
 });
 
@@ -671,38 +657,106 @@ app.get('/cloud/users/auth', async (req, res) => {
 });
 
 // Helper function to generate player activity data for charts
-function generatePlayerActivityData(stats) {
+// Async helper to build activity series for different ranges.
+// range: '24h' (hourly last 24), '7d' (daily last 7 days), '30d' (daily last 30 days), 'all' (daily for all available days)
+async function generatePlayerActivityData(stats, range = '24h') {
   const activityData = [];
   const now = new Date();
 
-  // Get today's hourly activity from analytics if available; prefer unique players per hour
-  if (stats.today && (stats.today.hourlyUniquePlayers || stats.today.hourlyActivity)) {
-    const hourlyActivity = stats.today.hourlyUniquePlayers || stats.today.hourlyActivity;
-
-    // Generate last 24 hours of data points (every hour)
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const hour = time.getHours();
-  const count = hourlyActivity[hour] || 0;
-
-      activityData.push({
-        timestamp: time.toISOString(),
-        count: count,
-      });
+  if (range === '24h') {
+    // Hourly series for last 24 hours
+    if (stats.today && (stats.today.hourlyUniquePlayers || stats.today.hourlyActivity)) {
+      const hourlyActivity = stats.today.hourlyUniquePlayers || stats.today.hourlyActivity;
+      for (let i = 23; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+        const hour = time.getHours();
+        const count = hourlyActivity[hour] || 0;
+        activityData.push({ timestamp: time.toISOString(), count });
+      }
+    } else {
+      for (let i = 23; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+        const count = i === 0 ? stats.activeSessions || 0 : 0;
+        activityData.push({ timestamp: time.toISOString(), count });
+      }
     }
-  } else {
-    // Fallback: show current active players for recent hours
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const count = i === 0 ? stats.activeSessions || 0 : 0;
+    return activityData;
+  }
 
-      activityData.push({
-        timestamp: time.toISOString(),
-        count: count,
+  // For multi-day ranges, build daily series
+  let days = 0;
+  if (range === '7d') days = 7;
+  else if (range === '30d') days = 30;
+
+  if (range === 'all') {
+    // collect all available days from either file-based analytics or database sessions
+    if (dbAnalytics && dbAnalytics.initialized) {
+      // fetch all session data and aggregate by EST date
+      const rows = await dbAnalytics.getSessionData('1970-01-01', new Date().toISOString().split('T')[0]);
+      const map = {};
+      rows.forEach(r => {
+        const d = new Date(r.start_time || r.start_time); // expect standard column
+        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const key = est.toISOString().split('T')[0];
+        map[key] = map[key] || new Set();
+        if (r.player_id) map[key].add(r.player_id);
       });
+      const keys = Object.keys(map).sort();
+      for (const k of keys) {
+        activityData.push({ timestamp: k + 'T00:00:00.000Z', count: map[k].size });
+      }
+      return activityData;
+    } else {
+      // file-based: iterate analytics.dailyStats
+      const keys = Array.from(analytics.dailyStats.keys()).sort();
+      for (const k of keys) {
+        const s = analytics.dailyStats.get(k) || {};
+        let count = 0;
+        if (s.uniquePlayers instanceof Set) count = s.uniquePlayers.size;
+        else if (Array.isArray(s.uniquePlayers)) count = s.uniquePlayers.length;
+        else if (typeof s.uniquePlayers === 'number') count = s.uniquePlayers;
+        activityData.push({ timestamp: k + 'T00:00:00.000Z', count });
+      }
+      return activityData;
     }
   }
 
+  // range is 7d or 30d
+  const n = days;
+  const dates = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+    // use EST date string
+    const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const key = est.toISOString().split('T')[0];
+    dates.push(key);
+  }
+
+  if (dbAnalytics && dbAnalytics.initialized) {
+    const start = dates[0];
+    const end = dates[dates.length - 1];
+    const rows = await dbAnalytics.getSessionData(start, end);
+    const map = {};
+    dates.forEach(k => (map[k] = new Set()));
+    rows.forEach(r => {
+      const d = new Date(r.start_time || r.start_time);
+      const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const key = est.toISOString().split('T')[0];
+      if (map[key] && r.player_id) map[key].add(r.player_id);
+    });
+    for (const k of dates) activityData.push({ timestamp: k + 'T00:00:00.000Z', count: map[k].size });
+    return activityData;
+  }
+
+  // file-based aggregation
+  for (const k of dates) {
+    const s = analytics.dailyStats.get(k) || {};
+    let count = 0;
+    if (s.uniquePlayers instanceof Set) count = s.uniquePlayers.size;
+    else if (Array.isArray(s.uniquePlayers)) count = s.uniquePlayers.length;
+    else if (typeof s.uniquePlayers === 'number') count = s.uniquePlayers;
+    activityData.push({ timestamp: k + 'T00:00:00.000Z', count });
+  }
   return activityData;
 }
 
