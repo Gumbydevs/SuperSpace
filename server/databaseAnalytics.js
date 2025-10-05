@@ -150,16 +150,16 @@ class DatabaseAnalytics {
   const yesterdayDate = new Date(estNow.getTime() - 24 * 60 * 60 * 1000);
   const yesterday = yesterdayDate.toISOString().split('T')[0];
 
-      // Get today's events
-      const todayEvents = await database.getAnalyticsEvents(today, today);
+  // Get today's events (include yesterday to account for timezone/date mismatches)
+  const todayEvents = await database.getAnalyticsEvents(yesterday, today);
       
       // Get all events for all-time stats
       const allEvents = await database.getAnalyticsEvents('2020-01-01', today);
       
-      // Get today's sessions
+      // Get today's sessions (include yesterday to account for timezone boundaries)
       const todaySessions = await database.pool.query(
-        'SELECT * FROM analytics_sessions WHERE date = $1',
-        [today]
+        'SELECT * FROM analytics_sessions WHERE date >= $1 AND date <= $2',
+        [yesterday, today]
       );
       
       // Get all sessions for all-time stats
