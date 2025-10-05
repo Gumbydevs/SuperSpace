@@ -27,8 +27,14 @@ class CloudSyncAuth {
     this.tokensFile = path.join(this.dataDir, 'tokens.json');
     this.dbAvailable = false;
 
-    // Initialize database on startup (non-blocking)
-    this.initializeDatabase();
+    // Initialize database on startup (non-blocking) only if DATABASE_URL is configured
+    // This avoids attempting to connect to Postgres on local machines without DB configured.
+    if (process.env.DATABASE_URL) {
+      this.initializeDatabase();
+    } else {
+      const logger = require('./logger');
+      logger.warn('CloudSyncAuth: DATABASE_URL not set - skipping DB initialization (using file storage)');
+    }
 
     // Space-themed words for recovery keys
     this.spaceWords = [

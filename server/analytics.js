@@ -751,6 +751,13 @@ class ServerAnalytics {
     };
   }
 
+  // Return whether analytics is persistent (DB-backed). Server code expects this method.
+  isPersistent() {
+    // This ServerAnalytics instance is the file-based analytics; return false.
+    // When DatabaseAnalytics is used, server sets persistentAnalytics based on dbAnalytics.initialized.
+    return false;
+  }
+
   // Returns YYYY-MM-DD string in EST (America/New_York)
   getDateString(date = null) {
     const d = date ? new Date(date) : new Date();

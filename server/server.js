@@ -395,7 +395,23 @@ app.get('/analytics', async (req, res) => {
 
     // Determine requested range and compute player activity series
     const range = req.query.range || '24h';
-    const playerActivity = await generatePlayerActivityData(stats, range);
+    let playerActivity = [];
+    try {
+      playerActivity = await generatePlayerActivityData(stats, range);
+    } catch (paErr) {
+      console.error('Error generating player activity series:', paErr);
+      // Fallback: build a simple last-24-hour hourly series from today's stats or active sessions
+      const now = new Date();
+      const hourly = (stats && stats.today && (stats.today.hourlyUniquePlayers || stats.today.hourlyActivity))
+        ? (stats.today.hourlyUniquePlayers || stats.today.hourlyActivity)
+        : null;
+      for (let i = 23; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+        const hour = time.getHours();
+        const count = hourly ? (hourly[hour] || 0) : (i === 0 ? (stats.activeSessions || 0) : 0);
+        playerActivity.push({ timestamp: time.toISOString(), count });
+      }
+    }
 
     // Respond with dashboard payload plus computed series
     res.json({
