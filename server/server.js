@@ -426,7 +426,8 @@ app.get('/analytics', async (req, res) => {
     res.json({
       ok: true,
       dataSource,
-      persistentAnalytics: analytics.isPersistent(),
+      // persistentAnalytics should reflect whether DB-backed analytics are initialized
+      persistentAnalytics: (dataSource === 'database') && !!(dbAnalytics && dbAnalytics.initialized),
       stats,
       diagnostics,
       playerActivity,
