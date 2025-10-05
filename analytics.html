@@ -527,6 +527,19 @@
         ],
       };
 
+      // Utility: format a Date in Eastern Time (Toronto/Montreal)
+      function formatEastern(date, options = {}) {
+        if (!date) return '';
+        const d = (date instanceof Date) ? date : new Date(date);
+        try {
+          // Default to full date+time if no specific options provided
+          const opts = Object.keys(options).length ? options : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+          return d.toLocaleString('en-US', Object.assign({}, opts, { timeZone: 'America/Toronto' }));
+        } catch (e) {
+          return d.toString();
+        }
+      }
+
       function initCharts() {
         // Player Activity Chart
         const playerCtx = document
@@ -700,11 +713,11 @@
           const users = data.users;
           const ccount3 = document.getElementById('cloudUsersCount'); if (ccount3) ccount3.textContent = users.length;
           const userItems = users.map(u => {
-            const last = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+            const last = u.lastLogin ? formatEastern(u.lastLogin) : 'Never';
             // Handle both old format (playTimeSeconds) and new format (playtime object)
             const playTimeSeconds = u.playTimeSeconds || (u.playtime ? Math.floor(u.playtime.totalMs / 1000) : 0);
             const play = formatPlayTime(playTimeSeconds);
-            const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'Unknown';
+            const created = u.createdAt ? formatEastern(u.createdAt, { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'Unknown';
             return `<div class="user-item">
               <div style="font-weight:bold;color:#00ff88;margin-bottom:4px;">${escapeHtml(u.username)}</div>
               <div style="font-size:0.85em;color:#ccc;">Last Login: ${last}</div>
@@ -1002,7 +1015,7 @@
               container.innerHTML = chatMessages.map(msg => {
                 const name = escapeHtml(msg.data?.name || msg.playerId || 'Unknown');
                 const message = escapeHtml(msg.data?.message || msg.data?.text || msg.message || '');
-                const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString() : '';
+                const ts = msg.timestamp ? formatEastern(msg.timestamp) : '';
                 return `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><span style='color:#aaa;font-size:0.9em;'>[${ts}]</span> <strong>${name}:</strong> ${message}</div>`;
               }).join('');
               scrollAdminChatToBottom(true);
@@ -1039,11 +1052,7 @@
         if (!activityData || activityData.length === 0) return;
 
         chartData.labels = activityData.map((point) => {
-          const date = new Date(point.timestamp);
-          return date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-          });
+          return formatEastern(point.timestamp, { hour: '2-digit', minute: '2-digit' });
         });
         chartData.datasets[0].data = activityData.map((point) => point.count);
 
@@ -1071,7 +1080,7 @@
 
         eventLog.innerHTML = eventData
           .map((event) => {
-            const timestamp = new Date(event.timestamp).toLocaleTimeString();
+            const timestamp = formatEastern(event.timestamp, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const eventType = (
               event.type ||
               event.eventType ||
@@ -1222,7 +1231,7 @@
                 el.style.padding = '6px';
                 el.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
                 const now = new Date();
-                el.innerHTML = `<span style='color:#aaa;font-size:0.9em;'>[${now.toLocaleString()}]</span> <strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
+                el.innerHTML = `<span style='color:#aaa;font-size:0.9em;'>[${formatEastern(now)}]</span> <strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
                 container.appendChild(el);
                 scrollAdminChatToBottom();
               });
