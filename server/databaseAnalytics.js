@@ -144,8 +144,11 @@ class DatabaseAnalytics {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Use EST (America/New_York) for 'today' so it matches the dashboard timezone
+  const estNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const today = estNow.toISOString().split('T')[0];
+  const yesterdayDate = new Date(estNow.getTime() - 24 * 60 * 60 * 1000);
+  const yesterday = yesterdayDate.toISOString().split('T')[0];
 
       // Get today's events
       const todayEvents = await database.getAnalyticsEvents(today, today);
@@ -169,17 +172,26 @@ class DatabaseAnalytics {
       const globalPeak = await database.getAnalyticsMeta('globalPeak') || 0;
 
       // Calculate today's stats
-      const todayStats = this.calculateStats(todayEvents.rows, todaySessions.rows);
-      
+      const todayStatsRaw = this.calculateStats(todayEvents.rows, todaySessions.rows);
       // Calculate all-time stats
-      const allTimeStats = this.calculateStats(allEvents.rows, allSessions.rows);
+      const allTimeStatsRaw = this.calculateStats(allEvents.rows, allSessions.rows);
+
+      // Normalize field names to match file-based analytics shape used by the dashboard
+      const todayStats = Object.assign({}, todayStatsRaw, {
+        // database calculateStats uses averageSessionTime in milliseconds; the dashboard expects seconds
+        averageSessionDuration: typeof todayStatsRaw.averageSessionTime === 'number' ? Math.floor(todayStatsRaw.averageSessionTime / 1000) : 0,
+        // ensure hourlyActivity is present
+        hourlyActivity: Array.isArray(todayStatsRaw.hourlyActivity) ? todayStatsRaw.hourlyActivity : Array(24).fill(0),
+      });
+
+      const allTimeStats = Object.assign({}, allTimeStatsRaw, {
+        averageSessionDuration: typeof allTimeStatsRaw.averageSessionTime === 'number' ? Math.floor(allTimeStatsRaw.averageSessionTime / 1000) : 0,
+        hourlyActivity: Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0),
+      });
 
       return {
         today: todayStats,
-        allTime: {
-          ...allTimeStats,
-          globalPeak: globalPeak
-        },
+        allTime: Object.assign({}, allTimeStats, { globalPeak: globalPeak }),
         source: 'database'
       };
     } catch (error) {
@@ -258,16 +270,27 @@ class DatabaseAnalytics {
     // Build hourly activity array (counts per hour in EST) so dashboard can plot last-24h
     try {
       const hourlyActivity = Array(24).fill(0);
-      events.forEach(event => {
-        // try multiple timestamp field names depending on DB schema
-        const ts = event.timestamp || event.time || event.created_at || event.createdAt || event.tstamp;
-        if (!ts) return;
-        const d = new Date(ts);
-        // Convert to EST (handles DST) then get hour
-        const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-        const hour = est.getHours();
-        if (typeof hour === 'number' && hour >= 0 && hour < 24) hourlyActivity[hour]++;
-      });
+      // Prefer session start times when available (sessions are a good proxy for active players)
+      if (Array.isArray(sessions) && sessions.length > 0) {
+        sessions.forEach(s => {
+          const ts = s.start_time || s.startTime || s.started_at || s.startedAt || s.start || s.timestamp;
+          if (!ts) return;
+          const d = new Date(ts);
+          const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+          const hour = est.getHours();
+          if (Number.isInteger(hour) && hour >= 0 && hour < 24) hourlyActivity[hour]++;
+        });
+      } else {
+        // Fallback to events if no session records are available
+        events.forEach(event => {
+          const ts = event.timestamp || event.time || event.created_at || event.createdAt || event.tstamp;
+          if (!ts) return;
+          const d = new Date(ts);
+          const est = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+          const hour = est.getHours();
+          if (Number.isInteger(hour) && hour >= 0 && hour < 24) hourlyActivity[hour]++;
+        });
+      }
       stats.hourlyActivity = hourlyActivity;
     } catch (e) {
       // defensive: if something goes wrong, expose zeros
