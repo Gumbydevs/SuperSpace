@@ -2208,8 +2208,14 @@ export class MultiplayerManager {
         
         // Award gems
         if (this.game.player.gems !== undefined) {
-          this.game.player.gems += data.gems;
-          this.game.player.saveToLocalStorage();
+        this.game.player.gems += data.gems;
+        if (typeof this.game.player.saveToLocalStorage === 'function') {
+          try {
+            this.game.player.saveToLocalStorage();
+          } catch (e) {
+            console.warn('Failed to save player gems to localStorage after multiplayer dreadnaught reward', e);
+          }
+        }
         } else if (this.game.premiumStore) {
           this.game.premiumStore.addSpaceGems(data.gems);
         }

@@ -1472,9 +1472,13 @@ export class TutorialSystem {
       // ignore
     }
 
-    // Save player progress
-    if (this.player && this.player.saveToLocalStorage) {
-      this.player.saveToLocalStorage();
+    // Save player progress (guarded)
+    if (this.player && typeof this.player.saveToLocalStorage === 'function') {
+      try {
+        this.player.saveToLocalStorage();
+      } catch (e) {
+        console.warn('Failed to save player progress from tutorial', e);
+      }
     }
   }
 

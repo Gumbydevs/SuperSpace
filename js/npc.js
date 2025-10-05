@@ -585,6 +585,16 @@ export class NPCManager {
         Math.sin(dreadnaught.rotation - Math.PI / 2) *
         dreadnaught.speed *
         deltaTime;
+      // While leaving, still allow the dreadnaught to fire at nearby targets
+      // so it doesn't become harmless while retreating.
+      if (closestTarget && closestDistance < dreadnaught.attackRange) {
+        const targetInSafeZone = this.world.isInSafeZone && this.world.isInSafeZone(closestTarget);
+        if (!targetInSafeZone) {
+          // Briefly pause movement for a bombardment feel and fire weapons
+          dreadnaught.pauseUntil = Date.now() + (this.dreadnaughtBombardPauseCombat || 1500);
+          this.fireDreadnaughtWeapons(dreadnaught, targets, deltaTime);
+        }
+      }
     } else if (dreadnaught.state === 'approaching') {
       // Check if we should avoid approaching safe zone - change target if needed
       const safeZone = this.world.safeZone;
@@ -1138,7 +1148,14 @@ export class NPCManager {
         // Award gems if player has gem system
         if (window.game.player.gems !== undefined) {
           window.game.player.gems += gemReward;
-          window.game.player.saveToLocalStorage();
+          // Guarded save: player may not expose saveToLocalStorage in some runtimes
+          if (typeof window.game.player.saveToLocalStorage === 'function') {
+            try {
+              window.game.player.saveToLocalStorage();
+            } catch (e) {
+              console.warn('Failed saving player to localStorage after dreadnaught reward', e);
+            }
+          }
         } else if (window.game.premiumStore) {
           window.game.premiumStore.addSpaceGems(gemReward);
         }
