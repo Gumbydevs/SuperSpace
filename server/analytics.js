@@ -8,6 +8,10 @@ const path = require('path');
 const logger = require('./logger');
 class ServerAnalytics {
   constructor() {
+  // Minimum session length (seconds) to include in averages. Exclude very short sessions
+  // (e.g., page loads, bot pings). Configurable via env var ANALYTICS_MIN_SESSION_SECONDS.
+  // Default to 60 seconds so quick page loads and probes don't skew averages.
+  this.minSessionSeconds = Number(process.env.ANALYTICS_MIN_SESSION_SECONDS) || 60;
     this.dataDir = path.join(__dirname, 'analytics_data');
     this.sessions = new Map(); // Active sessions
     this.dailyStats = new Map(); // Daily aggregated stats
@@ -871,13 +875,34 @@ class ServerAnalytics {
           }
         }
 
-        const statsData = {
-          ...stats,
+        // Defensive normalization: ensure duration fields are expressed in seconds
+        // (historical data may have used milliseconds in some code paths).
+        function normalizeArrayToSeconds(arr) {
+          if (!Array.isArray(arr)) return [];
+          return arr.map(v => {
+            if (typeof v !== 'number' || !isFinite(v)) return 0;
+            // Values > 10,000 are probably milliseconds (10,000ms = 10s)
+            return v > 10000 ? Math.round(v / 1000) : v;
+          });
+        }
+
+        const sessionDurationsOut = normalizeArrayToSeconds(stats.sessionDurations);
+        const gameDurationsOut = normalizeArrayToSeconds(stats.gameDurations);
+        const lifeDurationsOut = normalizeArrayToSeconds(stats.lifeDurations);
+        const totalSessionTimeOut = (typeof stats.totalSessionTime === 'number' && isFinite(stats.totalSessionTime))
+          ? (stats.totalSessionTime > 10000 ? Math.round(stats.totalSessionTime / 1000) : stats.totalSessionTime)
+          : 0;
+
+        const statsData = Object.assign({}, stats, {
           uniquePlayers: uniquePlayersArr,
           uniqueSessions: uniqueSessionsArr,
           uniqueIPs: uniqueIPsArr,
           playerSessionMap: playerSessionMapOut,
-        };
+          sessionDurations: sessionDurationsOut,
+          gameDurations: gameDurationsOut,
+          lifeDurations: lifeDurationsOut,
+          totalSessionTime: totalSessionTimeOut,
+        });
 
         await fs.writeFile(filepath, JSON.stringify(statsData, null, 2));
       }
@@ -1093,7 +1118,13 @@ class ServerAnalytics {
       uniquePlayers: allTime.uniquePlayers.size,
       cloudLogins: allTime.cloudLogins,
       cloudLoginUsers: Array.from(allTime.cloudLoginUsers),
-      averageSessionDuration: allTime.sessionDurations.length > 0 ? allTime.sessionDurations.reduce((a, b) => a + b, 0) / allTime.sessionDurations.length : 0,
+      averageSessionDuration: (() => {
+        try {
+          const minSec = Number(process.env.ANALYTICS_MIN_SESSION_SECONDS) || 5;
+          const arr = Array.isArray(allTime.sessionDurations) ? allTime.sessionDurations.filter(d => typeof d === 'number' && isFinite(d) && d >= minSec) : [];
+          return arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        } catch (e) { return 0; }
+      })(),
       averageGameDuration: allTime.gameDurations.length > 0 ? allTime.gameDurations.reduce((a, b) => a + b, 0) / allTime.gameDurations.length : 0,
       averageLifeDuration: allTime.lifeDurations.length > 0 ? allTime.lifeDurations.reduce((a, b) => a + b, 0) / allTime.lifeDurations.length : 0,
       peakConcurrent: allTime.peakConcurrent,
@@ -1166,16 +1197,18 @@ class ServerAnalytics {
           todayStats.gamesStarted > 0
             ? todayStats.gamesCompleted / todayStats.gamesStarted
             : 0,
-        averageSessionDuration:
-          todayStats.sessionDurations && todayStats.sessionDurations.length > 0
-            ? todayStats.sessionDurations.reduce((a, b) => a + b, 0) /
-              todayStats.sessionDurations.length
-            : 0,
-        averageLifeDuration:
-          todayStats.lifeDurations && todayStats.lifeDurations.length > 0
-            ? todayStats.lifeDurations.reduce((a, b) => a + b, 0) /
-              todayStats.lifeDurations.length
-            : 0,
+          averageSessionDuration: (() => {
+            try {
+              const minSec = Number(process.env.ANALYTICS_MIN_SESSION_SECONDS) || this.minSessionSeconds || 5;
+              const arr = Array.isArray(todayStats.sessionDurations) ? todayStats.sessionDurations.filter(d => typeof d === 'number' && isFinite(d) && d >= minSec) : [];
+              return arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+            } catch (e) { return 0; }
+          })(),
+          averageLifeDuration:
+            todayStats.lifeDurations && todayStats.lifeDurations.length > 0
+              ? todayStats.lifeDurations.reduce((a, b) => a + b, 0) /
+                todayStats.lifeDurations.length
+              : 0,
         peakConcurrentToday: todayStats.peakConcurrent || 0,
         globalPeakConcurrent: this.globalPeak || 0,
         currentConcurrent: activeSessions,

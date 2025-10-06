@@ -367,6 +367,17 @@ app.get('/analytics', async (req, res) => {
       // defensive - do not fail the endpoint due to persistence issues
     }
 
+    function formatSecondsToHMS(sec) {
+      if (typeof sec !== 'number' || !isFinite(sec) || sec <= 0) return '0s';
+      const s = Math.floor(sec);
+      const hours = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = s % 60;
+      if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
+      if (mins > 0) return `${mins}m ${secs}s`;
+      return `${secs}s`;
+    }
+
     const dashboardData = {
       // Challenge completions and achievers
       challengeStats,
@@ -375,8 +386,9 @@ app.get('/analytics', async (req, res) => {
       peakPlayers: adjustedPeak,
       totalSessions: stats.today?.totalSessions || 0,
   // averageSessionDuration is already expressed in seconds by analytics
-  // (do NOT divide by 1000 here or we'll under-report by 1000x).
+  // Add both numeric seconds (for compatibility) and a human-friendly format.
   avgSessionTime: Math.floor(stats.today?.averageSessionDuration || 0),
+  avgSessionTimeHuman: formatSecondsToHMS(Math.floor(stats.today?.averageSessionDuration || 0)),
       connectedPlayers, // <-- new field: array of {name, duration, socketId}
       // Expose today and allTime stats for frontend (with adjusted peak/current)
       today: todayPayload,
@@ -500,6 +512,38 @@ app.get('/analytics', async (req, res) => {
   } catch (error) {
     console.error('Error in /analytics', error);
     res.status(500).json({ ok: false, error: 'server error' });
+  }
+});
+
+// Diagnostics endpoint for session duration distribution (admin use)
+app.get('/analytics/diagnostics', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const dataDir = path.join(__dirname, 'analytics_data', 'daily');
+    const files = fs.existsSync(dataDir) ? fs.readdirSync(dataDir).filter(f => f.endsWith('.json')) : [];
+    const summary = { total: 0, lt60: 0, lt300: 0, lt600: 0, gte600: 0 };
+    for (const f of files) {
+      try {
+        const p = path.join(dataDir, f);
+        const raw = fs.readFileSync(p, 'utf8');
+        const obj = JSON.parse(raw);
+        if (Array.isArray(obj.sessionDurations)) {
+          for (let d of obj.sessionDurations) {
+            if (typeof d !== 'number' || !isFinite(d)) continue;
+            if (d > 10000) d = Math.round(d / 1000); // defensive
+            summary.total++;
+            if (d < 60) summary.lt60++;
+            else if (d < 300) summary.lt300++;
+            else if (d < 600) summary.lt600++;
+            else summary.gte600++;
+          }
+        }
+      } catch (e) { /* ignore file parse errors */ }
+    }
+    res.json({ ok: true, summary });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

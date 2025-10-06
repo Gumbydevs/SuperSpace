@@ -177,9 +177,19 @@ class DatabaseAnalytics {
       const allTimeStatsRaw = this.calculateStats(allEvents.rows, allSessions.rows);
 
       // Normalize field names to match file-based analytics shape used by the dashboard
+      // Defensive conversion: some callers may already provide an average in seconds
+      // while others provide milliseconds. If value looks large (>10s) we treat
+      // it as milliseconds and divide by 1000, otherwise assume seconds.
+      function toSecondsPossibly(msOrSec) {
+        if (typeof msOrSec !== 'number' || !isFinite(msOrSec)) return 0;
+        // If value is greater than 10,000 treat it as milliseconds (10,000ms = 10s)
+        // This guards against double-divide (ms -> /1000 twice) or missing conversion.
+        return Math.floor(msOrSec > 10000 ? msOrSec / 1000 : msOrSec);
+      }
+
       const todayStats = Object.assign({}, todayStatsRaw, {
-        // database calculateStats uses averageSessionTime in milliseconds; the dashboard expects seconds
-        averageSessionDuration: typeof todayStatsRaw.averageSessionTime === 'number' ? Math.floor(todayStatsRaw.averageSessionTime / 1000) : 0,
+        // Convert averageSessionTime (ms or sec) into seconds for the dashboard
+        averageSessionDuration: toSecondsPossibly(todayStatsRaw.averageSessionTime),
         // ensure hourlyActivity is present
         hourlyActivity: Array.isArray(todayStatsRaw.hourlyActivity) ? todayStatsRaw.hourlyActivity : Array(24).fill(0),
         // ensure hourlyUniquePlayers is present for charting
@@ -190,7 +200,7 @@ class DatabaseAnalytics {
       });
 
       const allTimeStats = Object.assign({}, allTimeStatsRaw, {
-        averageSessionDuration: typeof allTimeStatsRaw.averageSessionTime === 'number' ? Math.floor(allTimeStatsRaw.averageSessionTime / 1000) : 0,
+        averageSessionDuration: toSecondsPossibly(allTimeStatsRaw.averageSessionTime),
         hourlyActivity: Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0),
         hourlyUniquePlayers: Array.isArray(allTimeStatsRaw.hourlyUniquePlayers) ? allTimeStatsRaw.hourlyUniquePlayers : (Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0)),
         eventCounts: allTimeStatsRaw.eventCounts || {},
@@ -376,7 +386,13 @@ class DatabaseAnalytics {
     }
 
     // Calculate averages
-    stats.averageSessionTime = sessions.length > 0 ? stats.totalGameTime / sessions.length : 0;
+    // Exclude very short sessions from averages (configurable via env var)
+  const minSessionSeconds = Number(process.env.ANALYTICS_MIN_SESSION_SECONDS) || 60;
+    // sessions here hold duration_ms; convert candidate durations to seconds and filter
+    const sessionSecondsArr = sessions
+      .map(s => (typeof s.duration_ms === 'number' && isFinite(s.duration_ms) ? Math.round(s.duration_ms / 1000) : 0))
+      .filter(d => d >= minSessionSeconds);
+    stats.averageSessionTime = sessionSecondsArr.length > 0 ? sessionSecondsArr.reduce((a, b) => a + b, 0) / sessionSecondsArr.length : 0;
     stats.uniquePlayersCount = stats.uniquePlayers.size;
     delete stats.uniquePlayers; // Remove Set for JSON serialization
 

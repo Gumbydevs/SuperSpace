@@ -880,9 +880,15 @@
   const cu = document.getElementById('cloudLoginUsersList'); if (cu) cu.innerHTML = html;
 
   // Format average session time (today/all time)
-  const avgTimeToday = today.averageSessionDuration || 0;
+  // Prefer human-friendly string from server if present (avgSessionTimeHuman)
+  if (data.avgSessionTimeHuman) {
+    setText('avgSessionTimeToday', data.avgSessionTimeHuman);
+  } else {
+    const avgTimeToday = today.averageSessionDuration || 0;
+    setText('avgSessionTimeToday', formatDuration(avgTimeToday));
+  }
+  // For all-time fallback to computed format
   const avgTimeAll = allTime.averageSessionDuration || 0;
-  setText('avgSessionTimeToday', formatDuration(avgTimeToday));
   setText('avgSessionTimeAll', formatDuration(avgTimeAll));
       // Utility: format seconds as h/m/s
       function formatDuration(seconds) {
