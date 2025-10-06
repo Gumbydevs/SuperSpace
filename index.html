@@ -46,6 +46,22 @@
     </script>
     <script src="js/vercelAnalytics.js"></script>
   <script src="js/maintenance.js"></script>
+    <style>
+      /* Hide footer branding links and copyright on the start screen only
+         for small portrait (vertical) mobile devices to save screen space.
+         Uses #menu:not(.hidden) to ensure it only applies when the start
+         menu is visible. */
+      @media (max-width: 720px) and (orientation: portrait) {
+        /* Primary start-screen branding */
+        #menu:not(.hidden) #branding .links,
+        #menu:not(.hidden) #branding .copyright,
+        /* Some templates use alternate classes/structure elsewhere */
+        #menu:not(.hidden) .brand-links,
+        #menu:not(.hidden) .copyright-text {
+          display: none !important;
+        }
+      }
+    </style>
     <script>
       // Connect to the server to get player count as soon as the page loads
       window.addEventListener('load', function () {
