@@ -352,6 +352,8 @@ export class Player {
     this.color = this.shipColor; // Multiplayer color reference
     // Ship skin - load from localStorage
     this.shipSkin = localStorage.getItem('selectedShipSkin') || 'none';
+  // Toggle to alternate missile launcher firing side (false = left, true = right)
+  this._missileToggle = false;
     // Add collision properties
     this.collisionRadius = 15; // Radius used for collision detection
     this.collisionCooldown = 0; // Time remaining before next collision can occur
@@ -1873,36 +1875,61 @@ export class Player {
         break;
 
       case 'Seeker Missile':
-        // Fire a single homing missile - slower for better tracking visibility with explosion
+        // Fire a single homing missile - spawn from alternating wing launcher
+        // Calculate local offset for launcher based on ship size
+        let launcherOffsetX = -12;
+        let launcherOffsetY = -3;
+        let altOffsetX = 8;
+        if (this.currentShip === 'heavy' || this.currentShip === 'cruiser') {
+          launcherOffsetX = -25;
+          launcherOffsetY = -3;
+          altOffsetX = 19;
+        }
+
+        // Choose side: false = left, true = right
+        const side = this._missileToggle;
+        this._missileToggle = !this._missileToggle;
+
+        const localX = side ? altOffsetX : launcherOffsetX;
+        const localY = launcherOffsetY;
+
+        // Rotate local offset into world space
+        const cosR = Math.cos(this.rotation);
+        const sinR = Math.sin(this.rotation);
+        const worldOffsetX = localX * cosR - localY * sinR;
+        const worldOffsetY = localX * sinR + localY * cosR;
+
+        const spawnX = this.x + worldOffsetX;
+        const spawnY = this.y + worldOffsetY;
+
         projectiles.push(
           new Projectile(
-            this.x,
-            this.y,
+            spawnX,
+            spawnY,
             this.rotation,
             'missile',
-            weaponStats ? weaponStats.damage : 13, // Updated fallback damage to match shop stats proportion
-            weaponStats ? weaponStats.speed : 300, // Slower speed for better homing visualization
-            weaponStats ? weaponStats.range : 1000, // Longer range
-            true, // Homing capability
-            0, // splashRadius
-            30, // explosionRadius - small explosion on impact
-            8, // explosionDamage - extra area damage from explosion
-            0, // minDetonationRange
-            0, // maxDetonationRange
-            false, // shieldDisruption
-            0, // disruptionDuration
-            0, // armingTime
-            0, // lifetime
-            1.0, // asteroidDamageMultiplier
-            1.0, // playerDamageMultiplier
+            weaponStats ? weaponStats.damage : 13,
+            weaponStats ? weaponStats.speed : 300,
+            weaponStats ? weaponStats.range : 1000,
+            true,
+            0,
+            30,
+            8,
+            0,
+            0,
+            false,
+            0,
+            0,
+            1.0,
+            1.0,
           ),
         );
 
-        // Play missile launch sound
+        // Play missile launch sound at the launcher position
         if (soundManager) {
           soundManager.play('missile', {
             volume: 0.5,
-            position: { x: this.x, y: this.y },
+            position: { x: spawnX, y: spawnY },
           });
         }
         break;
