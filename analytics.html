@@ -317,8 +317,9 @@
        <!-- Average Session Time -->
       <div class="metric-card">
         <h3>⏱️ Avg Session</h3>
-        <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
-        <div class="metric-subtitle">Today / All Time</div>
+  <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
+  <div id="avgSessionMeta" style="font-size:0.8em;color:#9ef7c4;margin-top:6px;">median — · p90 —</div>
+  <div class="metric-subtitle">Today / All Time</div>
       </div>
 
       <!-- Total Sessions -->
@@ -879,9 +880,12 @@
         if (!html) html = '<em>None</em>';
   const cu = document.getElementById('cloudLoginUsersList'); if (cu) cu.innerHTML = html;
 
-  // Format average session time (today/all time)
-  // Prefer human-friendly string from server if present (avgSessionTimeHuman)
-  if (data.avgSessionTimeHuman) {
+  // Format session time (show median as a better representation of "typical" play)
+  const medianHuman = data.avgSessionMedianHuman || null;
+  const medianSec = data.avgSessionMedian || null;
+  if (medianHuman) {
+    setText('avgSessionTimeToday', medianHuman);
+  } else if (data.avgSessionTimeHuman) {
     setText('avgSessionTimeToday', data.avgSessionTimeHuman);
   } else {
     const avgTimeToday = today.averageSessionDuration || 0;
@@ -890,6 +894,12 @@
   // For all-time fallback to computed format
   const avgTimeAll = allTime.averageSessionDuration || 0;
   setText('avgSessionTimeAll', formatDuration(avgTimeAll));
+
+  // Show median and P90 as small text under the metric (if available)
+  if (data.avgSessionMedianHuman) {
+    const el = document.getElementById('avgSessionMeta');
+    if (el) el.textContent = `median ${data.avgSessionMedianHuman} · p90 ${data.avgSessionP90Human || '—'}`;
+  }
       // Utility: format seconds as h/m/s
       function formatDuration(seconds) {
         seconds = Math.floor(seconds);

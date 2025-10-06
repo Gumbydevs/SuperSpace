@@ -389,6 +389,11 @@ app.get('/analytics', async (req, res) => {
   // Add both numeric seconds (for compatibility) and a human-friendly format.
   avgSessionTime: Math.floor(stats.today?.averageSessionDuration || 0),
   avgSessionTimeHuman: formatSecondsToHMS(Math.floor(stats.today?.averageSessionDuration || 0)),
+  // Compute median and 90th percentile for today's session durations if available
+  avgSessionMedian: 0,
+  avgSessionP90: 0,
+  avgSessionMedianHuman: '0s',
+  avgSessionP90Human: '0s',
       connectedPlayers, // <-- new field: array of {name, duration, socketId}
       // Expose today and allTime stats for frontend (with adjusted peak/current)
       today: todayPayload,
@@ -419,6 +424,23 @@ app.get('/analytics', async (req, res) => {
       // Leaderboard for dashboard
       leaderboard,
     };
+
+      // Compute median and 90th percentile from today's session durations (seconds)
+      try {
+        const todaySessions = stats.today && stats.today.sessionDurations ? stats.today.sessionDurations.slice().filter(d => typeof d === 'number' && isFinite(d)) : [];
+        if (todaySessions.length > 0) {
+          const sorted = todaySessions.slice().sort((a, b) => a - b);
+          const median = sorted.length % 2 === 1 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2;
+          const idx90 = Math.ceil(0.9 * sorted.length) - 1;
+          const p90 = sorted[Math.max(0, Math.min(idx90, sorted.length - 1))];
+          dashboardData.avgSessionMedian = Math.round(median);
+          dashboardData.avgSessionP90 = Math.round(p90);
+          dashboardData.avgSessionMedianHuman = formatSecondsToHMS(Math.round(median));
+          dashboardData.avgSessionP90Human = formatSecondsToHMS(Math.round(p90));
+        }
+      } catch (e) {
+        // ignore
+      }
 
     // Determine requested range and compute player activity series
     const range = req.query.range || '24h';
