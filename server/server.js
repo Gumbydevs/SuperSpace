@@ -370,7 +370,9 @@ app.get('/analytics', async (req, res) => {
       activePlayers: actualActivePlayers,
       peakPlayers: adjustedPeak,
       totalSessions: stats.today?.totalSessions || 0,
-      avgSessionTime: Math.floor((stats.today?.averageSessionDuration || 0) / 1000),
+  // averageSessionDuration is already expressed in seconds by analytics
+  // (do NOT divide by 1000 here or we'll under-report by 1000x).
+  avgSessionTime: Math.floor(stats.today?.averageSessionDuration || 0),
       connectedPlayers, // <-- new field: array of {name, duration, socketId}
       // Expose today and allTime stats for frontend (with adjusted peak/current)
       today: todayPayload,
