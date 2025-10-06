@@ -764,6 +764,26 @@ export class TutorialSystem {
     }
 
     if (!this.hasPlayerMoved) {
+      // Desktop-specific robust detection: check player's thrust/velocity state
+      try {
+        const p = this.player;
+        if (p) {
+          // If player has a target thrust or current thrust animation level, treat as movement
+          const thrustActive = (typeof p.targetThrustLevel === 'number' && p.targetThrustLevel > 0) || (typeof p.thrustLevel === 'number' && p.thrustLevel > 0.05);
+          // Velocity-based fallback: if velocity magnitude has noticeably increased since start
+          const vx = typeof p.velocity?.x === 'number' ? p.velocity.x : 0;
+          const vy = typeof p.velocity?.y === 'number' ? p.velocity.y : 0;
+          const velMag = Math.sqrt(vx * vx + vy * vy);
+          const velocityThreshold = 0.12; // tuned conservative threshold to detect thrust on desktop
+          if (thrustActive || velMag > velocityThreshold) {
+            this.hasPlayerMoved = true;
+            this.checkStepProgress('movement');
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore any errors reading player state
+      }
       // Desktop fallback: if the game's input handler reports movement keys
       // being pressed, treat that as movement. This ensures keyboard users
       // advance the tutorial even if keydown events are missed by other
@@ -1026,6 +1046,8 @@ export class TutorialSystem {
       this._tutorialStartTs = Date.now();
       this._currentStepStartTs = Date.now();
       this._stepDurations = {};
+      // Control flag to avoid scheduling multiple nextStep calls concurrently
+      this._nextStepScheduled = false;
     } catch (e) {
       console.warn('Tutorial: failed to initialize timing fields', e);
     }
@@ -1048,6 +1070,7 @@ export class TutorialSystem {
     }
     this.isShowingNotification = false;
     this.notificationQueue = [];
+  this._nextStepScheduled = false;
     
     // Start with first step
     // Ensure we have a fresh starting position
@@ -1073,18 +1096,21 @@ export class TutorialSystem {
       // If we have a previous step start timestamp and a previous step exists, record duration
       if (this._currentStepStartTs != null && this.currentStep > 0) {
         const prevStep = this.tutorialSteps[this.currentStep - 1];
-        const durMs = now - this._currentStepStartTs;
-        this._stepDurations[prevStep.id] = (durMs / 1000);
-        // Emit per-step duration event for previous step
-        const durPayload = { stepId: prevStep.id, index: this.currentStep - 1, durationSeconds: Math.round(durMs / 1000) };
-        try {
-          if (window.analytics && typeof window.analytics.track === 'function') {
-            window.analytics.track('tutorial_step_duration', durPayload);
-          } else if (window.gameAnalytics && typeof window.gameAnalytics.trackEvent === 'function') {
-            window.gameAnalytics.trackEvent('tutorial_step_duration', durPayload);
+        // Only record and emit duration if it hasn't already been recorded.
+        if (!this._stepDurations || typeof this._stepDurations[prevStep.id] === 'undefined') {
+          const durMs = now - this._currentStepStartTs;
+          this._stepDurations[prevStep.id] = (durMs / 1000);
+          // Emit per-step duration event for previous step
+          const durPayload = { stepId: prevStep.id, index: this.currentStep - 1, durationSeconds: Math.round(durMs / 1000) };
+          try {
+            if (window.analytics && typeof window.analytics.track === 'function') {
+              window.analytics.track('tutorial_step_duration', durPayload);
+            } else if (window.gameAnalytics && typeof window.gameAnalytics.trackEvent === 'function') {
+              window.gameAnalytics.trackEvent('tutorial_step_duration', durPayload);
+            }
+          } catch (e) {
+            console.warn('Tutorial: failed to send analytics for tutorial_step_duration', e);
           }
-        } catch (e) {
-          console.warn('Tutorial: failed to send analytics for tutorial_step_duration', e);
         }
       }
       this._currentStepStartTs = now;
@@ -1522,12 +1548,19 @@ export class TutorialSystem {
   }
 
   nextStep() {
-    this.currentStep++;
-    // console.log(`📚 Tutorial: Moving to step ${this.currentStep + 1}/${this.tutorialSteps.length}`); // Production: disabled
-    
+    // Prevent scheduling multiple concurrent next-step transitions which can
+    // cause the tutorial to skip steps when actions fire rapidly.
+    if (this._nextStepScheduled) return;
+    this._nextStepScheduled = true;
+
+    // Advance step (clamped to bounds)
+    if (this.currentStep < this.tutorialSteps.length) this.currentStep = Math.min(this.currentStep + 1, this.tutorialSteps.length);
+
     // Small delay before showing next step
     setTimeout(() => {
       this.showCurrentStep();
+      // allow scheduling again shortly after the step is shown
+      this._nextStepScheduled = false;
     }, 300);
   }
 

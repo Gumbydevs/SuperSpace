@@ -511,6 +511,36 @@ app.post('/debug/powerup-events/clear', (req, res) => {
   res.json({ ok: true });
 });
 
+// Debug endpoint: list recent tutorial-related analytics events from the DB (read-only)
+app.get('/analytics/debug/tutorial-events', async (req, res) => {
+  try {
+    // Require database to be configured
+    if (!process.env.DATABASE_URL || !database || !database.pool) {
+      return res.status(400).json({ ok: false, error: 'database not configured on this server' });
+    }
+
+    // Respect a ?limit= query param, with safe bounds
+    const limit = Math.min(Math.max(parseInt(req.query.limit || '200', 10) || 200, 1), 2000);
+
+    // Optional since param (ISO date) to filter events newer than provided date
+    const since = req.query.since ? new Date(req.query.since) : null;
+
+    let sql = 'SELECT event_type, player_id, session_id, data, timestamp FROM analytics_events WHERE event_type ILIKE $1';
+    const params = ['tutorial%'];
+    if (since && !isNaN(since.getTime())) {
+      sql += ' AND timestamp >= $2';
+      params.push(since.toISOString());
+    }
+    sql += ' ORDER BY timestamp DESC LIMIT ' + limit;
+
+    const result = await database.pool.query(sql, params);
+    res.json({ ok: true, count: result.rows.length, events: result.rows });
+  } catch (error) {
+    console.error('Error in /analytics/debug/tutorial-events', error && error.stack ? error.stack : error);
+    res.status(500).json({ ok: false, error: 'server error', details: error && error.message });
+  }
+});
+
 // Expose cloud user registry (uses database when available, falls back to files)
 async function getCloudUsersPayload() {
   try {
