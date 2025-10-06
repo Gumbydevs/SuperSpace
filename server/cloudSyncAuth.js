@@ -312,15 +312,97 @@ class CloudSyncAuth {
         return { success: false, message: 'Invalid token' };
       }
 
+      // Load any existing saved player data so we can merge instead of overwrite
+      let existing = null;
+      try {
+        existing = await database.getPlayerData(validation.username);
+      } catch (e) {
+        // ignore - we'll treat as no existing data
+        existing = null;
+      }
+
+      const existingGameData = (existing && existing.gameData) ? existing.gameData : (existing || {});
+
+      // Merge strategy: for most keys, incoming upload replaces existing.
+      // For entitlement-related keys we merge to avoid accidental loss:
+      // - premiumPurchases: union of avatars and skins, concatenated deduped purchaseHistory
+      // - ownedAvatars / ownedSkins: union
+      // - selectedShipSkin: prefer non-default local value if present
+      const mergedGameData = Object.assign({}, existingGameData, gameData || {});
+
+      // Merge premiumPurchases if either side has it
+      try {
+        const cloudPurch = (gameData && gameData.premiumPurchases) ? JSON.parse(JSON.stringify(gameData.premiumPurchases)) : null;
+        const localPurch = (existingGameData && existingGameData.premiumPurchases) ? JSON.parse(JSON.stringify(existingGameData.premiumPurchases)) : null;
+
+        if (localPurch || cloudPurch) {
+          const avatars = Array.from(new Set([...(localPurch && localPurch.avatars || []), ...(cloudPurch && cloudPurch.avatars || [])]));
+          const skins = Array.from(new Set([...(localPurch && localPurch.skins || []), ...(cloudPurch && cloudPurch.skins || [])]));
+          const history = (localPurch && Array.isArray(localPurch.purchaseHistory) ? localPurch.purchaseHistory : []).concat(cloudPurch && Array.isArray(cloudPurch.purchaseHistory) ? cloudPurch.purchaseHistory : []);
+
+          // Deduplicate history by JSON string
+          const seen = new Set();
+          const dedupHistory = [];
+          for (const h of history) {
+            try {
+              const key = JSON.stringify(h);
+              if (!seen.has(key)) {
+                seen.add(key);
+                dedupHistory.push(h);
+              }
+            } catch (e) {
+              dedupHistory.push(h);
+            }
+          }
+
+          mergedGameData.premiumPurchases = {
+            avatars,
+            skins,
+            purchaseHistory: dedupHistory,
+          };
+        }
+      } catch (e) {
+        // On any merge error, prefer to keep whatever incoming data contained
+        if (gameData && gameData.premiumPurchases) mergedGameData.premiumPurchases = gameData.premiumPurchases;
+      }
+
+      // Merge legacy owned lists
+      try {
+        const mergeList = (key) => {
+          const cloudArr = gameData && gameData[key] ? JSON.parse(JSON.stringify(gameData[key])) : null;
+          const localArr = existingGameData && existingGameData[key] ? JSON.parse(JSON.stringify(existingGameData[key])) : null;
+          if (localArr || cloudArr) {
+            mergedGameData[key] = Array.from(new Set([...(localArr || []), ...(cloudArr || [])]));
+          }
+        };
+        mergeList('ownedAvatars');
+        mergeList('ownedSkins');
+      } catch (e) {
+        // ignore parsing issues
+      }
+
+      // Preserve a local non-default ship skin selection if it exists
+      try {
+        const localSel = existingGameData && existingGameData.selectedShipSkin;
+        const cloudSel = gameData && gameData.selectedShipSkin;
+        if (localSel && localSel !== 'none') {
+          mergedGameData.selectedShipSkin = localSel;
+        } else if (cloudSel) {
+          mergedGameData.selectedShipSkin = cloudSel;
+        }
+      } catch (e) {
+        // ignore
+      }
+
       const playerData = {
         username: validation.username,
-        gameData,
+        gameData: mergedGameData,
         lastSaved: new Date().toISOString(),
       };
 
       await database.savePlayerData(validation.username, playerData);
 
-      console.log(`💾 Saved data for: ${validation.username}`);
+      console.log(`💾 Saved (merged) data for: ${validation.username}`);
       return { success: true };
     } catch (error) {
       console.error('Save data error:', error);
