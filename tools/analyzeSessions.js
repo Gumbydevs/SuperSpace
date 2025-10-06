@@ -29,18 +29,22 @@ function analyze() {
     allDurations: [],
   };
 
+  const perDay = {};
   if (fs.existsSync(dailyDir)) {
     const files = fs.readdirSync(dailyDir).filter(f => f.endsWith('.json'));
     for (const f of files) {
       const p = path.join(dailyDir, f);
       const data = readJson(p);
       if (!data || !Array.isArray(data.sessionDurations)) continue;
+      const day = data.date || f.replace('.json','');
+      perDay[day] = perDay[day] || { durations: [], total: 0, lt60:0 };
       for (const d of data.sessionDurations) {
-        // durations in file should be seconds; fallback if huge (>10000) then treat as ms
         const dur = (typeof d === 'number' && isFinite(d)) ? (d > 10000 ? Math.round(d / 1000) : d) : 0;
         report.totalSessionCount++;
         report.allDurations.push(dur);
-        if (dur < 60) { report.lessThan60++; if (report.sampleShort.length < 5) report.sampleShort.push(dur); }
+        perDay[day].durations.push(dur);
+        perDay[day].total++;
+        if (dur < 60) { report.lessThan60++; perDay[day].lt60++; if (report.sampleShort.length < 5) report.sampleShort.push(dur); }
         else if (dur < 300) { report.lessThan300++; }
         else if (dur < 600) { report.lessThan600++; }
         else { report.greaterOrEqual600++; if (report.sampleLong.length < 5) report.sampleLong.push(dur); }
@@ -82,6 +86,20 @@ function analyze() {
   console.log('\nAverage (all sessions):', Math.round(allAvg), 's');
   console.log('Average (>=60s):', Math.round(filteredAvg), 's');
   console.log('Count used for >=60s average:', filtered.length);
+
+  // Per-day breakdown
+  console.log('\nPer-day averages (all / >=60s):');
+  const days = Object.keys(perDay).sort();
+  const todayKey = (new Date()).toISOString().split('T')[0];
+  for (const day of days) {
+    const arr = perDay[day].durations || [];
+    const avgAll = Math.round(avg(arr));
+    const arrFiltered = arr.filter(d => d >= 60);
+    const avgFiltered = Math.round(avg(arrFiltered));
+    const cnt = arrFiltered.length;
+    const marker = day === todayKey ? ' <- TODAY' : '';
+    console.log(`  ${day}: ${avgAll}s / ${avgFiltered}s (>=60s count: ${cnt})${marker}`);
+  }
 }
 
 analyze();
