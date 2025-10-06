@@ -187,9 +187,26 @@ class DatabaseAnalytics {
         return Math.floor(msOrSec > 10000 ? msOrSec / 1000 : msOrSec);
       }
 
+      // Helper: compute percentile from an array of numbers (seconds)
+      function percentileFromArray(arr, p) {
+        if (!Array.isArray(arr) || arr.length === 0) return 0;
+        const sorted = arr.slice().filter(x => typeof x === 'number' && isFinite(x)).sort((a,b)=>a-b);
+        if (sorted.length === 0) return 0;
+        const idx = p * (sorted.length - 1);
+        const lo = Math.floor(idx);
+        const hi = Math.ceil(idx);
+        if (lo === hi) return sorted[lo];
+        return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+      }
+
+      const todayMedian = todayStatsRaw.sessionDurations && todayStatsRaw.sessionDurations.length > 0 ? Math.round(percentileFromArray(todayStatsRaw.sessionDurations, 0.5)) : 0;
+      const todayP90 = todayStatsRaw.sessionDurations && todayStatsRaw.sessionDurations.length > 0 ? Math.round(percentileFromArray(todayStatsRaw.sessionDurations, 0.9)) : 0;
+
       const todayStats = Object.assign({}, todayStatsRaw, {
         // Convert averageSessionTime (ms or sec) into seconds for the dashboard
         averageSessionDuration: toSecondsPossibly(todayStatsRaw.averageSessionTime),
+        averageSessionMedian: todayMedian,
+        averageSessionP90: todayP90,
         // ensure hourlyActivity is present
         hourlyActivity: Array.isArray(todayStatsRaw.hourlyActivity) ? todayStatsRaw.hourlyActivity : Array(24).fill(0),
         // ensure hourlyUniquePlayers is present for charting
@@ -199,8 +216,13 @@ class DatabaseAnalytics {
         tutorial: todayStatsRaw.tutorial || { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} },
       });
 
+      const allTimeMedian = allTimeStatsRaw.sessionDurations && allTimeStatsRaw.sessionDurations.length > 0 ? Math.round(percentileFromArray(allTimeStatsRaw.sessionDurations,0.5)) : 0;
+      const allTimeP90 = allTimeStatsRaw.sessionDurations && allTimeStatsRaw.sessionDurations.length > 0 ? Math.round(percentileFromArray(allTimeStatsRaw.sessionDurations,0.9)) : 0;
+
       const allTimeStats = Object.assign({}, allTimeStatsRaw, {
         averageSessionDuration: toSecondsPossibly(allTimeStatsRaw.averageSessionTime),
+        averageSessionMedian: allTimeMedian,
+        averageSessionP90: allTimeP90,
         hourlyActivity: Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0),
         hourlyUniquePlayers: Array.isArray(allTimeStatsRaw.hourlyUniquePlayers) ? allTimeStatsRaw.hourlyUniquePlayers : (Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0)),
         eventCounts: allTimeStatsRaw.eventCounts || {},
