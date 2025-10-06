@@ -440,7 +440,7 @@ export class Player {
       active: false, // Whether the deflector is currently deployed
       duration: 0.8, // Maximum duration in seconds (brief deployment)
       remainingTime: 0, // Time left for current deployment
-      energyCost: 30, // Energy cost to activate
+      energyCost: 10, // Energy cost to activate
       cooldown: 2.0, // Cooldown between uses in seconds
       cooldownRemaining: 0, // Time left on cooldown
       radius: 35, // Visual and collision radius when active
