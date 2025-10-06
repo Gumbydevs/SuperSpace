@@ -395,6 +395,10 @@ export class Player {
     this.afterburnerSpeedMultiplier = 2.0; // Speed boost when active
     this.afterburnerFlameMultiplier = 2.5; // Engine flame size multiplier
     this.afterburnerMinEnergy = 10; // Minimum energy required to activate
+  // Multiplier applied to per-frame acceleration while afterburner is active.
+  // This makes afterburner behave like increased thrust (force), not an
+  // instantaneous velocity change.
+  this.afterburnerAccelMultiplier = 2.2;
     // Here we set up the shield system (requires upgrade)
     this.shieldCapacity = 0; // No shields by default until upgraded
     this.shield = 0;
@@ -477,18 +481,23 @@ export class Player {
 
       // Use the joystick thrust amount (if provided) to scale acceleration
       const thrustMultiplier = input.thrustAmount || 1.0;
+      const accelMultiplier = this.afterburnerActive
+        ? this.afterburnerAccelMultiplier
+        : 1.0;
 
       // Calculate acceleration based on the ship's rotation
       const accelerationX =
         Math.sin(this.rotation) *
         this.acceleration *
         deltaTime *
-        thrustMultiplier;
+        thrustMultiplier *
+        accelMultiplier;
       const accelerationY =
         -Math.cos(this.rotation) *
         this.acceleration *
         deltaTime *
-        thrustMultiplier;
+        thrustMultiplier *
+        accelMultiplier;
 
       // Apply acceleration to velocity
       this.velocity.x += accelerationX;
@@ -529,10 +538,13 @@ export class Player {
       if (input.keys.includes('ArrowUp') || input.keys.includes('KeyW')) {
         // Calculate acceleration components based on ship's rotation
         // Sine for X because 0 radians points up in our coordinate system
+        const accelMultiplier = this.afterburnerActive
+          ? this.afterburnerAccelMultiplier
+          : 1.0;
         const accelerationX =
-          Math.sin(this.rotation) * this.acceleration * deltaTime;
+          Math.sin(this.rotation) * this.acceleration * deltaTime * accelMultiplier;
         const accelerationY =
-          -Math.cos(this.rotation) * this.acceleration * deltaTime;
+          -Math.cos(this.rotation) * this.acceleration * deltaTime * accelMultiplier;
 
         // Apply acceleration to velocity
         this.velocity.x += accelerationX;
@@ -556,6 +568,8 @@ export class Player {
     const afterburnerRequested =
       input.keys.includes('Shift') || input.afterburner;
 
+    // Remember previous state so we can apply a single impulse when activating
+    const wasAfterburnerActive = this.afterburnerActive;
     if (
       afterburnerRequested &&
       this.energy >= this.afterburnerMinEnergy &&
@@ -563,7 +577,7 @@ export class Player {
     ) {
       if (!this.afterburnerActive) {
         this.afterburnerActive = true;
-        // Play afterburner ignition sound
+        // Play afterburner ignition sound (no instant velocity change)
         if (soundManager) {
           soundManager.play('explosion', {
             volume: 0.3,
@@ -699,10 +713,20 @@ export class Player {
       this.velocity.y *= frameIndependentFriction;
     }
 
-    // Here we cap velocity to the maximum speed (with afterburner boost)
+    // Soft speed cap: instead of instantly clamping velocity when afterburner
+    // ends (which feels like immediate braking), we gradually reduce any
+    // excess speed above currentMaxSpeed. This preserves inertia and feels
+    // like a real boost that imparts momentum. Bleed is intentionally low
+    // so the player perceives the speed boost for a short time after release.
     const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2);
     if (currentSpeed > currentMaxSpeed) {
-      const ratio = currentMaxSpeed / currentSpeed;
+      // Excess speed above the cap
+      const excess = currentSpeed - currentMaxSpeed;
+      // Gradually bleed off excess speed: fraction per second (0.2 = 20%/s)
+      const bleedPerSecond = 0.2;
+      const bleedAmount = Math.min(excess, excess * bleedPerSecond * deltaTime);
+      const newSpeed = currentSpeed - bleedAmount;
+      const ratio = newSpeed / currentSpeed;
       this.velocity.x *= ratio;
       this.velocity.y *= ratio;
     }
