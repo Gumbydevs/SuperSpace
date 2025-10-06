@@ -1189,7 +1189,14 @@
             return `Player joined the game`;
           case 'player_left':
           case 'session_end':
-            return `Player left after ${Math.floor(event.data?.sessionTime || event.data?.sessionDuration || 0) / 1000}s`;
+            // event.data.sessionDuration may be in milliseconds; convert to seconds and format
+            try {
+              const durMs = event.data?.sessionTime || event.data?.sessionDuration || 0;
+              const durSec = Math.floor(Number(durMs) / 1000);
+              return `Player left after ${formatDuration(durSec)}`;
+            } catch (e) {
+              return 'Player left';
+            }
           case 'kill':
             return `Kill with ${event.data?.weapon || 'unknown weapon'}`;
           case 'death':
