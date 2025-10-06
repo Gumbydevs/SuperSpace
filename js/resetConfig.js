@@ -1,31 +1,19 @@
 // Reset configuration file
 // Edit the flags below to control what is cleared/preserved during a version-driven reset.
 // Authoritative version for resets. Edit this value to trigger a version-driven reset.
-export const GAME_VERSION = '2025.10.02.007';
+import NotesModule, { versionNotes as RN_versionNotes, versionLinks as RN_versionLinks, versionLinkLabels as RN_versionLinkLabels } from './releaseNotes.js';
+
+export const GAME_VERSION = '2025.10.05.001';
 export const ResetConfig = {
-  // Human-readable release notes keyed by version string
-  versionNotes: {
-    // Use the same version format as GAME_VERSION above
-    [GAME_VERSION]: [
-        '<span style="color: #ff4444; font-weight: bold;">Important: Due to a glitch in deploying the last patch, you may need to re-register your cloud account if you experience login issues.</span>',
-        'Players have received a special pre-release avatar and ship skin to show our appreciation for your support!',
-        'Restored original ship rotation physics! No more rotational inertia. Original feel restored: smoother, more responsive flight feel.',
-        'Added Impact Deflector system: Press Left Ctrl or TAB for a brief energy shield that deflects asteroids without damage!',
-        'Tweaks to daily and weekly challenges: improved claim flow and fixed repeated weekly notifications.',
-        'Improved performance and stability.'
-    ]
-  },
-  // Optional per-version external links (devlog / full release notes).
-  // If present, the game will show a "Read full devlog / release notes" link
-  // in the version-reset modal so players can read more about the update.
-  versionLinks: {
-    [GAME_VERSION]: 'https://gumbydev.itch.io/superspace/devlog/1064512/-superspace-dev-log-4-community-features-polish-and-whats-next'
-  },
-  // Optional friendly labels to display for per-version links. If provided,
-  // the modal will show this text instead of the raw URL.
-  versionLinkLabels: {
-    [GAME_VERSION]: 'Devlog & Release Notes-2025.10.02'
-  },
+  // Human-readable release notes keyed by version string (imported from js/releaseNotes.js)
+  versionNotes: RN_versionNotes,
+  versionLinks: RN_versionLinks,
+  versionLinkLabels: RN_versionLinkLabels,
+  // Threshold version (inclusive): only players with stored versions older
+  // than this will receive a destructive reset when GAME_VERSION is bumped.
+  // Players with storedVersion >= resetThresholdVersion will have their
+  // stored version advanced without destructive resets. Update as needed.
+  resetThresholdVersion: '2025.10.02.007',
 
   // Flags to control which areas are reset. true = reset/clear, false = preserve
   flags: {

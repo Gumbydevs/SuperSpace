@@ -119,24 +119,45 @@ export class MultiplayerManager {
   // Check if game version has changed and reset progress if needed
   checkAndHandleVersionReset() {
     const storedVersion = localStorage.getItem('gameVersion');
-
     // Only reset progress when there is an existing stored version and it differs
-    // and automatic resets are explicitly allowed. This prevents accidental
-    // destructive clears during development or by mistake.
+    // and automatic resets are explicitly allowed. However, we only want to
+    // perform a destructive reset for players on versions older than a
+    // configured threshold. Players at or newer than the threshold will have
+    // their stored version advanced to avoid destructive clears of toggles.
+    const resetThreshold = (ResetConfig && ResetConfig.resetThresholdVersion) || '2025.10.02.007';
+
+    // Helper: compare two version strings like 'YYYY.MM.DD.NNN'
+    function versionCompare(a, b) {
+      try {
+        const pa = String(a).split('.').map((s) => parseInt(s, 10) || 0);
+        const pb = String(b).split('.').map((s) => parseInt(s, 10) || 0);
+        const len = Math.max(pa.length, pb.length);
+        for (let i = 0; i < len; i++) {
+          const na = pa[i] || 0;
+          const nb = pb[i] || 0;
+          if (na < nb) return -1;
+          if (na > nb) return 1;
+        }
+        return 0;
+      } catch (e) {
+        return String(a).localeCompare(String(b));
+      }
+    }
+
     if (this.allowAutomaticReset && storedVersion && storedVersion !== this.GAME_VERSION) {
-      console.log('🔄 Game version changed - resetting player progress...');
-
-      // Store old version for logging
-      const oldVersion = storedVersion;
-
-      // Set reset flag
-      this.resetOccurred = true;
-
-      // Reset all game progress
-      this.resetPlayerProgress(oldVersion);
-
-      // Update stored version to current
-      localStorage.setItem('gameVersion', this.GAME_VERSION);
+      // If storedVersion is older than the resetThreshold, perform a destructive reset
+      if (versionCompare(storedVersion, resetThreshold) < 0) {
+        console.log('🔄 Game version changed - performing destructive reset for very old version...', storedVersion, '->', this.GAME_VERSION);
+        const oldVersion = storedVersion;
+        this.resetOccurred = true;
+        this.resetPlayerProgress(oldVersion);
+        localStorage.setItem('gameVersion', this.GAME_VERSION);
+      } else {
+        // Player is on a recent enough version; skip destructive reset but
+        // advance their stored version so we don't repeatedly consider them.
+        console.log('ℹ️ Version bumped but player is on a recent version; skipping destructive reset. Advancing stored version.', storedVersion, '->', this.GAME_VERSION);
+        localStorage.setItem('gameVersion', this.GAME_VERSION);
+      }
     } else if (!storedVersion) {
       // If no stored version exists, just set it so future version bumps can be detected
       console.log('ℹ️ No stored gameVersion detected. Setting current version for future checks.');

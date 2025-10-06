@@ -185,20 +185,10 @@
         <div id="branding">
           <div class="copyright">© Gumbysoft - Made by Gumby</div>
           <div class="links">
-            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener"
-              >🎮 Other Games</a
-            >
-            <a
-              href="https://buymeacoffee.com/gumbydev"
-              target="_blank"
-              rel="noopener"
-              >☕ Support The Game</a>
-            
-          </div>
-          <div class="links">
-            <a href="https://discord.gg/hZbZ2gQ4" target="_blank" rel="noopener"
-              >💬 Join Discord</a
-            >
+            <a id="release-notes-link" href="#" title="Release Notes">📜 Release Notes <span id="release-notes-badge" style="background:#f44;color:#fff;border-radius:8px;padding:2px 6px;margin-left:6px;display:none;font-size:0.8em;">new</span></a>
+            <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener">☕ Support The Game</a>
+            <a href="https://discord.gg/hZbZ2gQ4" target="_blank" rel="noopener">💬 Join Discord</a>
+            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener">🎮 Other Games</a>
           </div>
         </div>
       </div>
@@ -499,6 +489,137 @@
           }
           window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
         });
+      });
+    </script>
+
+    <!-- Release Notes modal (renders from ResetConfig.versionNotes) -->
+
+    <div id="release-notes-popup" class="disclaimer-overlay" style="display:none;">
+      <div class="disclaimer-content" style="max-width:760px;">
+        <h2 style="margin-top:0;color:#fff;">Release Notes</h2>
+        <div id="release-notes-list" style="max-height:60vh;overflow:auto;color:#ddd;font-size:0.95em;padding:6px;background:rgba(0,0,0,0.12);border-radius:6px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="release-notes-close" class="cancel-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import ResetConfig, { GAME_VERSION } from './js/resetConfig.js';
+
+      function formatVersionNotes(notesObj) {
+        const keys = Object.keys(notesObj || {});
+        // Sort keys lexicographically which matches our version format YYYY.MM.DD.*
+        keys.sort();
+        keys.reverse(); // newest first
+
+        const container = document.getElementById('release-notes-list');
+        container.innerHTML = '';
+
+        if (keys.length === 0) {
+          container.innerHTML = '<div style="color:#aaa;padding:8px;">No release notes available.</div>';
+          return;
+        }
+
+        keys.forEach((v) => {
+          const section = document.createElement('div');
+          section.style.marginBottom = '12px';
+
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const title = document.createElement('div');
+          title.innerHTML = `<strong style=\"color:#fff\">Version ${v}</strong>`;
+          header.appendChild(title);
+
+          // External link if present
+          if (ResetConfig.versionLinks && ResetConfig.versionLinks[v]) {
+            const linkLabel = (ResetConfig.versionLinkLabels && ResetConfig.versionLinkLabels[v]) || 'Read full notes';
+            const a = document.createElement('a');
+            a.href = ResetConfig.versionLinks[v];
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = linkLabel;
+            a.style.color = '#8cf';
+            header.appendChild(a);
+          }
+
+          section.appendChild(header);
+
+          const list = document.createElement('ul');
+          list.style.margin = '6px 0 0 18px';
+          list.style.color = '#ddd';
+
+          const items = ResetConfig.versionNotes[v] || [];
+          items.forEach((itm) => {
+            const li = document.createElement('li');
+            li.innerHTML = itm; // NOTE: versionNotes contains HTML strings
+            list.appendChild(li);
+          });
+          section.appendChild(list);
+
+          container.appendChild(section);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+  // The release notes trigger is now a link inside the footer links area
+  const btn = document.getElementById('release-notes-link');
+    const popup = document.getElementById('release-notes-popup');
+    const closeBtn = document.getElementById('release-notes-close');
+  const badge = document.getElementById('release-notes-badge');
+
+        formatVersionNotes(ResetConfig.versionNotes);
+
+        // Show badge when user's last seen version differs from current GAME_VERSION
+        try {
+          const lastSeen = localStorage.getItem('superspace-last-seen-version') || '';
+          if (lastSeen !== GAME_VERSION) {
+            badge.style.display = 'inline-block';
+          }
+        } catch (e) {
+          // ignore storage errors
+        }
+
+        if (btn) {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            popup.style.display = 'flex';
+            badge.style.display = 'none';
+            try {
+              localStorage.setItem('superspace-last-seen-version', GAME_VERSION);
+            } catch (err) {
+              // ignore storage errors
+            }
+          });
+        }
+
+        closeBtn.addEventListener('click', () => {
+          popup.style.display = 'none';
+        });
+
+        // Opening the release notes now auto-marks them as read; the explicit
+        // 'Mark as read' button was removed to avoid redundancy.
+
+        // Also add a link from the disclaimer modal to open release notes for clarity
+        const disclaimerLink = document.createElement('a');
+        disclaimerLink.href = '#';
+        disclaimerLink.textContent = 'View Release Notes';
+        disclaimerLink.style.color = '#8cf';
+        disclaimerLink.style.marginLeft = '10px';
+        disclaimerLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.getElementById('release-notes-popup').style.display = 'flex';
+          document.getElementById('release-notes-badge').style.display = 'none';
+        });
+
+        // Append to disclaimer actions if present
+        const disclaimerActions = document.querySelector('.disclaimer-actions');
+        if (disclaimerActions) {
+          disclaimerActions.appendChild(disclaimerLink);
+        }
       });
     </script>
 
