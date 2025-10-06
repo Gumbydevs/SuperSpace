@@ -337,7 +337,11 @@ app.get('/analytics', async (req, res) => {
     const reportedPeak = stats.today?.peakConcurrent || 0;
     const adjustedPeak = Math.max(reportedPeak, actualActivePlayers);
 
-    const todayPayload = Object.assign({}, stats.today || {});
+  const todayPayload = Object.assign({}, stats.today || {});
+  // Ensure eventCounts are present for frontend (file-based analytics may not have been
+  // normalized into stats.today.eventCounts previously). This lets the dashboard read
+  // tutorial_* counters and other event metrics reliably.
+  todayPayload.eventCounts = (stats && stats.today && stats.today.eventCounts) ? stats.today.eventCounts : (stats && stats.eventCounts ? stats.eventCounts : {});
     // Ensure the frontend finds these fields under today
     todayPayload.peakConcurrent = adjustedPeak;
     todayPayload.currentConcurrent = actualActivePlayers;

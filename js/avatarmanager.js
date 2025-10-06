@@ -1633,6 +1633,20 @@ export class AvatarManager {
         ctx.fillRect(9, 14, 1, 1);
         ctx.fillRect(11, 14, 1, 1);
         break;
+      default:
+        // For any avatar types not handled above (including premium avatars),
+        // delegate to the premium-drawing routine which can render a scaled
+        // down premium portrait into the same canvas/context.
+        try {
+          this.drawPremiumAvatar(ctx, avatarType, 16);
+        } catch (e) {
+          // If something goes wrong, fall back to drawing a generic face
+          ctx.fillStyle = '#222';
+          ctx.fillRect(4, 4, 8, 8);
+          ctx.fillStyle = '#000';
+          ctx.fillRect(5, 6, 1, 1);
+          ctx.fillRect(10, 6, 1, 1);
+        }
     }
 
     // Return the canvas as data URL for use in player list

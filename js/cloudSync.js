@@ -143,10 +143,12 @@ class CloudSyncService {
         // Notify UI of login status change
         this.notifyLoginStatusChanged();
         
-        // Clear all game data keys before merging cloud data
-        this.clearGameDataLocalStorage();
-        // Download cloud data and merge with local
-        await this.downloadAndMergeCloudData();
+  // Download cloud data and merge with local
+  // NOTE: don't clear local game data here — that would permanently
+  // remove locally-purchased avatars/skins if the cloud copy is empty.
+  // Instead, merge cloud data with local and prefer non-empty local
+  // entitlements when appropriate (see mergeGameData below).
+  await this.downloadAndMergeCloudData();
         // Ensure playtester entitlements are present even if cloud had no data
         try {
           if (typeof this.ensurePlaytesterEntitlements === 'function') this.ensurePlaytesterEntitlements();
@@ -325,7 +327,7 @@ class CloudSyncService {
         continue;
       }
 
-      // For some keys, we might want to merge rather than overwrite
+  // For some keys, we might want to merge rather than overwrite
       if (key === 'credits' || key === 'playerCredits') {
         // Take the higher value for credits
         const localCredits = parseInt(localStorage.getItem(key) || '0');
@@ -343,6 +345,67 @@ class CloudSyncService {
           Math.max(localScore, cloudScore).toString(),
         );
         } else {
+          // Merge premium purchases safely so cloud won't wipe local purchases
+          if (key === 'premiumPurchases') {
+            try {
+              const cloudObj = JSON.parse(value || '{}');
+              const localRaw = localStorage.getItem('premiumPurchases');
+              const localObj = localRaw ? JSON.parse(localRaw) : { avatars: [], skins: [], purchaseHistory: [] };
+
+              const merged = {
+                avatars: Array.from(new Set([...(localObj.avatars || []), ...(cloudObj.avatars || [])])),
+                skins: Array.from(new Set([...(localObj.skins || []), ...(cloudObj.skins || [])])),
+                purchaseHistory: (localObj.purchaseHistory || []).concat(cloudObj.purchaseHistory || []),
+              };
+
+              // Deduplicate purchaseHistory entries by JSON string
+              const seen = new Set();
+              merged.purchaseHistory = merged.purchaseHistory.filter((p) => {
+                try {
+                  const k = JSON.stringify(p);
+                  if (seen.has(k)) return false;
+                  seen.add(k);
+                  return true;
+                } catch (e) {
+                  return true;
+                }
+              });
+
+              localStorage.setItem('premiumPurchases', JSON.stringify(merged));
+            } catch (e) {
+              // Fallback to overwrite if parse fails
+              localStorage.setItem(key, value);
+            }
+            continue;
+          }
+
+          // Merge legacy owned lists too (ownedAvatars / ownedSkins)
+          if (key === 'ownedAvatars' || key === 'ownedSkins') {
+            try {
+              const cloudArr = JSON.parse(value || '[]');
+              const localArr = JSON.parse(localStorage.getItem(key) || '[]');
+              const mergedArr = Array.from(new Set([...(localArr || []), ...(cloudArr || [])]));
+              localStorage.setItem(key, JSON.stringify(mergedArr));
+            } catch (e) {
+              // If parse fails, just write cloud value
+              localStorage.setItem(key, value);
+            }
+            continue;
+          }
+
+          // If cloud is trying to set selectedShipSkin to 'none' but local has a selection,
+          // prefer the local non-default selection to avoid clobbering the player's chosen skin.
+          if (key === 'selectedShipSkin') {
+            try {
+              const localSel = localStorage.getItem('selectedShipSkin');
+              if (localSel && localSel !== 'none') {
+                // Keep local selection
+                continue;
+              }
+            } catch (e) {
+              // fall through to set cloud value
+            }
+          }
         // Special-case achievements: merge per-achievement fields to preserve notified flags
         if (key === 'achievements') {
           try {
