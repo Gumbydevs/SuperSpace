@@ -1,8 +1,11 @@
 export class InputHandler {
   constructor() {
-    this.keys = [];
+  this.keys = [];
     this.isTouchDevice = false;
     this.isChatting = false; // Add this line
+  // Track keys that were just pressed (edge detection) so actions like
+  // one-shot abilities only trigger once per press.
+  this.justPressed = {};
     this.touchJoystick = {
       active: false,
       startX: 0,
@@ -55,11 +58,20 @@ export class InputHandler {
       if (!this.keys.includes(e.code) && !e.repeat) {
         this.keys.push(e.code);
 
+        // Mark as just pressed for edge-triggered actions
+        try {
+          this.justPressed[e.code] = true;
+        } catch (err) {
+          // ignore - defensive
+        }
+
         // Handle shift keys as generic 'Shift' for afterburner
         if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
           if (!this.keys.includes('Shift')) {
             this.keys.push('Shift');
           }
+          // Also mark generic Shift as just pressed
+          this.justPressed['Shift'] = true;
         }
       }
     });
@@ -81,6 +93,11 @@ export class InputHandler {
       const index = this.keys.indexOf(e.code);
       if (index > -1) {
         this.keys.splice(index, 1);
+      }
+
+      // Clear any justPressed flag for this key on release
+      if (this.justPressed && this.justPressed[e.code]) {
+        delete this.justPressed[e.code];
       }
 
       // Handle shift keys - remove generic 'Shift' when both shift keys are released
@@ -268,6 +285,9 @@ export class InputHandler {
       e.preventDefault();
       if (!this.keys.includes('ControlLeft')) {
         this.keys.push('ControlLeft');
+        // Mark touch as a just-pressed Control so client code that expects
+        // a single activation (edge-trigger) will honor it.
+        this.justPressed['ControlLeft'] = true;
         deflectorButton.classList.add('active');
         // Remove it after a short delay to simulate a keypress
         setTimeout(() => {
@@ -643,6 +663,17 @@ export class InputHandler {
     applyTouchButtonPositions();
     window.addEventListener('resize', applyTouchButtonPositions);
     window.addEventListener('orientationchange', applyTouchButtonPositions);
+  }
+
+  // Consume and return whether the named key was just pressed since last check.
+  // This implements an edge-trigger so one-shot abilities only activate once
+  // per physical press. Returns true once and clears the flag.
+  consumeJustPressed(code) {
+    if (this.justPressed && this.justPressed[code]) {
+      delete this.justPressed[code];
+      return true;
+    }
+    return false;
   }
 
   handleTouchStart(e) {

@@ -611,11 +611,24 @@ export class Player {
     }
 
     // Handle Impact Deflector activation (Left Control or Tab key)
-    const deflectorRequested = input.keys.includes('ControlLeft') || input.keys.includes('Tab');
-    
-    if (deflectorRequested && 
-        this.energy >= this.impactDeflector.energyCost && 
-        this.impactDeflector.cooldownRemaining <= 0 && 
+    // Use edge-trigger so the deflector only activates when the key/button
+    // was pressed, not while the key is held or accidentally set by touch UI.
+    let deflectorRequested = false;
+    try {
+      if (typeof input.consumeJustPressed === 'function') {
+        deflectorRequested =
+          input.consumeJustPressed('ControlLeft') || input.consumeJustPressed('Tab');
+      } else {
+        // Fallback: legacy behavior (still works but not edge-triggered)
+        deflectorRequested = input.keys.includes('ControlLeft') || input.keys.includes('Tab');
+      }
+    } catch (e) {
+      deflectorRequested = input.keys.includes('ControlLeft') || input.keys.includes('Tab');
+    }
+
+    if (deflectorRequested &&
+        this.energy >= this.impactDeflector.energyCost &&
+        this.impactDeflector.cooldownRemaining <= 0 &&
         !this.impactDeflector.active) {
       // Activate the impact deflector
       this.impactDeflector.active = true;
