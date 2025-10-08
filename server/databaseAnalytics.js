@@ -415,6 +415,8 @@ class DatabaseAnalytics {
       .map(s => (typeof s.duration_ms === 'number' && isFinite(s.duration_ms) ? Math.round(s.duration_ms / 1000) : 0))
       .filter(d => d >= minSessionSeconds);
     stats.averageSessionTime = sessionSecondsArr.length > 0 ? sessionSecondsArr.reduce((a, b) => a + b, 0) / sessionSecondsArr.length : 0;
+    // Expose the (filtered, seconds) session durations array so callers can compute median/p90
+    stats.sessionDurations = sessionSecondsArr.slice();
     stats.uniquePlayersCount = stats.uniquePlayers.size;
     delete stats.uniquePlayers; // Remove Set for JSON serialization
 
