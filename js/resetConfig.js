@@ -3,7 +3,7 @@
 // Authoritative version for resets. Edit this value to trigger a version-driven reset.
 import NotesModule, { versionNotes as RN_versionNotes, versionLinks as RN_versionLinks, versionLinkLabels as RN_versionLinkLabels } from './releaseNotes.js';
 
-export const GAME_VERSION = '2025.10.05.001';
+export const GAME_VERSION = '2025.11.12.001';
 export const ResetConfig = {
   // Human-readable release notes keyed by version string (imported from js/releaseNotes.js)
   versionNotes: RN_versionNotes,

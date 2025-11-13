@@ -1,5 +1,12 @@
 // Centralized release notes data to make it easy to add new versions/notes.
 export const versionNotes = {
+  // Server back online announcement
+  '2025.11.12.001': [
+    '<span style="color: #00ff88; font-weight: bold;">🎉 Welcome back! The server is now online after several weeks of downtime.</span>',
+    '<span style="color: #7ad1ff;">All your cloud data has been preserved and is ready to sync when you reconnect your account!</span>',
+    'Thank you for your patience during the extended maintenance period. Happy space battling!'
+  ],
+
   // Newer release (developer summary)
   '2025.10.05.001': [
     'Afterburner physics overhaul: changed afterburner to apply increased thrust (force) instead of an instantaneous speed spike — preserves inertia and improves turning feel while boosted.',
