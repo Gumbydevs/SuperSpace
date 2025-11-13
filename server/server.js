@@ -296,29 +296,50 @@ app.get('/analytics', async (req, res) => {
       }
     }
 
-    // Use actual connected players count from gameState
-    const actualActivePlayers = Object.keys(gameState.players).length;
+    // Count connected non-admin sockets so dashboard reflects actual socket connections
+    const socketsMap = (io.sockets && io.sockets.sockets) ? io.sockets.sockets : new Map();
+    let connectedSocketCount = 0;
+    for (const s of socketsMap.values()) {
+      try {
+        if (s && s.isAdminSocket) continue; // ignore admin/analytics sockets
+        connectedSocketCount++;
+      } catch (e) {}
+    }
 
-    // Build connected players list with session duration
+    // Use the larger of gameState players or connected sockets (non-admin) as the active players count
+    const actualActivePlayers = Math.max(Object.keys(gameState.players).length, connectedSocketCount);
+
+    // Build connected players list including entries from gameState and any connected sockets not yet added to gameState
     const now = Date.now();
-    const connectedPlayers = Object.entries(gameState.players).map(([socketId, player]) => {
-      // Try to get session start time from socket.analytics if available
-      let sessionStart = null;
-      const socketObj = (io.sockets && io.sockets.sockets && io.sockets.sockets.get(socketId)) || null;
-      if (socketObj && socketObj.analytics && socketObj.analytics.startTime) {
-        sessionStart = socketObj.analytics.startTime;
+    const connectedPlayers = [];
+
+    // Add full player records from gameState
+    for (const [socketId, player] of Object.entries(gameState.players)) {
+      try {
+        const socketObj = socketsMap.get(socketId) || null;
+        let sessionStart = socketObj && socketObj.analytics && socketObj.analytics.startTime ? socketObj.analytics.startTime : (playerLastActivity[socketId] || null);
+        if (!sessionStart) sessionStart = now - 10000; // fallback: pretend a 10s session
+        const duration = Math.floor((now - sessionStart) / 1000);
+        connectedPlayers.push({ name: player.name, duration, socketId });
+      } catch (e) {
+        // ignore malformed entries
       }
-      // Fallback: use playerLastActivity as a rough estimate if no startTime
-      if (!sessionStart) {
-        sessionStart = playerLastActivity[socketId] ? now - 10000 : now; // fallback: 10s session if unknown
+    }
+
+    // Add minimal entries for connected sockets that are not present in gameState.players
+    for (const [socketId, socketObj] of socketsMap.entries()) {
+      try {
+        if (!socketObj) continue;
+        if (socketObj.isAdminSocket) continue;
+        if (gameState.players[socketId]) continue; // already included
+        const name = (socketObj.analytics && socketObj.analytics.playerId) || (socketObj.handshake && socketObj.handshake.auth && socketObj.handshake.auth.name) || `Guest-${String(socketId).substring(0,4)}`;
+        const sessionStart = (socketObj.analytics && socketObj.analytics.startTime) || (playerLastActivity[socketId] || now);
+        const duration = Math.floor((now - sessionStart) / 1000);
+        connectedPlayers.push({ name, duration, socketId });
+      } catch (e) {
+        // ignore
       }
-      const duration = Math.floor((now - sessionStart) / 1000);
-      return {
-        name: player.name,
-        duration,
-        socketId
-      };
-    });
+    }
 
     // Build leaderboard: sort by score descending
     const leaderboard = Object.values(gameState.players)

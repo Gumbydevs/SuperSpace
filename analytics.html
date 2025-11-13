@@ -314,13 +314,13 @@
 
       
       
-       <!-- Average Session Time -->
-      <div class="metric-card">
-        <h3>⏱️ Avg Session</h3>
-  <div class="metric-value"><span id="avgSessionTimeToday">0m</span> / <span id="avgSessionTimeAll">0m</span></div>
+  <!-- Average Session Time (Today only) -->
+  <div class="metric-card">
+    <h3>⏱️ Avg Session</h3>
+  <div class="metric-value"><span id="avgSessionTimeToday">0m</span></div>
   <div id="avgSessionMeta" style="font-size:0.8em;color:#9ef7c4;margin-top:6px;">median — · p90 —</div>
-  <div class="metric-subtitle">Today / All Time</div>
-      </div>
+  <div class="metric-subtitle">Today</div>
+  </div>
 
       <!-- Total Sessions -->
       <div class="metric-card">
@@ -891,9 +891,7 @@
     const avgTimeToday = today.averageSessionDuration || 0;
     setText('avgSessionTimeToday', formatDuration(avgTimeToday));
   }
-  // For all-time fallback to computed format
-  const avgTimeAll = allTime.averageSessionDuration || 0;
-  setText('avgSessionTimeAll', formatDuration(avgTimeAll));
+  // All-time value is intentionally not shown here; we display Today only
 
   // Show median and P90 as small text under the metric (if available)
   if (data.avgSessionMedianHuman) {
@@ -1133,7 +1131,6 @@
           const avgSec = today.averageSessionDuration || today.avgSessionTime || 0;
           const avgText = formatDuration(Math.floor(avgSec));
           setText('avgSessionTimeToday', avgText);
-          setText('avgSessionTimeAll', formatDuration(Math.floor(allTime.averageSessionDuration || 0)));
           setText('totalSessionsToday', today.totalSessions || 0);
           setText('totalSessionsAll', allTime.totalSessions || 0);
           // update connected/active players
