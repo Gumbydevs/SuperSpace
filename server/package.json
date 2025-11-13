@@ -2,10 +2,10 @@
   "name": "superspace-server",
   "version": "1.0.0",
   "description": "Multiplayer server for SuperSpace game",
-  "main": "index.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
   },
   "author": "Gumbysoft and Matt Sherman",
   "license": "ALL RIGHTS RESERVED",
@@ -20,7 +20,7 @@
     "nodemon": "^2.0.20"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=14.0.0"
   },
   "customLicense": {
     "notice": "This project is not open source. The code is available publicly for testing and community feedback only. All rights are reserved by Gumbysoft and Matt Sherman. Use, reuse, distribution, or modification is not permitted.",
