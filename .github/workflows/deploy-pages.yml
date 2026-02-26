@@ -3,52 +3,56 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-    # Don't re-trigger when the action itself commits docs/
-    paths-ignore:
-      - 'docs/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build docs/ from repo root
+      - name: Build site folder
         run: |
-          rm -rf docs
-          mkdir -p docs
+          mkdir -p _site
 
-          # Folders and files to exclude from the static site
-          EXCLUDE="docs .git node_modules server src tools exports analytics_data cloud_data"
-
+          # Copy everything except server/dev-only folders
+          EXCLUDE=".git node_modules server src tools exports analytics_data cloud_data _site"
           for item in * .[^.]* ; do
-            # skip excluded items
             skip=false
             for ex in $EXCLUDE; do
               [ "$item" = "$ex" ] && skip=true && break
             done
             $skip && continue
-            cp -r "$item" docs/
+            cp -r "$item" _site/ 2>/dev/null || true
           done
 
-          # Write runtime config pointing to Railway
-          echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > docs/config.json
+          # Runtime config pointing to Railway
+          echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > _site/config.json
 
-          # Prevent Jekyll from processing _ prefixed files
-          touch docs/.nojekyll
+          # Prevent Jekyll processing
+          touch _site/.nojekyll
 
-          echo "Files in docs/: $(find docs -type f | wc -l)"
+          echo "Files in _site/: $(find _site -type f | wc -l)"
 
-      - name: Commit and push docs/
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f docs/
-          # Only commit if something actually changed
-          git diff --cached --quiet && echo "No changes to docs/" && exit 0
-          git commit -m "chore: auto-deploy static site to docs/ [skip ci]"
-          git push origin main
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
