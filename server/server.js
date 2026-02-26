@@ -1220,7 +1220,19 @@ app.post('/analytics/track', (req, res) => {
       };
 
   logger.debug('📊 Processing event data:', eventData);
+      // Write to file-based analytics (always)
       analytics.processEvent(eventData, req.ip);
+      // Also write to database analytics (persistent) so the dashboard picks it up
+      if (dbAnalytics && dbAnalytics.initialized) {
+        dbAnalytics.trackEvent(
+          eventData.eventType,
+          eventData.playerId,
+          eventData.sessionId,
+          { ...eventData, clientIp: req.ip }
+        ).catch(err => {
+          logger.warn('Database analytics error in /analytics/track:', err && err.message ? err.message : err);
+        });
+      }
   logger.debug(`📊 Analytics event tracked: ${event} from ${data.playerId}`);
     } else {
   logger.warn(`📊 Analytics event missing required fields:`, {
