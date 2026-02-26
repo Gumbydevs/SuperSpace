@@ -1333,7 +1333,7 @@ input[type='range'] {
 
   /* Player list mobile adjustments - position within fixed viewport */
   #player-list {
-    max-width: 220px !important;
+    max-width: 260px !important;
     max-height: 250px !important;
     font-size: 12px !important;
     padding: 8px !important;
@@ -1400,6 +1400,20 @@ input[type='range'] {
   #player-list span {
     color: inherit !important;
     font-size: inherit !important;
+  }
+
+  /* On mobile hide wins/losses columns & shrink score so player names aren't truncated.
+     Column order in each player row: 1=rank, 2=dot, 3=avatar, 4=name, 5=score, 6=wins, 7=losses */
+  #player-list-container > div > span:nth-child(6),
+  #player-list-container > div > span:nth-child(7) {
+    display: none !important;
+  }
+  #player-list-container > div > span:nth-child(5) {
+    width: 38px !important;
+  }
+  /* Allow name flex item to shrink to available space */
+  #player-list-container > div > span:nth-child(4) {
+    min-width: 0 !important;
   }
 
   /* Adjust game UI elements to avoid touch control overlap */
@@ -1866,7 +1880,7 @@ input[type='range'] {
 
   /* Player list even smaller on small mobile */
   #player-list {
-    max-width: 160px;
+    max-width: 200px;
     max-height: 150px;
     font-size: 8px;
     padding: 4px;
@@ -1888,6 +1902,18 @@ input[type='range'] {
 
   #player-list-container {
     font-size: 7px;
+  }
+
+  /* Ensure wins/losses stay hidden and name has minimum space on very small screens */
+  #player-list-container > div > span:nth-child(6),
+  #player-list-container > div > span:nth-child(7) {
+    display: none !important;
+  }
+  #player-list-container > div > span:nth-child(5) {
+    width: 30px !important;
+  }
+  #player-list-container > div > span:nth-child(4) {
+    min-width: 0 !important;
   }
 
   /* Shop container adjustments for small mobile */
