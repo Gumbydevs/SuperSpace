@@ -157,7 +157,7 @@ export class TutorialSystem {
       {
         id: 'basic_movement',
         title: 'Master Your Ship Controls',
-        message: "Move your ship forward! Press W or Arrow Up to thrust. The Arrow Keys or WSAD will help you navigate. Try moving now! Your ship has realistic momentum so plan your maneuvers carefully in combat.",
+        message: "Move your ship! On mobile/iPad use the joystick (bottom-left). On desktop press W or Arrow Up to thrust. Your ship has realistic momentum so plan your maneuvers carefully in combat.",
         trigger: 'auto',
         reward: null,
         rewardText: "Give it a little thrust! ⭐",
@@ -568,21 +568,51 @@ export class TutorialSystem {
       brakeBtn.addEventListener('touchcancel', clearStop, { passive: true });
     }
 
-    // Touch joystick: detect touch interactions as movement on mobile
-    const joystickEl = document.getElementById('touch-joystick');
-    if (joystickEl) {
-      const setMoveActive = (e) => {
-        if (!this.isActive) return;
+    // Touch joystick: detect touch interactions as movement on mobile.
+    // The joystick element is created dynamically by input.js AFTER the tutorial
+    // constructor runs, so getElementById returns null here. Instead, use a
+    // document-level touchstart/touchmove listener and check whether the movement
+    // step is active. Also lazily attach to the element on first use.
+    this._joystickListenersAttached = false;
+
+    const setMoveActive = () => {
+      this._mobileMovementActive = true;
+    };
+    const clearMoveActive = () => {
+      this._mobileMovementActive = false;
+    };
+
+    const tryAttachJoystickListeners = () => {
+      if (this._joystickListenersAttached) return;
+      const joystickEl = document.getElementById('touch-joystick');
+      if (joystickEl) {
+        joystickEl.addEventListener('touchstart', setMoveActive, { passive: true });
+        joystickEl.addEventListener('touchmove', setMoveActive, { passive: true });
+        joystickEl.addEventListener('touchend', clearMoveActive, { passive: true });
+        joystickEl.addEventListener('touchcancel', clearMoveActive, { passive: true });
+        this._joystickListenersAttached = true;
+      }
+    };
+
+    // Document-level fallback: any touch on the screen when the movement step is
+    // active counts as movement intent. The checkMovement() guard ensures this
+    // only advances the correct tutorial step.
+    document.addEventListener('touchstart', (e) => {
+      if (!this.isActive) return;
+      const step = this.tutorialSteps[this.currentStep];
+      if (step && step.action === 'movement') {
         this._mobileMovementActive = true;
-      };
-      const clearMoveActive = (e) => {
-        this._mobileMovementActive = false;
-      };
-      joystickEl.addEventListener('touchstart', setMoveActive, { passive: true });
-      joystickEl.addEventListener('touchmove', setMoveActive, { passive: true });
-      joystickEl.addEventListener('touchend', clearMoveActive, { passive: true });
-      joystickEl.addEventListener('touchcancel', clearMoveActive, { passive: true });
-    }
+        tryAttachJoystickListeners();
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!this.isActive) return;
+      const step = this.tutorialSteps[this.currentStep];
+      if (step && step.action === 'movement') {
+        this._mobileMovementActive = true;
+      }
+    }, { passive: true });
   }
 
   // Helper to determine if the player can actually shoot (weapon engaged)
@@ -1356,11 +1386,12 @@ export class TutorialSystem {
     const hint = document.createElement('div');
     if (step.action) {
       hint.className = 'tutorial-action-hint';
+      const isMobile = this.game && this.game.isMobileDevice;
       const actionTexts = {
-        'movement': 'Try moving with WASD or arrow keys',
-        'stop_ship': 'Hold S or DOWN arrow to stop your ship',
-        'change_weapon': 'Press Q/E or number keys to change weapons',
-        'shoot': 'Press SPACEBAR to shoot',
+        'movement': isMobile ? 'Use the joystick (bottom-left) to move' : 'Try moving with WASD or arrow keys',
+        'stop_ship': isMobile ? 'Hold the red STOP button 🛑 for 1 second' : 'Hold S or DOWN arrow to stop your ship',
+        'change_weapon': isMobile ? 'Tap the weapon button 🔄 to cycle weapons' : 'Press Q/E or number keys to change weapons',
+        'shoot': isMobile ? 'Tap the FIRE button 🔥 to shoot' : 'Press SPACEBAR to shoot',
         'leave_safe_zone': 'Leave the checkerboard safe zone area',
         'return_to_safe_zone': 'Return to the safe zone (green area)',
         'mine_asteroid': 'Shoot an asteroid to mine it',
