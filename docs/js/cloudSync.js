@@ -593,7 +593,38 @@ class CloudSyncService {
         } catch (e) {
           // ignore errors when trying to set selectedAvatar
         }
-      }
+        }
+
+        // Refresh in-memory premium and avatar systems so the gifted avatar appears unlocked immediately
+        try {
+          if (typeof window !== 'undefined') {
+            // Refresh PremiumStore if available
+            try {
+              if (window.game && window.game.premiumStore) {
+                const ps = window.game.premiumStore;
+                ps.premiumPurchases = ps.loadPremiumPurchases ? ps.loadPremiumPurchases() : JSON.parse(localStorage.getItem('premiumPurchases') || '{}');
+                if (typeof ps.updateOwnedStatus === 'function') ps.updateOwnedStatus();
+                if (typeof ps.savePremiumPurchases === 'function') ps.savePremiumPurchases();
+              }
+            } catch (e) {
+              console.warn('Failed to refresh PremiumStore after granting playtester entitlements', e);
+            }
+
+            // Refresh AvatarManager UI if present
+            try {
+              if (window.avatarManagerInstance) {
+                if (typeof window.avatarManagerInstance.setupPremiumAvatars === 'function') window.avatarManagerInstance.setupPremiumAvatars();
+                if (typeof window.avatarManagerInstance.drawAllAvatars === 'function') window.avatarManagerInstance.drawAllAvatars();
+                if (typeof window.avatarManagerInstance.drawProfileAvatar === 'function') window.avatarManagerInstance.drawProfileAvatar();
+              }
+            } catch (e) {
+              console.warn('Failed to refresh AvatarManager after granting playtester entitlements', e);
+            }
+          }
+        } catch (e) {
+          /* ignore refresh errors */
+        }
+
     } catch (e) {
       console.warn('Failed to ensure playtester entitlements:', e);
     }
