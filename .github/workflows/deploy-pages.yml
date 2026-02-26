@@ -5,21 +5,11 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Only one deploy at a time
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
@@ -29,8 +19,7 @@ jobs:
         run: |
           mkdir -p _site
 
-          # Copy everything except server/dev-only folders
-          EXCLUDE=".git node_modules server src tools exports analytics_data cloud_data _site"
+          EXCLUDE=".git node_modules server src tools exports analytics_data cloud_data _site docs"
           for item in * .[^.]* ; do
             skip=false
             for ex in $EXCLUDE; do
@@ -40,19 +29,13 @@ jobs:
             cp -r "$item" _site/ 2>/dev/null || true
           done
 
-          # Runtime config pointing to Railway
           echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > _site/config.json
-
-          # Prevent Jekyll processing
           touch _site/.nojekyll
 
           echo "Files in _site/: $(find _site -type f | wc -l)"
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: _site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
