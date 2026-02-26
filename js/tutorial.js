@@ -796,113 +796,92 @@ export class TutorialSystem {
       return;
     }
 
-    if (!this.hasPlayerMoved) {
-      // Desktop-specific robust detection: check player's thrust/velocity state
-      try {
-        const p = this.player;
-        if (p) {
-          // If player has a target thrust or current thrust animation level, treat as movement
-          const thrustActive = (typeof p.targetThrustLevel === 'number' && p.targetThrustLevel > 0) || (typeof p.thrustLevel === 'number' && p.thrustLevel > 0.05);
-          // Velocity-based fallback: if velocity magnitude has noticeably increased since start
-          const vx = typeof p.velocity?.x === 'number' ? p.velocity.x : 0;
-          const vy = typeof p.velocity?.y === 'number' ? p.velocity.y : 0;
-          const velMag = Math.sqrt(vx * vx + vy * vy);
-          const velocityThreshold = 0.12; // tuned conservative threshold to detect thrust on desktop
-          if (thrustActive || velMag > velocityThreshold) {
+    // Run all detection checks every frame — do NOT guard with `hasPlayerMoved`.
+    // If detection fires while isShowingNotification is momentarily false (during
+    // the ~800ms step-transition window), hasPlayerMoved would be set to true but
+    // checkStepProgress would silently return early. Wrapping subsequent frames in
+    // `if (!hasPlayerMoved)` then permanently skips ALL detection, leaving step 3
+    // stuck forever. checkStepProgress has its own idempotency guards (isActive +
+    // isShowingNotification), so re-calling it every frame is safe.
+
+    // Check 1: thrust/velocity state (desktop + physics drift)
+    try {
+      const p = this.player;
+      if (p) {
+        const thrustActive = (typeof p.targetThrustLevel === 'number' && p.targetThrustLevel > 0) || (typeof p.thrustLevel === 'number' && p.thrustLevel > 0.05);
+        const vx = typeof p.velocity?.x === 'number' ? p.velocity.x : 0;
+        const vy = typeof p.velocity?.y === 'number' ? p.velocity.y : 0;
+        const velMag = Math.sqrt(vx * vx + vy * vy);
+        const velocityThreshold = 0.12;
+        if (thrustActive || velMag > velocityThreshold) {
+          this.hasPlayerMoved = true;
+          this.checkStepProgress('movement');
+          return;
+        }
+      }
+    } catch (e) {
+      // ignore any errors reading player state
+    }
+
+    // Check 2: keyboard movement keys held (desktop fallback)
+    try {
+      const inputHandler = this.game && this.game.input;
+      if (inputHandler && Array.isArray(inputHandler.keys) && inputHandler.keys.length) {
+        const keyList = inputHandler.keys;
+        const movementKeys = ['KeyW', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowRight'];
+        for (let i = 0; i < movementKeys.length; i++) {
+          if (keyList.includes(movementKeys[i])) {
             this.hasPlayerMoved = true;
             this.checkStepProgress('movement');
             return;
           }
         }
-      } catch (e) {
-        // ignore any errors reading player state
       }
-      // Desktop fallback: if the game's input handler reports movement keys
-      // being pressed, treat that as movement. This ensures keyboard users
-      // advance the tutorial even if keydown events are missed by other
-      // listeners or focus changes.
-      try {
-        const inputHandler = this.game && this.game.input;
-        if (inputHandler && Array.isArray(inputHandler.keys) && inputHandler.keys.length) {
-          const keyList = inputHandler.keys;
-          const movementKeys = ['KeyW', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowRight'];
-          for (let i = 0; i < movementKeys.length; i++) {
-            if (keyList.includes(movementKeys[i])) {
-              this.hasPlayerMoved = true;
-              this.checkStepProgress('movement');
-              return;
-            }
+    } catch (e) {
+      // ignore input read errors
+    }
+
+    // Check 3: joystick / touch movement (mobile)
+    try {
+      const input = this.game && this.game.input;
+      if (input) {
+        let mag = 0;
+        const joystickActive = !!(input.touchJoystick && input.touchJoystick.active);
+        if (input.touchJoystick) {
+          if (typeof input.touchJoystick.magnitude === 'number') {
+            mag = input.touchJoystick.magnitude;
+          } else if (typeof input.touchJoystick.dx === 'number' || typeof input.touchJoystick.dy === 'number') {
+            const dxj = input.touchJoystick.dx || 0;
+            const dyj = input.touchJoystick.dy || 0;
+            mag = Math.sqrt(dxj * dxj + dyj * dyj);
+          } else if (typeof input.touchJoystick.x === 'number' || typeof input.touchJoystick.y === 'number') {
+            const dxj = input.touchJoystick.x || 0;
+            const dyj = input.touchJoystick.y || 0;
+            mag = Math.sqrt(dxj * dxj + dyj * dyj);
           }
         }
-      } catch (e) {
-        // ignore input read errors
-      }
-      // Also consider mobile joystick input as movement: if the game's input system
-      // reports a touch joystick or thrust amount, treat that as movement so the
-      // mobile tutorial doesn't get stuck waiting for keyboard input.
-      try {
-        const input = this.game && this.game.input;
-        if (input) {
-          // Compute joystick magnitude from multiple possible shapes the input system
-          // might expose (normalized magnitude or raw dx/dy). Be permissive on
-          // mobile so small thumb movements count.
-          let mag = 0;
-          // Primary check: input.js sets touchJoystick.active = true the moment the
-          // user's finger is on the joystick (more reliable than our own flag on Android).
-          const joystickActive = !!(input.touchJoystick && input.touchJoystick.active);
-          if (input.touchJoystick) {
-            if (typeof input.touchJoystick.magnitude === 'number') {
-              mag = input.touchJoystick.magnitude;
-            } else if (typeof input.touchJoystick.dx === 'number' || typeof input.touchJoystick.dy === 'number') {
-              const dxj = input.touchJoystick.dx || 0;
-              const dyj = input.touchJoystick.dy || 0;
-              mag = Math.sqrt(dxj * dxj + dyj * dyj);
-            } else if (typeof input.touchJoystick.x === 'number' || typeof input.touchJoystick.y === 'number') {
-              const dxj = input.touchJoystick.x || 0;
-              const dyj = input.touchJoystick.y || 0;
-              mag = Math.sqrt(dxj * dxj + dyj * dyj);
-            }
-          }
-          const thrust = input.thrustAmount || 0;
-
-          // Mobile thresholds: be more permissive for touch. Desktop keeps previous
-          // conservative thresholds. These are intentionally low so small thumb
-          // movements register — adjust if you see false positives.
-          const mobileMagThreshold = 0.05; // normalized or raw depending on input impl
-          const mobileThrustThreshold = 0.08;
-
-          if (joystickActive || this._mobileMovementActive || mag > mobileMagThreshold || thrust > mobileThrustThreshold) {
-            // Treat a sustained joystick push or touch interaction as movement
-            this.hasPlayerMoved = true;
-            this.checkStepProgress('movement');
-            return;
-          }
+        const thrust = input.thrustAmount || 0;
+        const mobileMagThreshold = 0.05;
+        const mobileThrustThreshold = 0.08;
+        if (joystickActive || this._mobileMovementActive || mag > mobileMagThreshold || thrust > mobileThrustThreshold) {
+          this.hasPlayerMoved = true;
+          this.checkStepProgress('movement');
+          return;
         }
-      } catch (e) {
-        // ignore any errors reading input
       }
-      // As a fallback, check for very small position changes which can occur on mobile when
-      // thrust is applied by touch-driven physics updates that are not reflected via input fields.
-      const dx = this.player.x - this.playerStartPosition.x;
-      const dy = this.player.y - this.playerStartPosition.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    } catch (e) {
+      // ignore any errors reading input
+    }
 
-      // Determine movement threshold depending on platform so mobile touch
-      // interactions (smaller pixel movements) register correctly.
-      // 5px for mobile: even tiny spawn drift or a brief joystick tap will
-      // nudge the ship enough to cross this threshold on Android.
-      const threshold = (this.game && this.game.isMobileDevice) ? 5 : 30;
-      
-      // Log less frequently to avoid spam - only every 60 frames (about 1 second)
-      // if (this.game.frameCount % 60 === 0) { // Production: disabled
-      //   console.log(`🔍 Tutorial: checkMovement - start(${this.playerStartPosition.x.toFixed(1)},${this.playerStartPosition.y.toFixed(1)}) current(${this.player.x.toFixed(1)},${this.player.y.toFixed(1)}) distance=${distance.toFixed(1)}`);
-      // }
-
-      if (distance > threshold) {
-        // console.log('📚 Tutorial: Player movement detected! Distance: ' + distance.toFixed(1)); // Production: disabled
-        this.hasPlayerMoved = true;
-        this.checkStepProgress('movement');
-      }
+    // Check 4: position distance fallback
+    const dx = this.player.x - this.playerStartPosition.x;
+    const dy = this.player.y - this.playerStartPosition.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    // 5px threshold on mobile; 30px on desktop
+    const threshold = (this.game && this.game.isMobileDevice) ? 5 : 30;
+    if (distance > threshold) {
+      this.hasPlayerMoved = true;
+      this.checkStepProgress('movement');
     }
   }
 
