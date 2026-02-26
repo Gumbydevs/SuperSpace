@@ -562,6 +562,12 @@ app.get('/analytics', async (req, res) => {
     }
 
     // Respond with dashboard payload plus computed series
+    // Expose recentEvents at top-level so the frontend event log works
+    const recentEventsOut = (stats && stats.recentEvents) ? stats.recentEvents : [];
+    // Ensure uniquePlayersCount is available at today/allTime level for the frontend
+    if (todayPayload && typeof todayPayload.uniquePlayersCount === 'undefined') {
+      todayPayload.uniquePlayersCount = todayPayload.uniquePlayers || 0;
+    }
     res.json({
       ok: true,
       dataSource,
@@ -572,6 +578,7 @@ app.get('/analytics', async (req, res) => {
       playerActivity,
       range,
       tutorialStats: tutorialStatsOut,
+      recentEvents: recentEventsOut,
       ...dashboardData,
     });
   } catch (error) {

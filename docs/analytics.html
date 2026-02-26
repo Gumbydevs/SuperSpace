@@ -1004,6 +1004,13 @@
   setText('purchases', `${today.totalPurchases || 0} / ${allTime.totalPurchases || 0}`);
   setText('revenue', `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`);
   setText('gemsSpent', `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`);
+
+  // Update charts and live event log so auto-refresh keeps everything in sync
+  try {
+    if (data.playerActivity) updatePlayerActivityChart(data.playerActivity);
+    if (data.gameEvents) updateGameEventsChart(data.gameEvents);
+    if (data.recentEvents) updateEventLog(data.recentEvents);
+  } catch (e) { /* ignore chart errors */ }
       // Load all previous chat history (all players, all server chat) into admin chat panel
 
       // --- Admin Chat Scrollable Log ---

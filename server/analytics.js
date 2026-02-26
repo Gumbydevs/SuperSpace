@@ -1064,6 +1064,7 @@ class ServerAnalytics {
       gameDurations: [],
       lifeDurations: [],
       peakConcurrent: 0,
+      eventCounts: {},
     };
     for (const stats of this.dailyStats.values()) {
       allTime.totalSessions += stats.totalSessions || 0;
@@ -1101,6 +1102,12 @@ class ServerAnalytics {
       if (typeof stats.peakConcurrent === 'number') {
         allTime.peakConcurrent = Math.max(allTime.peakConcurrent, stats.peakConcurrent);
       }
+      // Aggregate event counts (used by tutorial funnel all-time totals)
+      if (stats.eventCounts) {
+        for (const [k, v] of Object.entries(stats.eventCounts)) {
+          allTime.eventCounts[k] = (allTime.eventCounts[k] || 0) + v;
+        }
+      }
     }
 
     // Format allTime for output
@@ -1129,6 +1136,8 @@ class ServerAnalytics {
       averageLifeDuration: allTime.lifeDurations.length > 0 ? allTime.lifeDurations.reduce((a, b) => a + b, 0) / allTime.lifeDurations.length : 0,
       peakConcurrent: allTime.peakConcurrent,
       globalPeakConcurrent: this.globalPeak || 0,
+      eventCounts: allTime.eventCounts,
+      uniquePlayersCount: allTime.uniquePlayers.size,
     };
 
     // Build tutorialStats aggregation (today + all time)
@@ -1185,6 +1194,9 @@ class ServerAnalytics {
         cloudLogins: todayStats.cloudLogins || 0,
         cloudLoginUsers: todayStats.cloudLoginUsers || [],
         uniquePlayers: todayStats.uniquePlayers
+          ? todayStats.uniquePlayers.size
+          : 0,
+        uniquePlayersCount: todayStats.uniquePlayers
           ? todayStats.uniquePlayers.size
           : 0,
         totalSessions: todayStats.totalSessions || 0,
