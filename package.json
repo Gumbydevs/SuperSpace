@@ -10,7 +10,7 @@
     "test:unit": "jest --testPathIgnorePatterns=api/test.js"
   },
   "keywords": [],
-  "author": "Gumbysoft and Matt Sherman",
+  "author": "Gumbysoft",
   "license": "ALL RIGHTS RESERVED",
   "private": true,
   "type": "commonjs",
@@ -26,7 +26,7 @@
     "node": ">=18.0.0"
   },
   "customLicense": {
-    "notice": "This project is not open source. The code is available publicly for testing and community feedback only. All rights are reserved by Gumbysoft and Matt Sherman. Use, reuse, distribution, or modification is not permitted.",
+    "notice": "This project is not open source. The code is available publicly for testing and community feedback only. All rights are reserved by Gumbysoft. Use, reuse, distribution, or modification is not permitted.",
     "contact": "gumbydev@icloud.com"
   },
   "devDependencies": {
