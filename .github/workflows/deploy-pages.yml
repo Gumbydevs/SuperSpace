@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
 
 permissions:
   contents: write
@@ -10,32 +12,31 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build site folder
+      - name: Build docs/
         run: |
-          mkdir -p _site
-
-          EXCLUDE=".git node_modules server src tools exports analytics_data cloud_data _site docs"
+          rm -rf docs && mkdir -p docs
+          EXCLUDE=".git node_modules server src tools exports analytics_data cloud_data docs"
           for item in * .[^.]* ; do
             skip=false
-            for ex in $EXCLUDE; do
-              [ "$item" = "$ex" ] && skip=true && break
-            done
+            for ex in $EXCLUDE; do [ "$item" = "$ex" ] && skip=true && break; done
             $skip && continue
-            cp -r "$item" _site/ 2>/dev/null || true
+            cp -r "$item" docs/ 2>/dev/null || true
           done
+          echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > docs/config.json
+          touch docs/.nojekyll
+          echo "Copied $(find docs -type f | wc -l) files"
 
-          echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > _site/config.json
-          touch _site/.nojekyll
-
-          echo "Files in _site/: $(find _site -type f | wc -l)"
-
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
+      - name: Commit and push docs/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f docs/
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "chore: update docs/ [skip ci]"
+          git push
