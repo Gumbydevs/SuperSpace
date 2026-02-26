@@ -588,8 +588,11 @@ export class TutorialSystem {
       if (joystickEl) {
         joystickEl.addEventListener('touchstart', setMoveActive, { passive: true });
         joystickEl.addEventListener('touchmove', setMoveActive, { passive: true });
-        joystickEl.addEventListener('touchend', clearMoveActive, { passive: true });
-        joystickEl.addEventListener('touchcancel', clearMoveActive, { passive: true });
+        // NOTE: intentionally NOT attaching touchend/touchcancel → clearMoveActive.
+        // Clearing the flag on touchend creates a race on Android where a fast tap
+        // fires touchstart+touchend within the same animation frame so checkMovement()
+        // sees the flag as false. The flag is only meaningful while step.action==='movement';
+        // after that step advances it is ignored, so leaving it true is harmless.
         this._joystickListenersAttached = true;
       }
     };
@@ -844,6 +847,9 @@ export class TutorialSystem {
           // might expose (normalized magnitude or raw dx/dy). Be permissive on
           // mobile so small thumb movements count.
           let mag = 0;
+          // Primary check: input.js sets touchJoystick.active = true the moment the
+          // user's finger is on the joystick (more reliable than our own flag on Android).
+          const joystickActive = !!(input.touchJoystick && input.touchJoystick.active);
           if (input.touchJoystick) {
             if (typeof input.touchJoystick.magnitude === 'number') {
               mag = input.touchJoystick.magnitude;
@@ -865,7 +871,7 @@ export class TutorialSystem {
           const mobileMagThreshold = 0.05; // normalized or raw depending on input impl
           const mobileThrustThreshold = 0.08;
 
-          if (this._mobileMovementActive || mag > mobileMagThreshold || thrust > mobileThrustThreshold) {
+          if (joystickActive || this._mobileMovementActive || mag > mobileMagThreshold || thrust > mobileThrustThreshold) {
             // Treat a sustained joystick push or touch interaction as movement
             this.hasPlayerMoved = true;
             this.checkStepProgress('movement');
@@ -883,7 +889,9 @@ export class TutorialSystem {
 
       // Determine movement threshold depending on platform so mobile touch
       // interactions (smaller pixel movements) register correctly.
-      const threshold = (this.game && this.game.isMobileDevice) ? 12 : 30;
+      // 5px for mobile: even tiny spawn drift or a brief joystick tap will
+      // nudge the ship enough to cross this threshold on Android.
+      const threshold = (this.game && this.game.isMobileDevice) ? 5 : 30;
       
       // Log less frequently to avoid spam - only every 60 frames (about 1 second)
       // if (this.game.frameCount % 60 === 0) { // Production: disabled
