@@ -322,6 +322,7 @@ app.get('/analytics', async (req, res) => {
     for (const s of socketsMap.values()) {
       try {
         if (s && s.isAdminSocket) continue; // ignore admin/analytics sockets
+        if (s && s.isViewerSocket) continue; // ignore menu page player-count watchers
         connectedSocketCount++;
       } catch (e) {}
     }
@@ -351,6 +352,7 @@ app.get('/analytics', async (req, res) => {
       try {
         if (!socketObj) continue;
         if (socketObj.isAdminSocket) continue;
+        if (socketObj.isViewerSocket) continue; // ignore menu page player-count watchers
         if (gameState.players[socketId]) continue; // already included
         const name = (socketObj.analytics && socketObj.analytics.playerId) || (socketObj.handshake && socketObj.handshake.auth && socketObj.handshake.auth.name) || `Guest-${String(socketId).substring(0,4)}`;
         const sessionStart = (socketObj.analytics && socketObj.analytics.startTime) || (playerLastActivity[socketId] || now);
@@ -1750,6 +1752,9 @@ io.on('connection', (socket) => {
   try {
     if (socket.handshake && socket.handshake.auth && socket.handshake.auth.role === 'admin') {
       socket.isAdminSocket = true;
+    }
+    if (socket.handshake && socket.handshake.auth && socket.handshake.auth.role === 'viewer') {
+      socket.isViewerSocket = true; // menu page player-count watcher - not a game client
     }
   } catch (e) {}
 
