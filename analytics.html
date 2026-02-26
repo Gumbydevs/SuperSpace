@@ -1028,7 +1028,7 @@
 
       async function loadAllChatHistory() {
         try {
-          const resp = await fetch('/analytics');
+          const resp = await fetch(getApiBase() + '/analytics');
           if (resp.ok) {
             const data = await resp.json();
             if (data && data.recentEvents) {
@@ -1093,7 +1093,7 @@
       // Fetch analytics payload for a given timeframe range
       async function fetchAnalytics(range = '24h') {
         try {
-          const resp = await fetch('/analytics?range=' + encodeURIComponent(range));
+          const resp = await fetch(getApiBase() + '/analytics?range=' + encodeURIComponent(range));
           if (!resp.ok) return;
           const data = await resp.json();
 
