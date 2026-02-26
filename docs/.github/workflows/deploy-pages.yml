@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    # Don't re-trigger when the action itself commits docs/
+    paths-ignore:
+      - 'docs/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build docs/ from repo root
+        run: |
+          rm -rf docs
+          mkdir -p docs
+
+          # Folders and files to exclude from the static site
+          EXCLUDE="docs .git node_modules server src tools exports analytics_data cloud_data"
+
+          for item in * .[^.]* ; do
+            # skip excluded items
+            skip=false
+            for ex in $EXCLUDE; do
+              [ "$item" = "$ex" ] && skip=true && break
+            done
+            $skip && continue
+            cp -r "$item" docs/
+          done
+
+          # Write runtime config pointing to Railway
+          echo '{"API_URL":"https://superspace-server-production.up.railway.app"}' > docs/config.json
+
+          # Prevent Jekyll from processing _ prefixed files
+          touch docs/.nojekyll
+
+          echo "Files in docs/: $(find docs -type f | wc -l)"
+
+      - name: Commit and push docs/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f docs/
+          # Only commit if something actually changed
+          git diff --cached --quiet && echo "No changes to docs/" && exit 0
+          git commit -m "chore: auto-deploy static site to docs/ [skip ci]"
+          git push origin main
