@@ -16,15 +16,36 @@
     <link rel="stylesheet" href="css/styles.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-      // Ensure a global server URL is available for all modules early.
-      // This avoids accidental attempts to connect to localhost when the
-      // production server should be used during local development.
-      if (!window.SUPERSPACE_SERVER_URL) {
-        window.SUPERSPACE_SERVER_URL = 'https://superspace-server-production.up.railway.app';
-        console.debug('AUTO: SUPERSPACE_SERVER_URL set to', window.SUPERSPACE_SERVER_URL);
-      } else {
-        console.debug('SUPERSPACE_SERVER_URL already set to', window.SUPERSPACE_SERVER_URL);
-      }
+      // Load optional runtime config from /config.json (synchronous fallback)
+      // so deploys can change the API endpoint without rebuilding source.
+      (function () {
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', '/config.json', false); // synchronous on purpose
+          xhr.timeout = 1500;
+          xhr.send(null);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              var cfg = JSON.parse(xhr.responseText);
+              if (cfg && cfg.API_URL) {
+                window.SUPERSPACE_SERVER_URL = cfg.API_URL;
+                console.debug('Loaded SUPERSPACE_SERVER_URL from /config.json', cfg.API_URL);
+                return;
+              }
+            } catch (e) {
+              // fallthrough to default below
+            }
+          }
+        } catch (e) {
+          // network error or not present - fallthrough
+        }
+        if (!window.SUPERSPACE_SERVER_URL) {
+          window.SUPERSPACE_SERVER_URL = 'https://superspace-server-production.up.railway.app';
+          console.debug('AUTO: SUPERSPACE_SERVER_URL set to', window.SUPERSPACE_SERVER_URL);
+        } else {
+          console.debug('SUPERSPACE_SERVER_URL already set to', window.SUPERSPACE_SERVER_URL);
+        }
+      })();
     </script>
     <!-- Player-count monitor removed (was used for debugging) -->
     <!-- Vercel Analytics - Simplified -->
