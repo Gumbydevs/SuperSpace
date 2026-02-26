@@ -214,6 +214,10 @@ class DatabaseAnalytics {
         // expose eventCounts and tutorial shape
         eventCounts: todayStatsRaw.eventCounts || {},
         tutorial: todayStatsRaw.tutorial || { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} },
+        // Field name aliases expected by server.js dashboard payload
+        totalKills: todayStatsRaw.kills || 0,
+        totalDeaths: todayStatsRaw.deaths || 0,
+        totalShots: todayStatsRaw.shotsFired || 0,
       });
 
       const allTimeMedian = allTimeStatsRaw.sessionDurations && allTimeStatsRaw.sessionDurations.length > 0 ? Math.round(percentileFromArray(allTimeStatsRaw.sessionDurations,0.5)) : 0;
@@ -227,6 +231,10 @@ class DatabaseAnalytics {
         hourlyUniquePlayers: Array.isArray(allTimeStatsRaw.hourlyUniquePlayers) ? allTimeStatsRaw.hourlyUniquePlayers : (Array.isArray(allTimeStatsRaw.hourlyActivity) ? allTimeStatsRaw.hourlyActivity : Array(24).fill(0)),
         eventCounts: allTimeStatsRaw.eventCounts || {},
         tutorial: allTimeStatsRaw.tutorial || { started: 0, completed: 0, completionDurations: [], quitCounts: {}, quitDurations: [], stepDurations: {} },
+        // Field name aliases expected by server.js dashboard payload
+        totalKills: allTimeStatsRaw.kills || 0,
+        totalDeaths: allTimeStatsRaw.deaths || 0,
+        totalShots: allTimeStatsRaw.shotsFired || 0,
       });
 
       return {
@@ -295,14 +303,18 @@ class DatabaseAnalytics {
       } catch (e) {}
 
       switch (event.event_type) {
+        case 'player_kill':      // client fires this name
         case 'player_killed':
         case 'kill':
           stats.kills++;
           break;
         case 'player_died':
+        case 'player_death':
         case 'death':
           stats.deaths++;
           break;
+        case 'weapon_fired':     // client fires this name
+        case 'weapon_fire':
         case 'shot_fired':
           stats.shotsFired++;
           break;
