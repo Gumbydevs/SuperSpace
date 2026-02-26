@@ -1,0 +1,1409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>SuperSpace Analytics Dashboard v2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0c0c0c 0%,
+          #1a1a2e 50%,
+          #16213e 100%
+        );
+        color: #ffffff;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        text-align: center;
+        border-bottom: 2px solid #00ff88;
+        box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        color: #00ff88;
+        text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        margin-bottom: 10px;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        padding: 5px 15px;
+        background: #00ff88;
+        color: #000;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9em;
+      }
+
+      .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .metric-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 15px;
+        padding: 20px;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .metric-card:hover {
+        border-color: #00ff88;
+        box-shadow: 0 8px 32px rgba(0, 255, 136, 0.2);
+        transform: translateY(-5px);
+      }
+
+      .metric-card h3 {
+        color: #00ff88;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      .metric-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0;
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+      }
+
+      .metric-subtitle {
+        font-size: 0.9em;
+        color: #cccccc;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-top: 15px;
+      }
+
+      .large-chart {
+        grid-column: span 2;
+      }
+
+      .wide-users-card {
+        grid-column: span 2;
+        max-width: none;
+      }
+
+      .users-list-wide {
+        max-height: 300px;
+        overflow-y: auto;
+        font-size: 0.9em;
+        color: #fff;
+        background: rgba(0,0,0,0.12);
+        padding: 12px;
+        border-radius: 8px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 8px;
+      }
+
+      .user-item {
+        background: rgba(0, 255, 136, 0.1);
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+      }
+
+      .event-log {
+        grid-column: span 2;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .event-item {
+        background: rgba(0, 0, 0, 0.3);
+        margin: 5px 0;
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 3px solid #00ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+      }
+
+      .event-timestamp {
+        color: #00ff88;
+        font-weight: bold;
+      }
+
+      .event-type {
+        color: #ffaa00;
+        font-weight: bold;
+      }
+
+      .event-details {
+        color: #cccccc;
+        margin-left: 10px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .stat-item {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid rgba(0, 255, 136, 0.2);
+      }
+
+      .stat-label {
+        font-size: 0.8em;
+        color: #cccccc;
+        margin-bottom: 5px;
+      }
+
+      .stat-value {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #00ff88;
+      }
+
+      .loading {
+        text-align: center;
+        color: #00ff88;
+        font-style: italic;
+      }
+
+      .refresh-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 255, 136, 0.8);
+        color: #000;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        z-index: 1000;
+        transition: opacity 0.3s ease;
+      }
+
+      .scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+      }
+
+      .scrollbar::-webkit-scrollbar-thumb {
+        background: #00ff88;
+        border-radius: 4px;
+      }
+
+      .scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #00cc6a;
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-container {
+          grid-template-columns: 1fr;
+          padding: 10px;
+        }
+
+        .large-chart,
+        .event-log {
+          grid-column: span 1;
+        }
+
+        .header h1 {
+          font-size: 1.8em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🚀 SuperSpace Analytics Dashboard</h1>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px;">
+        <div class="status-indicator" id="statusIndicator">LIVE</div>
+        <div class="status-indicator" id="persistenceIndicator" style="background:#ff9500;">FILE</div>
+  <div style="color:#00ff88;font-size:0.9em;">Connected to: superspace-server-production.up.railway.app</div>
+  </div>
+  <div id="statusError" style="text-align:center;margin-top:6px;color:#ff7777;display:none;font-size:0.85em;"></div>
+    </div>
+
+    <div style="text-align:center;margin:12px 0;">
+      <button id="toggleAdvanced" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:#00ff88;padding:6px 10px;border-radius:6px;cursor:pointer;">Show advanced</button>
+      <label style="margin-left:12px;color:#ccc;font-size:0.95em;">
+        <input id="autoRefresh" type="checkbox" style="vertical-align:middle;margin-right:6px;"> Auto-refresh (30s)
+      </label>
+    </div>
+
+    <div class="refresh-indicator" id="refreshIndicator" style="opacity: 0">
+      Refreshing...
+    </div>
+
+    <div class="dashboard-container">
+
+      <!-- Peak Players -->
+      <div class="metric-card">
+        <h3>📈 Peak Concurrent</h3>
+        <div class="metric-value"><span id="peakPlayersToday">0</span> / <span id="peakPlayersAll">0</span></div>
+        <div class="metric-subtitle">Live / All Time</div>
+      </div>
+      
+       <!-- Player Names List -->
+      <div class="metric-card">
+        <h3>🧑‍🚀 Online Players </h3>
+        <div id="playerNamesList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;display:flex;flex-direction:row;gap:24px;"></div>
+        <div class="metric-subtitle">Players logged in guest & cloud</div>
+      </div>
+      
+      <!-- Live Player Count -->
+      <div class="metric-card">
+        <h3>🎮 Active Players</h3>
+        <div class="metric-value"><span id="activePlayersToday">0</span> / <span id="activePlayersAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+     
+
+      <!-- Cloud Account Logins
+      <div class="metric-card">
+        <h3>☁️ Cloud Logins</h3>
+        <div class="metric-value"><span id="cloudLoginsToday">0</span> / <span id="cloudLoginsAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div> -->
+
+      <!-- Cloud Accounts Created/Logged In -->
+      <div class="metric-card">
+        <h3>👤 Cloud Users</h3>
+        <div id="cloudLoginUsersList" style="max-height:120px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+      
+      
+  <!-- Average Session Time (Today only) -->
+  <div class="metric-card">
+    <h3>⏱️ Avg Session</h3>
+  <div class="metric-value"><span id="avgSessionTimeToday">0m</span></div>
+  <div id="avgSessionMeta" style="font-size:0.8em;color:#9ef7c4;margin-top:6px;">median — · p90 —</div>
+  <div class="metric-subtitle">Today</div>
+  </div>
+
+      <!-- Total Sessions -->
+      <div class="metric-card">
+        <h3>🔢 Total Sessions</h3>
+        <div class="metric-value"><span id="totalSessionsToday">0</span> / <span id="totalSessionsAll">0</span></div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+      <!-- Tutorial Funnel -->
+      <div class="metric-card">
+        <h3>🧭 Tutorial Funnel</h3>
+        <div class="metric-value" style="font-size:1em;line-height:1.4;">
+          <div>Started: <strong><span id="tutorialStartedToday">0</span></strong> / <strong><span id="tutorialStartedAll">0</span></strong></div>
+          <div>Step Shown: <strong><span id="tutorialStepShownToday">0</span></strong> / <strong><span id="tutorialStepShownAll">0</span></strong></div>
+          <div>Step Completed: <strong><span id="tutorialStepCompletedToday">0</span></strong> / <strong><span id="tutorialStepCompletedAll">0</span></strong></div>
+        </div>
+        <div class="metric-subtitle">Today / All Time</div>
+      </div>
+
+     <!-- Analytics Persistence Info -->
+      <div class="metric-card" id="persistenceInfo">
+        <h3>💾 Analytics Storage</h3>
+        <div id="persistenceStatus" style="font-size:1.2em;text-align:center;margin:10px 0;">
+          <div id="persistenceIcon">📁</div>
+          <div id="persistenceText">File-based</div>
+        </div>
+        <div class="metric-subtitle" id="persistenceDescription">Data resets on server redeploys</div>
+      </div>
+
+      <!-- Player Activity Chart -->
+      <div class="metric-card large-chart">
+    <h3>📊 Unique Players <span id="playerActivityTitle">(Last 24 Hours)</span></h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <label for="activityRange">Timeframe:</label>
+          <select id="activityRange" style="background:#111;color:#fff;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
+        <div class="chart-container">
+          <canvas id="playerActivityChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Game Events Chart -->
+      <div class="metric-card large-chart">
+        <h3>⚡ Game Events (Real-time)</h3>
+        <div class="chart-container">
+          <canvas id="gameEventsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Tutorial Insights (new) -->
+  <div class="metric-card large-chart advanced">
+        <h3>🧭 Tutorial Insights</h3>
+        <div style="display:flex;gap:12px;align-items:stretch;">
+          <div style="flex:1;min-width:280px;height:260px;">
+            <div class="chart-container" style="height:100%;">
+              <canvas id="tutorialQuitChart"></canvas>
+            </div>
+          </div>
+          <div style="flex:1;min-width:260px;color:#fff;">
+            <div style="font-size:0.95em;margin-bottom:8px;color:#00ff88;">Per-step average duration (s)</div>
+            <div id="tutorialStepTable" style="max-height:220px;overflow:auto;background:rgba(0,0,0,0.15);padding:8px;border-radius:6px;color:#fff;font-size:0.95em;">
+              <em>No tutorial timing data yet</em>
+            </div>
+          </div>
+        </div>
+        <div class="metric-subtitle">Quit-distribution and per-step timings (Today / All Time)</div>
+      </div>
+
+      <!-- Detailed Statistics -->
+      <div class="metric-card">
+        <h3>🎯 Game Statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Kills</div>
+            <div class="stat-value"><span id="killsToday">0</span> / <span id="killsAll">0</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Deaths</div>
+            <div class="stat-value"><span id="deathsToday">0</span> / <span id="deathsAll">0</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Shots Fired</div>
+            <div class="stat-value"><span id="shotsFiredToday">0</span> / <span id="shotsFiredAll">0</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Power-ups</div>
+            <div class="stat-value"><span id="powerupsCollectedToday">0</span> / <span id="powerupsCollectedAll">0</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Tutorial Avg Complete</div>
+            <div class="stat-value"><span id="tutorialAvgComplete">0s</span></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Tutorial Most Quit Step</div>
+            <div class="stat-value"><span id="tutorialMostQuit">-</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Premium Statistics -->
+  <div class="metric-card advanced">
+        <h3>💎 Premium Stats</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Premium Players</div>
+            <div class="stat-value" id="premiumPlayers">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Store Visits</div>
+            <div class="stat-value" id="storeVisits">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Purchases</div>
+            <div class="stat-value" id="purchases">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Revenue</div>
+            <div class="stat-value" id="revenue">$0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Gems Spent</div>
+            <div class="stat-value" id="gemsSpent">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Event Log -->
+      <div class="metric-card event-log">
+        <h3>📡 Live Event Stream</h3>
+        <div id="eventLog" class="scrollbar">
+          <div class="loading">Loading events...</div>
+        </div>
+      </div>   
+
+      <!-- Challenge Completions -->
+  <div class="metric-card large-chart advanced">
+        <h3>🎯 Challenge Completions</h3>
+        <div id="challengeCompletionsSection" style="max-height:350px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Daily & Weekly | Today / This Week / All Time</div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="metric-card large-chart">
+        <h3>🏆 Leaderboard (Current Players)</h3>
+        <div id="leaderboardList" style="max-height:300px;overflow-y:auto;font-size:1em;color:#fff;background:rgba(0,0,0,0.15);padding:8px;border-radius:8px;"></div>
+        <div class="metric-subtitle">Sorted by Score</div>
+      </div>
+
+      <!-- Admin Chat Panel -->
+  <div class="metric-card advanced">
+        <h3>💬 Admin Chat</h3>
+        <div id="adminChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:rgba(0,0,0,0.2);padding:8px;border-radius:6px;"></div>
+        <input id="adminChatInput" type="text" placeholder="Send admin message..." style="width:100%;padding:8px;border-radius:6px;border:1px solid rgba(0,255,136,0.2);" />
+        <button id="adminChatSend" style="margin-top:8px;padding:8px 12px;border-radius:6px;background:#00ff88;border:none;cursor:pointer;">Send as Admin</button>
+      </div>
+
+  <!-- Cloud Users Registry (detailed) - Wide Layout -->
+  <div class="metric-card wide-users-card advanced">
+        <h3>☁️ Cloud User Registry</h3>
+        <div id="cloudUsersCount" class="metric-value">0</div>
+        <div id="cloudUsersList" class="users-list-wide"></div>
+        <div class="metric-subtitle">Shows username, last login, and accumulated playtime</div>
+      </div>
+    </div>
+
+    <script>
+      // Socket.IO client for admin chat (loaded dynamically below)
+      let socket = null;
+      let playerActivityChart, gameEventsChart, tutorialQuitChart;
+      let eventData = [];
+      let chartData = {
+        labels: [],
+        datasets: [
+          {
+            label: 'Unique Players',
+            data: [],
+            borderColor: '#00ff88',
+            backgroundColor: 'rgba(0, 255, 136, 0.1)',
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      };
+
+      let gameEventChartData = {
+        labels: ['Kills', 'Deaths', 'Shots', 'Power-ups', 'Purchases'],
+        datasets: [
+          {
+            label: 'Events',
+            data: [0, 0, 0, 0, 0],
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.8)', // Red for Kills
+              'rgba(255, 159, 64, 0.8)', // Orange for Deaths
+              'rgba(255, 205, 86, 0.8)', // Yellow for Shots
+              'rgba(75, 192, 192, 0.8)', // Teal for Power-ups
+              'rgba(153, 102, 255, 0.8)', // Purple for Purchases
+            ],
+            borderColor: [
+              'rgb(255, 99, 132)',
+              'rgb(255, 159, 64)',
+              'rgb(255, 205, 86)',
+              'rgb(75, 192, 192)',
+              'rgb(153, 102, 255)',
+            ],
+            borderWidth: 2,
+            borderRadius: 4,
+            borderSkipped: false,
+          },
+        ],
+      };
+
+      // Utility: format a Date in Eastern Time (Toronto/Montreal)
+      function formatEastern(date, options = {}) {
+        if (!date) return '';
+        const d = (date instanceof Date) ? date : new Date(date);
+        try {
+          // Default to full date+time if no specific options provided
+          const opts = Object.keys(options).length ? options : { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+          return d.toLocaleString('en-US', Object.assign({}, opts, { timeZone: 'America/Toronto' }));
+        } catch (e) {
+          return d.toString();
+        }
+      }
+
+      function initCharts() {
+        // Player Activity Chart
+        const playerCtx = document
+          .getElementById('playerActivityChart')
+          .getContext('2d');
+        playerActivityChart = new Chart(playerCtx, {
+          type: 'line',
+          data: chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#ffffff',
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { color: '#cccccc' },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              },
+              y: {
+                ticks: { color: '#cccccc' },
+                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+
+        // Game Events Chart
+        const eventsCtx = document
+          .getElementById('gameEventsChart')
+          .getContext('2d');
+        gameEventsChart = new Chart(eventsCtx, {
+          type: 'bar',
+          data: gameEventChartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false, // Hide legend for bar chart since x-axis labels are clear
+              },
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#ffffff',
+                  font: {
+                    size: 12,
+                  },
+                },
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)',
+                },
+              },
+              y: {
+                ticks: {
+                  color: '#ffffff',
+                  font: {
+                    size: 12,
+                  },
+                  precision: 0, // Show whole numbers only
+                  callback: function (value) {
+                    return Math.floor(value); // Ensure integers
+                  },
+                },
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)',
+                },
+                beginAtZero: true,
+              },
+            },
+            // Show numbers on top of bars
+            animation: {
+              onComplete: function (animation) {
+                const chart = animation.chart;
+                const ctx = chart.ctx;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px Arial';
+
+                chart.data.datasets.forEach((dataset, i) => {
+                  const meta = chart.getDatasetMeta(i);
+                  meta.data.forEach((bar, index) => {
+                    const data = dataset.data[index];
+                    if (data > 0) {
+                      // Only show numbers if value > 0
+                      ctx.fillText(data, bar.x, bar.y - 5);
+                    }
+                  });
+                });
+              },
+            },
+          },
+        });
+
+        // Tutorial Quit Distribution Chart (initial empty)
+        try {
+          const tutCtx = document.getElementById('tutorialQuitChart')?.getContext('2d');
+          if (tutCtx) {
+            tutorialQuitChart = new Chart(tutCtx, {
+              type: 'bar',
+              data: {
+                labels: [],
+                datasets: [{ label: 'Quit Count', data: [], backgroundColor: 'rgba(255,99,132,0.8)' }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                  y: { ticks: { color: '#ffffff', precision: 0 }, beginAtZero: true }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to initialize tutorialQuitChart', e);
+        }
+      }
+
+        // --- Cloud users registry fetch & render ---
+        // Default API base for cloud user registry. If you prefer a different
+        // deployed URL change DEFAULT_API_BASE below or save an override in the
+        // input field (stored to localStorage as analyticsApiBase).
+        function getApiBase() {
+          // Always use the deployed server for analytics
+          return (window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app');
+        }
+
+      async function fetchCloudUsers() {
+        // Try multiple endpoints in order of preference
+        const endpoints = ['/cloud/users', '/api/cloud/users', '/api/v1/cloud/users'];
+        let lastError = null;
+        
+        for (const endpoint of endpoints) {
+          try {
+            const base = getApiBase();
+            const url = base.replace(/\/+$/, '') + endpoint;
+            const res = await fetch(url, { mode: 'cors' });
+            if (res.ok) {
+              const data = await res.json();
+              renderCloudUsers(data);
+              return; // Success, exit early
+            } else {
+              const txt = await res.text().catch(() => '(no body)');
+              lastError = new Error(`${endpoint}: status=${res.status} body=${txt}`);
+            }
+          } catch (e) {
+            lastError = new Error(`${endpoint}: ${e.message}`);
+          }
+        }
+        
+        // All endpoints failed
+        console.error('Cloud users fetch error', lastError);
+        const base = getApiBase();
+        const url = base.replace(/\/+$/, '') + '/cloud/users';
+  const cul = document.getElementById('cloudUsersList'); if (cul) cul.innerHTML = `<div class="user-item" style="color:#ff8888;background:rgba(255,136,136,0.1);">Failed to load cloud users from <strong>${escapeHtml(base)}</strong><br/><small style="color:#ffbbbb">${escapeHtml(lastError?.message || 'Unknown error')}</small><div style="margin-top:6px"><a href="${escapeHtml(url)}" target="_blank" style="color:#00ff88">Open endpoint in new tab</a></div></div>`;
+  const ccount = document.getElementById('cloudUsersCount'); if (ccount) ccount.textContent = '0';
+      }        function renderCloudUsers(data) {
+          if (!data || !Array.isArray(data.users)) {
+            const cul2 = document.getElementById('cloudUsersList'); if (cul2) cul2.innerHTML = '<div class="user-item"><em>No cloud users</em></div>';
+            const ccount2 = document.getElementById('cloudUsersCount'); if (ccount2) ccount2.textContent = '0';
+            return;
+          }
+          const users = data.users;
+          const ccount3 = document.getElementById('cloudUsersCount'); if (ccount3) ccount3.textContent = users.length;
+          const userItems = users.map(u => {
+            const last = u.lastLogin ? formatEastern(u.lastLogin) : 'Never';
+            // Handle both old format (playTimeSeconds) and new format (playtime object)
+            const playTimeSeconds = u.playTimeSeconds || (u.playtime ? Math.floor(u.playtime.totalMs / 1000) : 0);
+            const play = formatPlayTime(playTimeSeconds);
+            const created = u.createdAt ? formatEastern(u.createdAt, { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'Unknown';
+            return `<div class="user-item">
+              <div style="font-weight:bold;color:#00ff88;margin-bottom:4px;">${escapeHtml(u.username)}</div>
+              <div style="font-size:0.85em;color:#ccc;">Last Login: ${last}</div>
+              <div style="font-size:0.85em;color:#ccc;">Play Time: ${play}</div>
+              <div style="font-size:0.85em;color:#ccc;">Joined: ${created}</div>
+            </div>`;
+          }).join('');
+          const cul4 = document.getElementById('cloudUsersList'); if (cul4) cul4.innerHTML = userItems || '<div class="user-item"><em>No cloud users</em></div>';
+        }
+
+        function formatPlayTime(seconds) {
+          seconds = Math.floor(seconds || 0);
+          const h = Math.floor(seconds / 3600);
+          const m = Math.floor((seconds % 3600) / 60);
+          const s = seconds % 60;
+          const pad = (n) => String(n).padStart(2, '0');
+          return `${h}h ${pad(m)}m ${pad(s)}s`;
+        }
+
+  // Kick off fetch and refresh every 30s (disabled to reduce bandwidth)
+  fetchCloudUsers();
+  // setInterval(fetchCloudUsers, 30000);
+
+      // --- Challenge definitions for rendering ---
+      const CHALLENGE_DEFS = {
+        daily: [
+          { id: 'survive_10', description: 'Survive for 10 minutes' },
+          { id: 'destroy_200_asteroids', description: 'Destroy 200 asteroids' },
+          { id: 'earn_1000_credits', description: 'Earn 1000 credits in one session' },
+          { id: 'kill_10_enemies', description: 'Kill 10 enemy ships' },
+          { id: 'collect_5_powerups', description: 'Collect 5 power-ups' },
+          { id: 'no_damage_5', description: 'Survive 5 minutes without taking damage' },
+          { id: 'use_3_bombs', description: 'Use 3 bombs in one game' },
+          { id: 'spend_5000_credits', description: 'Spend 5,000 credits in the shop' },
+          { id: 'fly_10km', description: 'Travel 10 kilometers in one session' },
+          { id: 'chat_1', description: 'Send a message in chat' },
+          { id: 'equip_skin', description: 'Equip a new ship skin' },
+          { id: 'evade_20_projectiles', description: 'Evade 20 enemy projectiles' },
+          { id: 'upgrade_weapon', description: 'Upgrade your ship once' },
+          { id: 'visit_sector_5', description: 'Visit sector 5' },
+          { id: 'scan_3_artifacts', description: 'Scan 3 space artifacts' },
+          { id: 'destroy_boss', description: 'Defeat a boss ship' },
+          { id: 'collect_10_powerups', description: 'Collect 10 power-ups in one day' },
+        ],
+        weekly: [
+          { id: 'score_20000', description: 'Score 20,000 points in one game' },
+          { id: 'kill_25_enemies', description: 'Kill 25 enemy ships' },
+          { id: 'play_20_games', description: 'Play 20 games this week' },
+          { id: 'destroy_1000_asteroids', description: 'Destroy 1,000 asteroids' },
+          { id: 'earn_10000_credits', description: 'Earn 10,000 credits this week' },
+          { id: 'no_death_3_rounds', description: 'Complete 3 rounds in a row without dying' },
+          { id: 'buy_3_items', description: 'Buy 3 different items from the shop' },
+          { id: 'explore_50km', description: 'Travel a total of 50 kilometers' },
+          { id: 'defeat_5_bosses', description: 'Defeat 5 boss ships' },
+          { id: 'collect_10_gems', description: 'Collect 10 rare space gems' },
+          { id: 'upgrade_5_times', description: 'Upgrade your ship 5 times' },
+        ],
+      };
+
+      function renderChallengeCompletions(challengeStats) {
+        if (!challengeStats) {
+    const ccsec = document.getElementById('challengeCompletionsSection'); if (ccsec) ccsec.innerHTML = '<em>No challenge data available</em>';
+          return;
+        }
+        let html = '';
+        for (const type of ['daily', 'weekly']) {
+          const defs = CHALLENGE_DEFS[type];
+          html += `<h4 style='color:#00ff88;margin:8px 0 4px 0;'>${type.charAt(0).toUpperCase() + type.slice(1)} Challenges</h4>`;
+          html += `<table style='width:100%;margin-bottom:12px;font-size:0.98em;'><thead><tr><th style='text-align:left;'>Challenge</th><th>Today</th><th>This Week</th><th>All Time</th></tr></thead><tbody>`;
+          for (const ch of defs) {
+            const today = challengeStats.today?.[ch.id] || { count: 0, players: [] };
+            const week = challengeStats.week?.[ch.id] || { count: 0, players: [] };
+            const allTime = challengeStats.allTime?.[ch.id] || { count: 0, players: [] };
+            html += `<tr><td style='max-width:220px;'>${escapeHtml(ch.description)}</td>`;
+            html += `<td title='${today.players.map(escapeHtml).join(", ")}' style='color:#00ff88;'>${today.count}</td>`;
+            html += `<td title='${week.players.map(escapeHtml).join(", ")}' style='color:#ffaa00;'>${week.count}</td>`;
+            html += `<td title='${allTime.players.map(escapeHtml).join(", ")}' style='color:#fff;'>${allTime.count}</td></tr>`;
+          }
+          html += '</tbody></table>';
+        }
+  const ccsec2 = document.getElementById('challengeCompletionsSection'); if (ccsec2) ccsec2.innerHTML = html;
+      }
+
+      function updateMetrics(data) {
+            // safe setter to avoid 'Cannot set properties of null'
+            function setText(id, val) {
+              try { const el = document.getElementById(id); if (el) el.textContent = val; } catch (e) { /* ignore */ }
+            }
+        // Challenge completions
+        if (data.challengeStats) {
+          renderChallengeCompletions(data.challengeStats);
+        } else {
+          const ccsec3 = document.getElementById('challengeCompletionsSection'); if (ccsec3) ccsec3.innerHTML = '<em>No challenge data available</em>';
+        }
+        // Leaderboard
+        if (Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
+          const rows = data.leaderboard.map((p, i) =>
+            `<tr><td style='color:#00ff88;'>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${p.score}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`
+          ).join('');
+          const llist = document.getElementById('leaderboardList'); if (llist) llist.innerHTML = `
+            <table style='width:100%;color:#fff;font-size:1em;'>
+              <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wins</th><th>Losses</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `;
+        } else {
+          const llist2 = document.getElementById('leaderboardList'); if (llist2) llist2.innerHTML = '<em>No players online</em>';
+        }
+        // Update basic metrics
+  // Fallback to main data if today/allTime missing
+  const today = data.today || {};
+  const allTime = data.allTime || {};
+  // Active players: prefer uniquePlayersCount if provided by the server
+  setText('activePlayersToday', (typeof today.uniquePlayersCount === 'number' ? today.uniquePlayersCount : (today.activePlayers ?? data.activePlayers ?? 0)));
+  setText('activePlayersAll', (typeof allTime.uniquePlayersCount === 'number' ? allTime.uniquePlayersCount : (allTime.activePlayers ?? data.activePlayers ?? 0)));
+  // Peak concurrent: prefer globalPeak (all-time) or peakConcurrent where available
+  setText('peakPlayersToday', (typeof today.peakConcurrent === 'number' ? today.peakConcurrent : (data.peakPlayers ?? 0)));
+  setText('peakPlayersAll', (typeof allTime.globalPeak === 'number' ? allTime.globalPeak : (typeof allTime.peakConcurrent === 'number' ? allTime.peakConcurrent : (data.peakPlayers ?? 0))));
+  // Show today/all time for total sessions
+  setText('totalSessionsToday', today.totalSessions || 0);
+  setText('totalSessionsAll', allTime.totalSessions || 0);
+
+        // Player names with session durations (side by side)
+        if (Array.isArray(data.connectedPlayers) && data.connectedPlayers.length > 0) {
+          // Show names and durations in two columns, side by side, format duration as h/m/s
+          const nameCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;'>${escapeHtml(p.name)}</div>`).join('');
+          const durCol = data.connectedPlayers.map(p => `<div style='padding:2px 0;color:#00ff88;'>${formatDuration(p.duration)}</div>`).join('');
+                  const pnl = document.getElementById('playerNamesList'); if (pnl) pnl.innerHTML = `
+                    <div style='flex:1;min-width:120px;'>${nameCol}</div>
+                    <div style='flex:0 0 110px;text-align:right;'>${durCol}</div>
+                  `;
+        } else {
+          const pnl2 = document.getElementById('playerNamesList'); if (pnl2) pnl2.innerHTML = '<em>No players connected</em>';
+        }
+
+  // Cloud logins today/all time
+  setText('cloudLoginsToday', today.cloudLogins ?? data.cloudLogins ?? 0);
+  setText('cloudLoginsAll', allTime.cloudLogins ?? data.cloudLogins ?? 0);
+
+        // Cloud login users today/all time
+  let todayUsers = today.cloudLoginUsers || [];
+  let allTimeUsers = allTime.cloudLoginUsers || [];
+        let html = '';
+        if (todayUsers.length > 0) {
+          html += `<div><b>Today:</b> ${todayUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
+        }
+        if (allTimeUsers.length > 0) {
+          html += `<div><b>All Time:</b> ${allTimeUsers.map(u => escapeHtml(u)).join(', ')}</div>`;
+        }
+        if (!html) html = '<em>None</em>';
+  const cu = document.getElementById('cloudLoginUsersList'); if (cu) cu.innerHTML = html;
+
+  // Format session time (show median as a better representation of "typical" play)
+  const medianHuman = data.avgSessionMedianHuman || null;
+  const medianSec = data.avgSessionMedian || null;
+  if (medianHuman) {
+    setText('avgSessionTimeToday', medianHuman);
+  } else if (data.avgSessionTimeHuman) {
+    setText('avgSessionTimeToday', data.avgSessionTimeHuman);
+  } else {
+    const avgTimeToday = today.averageSessionDuration || 0;
+    setText('avgSessionTimeToday', formatDuration(avgTimeToday));
+  }
+  // All-time value is intentionally not shown here; we display Today only
+
+  // Show median and P90 as small text under the metric (if available)
+  if (data.avgSessionMedianHuman) {
+    const el = document.getElementById('avgSessionMeta');
+    if (el) el.textContent = `median ${data.avgSessionMedianHuman} · p90 ${data.avgSessionP90Human || '—'}`;
+  }
+      // Utility: format seconds as h/m/s
+      function formatDuration(seconds) {
+        seconds = Math.floor(seconds);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        if (h > 0) {
+          return `${h}h ${m}m ${s}s`;
+        } else if (m > 0) {
+          return `${m}m ${s}s`;
+        } else {
+          return `${s}s`;
+        }
+      }
+
+        // Update game statistics
+  // Show today/all time for kills, deaths, shots, powerups
+  setText('killsToday', today.totalKills || 0);
+  setText('killsAll', allTime.totalKills || 0);
+  setText('deathsToday', today.totalDeaths || 0);
+  setText('deathsAll', allTime.totalDeaths || 0);
+  setText('shotsFiredToday', today.totalShots || 0);
+  setText('shotsFiredAll', allTime.totalShots || 0);
+  setText('powerupsCollectedToday', today.powerupsCollected || 0);
+  setText('powerupsCollectedAll', allTime.powerupsCollected || 0);
+
+  // Tutorial timing/quit stats
+  const tut = data.tutorialStats || { today: {}, allTime: {} };
+  const avgToday = tut.today ? (tut.today.avgCompletionSeconds || 0) : 0;
+  const avgAll = tut.allTime ? (tut.allTime.avgCompletionSeconds || 0) : 0;
+  setText('tutorialAvgComplete', formatDuration(Math.round(avgToday)) + ' / ' + formatDuration(Math.round(avgAll)));
+  // Most common quit step (choose today if available, otherwise allTime)
+  const quitCounts = (tut.today && tut.today.quitCounts && Object.keys(tut.today.quitCounts).length>0) ? tut.today.quitCounts : (tut.allTime && tut.allTime.quitCounts ? tut.allTime.quitCounts : {});
+  let mostQuit = '-';
+  if (quitCounts && Object.keys(quitCounts).length>0) {
+    let max = -1; let key = null;
+    for (const [k,v] of Object.entries(quitCounts)) {
+      if (v > max) { max = v; key = k; }
+    }
+    mostQuit = key + ` (${max})`;
+  }
+  setText('tutorialMostQuit', mostQuit);
+
+  // Populate tutorial step durations table
+  try {
+  const tableContainer = document.getElementById('tutorialStepTable');
+    const stepDurationsToday = tut.today && tut.today.stepDurations ? tut.today.stepDurations : {};
+    const stepDurationsAll = tut.allTime && tut.allTime.stepDurations ? tut.allTime.stepDurations : {};
+    const allStepIds = new Set([...Object.keys(stepDurationsToday), ...Object.keys(stepDurationsAll)]);
+    if (allStepIds.size === 0) {
+  if (tableContainer) tableContainer.innerHTML = '<em>No tutorial timing data yet</em>';
+    } else {
+      let html = '<table style="width:100%;color:#fff;border-collapse:collapse;font-size:0.95em;">';
+      html += '<thead><tr><th style="text-align:left">Step</th><th>Today (s)</th><th>All Time (s)</th></tr></thead><tbody>';
+      for (const sid of Array.from(allStepIds)) {
+        const todayArr = Array.isArray(stepDurationsToday[sid]) ? stepDurationsToday[sid] : [];
+        const allArr = Array.isArray(stepDurationsAll[sid]) ? stepDurationsAll[sid] : [];
+        const avg = arr => (arr.length>0?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0);
+        html += `<tr><td style="padding:4px 6px">${escapeHtml(sid)}</td><td style="padding:4px 6px;color:#00ff88">${avg(todayArr)}</td><td style="padding:4px 6px">${avg(allArr)}</td></tr>`;
+      }
+      html += '</tbody></table>';
+  if (tableContainer) tableContainer.innerHTML = html;
+    }
+  } catch (e) {
+    console.warn('Failed to render tutorialStepTable', e);
+  }
+
+  // Populate tutorialQuitChart with quitCounts (today if available else allTime)
+  try {
+    if (tutorialQuitChart) {
+      const qcounts = (tut.today && tut.today.quitCounts && Object.keys(tut.today.quitCounts).length>0) ? tut.today.quitCounts : (tut.allTime && tut.allTime.quitCounts ? tut.allTime.quitCounts : {});
+      const labels = Object.keys(qcounts);
+      const values = labels.map(l => qcounts[l] || 0);
+      tutorialQuitChart.data.labels = labels;
+      tutorialQuitChart.data.datasets[0].data = values;
+      tutorialQuitChart.update('none');
+    }
+  } catch (e) {
+    console.warn('Failed to update tutorialQuitChart', e);
+  }
+
+  // --- Tutorial funnel counts (events emitted by client tutorial.js)
+  // eventCounts may live under today.eventCounts and allTime.eventCounts depending on server response
+  const todayEvents = today.eventCounts || {};
+  const allTimeEvents = allTime.eventCounts || {};
+
+  const tStartedToday = todayEvents['tutorial_started'] || 0;
+  const tStartedAll = allTimeEvents['tutorial_started'] || 0;
+  const tShownToday = todayEvents['tutorial_step_shown'] || 0;
+  const tShownAll = allTimeEvents['tutorial_step_shown'] || 0;
+  const tCompletedToday = todayEvents['tutorial_step_completed'] || 0;
+  const tCompletedAll = allTimeEvents['tutorial_step_completed'] || 0;
+
+  setText('tutorialStartedToday', tStartedToday);
+  setText('tutorialStartedAll', tStartedAll);
+  setText('tutorialStepShownToday', tShownToday);
+  setText('tutorialStepShownAll', tShownAll);
+  setText('tutorialStepCompletedToday', tCompletedToday);
+  setText('tutorialStepCompletedAll', tCompletedAll);
+
+  // Update premium statistics (today/all time)
+  setText('premiumPlayers', `${today.premiumPlayers || 0} / ${allTime.premiumPlayers || 0}`);
+  setText('storeVisits', `${today.storeVisits || 0} / ${allTime.storeVisits || 0}`);
+  setText('purchases', `${today.totalPurchases || 0} / ${allTime.totalPurchases || 0}`);
+  setText('revenue', `$${(today.totalSpent || 0).toFixed(2)} / $${(allTime.totalSpent || 0).toFixed(2)}`);
+  setText('gemsSpent', `${today.gemsSpent || 0} / ${allTime.gemsSpent || 0} 💎`);
+      // Load all previous chat history (all players, all server chat) into admin chat panel
+
+      // --- Admin Chat Scrollable Log ---
+      let isUserScrolledUp = false;
+      function scrollAdminChatToBottom(force = false) {
+        const container = document.getElementById('adminChatMessages');
+        if (!container) return;
+        if (force || !isUserScrolledUp) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+
+      function monitorAdminChatScroll() {
+        const container = document.getElementById('adminChatMessages');
+        if (!container) return;
+        container.addEventListener('scroll', function () {
+          // If user is near the bottom, auto-scroll on new messages
+          const threshold = 30; // px
+          isUserScrolledUp = container.scrollHeight - container.scrollTop - container.clientHeight > threshold;
+        });
+      }
+
+      async function loadAllChatHistory() {
+        try {
+          const resp = await fetch('/analytics');
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.recentEvents) {
+              // Find all chat events (admin and player)
+              const chatMessages = data.recentEvents.filter(e => e.eventType === 'admin_chat' || e.eventType === 'chat');
+              const container = document.getElementById('adminChatMessages');
+              container.innerHTML = chatMessages.map(msg => {
+                const name = escapeHtml(msg.data?.name || msg.playerId || 'Unknown');
+                const message = escapeHtml(msg.data?.message || msg.data?.text || msg.message || '');
+                const ts = msg.timestamp ? formatEastern(msg.timestamp) : '';
+                return `<div style='padding:6px;border-bottom:1px solid rgba(255,255,255,0.03);'><span style='color:#aaa;font-size:0.9em;'>[${ts}]</span> <strong>${name}:</strong> ${message}</div>`;
+              }).join('');
+              scrollAdminChatToBottom(true);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load all chat history:', e);
+        }
+      }
+
+      // Call this on DOMContentLoaded
+
+      document.addEventListener('DOMContentLoaded', function () {
+        loadAllChatHistory();
+        monitorAdminChatScroll();
+        // Setup timeframe control
+        const rangeSelect = document.getElementById('activityRange');
+        if (rangeSelect) {
+          rangeSelect.addEventListener('change', function () {
+            const val = rangeSelect.value || '24h';
+            const title = document.getElementById('playerActivityTitle');
+            if (title) {
+              if (val === '24h') title.textContent = '(Last 24 Hours)';
+              else if (val === '7d') title.textContent = '(Last 7 Days)';
+              else if (val === '30d') title.textContent = '(Last 30 Days)';
+              else title.textContent = '(All Time)';
+            }
+            fetchAnalytics(val);
+          });
+        }
+
+        // Initial load for charts using selected range
+        const initialRange = (document.getElementById('activityRange') && document.getElementById('activityRange').value) || '24h';
+        fetchAnalytics(initialRange);
+      });
+
+        // Update charts
+        if (data.playerActivity) {
+          updatePlayerActivityChart(data.playerActivity);
+        }
+
+        if (data.gameEvents) {
+          updateGameEventsChart(data.gameEvents);
+        }
+
+        // Update event log
+        if (data.recentEvents) {
+          updateEventLog(data.recentEvents);
+        }
+      }
+
+      // Fetch analytics payload for a given timeframe range
+      async function fetchAnalytics(range = '24h') {
+        try {
+          const resp = await fetch('/analytics?range=' + encodeURIComponent(range));
+          if (!resp.ok) return;
+          const data = await resp.json();
+
+          // Update persistence UI
+          const persistenceIcon = document.getElementById('persistenceIcon');
+          const persistenceText = document.getElementById('persistenceText');
+          const persistenceDesc = document.getElementById('persistenceDescription');
+          if (data && data.persistentAnalytics) {
+            if (persistenceIcon) persistenceIcon.textContent = '🗄️';
+            if (persistenceText) persistenceText.textContent = 'Database';
+            if (persistenceDesc) persistenceDesc.textContent = 'Persistent (DB) storage';
+          } else {
+            if (persistenceIcon) persistenceIcon.textContent = '📁';
+            if (persistenceText) persistenceText.textContent = 'File-based';
+            if (persistenceDesc) persistenceDesc.textContent = 'Data resets on server redeploys';
+          }
+
+          // Update charts and UI using existing handlers
+          if (data.playerActivity) updatePlayerActivityChart(data.playerActivity);
+          if (data.gameEvents) updateGameEventsChart(data.gameEvents);
+          if (data.recentEvents) updateEventLog(data.recentEvents);
+
+          // Update other metric fields
+          if (data.stats) updateMetricsFromStats(data.stats);
+        } catch (e) {
+          console.error('Failed to fetch analytics for range', range, e);
+        }
+      }
+
+      function updateMetricsFromStats(stats) {
+        try {
+          const today = stats.today || {};
+          const allTime = stats.allTime || {};
+          // avgSessionTime expects seconds in today.averageSessionDuration
+          const avgSec = today.averageSessionDuration || today.avgSessionTime || 0;
+          const avgText = formatDuration(Math.floor(avgSec));
+          setText('avgSessionTimeToday', avgText);
+          setText('totalSessionsToday', today.totalSessions || 0);
+          setText('totalSessionsAll', allTime.totalSessions || 0);
+          // update connected/active players
+          setText('activePlayers', stats.activePlayers || 0);
+          setText('peakPlayers', stats.peakPlayers || 0);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      function updatePlayerActivityChart(activityData) {
+        if (!activityData || activityData.length === 0) return;
+
+        chartData.labels = activityData.map((point) => {
+          return formatEastern(point.timestamp, { hour: '2-digit', minute: '2-digit' });
+        });
+        chartData.datasets[0].data = activityData.map((point) => point.count);
+
+        playerActivityChart.update('none');
+      }
+
+      function updateGameEventsChart(events) {
+        gameEventChartData.datasets[0].data = [
+          events.kills || 0,
+          events.deaths || 0,
+          events.shots || 0,
+          events.powerups || 0,
+          events.purchases || 0,
+        ];
+
+        gameEventsChart.update('active'); // Use 'active' animation to trigger onComplete callback
+      }
+
+      function updateEventLog(events) {
+        const eventLog = document.getElementById('eventLog');
+        const maxEvents = 50;
+
+        // Keep only recent events
+        eventData = [...events.slice(-maxEvents)];
+
+        eventLog.innerHTML = eventData
+          .map((event) => {
+            const timestamp = formatEastern(event.timestamp, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const eventType = (
+              event.type ||
+              event.eventType ||
+              'unknown'
+            ).toUpperCase();
+            return `
+                    <div class="event-item">
+                        <span class="event-timestamp">[${timestamp}]</span>
+                        <span class="event-type">${eventType}</span>
+                        <span class="event-details">${formatEventDetails(event)}</span>
+                    </div>
+                `;
+          })
+          .reverse()
+          .join('');
+
+        // Auto-scroll to top (newest events)
+        eventLog.scrollTop = 0;
+      }
+
+      function formatEventDetails(event) {
+        const eventType = event.type || event.eventType || 'unknown';
+        switch (eventType) {
+          case 'player_joined':
+          case 'session_start':
+            return `Player joined the game`;
+          case 'player_left':
+          case 'session_end':
+            // event.data.sessionDuration may be in milliseconds; convert to seconds and format
+            try {
+              const durMs = event.data?.sessionTime || event.data?.sessionDuration || 0;
+              const durSec = Math.floor(Number(durMs) / 1000);
+              return `Player left after ${formatDuration(durSec)}`;
+            } catch (e) {
+              return 'Player left';
+            }
+          case 'kill':
+            return `Kill with ${event.data?.weapon || 'unknown weapon'}`;
+          case 'death':
+            return `Player died (${event.data?.cause || 'unknown cause'})`;
+          case 'weapon_fired':
+            return `${event.data?.weapon || 'Weapon'} fired`;
+          case 'powerup_collected':
+            return `Collected ${event.data?.type || 'powerup'}`;
+          case 'premium_purchase':
+            return `Premium purchase: $${event.data?.amount || 0}`;
+          case 'store_visit':
+            return `Store visited`;
+          case 'achievement_unlocked':
+            return `Achievement: ${event.data?.name || 'Unknown'}`;
+          default:
+            return event.data ? JSON.stringify(event.data) : '';
+        }
+      }
+
+      function showRefreshIndicator() {
+        const indicator = document.getElementById('refreshIndicator');
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+          indicator.style.opacity = '0';
+        }, 1000);
+      }
+
+      async function fetchAnalyticsData() {
+        try {
+          showRefreshIndicator();
+          // Use the Render server analytics endpoint instead of Vercel
+          // Add cache busting parameter to force fresh requests
+          const response = await fetch(
+            `${(window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app')}/analytics?t=${Date.now()}`,
+            {
+              cache: 'no-cache',
+              headers: {
+                'Cache-Control': 'no-cache',
+                Pragma: 'no-cache',
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          updateMetrics(data);
+
+          // Update status indicator
+          const statusEl = document.getElementById('statusIndicator');
+          if (statusEl) { statusEl.textContent = 'LIVE'; statusEl.style.background = '#00ff88'; }
+          
+          // Update persistence indicator based on data source
+          const persistenceIndicator = document.getElementById('persistenceIndicator');
+          const persistenceIcon = document.getElementById('persistenceIcon');
+          const persistenceText = document.getElementById('persistenceText');
+          const persistenceDescription = document.getElementById('persistenceDescription');
+          
+          if (data.persistentAnalytics && data.dataSource === 'database') {
+            if (persistenceIndicator) { persistenceIndicator.textContent = 'DATABASE'; persistenceIndicator.style.background = '#00ff88'; persistenceIndicator.title = 'Analytics data persists across server redeploys'; }
+            if (persistenceIcon) persistenceIcon.textContent = '🗄️';
+            if (persistenceText) persistenceText.textContent = 'Database Storage';
+            if (persistenceDescription) { persistenceDescription.textContent = '✅ Data persists across server redeploys'; persistenceDescription.style.color = '#00ff88'; }
+          } else {
+            if (persistenceIndicator) { persistenceIndicator.textContent = 'FILE'; persistenceIndicator.style.background = '#ff9500'; persistenceIndicator.title = 'Analytics data resets on server redeploys'; }
+            if (persistenceIcon) persistenceIcon.textContent = '📁';
+            if (persistenceText) persistenceText.textContent = 'File-based Storage';
+            if (persistenceDescription) { persistenceDescription.textContent = '⚠️ Data resets on server redeploys'; persistenceDescription.style.color = '#ff9500'; }
+          }
+        } catch (error) {
+          console.error('Failed to fetch analytics data:', error);
+
+          // Update status indicator to show error
+          const statusElErr = document.getElementById('statusIndicator');
+          if (statusElErr) { statusElErr.textContent = 'OFFLINE'; statusElErr.style.background = '#ff4444'; }
+
+          // Update persistence indicator to show error
+          const persistenceIndicatorErr = document.getElementById('persistenceIndicator');
+          if (persistenceIndicatorErr) { persistenceIndicatorErr.textContent = 'ERROR'; persistenceIndicatorErr.style.background = '#ff4444'; persistenceIndicatorErr.title = 'Cannot connect to analytics server'; }
+
+          // show short error message in header for quick debugging
+          try {
+            const el = document.getElementById('statusError');
+            if (el) { el.style.display = 'block'; el.textContent = (error && error.message) ? `Error: ${error.message}` : String(error); }
+          } catch (e) { /* ignore UI errors */ }
+        }
+      }
+
+      // Initialize dashboard
+      document.addEventListener('DOMContentLoaded', function () {
+        initCharts();
+        fetchAnalyticsData();
+
+  // initialize Socket.IO connection for admin chat and live events
+        (function initSocket() {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+          script.onload = () => {
+            try {
+              // Connect to the analytics server (same base as data fetch)
+              socket = io((window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app'), {
+                transports: ['websocket'],
+                secure: true,
+                auth: { role: 'admin' }, // mark this socket as an admin/dashboard client
+              });
+
+              socket.on('connect', () => {
+                console.log('Admin socket connected:', socket.id);
+                // inform server explicitly as a fallback identification
+                try { socket.emit('identifyAdmin'); } catch (e) {}
+              });
+
+              // Show incoming chat messages (including admin messages)
+              socket.on('chatMessage', (data) => {
+                const container = document.getElementById('adminChatMessages');
+                const el = document.createElement('div');
+                el.style.padding = '6px';
+                el.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+                const now = new Date();
+                el.innerHTML = `<span style='color:#aaa;font-size:0.9em;'>[${formatEastern(now)}]</span> <strong>${escapeHtml(data.name || 'System')}:</strong> ${escapeHtml(data.message)}`;
+                container.appendChild(el);
+                scrollAdminChatToBottom();
+              });
+
+              // Wire admin send button
+              document.getElementById('adminChatSend').onclick = () => {
+                const input = document.getElementById('adminChatInput');
+                const msg = input.value.trim();
+                if (!msg || !socket) return;
+                socket.emit('adminChatMessage', { message: msg, adminName: 'Admin' });
+                input.value = '';
+              };
+            } catch (e) {
+              console.error('Failed to initialize admin socket:', e);
+            }
+          };
+          document.head.appendChild(script);
+        })();
+
+        // Advanced UI toggle and auto-refresh handling
+        const advBtn = document.getElementById('toggleAdvanced');
+        const autoCheckbox = document.getElementById('autoRefresh');
+        let advancedShown = false;
+        let refreshTimer = null;
+
+        function setAdvancedVisible(visible) {
+          advancedShown = !!visible;
+          document.querySelectorAll('.advanced').forEach(el => {
+            el.style.display = visible ? '' : 'none';
+          });
+          advBtn.textContent = visible ? 'Hide advanced' : 'Show advanced';
+        }
+
+        advBtn.onclick = () => setAdvancedVisible(!advancedShown);
+        // default: hide advanced panels
+        setAdvancedVisible(false);
+
+        function startAutoRefresh() {
+          if (refreshTimer) clearInterval(refreshTimer);
+          refreshTimer = setInterval(() => fetchAnalyticsData(), 30000); // 30s
+        }
+
+        function stopAutoRefresh() {
+          if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+          }
+        }
+
+        autoCheckbox.addEventListener('change', (e) => {
+          if (e.target.checked) startAutoRefresh(); else stopAutoRefresh();
+        });
+
+        console.log('🚀 SuperSpace Analytics Dashboard Initialized');
+      });
+
+      // Utility: escape HTML to avoid injection in admin chat
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // Handle visibility change to pause/resume updates (fetch disabled)
+      // document.addEventListener('visibilitychange', function () {
+      //   if (document.visibilityState === 'visible') {
+      //     fetchAnalyticsData();
+      //   }
+      // });
+    </script>
+  </body>
+</html>

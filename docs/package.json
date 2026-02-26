@@ -1,0 +1,37 @@
+{
+  "name": "superspace",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/server.js",
+    "lint": "eslint . --ext .js,.ts",
+    "format": "prettier --write .",
+    "test:unit": "jest --testPathIgnorePatterns=api/test.js"
+  },
+  "keywords": [],
+  "author": "Gumbysoft and Matt Sherman",
+  "license": "ALL RIGHTS RESERVED",
+  "private": true,
+  "type": "commonjs",
+  "description": "A multiplayer space shooter game inspired by SubSpace",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "serve": "^14.2.1",
+    "socket.io": "^4.8.1",
+    "pg": "^8.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "customLicense": {
+    "notice": "This project is not open source. The code is available publicly for testing and community feedback only. All rights are reserved by Gumbysoft and Matt Sherman. Use, reuse, distribution, or modification is not permitted.",
+    "contact": "gumbydev@icloud.com"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "jest": "^30.1.3",
+    "prettier": "^3.6.2"
+  }
+}

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SuperSpace - Premium Store Demo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: white;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+      }
+
+      #gameCanvas {
+        display: block;
+        background: #000;
+      }
+
+      .demo-info {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        max-width: 300px;
+      }
+
+      .demo-info h3 {
+        margin: 0 0 10px 0;
+        color: #00ffff;
+      }
+
+      .demo-info p {
+        margin: 5px 0;
+        font-size: 14px;
+      }
+
+      .test-buttons {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 1000;
+      }
+
+      .test-btn {
+        background: #4a4a4a;
+        color: white;
+        border: 1px solid #666;
+        padding: 5px 10px;
+        margin: 2px;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+
+      .test-btn:hover {
+        background: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="demo-info">
+      <h3>Premium Store Demo</h3>
+      <p><strong>💎 Space Gems:</strong> <span id="gemCount">0</span></p>
+      <p><strong>Controls:</strong></p>
+      <p>• Click "💎 Premium" button to open store</p>
+      <p>• Browse Avatars, Ship Skins, and Gem packages</p>
+      <p>• Click items to purchase with Space Gems</p>
+      <p>• Use test buttons below to add gems</p>
+    </div>
+
+    <div class="test-buttons">
+      <button class="test-btn" onclick="addTestGems(100)">Add 100 Gems</button>
+      <button class="test-btn" onclick="addTestGems(500)">Add 500 Gems</button>
+      <button class="test-btn" onclick="toggleTestMode()">
+        Toggle Test Mode
+      </button>
+      <button class="test-btn" onclick="resetPurchases()">
+        Reset Purchases
+      </button>
+      <button class="test-btn" onclick="showOwned()">Show Owned</button>
+    </div>
+
+    <script type="module">
+      import { PremiumStore } from './js/premiumstore.js';
+      import { ShipSkinSystem } from './js/shipskins.js';
+      import { AvatarManager } from './js/avatarmanager.js';
+      import { PayPalIntegration } from './js/paypal-integration.js';
+
+      // Mock player object for demo
+      const mockPlayer = {
+        x: 400,
+        y: 300,
+        rotation: 0,
+        currentShip: 'scout',
+        color: '#33f',
+        engineColor: '#f66',
+        visible: true,
+        speed: 0,
+        shield: 0,
+        projectiles: [],
+        renderMiningBeam: () => {},
+      };
+
+      // Initialize systems
+      const premiumStore = new PremiumStore(mockPlayer);
+      const shipSkins = new ShipSkinSystem();
+      const avatarManager = new AvatarManager(premiumStore);
+      const paypalIntegration = new PayPalIntegration(premiumStore);
+
+      // Connect systems to premium store
+      premiumStore.setAvatarManager(avatarManager);
+      premiumStore.setPayPalIntegration(paypalIntegration);
+
+      // Canvas setup
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // Add mouse click handling
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        premiumStore.handleClick(x, y, canvas);
+        updateGemDisplay();
+      });
+
+      // Create premium store button
+      const premiumBtn = document.createElement('button');
+      premiumBtn.textContent = '💎 Premium Store';
+      premiumBtn.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1002;
+            background: linear-gradient(45deg, #6a0dad, #9932cc);
+            color: white;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        `;
+
+      premiumBtn.onclick = () => {
+        premiumStore.toggleStore();
+        updateGemDisplay();
+      };
+
+      document.body.appendChild(premiumBtn);
+
+      // Update gem display
+      function updateGemDisplay() {
+        document.getElementById('gemCount').textContent =
+          premiumStore.spaceGems;
+      }
+
+      // Test functions
+      window.addTestGems = (amount) => {
+        premiumStore.addSpaceGems(amount);
+        updateGemDisplay();
+        console.log(`Added ${amount} Space Gems for testing`);
+      };
+
+      window.resetPurchases = () => {
+        localStorage.removeItem('premiumPurchases');
+        localStorage.removeItem('spaceGems');
+        localStorage.removeItem('activeSkins');
+        location.reload();
+      };
+
+      window.showOwned = () => {
+        console.log('Owned Avatars:', premiumStore.getOwnedPremiumAvatars());
+        console.log('Premium Purchases:', premiumStore.premiumPurchases);
+        console.log('Active Skins:', shipSkins.activeSkins);
+      };
+
+      window.toggleTestMode = () => {
+        const isTestMode =
+          localStorage.getItem('superspaceTestMode') === 'true';
+        localStorage.setItem('superspaceTestMode', (!isTestMode).toString());
+        console.log(`Test Mode ${!isTestMode ? 'ENABLED' : 'DISABLED'}`);
+        console.log(
+          'Test Mode will simulate payments instead of opening PayPal',
+        );
+      };
+
+      // Render loop
+      function render() {
+        // Clear canvas
+        ctx.fillStyle = '#000011';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw some stars for background
+        ctx.fillStyle = 'white';
+        for (let i = 0; i < 100; i++) {
+          const x = (i * 123) % canvas.width;
+          const y = (i * 456) % canvas.height;
+          ctx.fillRect(x, y, 1, 1);
+        }
+
+        // Render demo ship with skins
+        shipSkins.renderShipWithSkin(ctx, mockPlayer, premiumStore);
+
+        // Render premium store
+        premiumStore.render(ctx, canvas);
+
+        // Update gem display
+        updateGemDisplay();
+
+        requestAnimationFrame(render);
+      }
+
+      // Start demo
+      updateGemDisplay();
+      render();
+
+      console.log('Premium Store Demo loaded!');
+      console.log('Premium Store:', premiumStore);
+      console.log('Ship Skins:', shipSkins);
+    </script>
+  </body>
+</html>

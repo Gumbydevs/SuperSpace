@@ -1,0 +1,12 @@
+{
+  // Hide node_modules from Explorer and Search, and hide Problems coming from node_modules
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  "problems.exclude": {
+    "**/node_modules/**": true
+  }
+}

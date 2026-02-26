@@ -1,0 +1,22 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "image-rendering: crisp-edges",
+          "user-select",
+          "-webkit-overflow-scrolling",
+          "-webkit-text-size-adjust",
+          "overscroll-behavior-y",
+          "overscroll-behavior-y: contain",
+          "overscroll-behavior"
+        ]
+      }
+    ],
+    "no-inline-styles": "off"
+  }
+}

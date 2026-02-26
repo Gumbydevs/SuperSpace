@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Purchase System</title>
+  </head>
+  <body>
+    <h1>Debug Purchase System</h1>
+    <button onclick="checkStorage()">Check localStorage</button>
+    <button onclick="clearStorage()">Clear localStorage</button>
+    <button onclick="simulatePurchase()">Simulate Purchase</button>
+    <div id="output"></div>
+
+    <script>
+      function checkStorage() {
+        const output = document.getElementById('output');
+        const purchases = localStorage.getItem('premiumPurchases');
+        const gems = localStorage.getItem('spaceGems');
+
+        output.innerHTML = `
+                <h3>localStorage Contents:</h3>
+                <p><strong>Space Gems:</strong> ${gems}</p>
+                <p><strong>Premium Purchases:</strong></p>
+                <pre>${purchases ? JSON.stringify(JSON.parse(purchases), null, 2) : 'None'}</pre>
+            `;
+      }
+
+      function clearStorage() {
+        localStorage.removeItem('premiumPurchases');
+        localStorage.removeItem('spaceGems');
+        checkStorage();
+      }
+
+      function simulatePurchase() {
+        // Simulate adding a purchase
+        const purchases = JSON.parse(
+          localStorage.getItem('premiumPurchases') ||
+            '{"avatars": [], "skins": [], "purchaseHistory": []}',
+        );
+        purchases.avatars.push('golden_astronaut');
+        localStorage.setItem('premiumPurchases', JSON.stringify(purchases));
+        checkStorage();
+      }
+
+      // Auto check on load
+      checkStorage();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>SuperSpace 👨‍🚀 The Multiplayer Space Deathmatch Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      // Load optional runtime config from /config.json (synchronous fallback)
+      // so deploys can change the API endpoint without rebuilding source.
+      (function () {
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', '/config.json', false); // synchronous on purpose
+          xhr.timeout = 1500;
+          xhr.send(null);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              var cfg = JSON.parse(xhr.responseText);
+              if (cfg && cfg.API_URL) {
+                window.SUPERSPACE_SERVER_URL = cfg.API_URL;
+                console.debug('Loaded SUPERSPACE_SERVER_URL from /config.json', cfg.API_URL);
+                return;
+              }
+            } catch (e) {
+              // fallthrough to default below
+            }
+          }
+        } catch (e) {
+          // network error or not present - fallthrough
+        }
+        if (!window.SUPERSPACE_SERVER_URL) {
+          window.SUPERSPACE_SERVER_URL = 'https://superspace-server-production.up.railway.app';
+          console.debug('AUTO: SUPERSPACE_SERVER_URL set to', window.SUPERSPACE_SERVER_URL);
+        } else {
+          console.debug('SUPERSPACE_SERVER_URL already set to', window.SUPERSPACE_SERVER_URL);
+        }
+      })();
+    </script>
+    <!-- Player-count monitor removed (was used for debugging) -->
+    <!-- Vercel Analytics - Simplified -->
+    <script>
+      // Set analytics host for custom tracking
+  window.SUPERSPACE_ANALYTICS_HOST = window.SUPERSPACE_SERVER_URL || 'https://superspace-server-production.up.railway.app';
+      
+      // Simple Vercel Analytics setup without external dependencies
+      window.vercelTrack = function (event, data) {
+        // console.log('✅ Vercel Analytics (fallback):', event, data); // Production: disabled
+        // This will be replaced by actual Vercel Analytics when available
+      };
+
+      // Try to load Vercel Analytics
+      if (typeof window.va !== 'undefined') {
+        window.vercelTrack = (event, data) => window.va('track', event, data);
+        // console.log('✅ Vercel Analytics loaded via window.va'); // Production: disabled
+      }
+    </script>
+    <script src="js/vercelAnalytics.js"></script>
+  <script src="js/maintenance.js"></script>
+    <style>
+      /* Hide footer branding links and copyright on the start screen only
+         for small portrait (vertical) mobile devices to save screen space.
+         Uses #menu:not(.hidden) to ensure it only applies when the start
+         menu is visible. */
+      @media (max-width: 720px) and (orientation: portrait) {
+        /* Primary start-screen branding */
+        #menu:not(.hidden) #branding .links,
+        #menu:not(.hidden) #branding .copyright,
+        /* Some templates use alternate classes/structure elsewhere */
+        #menu:not(.hidden) .brand-links,
+        #menu:not(.hidden) .copyright-text {
+          display: none !important;
+        }
+      }
+    </style>
+    <script>
+      // Connect to the server to get player count as soon as the page loads
+      window.addEventListener('load', function () {
+  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  // Prefer an explicit override when provided (useful when developing locally
+  // but wanting to target the remote multiplayer server)
+  const serverUrl = window.SUPERSPACE_SERVER_URL || (isLocalHost ? 'http://localhost:3000' : 'https://superspace-server-production.up.railway.app');
+  console.debug('Player-count socket will connect to:', serverUrl);
+
+        // Connect to server
+        const socket = io(serverUrl, {
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 3000,
+          reconnectionDelayMax: 10000,
+          timeout: 10000,
+        });
+
+        // Keep last known player count so transient disconnects don't immediately
+        // replace the visible number with a '?' which is confusing to users.
+        let lastKnownCount = null;
+        let disconnectTimer = null;
+        const DISCONNECT_GRACE_MS = 7000; // wait this long before showing '?'
+
+        function updatePlayerCountDisplay(val) {
+          const el = document.getElementById('player-count');
+          if (!el) return;
+          el.textContent = (val === null || typeof val === 'undefined') ? '?' : val;
+        }
+
+        // When connected, request player count and clear any pending disconnect timers
+        socket.on('connect', function () {
+          if (disconnectTimer) {
+            clearTimeout(disconnectTimer);
+            disconnectTimer = null;
+          }
+          socket.emit('getPlayerCount');
+        });
+
+        // Listen for player count updates (guard element access to avoid crashes
+        // when page body is replaced by other scripts like the inactivity logout)
+        socket.on('playerCountUpdate', function (count) {
+          lastKnownCount = count;
+          updatePlayerCountDisplay(count);
+        });
+
+        // Schedule showing a '?' only after a short grace period. If we reconnect
+        // or receive an update before the timer fires, we keep the last known value.
+        function scheduleShowQuestion() {
+          if (disconnectTimer) return; // already scheduled
+          disconnectTimer = setTimeout(function () {
+            // If we have a last known count, keep showing it; otherwise show '?'
+            if (lastKnownCount === null || typeof lastKnownCount === 'undefined') {
+              updatePlayerCountDisplay('?');
+            } else {
+              updatePlayerCountDisplay(lastKnownCount);
+            }
+            disconnectTimer = null;
+          }, DISCONNECT_GRACE_MS);
+        }
+
+        socket.on('disconnect', scheduleShowQuestion);
+        socket.on('connect_error', scheduleShowQuestion);
+      });
+    </script>
+  </head>
+  <body>
+    <!-- Disclaimer Popup -->
+    <div id="disclaimer-popup" class="disclaimer-overlay">
+      <div class="disclaimer-content">
+        <h2>Development Notice</h2>
+        <p>
+          <strong>SuperSpace</strong> is a hobby project in constant
+          development.<br /><br />
+          <b>Best experienced on desktop in a browser at
+            fullscreen or the largest available width. Mobile support is being worked on and will improve!</b>
+        </p>
+        <div class="disclaimer-details">
+          <p class="disclaimer-lead">Please be aware that you may experience:</p>
+          <ul class="disclaimer-list">
+            <li>Game crashes and freezes</li>
+            <li>Server downtime and disconnections</li>
+            <li>Loss of progress and statistics</li>
+            <li>Frequent updates and changes</li>
+          </ul>
+          <p class="disclaimer-ack">By continuing, you acknowledge that this is an experimental game and accept these conditions.</p>
+        </div>
+        <div class="disclaimer-actions">
+          <label class="checkbox-label">
+            <input type="checkbox" id="dont-show-again" /> Don't show this again
+          </label>
+          <button id="disclaimer-agree-btn">I Agree & Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance Popup (shown when server suspended) -->
+    <div id="maintenance-popup" class="disclaimer-overlay">
+      <div class="disclaimer-content">
+        <h2>Server Temporarily Offline</h2>
+        <p>
+          The game server has been suspended while we migrate to a new host.
+          You can still play single-player content locally, but multiplayer and cloud features are currently unavailable.
+        </p>
+        <div class="disclaimer-details">
+          <p class="disclaimer-lead">What this means:</p>
+          <ul class="disclaimer-list">
+            <li>Multiplayer is disabled</li>
+            <li>Cloud saves and leaderboards are unavailable</li>
+            <li>We expect to resume service as soon as a replacement host is configured</li>
+          </ul>
+        </div>
+        <div class="disclaimer-actions">
+          <button id="maintenance-ok-btn">Got it</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-container">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- Chat UI -->
+      <div id="chat-toast-container"></div>
+      <div id="chat-container" class="hidden">
+        <div id="chat-messages"></div>
+        <input type="text" id="chat-input" placeholder="Say something..." />
+      </div>
+
+      <div id="menu">
+        <h1 class="superspace-title">SUPERSPACE</h1>
+        <div class="launch-subtext">LAUNCH SEQUENCE READY</div>
+        <button id="play-btn">ENTER SUPERSPACE</button>
+        <button id="options-btn">Options</button>
+        <div id="server-info" style="display: none">
+          Online Players (<span id="player-count">0</span>)
+        </div>
+        <div id="branding">
+          <div class="copyright">© Gumbysoft - Made by Gumby</div>
+          <div class="links">
+            <a id="release-notes-link" href="#" title="Release Notes">📜 Release Notes <span id="release-notes-badge" style="background:#f44;color:#fff;border-radius:8px;padding:2px 6px;margin-left:6px;display:none;font-size:0.8em;">new</span></a>
+            <a href="https://buymeacoffee.com/gumbydev" target="_blank" rel="noopener">☕ Support The Game</a>
+            <a href="https://discord.gg/hZbZ2gQ4" target="_blank" rel="noopener">💬 Join Discord</a>
+            <a href="https://gumbydev.itch.io/" target="_blank" rel="noopener">🎮 Other Games</a>
+          </div>
+        </div>
+      </div>
+      <!-- Unified Options/Instructions Overlay -->
+      <div id="options-overlay" class="hidden">
+        <div class="options-panel">
+          <h2>Player Options</h2>
+          <button id="close-options-btn" class="close-btn">✕</button>
+          <div class="section">
+            <div class="section">
+              <div class="pilot-info">
+                <div class="pilot-name-row">
+                  <span class="pilot-label">👨‍✈️ Pilot Name:</span>
+                  <span id="pilot-name">(Loading...)</span>
+                </div>
+                <canvas
+                  id="profileAvatarCanvas"
+                  class="profile-avatar-canvas"
+                  width="64"
+                  height="64"
+                ></canvas>
+                <div class="profile-buttons">
+                  <button id="view-profile-btn" class="profile-btn">
+                    📊 Stats
+                  </button>
+                  <button id="view-achievements-btn" class="profile-btn">
+                    🏆 Achievements
+                  </button>
+                </div>
+                <div class="pilot-buttons">
+                  <button id="changePilotBtn" class="change-pilot-btn">
+                    Change Avatar
+                  </button>
+                  <button id="rename-btn" class="rename-btn">
+                    Change Name
+                  </button>
+                  <!-- Cloud Sync from Options -->
+                  <button id="open-cloud-sync-btn" class="profile-btn">
+                    4be Cloud Sync
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="section">
+              <h3>Controls (Desktop)</h3>
+              <ul class="controls-list">
+                <li>
+                  <span class="control-action">Move:</span>
+                  <span class="control-key">Arrow Keys / WASD</span>
+                </li>
+                <li>
+                  <span class="control-action">Shoot:</span>
+                  <span class="control-key">Spacebar</span>
+                </li>
+                <li>
+                  <span class="control-action">Afterburner:</span>
+                  <span class="control-key">Left Shift (hold)</span>
+                </li>
+                <li>
+                  <span class="control-action">Impact Deflector:</span>
+                  <span class="control-key">Left Ctrl / Tab</span>
+                </li>
+                <li>
+                  <span class="control-action">Weapon Switch:</span>
+                  <span class="control-key">Q (previous) / E (next)</span>
+                </li>
+                <li>
+                  <span class="control-action">Direct Weapon Select:</span>
+                  <span class="control-key">0-9 number keys</span>
+                </li>
+                <li>
+                  <span class="control-action">Player Profile:</span>
+                  <span class="control-key">P key</span>
+                </li>
+                <li>
+                  <span class="control-action">Zoom:</span>
+                  <span class="control-key">Z key (toggle)</span>
+                </li>
+                <li>
+                  <span class="control-action">Shop:</span>
+                  <span class="control-key">B key</span>
+                </li>
+                <li>
+                  <span class="control-action">Open Chat</span>
+                  <span class="control-key">T key</span>
+                </li>
+                <li>
+                  <span class="control-action">Mute Music:</span>
+                  <span class="control-key">M key</span>
+                </li>
+                <li>
+                  <span class="control-action">Mute SFX:</span>
+                  <span class="control-key">N key</span>
+                </li>
+                <li>
+                  <span class="control-action">Show/Hide Menu:</span>
+                  <span class="control-key">Esc key</span>
+                </li>
+              </ul>
+            </div>
+            <div class="section">
+              <h3>Audio</h3>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <label
+                  ><input type="checkbox" id="music-toggle" checked /> Music
+                  On/Off</label
+              </div>
+              <div class="audio-spacer"></div>
+              <div class="slider-row">
+                <label for="music-volume">Music Volume</label>
+                <input
+                  type="range"
+                  id="music-volume"
+                  min="0"
+                  max="3"
+                  step="0.01"
+                  value="0.7"
+                />
+              </div>
+              <div class="slider-row">
+                <label for="sfx-volume">SFX Volume</label>
+                <input
+                  type="range"
+                  id="sfx-volume"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.7"
+                />
+              </div>
+            </div>
+            <div class="section branding-section">
+              <div class="game-branding">
+                <div class="copyright-text">© Gumbysoft - Made by Gumby</div>
+                <div class="brand-links">
+                  <a
+                    href="https://gumbydev.itch.io/"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >🎮 More Games</a
+                  >
+                  <a
+                    href="https://buymeacoffee.com/gumbydev"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >☕ Support Dev</a
+                  >
+                </div>
+                <div class="brand-links">
+                  <a
+                    href="https://discord.gg/8vcPr9WK"
+                    target="_blank"
+                    rel="noopener"
+                    class="brand-link"
+                    >💬 Join Discord</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Avatar Selection Modal -->
+        <div id="avatarModal" class="avatar-modal hidden">
+          <div class="avatar-modal-content">
+            <h3>Select Pilot Avatar</h3>
+            <div class="avatar-selection">
+              <!-- Row 1: free avatars (first three) -->
+              <div class="avatar-option" data-avatar="han">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Ace</span>
+              </div>
+              <div class="avatar-option" data-avatar="ripley">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Ripley</span>
+              </div>
+              <div class="avatar-option" data-avatar="missy">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Missy</span>
+              </div>
+              <!-- Premium slots-->
+              <div class="avatar-option" data-avatar="robot">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Marvin</span>
+              </div>
+              <div class="avatar-option" data-avatar="alien">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Jeff</span>
+              </div>
+              <div class="avatar-option" data-avatar="longjohn">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Long John</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <!-- Row 2: 10 more avatars -->
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+              <div class="avatar-option disabled">
+                <canvas class="avatar-canvas" width="48" height="48"></canvas>
+                <span class="avatar-name">Soon</span>
+              </div>
+            </div>
+            <div class="avatar-modal-actions">
+              <button id="authenticateBtn" class="authenticate-btn">
+                Authenticate
+              </button>
+              <button id="cancelAvatarBtn" class="cancel-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Disclaimer popup logic
+      document.addEventListener('DOMContentLoaded', function () {
+        const disclaimerPopup = document.getElementById('disclaimer-popup');
+        const agreeBtn = document.getElementById('disclaimer-agree-btn');
+        const dontShowCheckbox = document.getElementById('dont-show-again');
+
+        // If any required element is missing (page modified or partial load), bail out
+        if (!disclaimerPopup || !agreeBtn || !dontShowCheckbox) return;
+
+        // Check if user has already agreed (permanently or for this session)
+        // Only treat the string 'true' (lowercase) as agreed
+        const agreedLocal = localStorage.getItem(
+          'superspace-disclaimer-agreed',
+        );
+        const agreedSession = sessionStorage.getItem(
+          'superspace-disclaimer-temp-agreed',
+        );
+        const hasAgreed = agreedLocal === 'true' || agreedSession === 'true';
+
+        if (!hasAgreed) {
+          disclaimerPopup.style.display = 'flex';
+        } else {
+          disclaimerPopup.style.display = 'none';
+          // Fire event immediately if already agreed
+          window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
+        }
+
+        agreeBtn.addEventListener('click', function () {
+          disclaimerPopup.style.display = 'none';
+          if (dontShowCheckbox.checked) {
+            localStorage.setItem('superspace-disclaimer-agreed', 'true');
+          } else {
+            sessionStorage.setItem('superspace-disclaimer-temp-agreed', 'true');
+          }
+          window.dispatchEvent(new Event('superspaceDisclaimerAgreed'));
+        });
+      });
+    </script>
+
+    <!-- Release Notes modal (renders from ResetConfig.versionNotes) -->
+
+    <div id="release-notes-popup" class="disclaimer-overlay" style="display:none;">
+      <div class="disclaimer-content" style="max-width:760px;">
+        <h2 style="margin-top:0;color:#fff;">Release Notes</h2>
+        <div id="release-notes-list" style="max-height:60vh;overflow:auto;color:#ddd;font-size:0.95em;padding:6px;background:rgba(0,0,0,0.12);border-radius:6px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="release-notes-close" class="cancel-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import ResetConfig, { GAME_VERSION } from './js/resetConfig.js';
+
+      function formatVersionNotes(notesObj) {
+        const keys = Object.keys(notesObj || {});
+        // Sort keys lexicographically which matches our version format YYYY.MM.DD.*
+        keys.sort();
+        keys.reverse(); // newest first
+
+        const container = document.getElementById('release-notes-list');
+        container.innerHTML = '';
+
+        if (keys.length === 0) {
+          container.innerHTML = '<div style="color:#aaa;padding:8px;">No release notes available.</div>';
+          return;
+        }
+
+        keys.forEach((v) => {
+          const section = document.createElement('div');
+          section.style.marginBottom = '12px';
+
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const title = document.createElement('div');
+          title.innerHTML = `<strong style=\"color:#fff\">Version ${v}</strong>`;
+          header.appendChild(title);
+
+          // External link if present
+          if (ResetConfig.versionLinks && ResetConfig.versionLinks[v]) {
+            const linkLabel = (ResetConfig.versionLinkLabels && ResetConfig.versionLinkLabels[v]) || 'Read full notes';
+            const a = document.createElement('a');
+            a.href = ResetConfig.versionLinks[v];
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = linkLabel;
+            a.style.color = '#8cf';
+            header.appendChild(a);
+          }
+
+          section.appendChild(header);
+
+          const list = document.createElement('ul');
+          list.style.margin = '6px 0 0 18px';
+          list.style.color = '#ddd';
+
+          const items = ResetConfig.versionNotes[v] || [];
+          items.forEach((itm) => {
+            const li = document.createElement('li');
+            li.innerHTML = itm; // NOTE: versionNotes contains HTML strings
+            list.appendChild(li);
+          });
+          section.appendChild(list);
+
+          container.appendChild(section);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+  // The release notes trigger is now a link inside the footer links area
+  const btn = document.getElementById('release-notes-link');
+    const popup = document.getElementById('release-notes-popup');
+    const closeBtn = document.getElementById('release-notes-close');
+  const badge = document.getElementById('release-notes-badge');
+
+        formatVersionNotes(ResetConfig.versionNotes);
+
+        // Show badge when user's last seen version differs from current GAME_VERSION
+        try {
+          const lastSeen = localStorage.getItem('superspace-last-seen-version') || '';
+          if (lastSeen !== GAME_VERSION) {
+            badge.style.display = 'inline-block';
+          }
+        } catch (e) {
+          // ignore storage errors
+        }
+
+        if (btn) {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            popup.style.display = 'flex';
+            badge.style.display = 'none';
+            try {
+              localStorage.setItem('superspace-last-seen-version', GAME_VERSION);
+            } catch (err) {
+              // ignore storage errors
+            }
+          });
+        }
+
+        closeBtn.addEventListener('click', () => {
+          popup.style.display = 'none';
+        });
+
+        // Opening the release notes now auto-marks them as read; the explicit
+        // 'Mark as read' button was removed to avoid redundancy.
+
+        // Also add a link from the disclaimer modal to open release notes for clarity
+        const disclaimerLink = document.createElement('a');
+        disclaimerLink.href = '#';
+        disclaimerLink.textContent = 'View Release Notes';
+        disclaimerLink.style.color = '#8cf';
+        disclaimerLink.style.marginLeft = '10px';
+        disclaimerLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.getElementById('release-notes-popup').style.display = 'flex';
+          document.getElementById('release-notes-badge').style.display = 'none';
+        });
+
+        // Append to disclaimer actions if present
+        const disclaimerActions = document.querySelector('.disclaimer-actions');
+        if (disclaimerActions) {
+          disclaimerActions.appendChild(disclaimerLink);
+        }
+      });
+    </script>
+
+    <script>
+      // Block gameplay if kicked
+      if (sessionStorage.getItem('wasKicked') === '1') {
+        document.body.innerHTML =
+          '<div style="color:#f44;font-size:2em;text-align:center;margin-top:20vh;">You have been kicked from the game by an admin.<br><br><button onclick="sessionStorage.removeItem(\'wasKicked\');location.reload()" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
+        throw new Error('Blocked by admin kick');
+      }
+    </script>
+    <script>
+      // Early check: show a message if the user was previously logged out due to inactivity
+      (function () {
+        try {
+          if (sessionStorage.getItem('loggedOutDueToInactivity') === '1') {
+            document.body.innerHTML =
+              '<div style="color:#f44;font-size:1.6em;text-align:center;margin-top:20vh;">You were logged out due to inactivity.<br><br><button id="_ssi_ok_btn" style="font-size:1em;padding:0.5em 1em;">OK</button></div>';
+            // Remove the flag when user acknowledges so normal flow resumes
+            document.addEventListener('click', function onClick(e) {
+              if (e.target && e.target.id === '_ssi_ok_btn') {
+                sessionStorage.removeItem('loggedOutDueToInactivity');
+                location.reload();
+              }
+            });
+            // Prevent further scripts from running on this page load
+            throw new Error('Logged out due to inactivity');
+          }
+        } catch (e) {
+          // Intentionally swallow errors to avoid breaking load if sessionStorage is inaccessible
+        }
+      })();
+    </script>
+
+    <script>
+      // Inactivity manager (client-side)
+      // - Shows a warning after inactivity
+      // - Logs out by setting sessionStorage flag and reloading
+      (function () {
+  const DEFAULT_INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
+    const WARN_BEFORE_MS = 60 * 1000; // show warning 60s before logout
+    // Ignore very small values saved accidentally in localStorage from tests.
+    const MIN_LOCAL_INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
+
+        // read configured timeout and fall back to default
+        // Behavior note: by default we do NOT honor a previous session's stored
+        // inactivity timeout. This avoids accidental short timers persisting
+        // across page loads. To explicitly persist a custom timeout across
+        // sessions set localStorage 'superspace-inactivity-persist' === '1'.
+        // For development testing you can still set window.SUPERSPACE_INACTIVITY_MS
+        // in the console (only for the current session).
+        function readConfiguredTimeout() {
+          const fromWindow = (typeof window.SUPERSPACE_INACTIVITY_MS === 'number' && window.SUPERSPACE_INACTIVITY_MS > 0)
+            ? window.SUPERSPACE_INACTIVITY_MS
+            : null;
+          if (fromWindow) return fromWindow;
+          // Only read localStorage if user explicitly opted into persistence
+          try {
+            if (localStorage.getItem('superspace-inactivity-persist') !== '1') {
+              return DEFAULT_INACTIVITY_MS;
+            }
+          } catch (e) {
+            return DEFAULT_INACTIVITY_MS;
+          }
+
+          const fromStorage = parseInt(localStorage.getItem('superspace-inactivity-ms'), 10);
+          if (Number.isFinite(fromStorage) && fromStorage > 0) {
+            if (fromStorage < MIN_LOCAL_INACTIVITY_MS) {
+              // Remove tiny leftover test values so they don't affect new sessions.
+              try { localStorage.removeItem('superspace-inactivity-ms'); } catch (e) {}
+              if (window.DEBUG_LOGS) console.warn('superspace-inactivity-ms in localStorage was too small (' + fromStorage + 'ms); removed and using default ' + DEFAULT_INACTIVITY_MS + 'ms. To persist a custom timeout across sessions set localStorage.superspace-inactivity-persist = "1" and superspace-inactivity-ms.');
+              return DEFAULT_INACTIVITY_MS;
+            }
+            return fromStorage;
+          }
+          return DEFAULT_INACTIVITY_MS;
+        }
+
+        // Don't run in environments where document/body isn't available yet
+        if (!document || !document.body || typeof sessionStorage === 'undefined') return;
+
+  // Mutable value so runtime changes take effect
+  let inactivityMs = readConfiguredTimeout();
+
+  // Manager state
+  let enabled = false; // only start counting when explicitly enabled (e.g., after player joins)
+
+  let idleTimer = null;
+        let warnTimer = null;
+        let countdownInterval = null;
+  let lastReset = 0; // simple debounce timestamp
+  let lastActivity = Date.now(); // timestamp of last user activity
+        const RESET_DEBOUNCE_MS = 500; // ignore resets more frequent than this
+
+        // Create warning overlay (hidden by default)
+        const overlay = document.createElement('div');
+        overlay.id = 'superspace-inactivity-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.display = 'none';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.background = 'rgba(0,0,0,0.75)';
+        overlay.style.zIndex = '99999';
+        overlay.innerHTML = `
+          <div style="max-width:520px;padding:20px;border-radius:8px;background:#111;color:#fff;text-align:center;font-family:inherit;">
+            <div id="ssi-message" style="font-size:1.1em;margin-bottom:12px;">You've been inactive and will be logged out soon.</div>
+            <div id="ssi-countdown" style="font-size:1.4em;font-weight:600;margin-bottom:16px;"></div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+              <button id="ssi-stay-btn" style="padding:8px 14px;border-radius:6px;border:0;cursor:pointer;background:#2bff8a;color:#000;font-weight:700;">Stay Logged In</button>
+              <button id="ssi-logout-btn" style="padding:8px 14px;border-radius:6px;border:0;cursor:pointer;background:#ff6b6b;color:#fff;font-weight:700;">Log Out Now</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const showWarning = () => {
+          try {
+            // Re-read configured timeout in case it changed while idle
+            inactivityMs = readConfiguredTimeout();
+            // If the configured inactivity is shorter than the warning window,
+            // use the smaller value so the countdown reflects the true remaining time.
+            const logoutDelay = Math.min(WARN_BEFORE_MS, Math.max(0, inactivityMs));
+            const logoutAt = Date.now() + logoutDelay;
+            overlay.style.display = 'flex';
+            const countdownEl = document.getElementById('ssi-countdown');
+            if (countdownInterval) clearInterval(countdownInterval);
+            // update countdown once per second (low cost)
+            countdownInterval = setInterval(() => {
+              const sec = Math.max(0, Math.ceil((logoutAt - Date.now()) / 1000));
+              if (countdownEl) countdownEl.textContent = `${sec}s`;
+              if (sec <= 0) {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+
+            // After the computed logoutDelay, perform logout (set flag then reload)
+            warnTimer = setTimeout(() => {
+              try {
+                sessionStorage.setItem('loggedOutDueToInactivity', '1');
+              } catch (e) {
+                // ignore
+              }
+              location.reload();
+            }, logoutDelay);
+          } catch (e) {
+            // ignore overlay errors
+          }
+        };
+
+        const hideWarning = () => {
+          overlay.style.display = 'none';
+          if (warnTimer) {
+            clearTimeout(warnTimer);
+            warnTimer = null;
+          }
+          if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+          }
+        };
+
+        const resetIdleTimer = (force) => {
+          if (!enabled && !force) return; // ignore resets until enabled
+          const now = Date.now();
+          // Debounce to avoid spamming timer resets from frequent events
+          if (!force && now - lastReset < RESET_DEBOUNCE_MS) return;
+          lastReset = now;
+
+          // If warning is visible, hide it and cancel pending logout
+          hideWarning();
+          if (idleTimer) {
+            clearTimeout(idleTimer);
+          }
+          // Ensure we use latest configured timeout (supports runtime changes)
+          inactivityMs = readConfiguredTimeout();
+          // If the configured timeout is shorter than the warning window,
+          // schedule the warning after the full timeout. Otherwise schedule
+          // it WARN_BEFORE_MS before the timeout.
+          const delayToWarning = inactivityMs > WARN_BEFORE_MS ? (inactivityMs - WARN_BEFORE_MS) : inactivityMs;
+          if (window.DEBUG_LOGS) console.debug('Inactivity: scheduling warning in', delayToWarning, 'ms (inactivityMs=', inactivityMs, 'WARN_BEFORE_MS=', WARN_BEFORE_MS, ')');
+          idleTimer = setTimeout(() => {
+            showWarning();
+          }, Math.max(0, delayToWarning));
+        };
+
+        // Activity events
+        const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'wheel', 'click'];
+        activityEvents.forEach((ev) => {
+          window.addEventListener(ev, () => {
+            try {
+              // Always update last activity timestamp so enabling the manager uses
+              // a recent activity time as baseline and doesn't immediately fire.
+              lastActivity = Date.now();
+              // If the manager isn't enabled or the warning overlay is visible, ignore starting reset
+              if (!enabled) return;
+              if (overlay && overlay.style && overlay.style.display === 'flex') return;
+              resetIdleTimer();
+            } catch (e) {
+              // ignore
+            }
+          }, { passive: true });
+        });
+
+        // Buttons
+        document.addEventListener('click', function (e) {
+          if (!e.target) return;
+          if (e.target.id === 'ssi-stay-btn') {
+            resetIdleTimer(true);
+          } else if (e.target.id === 'ssi-logout-btn') {
+            try {
+              sessionStorage.setItem('loggedOutDueToInactivity', '1');
+            } catch (e) {}
+            location.reload();
+          }
+        });
+
+  // Do NOT start the idle timer yet. The manager must be enabled when the player
+  // actually enters the game/server. Call window.superspaceInactivity.enable() to start.
+
+        // Expose a safe API to reset the idle timer and change timeout at runtime
+        // API: control enabling/disabling and timeout at runtime
+        function enableInactivity() {
+          if (enabled) return;
+          enabled = true;
+          // Treat the enable action as recent activity and start timers fresh.
+          lastActivity = Date.now();
+          // Use the central reset path so debounce, configured timeout reads,
+          // and warning cancellation behavior are consistent.
+          resetIdleTimer(true);
+          if (window.DEBUG_LOGS) console.debug('Inactivity enabled via enableInactivity(), timers reset.');
+        }
+
+        function disableInactivity() {
+          enabled = false;
+          hideWarning();
+          if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+        }
+
+        if (!window.superspaceInactivity) {
+          window.superspaceInactivity = {
+            reset: resetIdleTimer,
+            enable: enableInactivity,
+            disable: disableInactivity,
+            setTimeoutMs(ms) {
+              if (!Number.isFinite(ms) || ms <= 0) return false;
+              try { localStorage.setItem('superspace-inactivity-ms', String(ms)); } catch (e) {}
+              inactivityMs = ms;
+              if (enabled) resetIdleTimer(true);
+              return true;
+            },
+            getTimeoutMs() { return inactivityMs; }
+          };
+        } else {
+          // augment existing API if present
+          window.superspaceInactivity.reset = resetIdleTimer;
+          window.superspaceInactivity.enable = enableInactivity;
+          window.superspaceInactivity.disable = disableInactivity;
+          window.superspaceInactivity.setTimeoutMs = function (ms) {
+            if (!Number.isFinite(ms) || ms <= 0) return false;
+            try { localStorage.setItem('superspace-inactivity-ms', String(ms)); } catch (e) {}
+            inactivityMs = ms;
+            if (enabled) resetIdleTimer(true);
+            return true;
+          };
+          window.superspaceInactivity.getTimeoutMs = function () { return inactivityMs; };
+        }
+
+        // Automatically enable inactivity when player clicks the main play button
+        try {
+          const playBtn = document.getElementById('play-btn');
+          if (playBtn) {
+            playBtn.addEventListener('click', () => {
+              try { window.superspaceInactivity && window.superspaceInactivity.enable(); } catch (e) {}
+            });
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
+    <script>
+      // Simple mobile zoom prevention
+      (function () {
+        if ('ontouchstart' in window) {
+          // Prevent pinch zoom
+          document.addEventListener(
+            'touchstart',
+            function (e) {
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            },
+            { passive: false },
+          );
+
+          document.addEventListener(
+            'touchmove',
+            function (e) {
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            },
+            { passive: false },
+          );
+
+          // Prevent double-tap zoom
+          let lastTouchEnd = 0;
+          document.addEventListener(
+            'touchend',
+            function (e) {
+              const now = Date.now();
+              if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+              }
+              lastTouchEnd = now;
+            },
+            { passive: false },
+          );
+        }
+      })();
+    </script>
+
+    <!-- Cloud Sync System -->
+    <script src="js/cloudSync.js"></script>
+    <script src="js/accountUI.js"></script>
+    <!-- Ship Skin Notifications -->
+    <script src="js/shipSkinNotifications.js"></script>
+    <script src="js/game.js" type="module"></script>
+  </body>
+</html>
