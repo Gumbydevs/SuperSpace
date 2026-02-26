@@ -69,6 +69,15 @@ class CloudSyncService {
     // Check if user is already logged in
     this.checkExistingLogin();
 
+    // Ensure playtester entitlements are present for fresh/anonymous users
+    try {
+      if (typeof this.ensurePlaytesterEntitlements === 'function') {
+        this.ensurePlaytesterEntitlements();
+      }
+    } catch (e) {
+      console.warn('Error ensuring playtester entitlements in constructor:', e);
+    }
+
     // Setup automatic syncing
     this.setupAutoSync();
   }
@@ -557,6 +566,19 @@ class CloudSyncService {
               }
             } catch (e) {
               /* ignore UI update errors */
+            }
+
+            // Also ensure the gifted playtester ship skin is selected for fresh players
+            try {
+              const curSelSkin = localStorage.getItem('selectedShipSkin');
+              if (!curSelSkin || curSelSkin === 'none') {
+                localStorage.setItem('selectedShipSkin', playSkin);
+                if (window && window.game && window.game.shipSkins && typeof window.game.shipSkins.setActiveSkin === 'function') {
+                  try { window.game.shipSkins.setActiveSkin('scout', playSkin); } catch (e) { /* ignore */ }
+                }
+              }
+            } catch (e) {
+              /* ignore */
             }
 
             // If user is logged in, trigger an immediate cloud upload to persist this selection
