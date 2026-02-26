@@ -1,5 +1,12 @@
 // Centralized release notes data to make it easy to add new versions/notes.
 export const versionNotes = {
+  // 2026 server migration announcement
+  '2026.02.26.001': [
+    '<span style="color: #00ff88; font-weight: bold;">🛸 SuperSpace is back online!</span>',
+    '<span style="color: #7ad1ff;">We migrated to a more affordable server setup — your cloud saves, progress, and account data are all preserved.</span>',
+    'Thank you for your patience. See you in the galaxy!'
+  ],
+
   // Server back online announcement
   '2025.11.12.001': [
     '<span style="color: #00ff88; font-weight: bold;">🎉 Welcome back! The server is now online after several weeks of downtime.</span>',
