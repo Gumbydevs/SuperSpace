@@ -140,6 +140,26 @@ app.use(
 // Allow JSON bodies (used by admin endpoints)
 app.use(express.json());
 
+// Force CORS headers and optional debug logging as a safeguard. Some
+// hosting proxies may strip or alter headers from app-level middleware;
+// this middleware ensures the expected CORS headers are present on all
+// responses and handles preflight OPTIONS early.
+app.use((req, res, next) => {
+  const origin = req.get('origin') || '*';
+  res.set('Access-Control-Allow-Origin', origin);
+  res.set('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Cache-Control, Pragma',
+  );
+  // Optional CORS debug logging when DEBUG_CORS=1
+  if (process.env.DEBUG_CORS === '1') {
+    console.debug(`[CORS DEBUG] ${req.method} ${req.url} origin=${origin}`);
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  return next();
+});
+
 // Maintenance mode: if MAINTENANCE=1 then short-circuit requests with a tiny 503
 // response to stop serving large assets and reduce outgoing bandwidth while
 // you fix billing or migrate the service. This middleware must come before
